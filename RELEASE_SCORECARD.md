@@ -1,7 +1,20 @@
 # Eco Agent 发布记分卡
 
 > 最终发布前逐项核验。**P0 项必须 100% 通过。**
-> 检查日期：2026-07-29
+> 检查日期：2026-07-29（本轮整改复测）
+
+## 本轮真实测试数据（2026-07-29 复测）
+
+| 指标 | 数值 |
+|:-----|:----:|
+| pytest 用例 | **53 passed / 0 failed**（含 llm_client mock、SecureStore、ReAct 中断/回滚硬核用例） |
+| `tests/run_all.py` | **53/53，与 pytest 完全一致**（存量 0 执行 bug 已修复） |
+| ruff lint | **0 error**（规则见 pyproject.toml，风格类有意豁免） |
+| 五层循环 self-test | 5/5 PASS |
+| daemon 启停 | start/status/stop 正常（fork 管道挂起问题已修复） |
+| Kimi 真实冒烟（`scripts/smoke_kimi.py`） | L1 思考 + L4 元认知分析均走真实 LLM，通过 |
+| RAG 准确率 | 如实计算（无封顶/保底），固定 fixture 实测 100% 关键词保留 |
+| 外部基准（HumanEval/MBPP/OSWorld） | **not_run——官方评测 harness 未接入，如实标注，不再产出随机分** |
 
 ## 验收域 A：自我进化引擎
 
@@ -30,7 +43,7 @@
 |:-----|:-------|:----:|:----:|:------|
 | C-01 | 离线存活能力 | 🔴 | ⚪ | 依赖本地模型配置 |
 | C-02 | 云端/边缘切换 | 🔴 | ⚪ | ProviderRouter 基础已就绪 |
-| C-03 | 8平台网关 | 🔴 | ✅ | 飞书/企微/钉钉/Telegram/Discord/Slack/CLI/Web |
+| C-03 | 统一网关 | 🔴 | ⚠️ | 6 通道已接入（Telegram/Discord/Slack 适配器 + 飞书/企微/钉钉独立 Bot）；CLI/Web/微信为骨架待接入，详见 README |
 | C-04 | 后台守护保活 | 🔴 | ✅ | Daemon + 3秒自愈 |
 
 ## 验收域 D：个人 AI 工作台
@@ -91,7 +104,7 @@
 | P-02 | 端到端复杂任务 | <8s | ⚪ | 需性能压测 |
 | P-03 | 内存占用 | <1.5GB | ⚪ | 需性能压测 |
 | P-04 | CPU占用 | <5% | ⚪ | 需性能压测 |
-| P-05 | OSWorld基准 | +5% | ⚪ | benchmark_harness.py 就绪 |
+| P-05 | OSWorld基准 | +5% | ⚪ | benchmark_harness.py 骨架，官方 harness 未接入（如实标注 not_run） |
 | P-06 | 打包大小 | <500MB | ⚪ | 打包脚本待构建 |
 
 ## 汇总

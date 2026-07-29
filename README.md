@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/version-5.0.0--alpha-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-orange)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-23%20passed-brightgreen)](TEST_LOG.md)
+[![Tests](https://img.shields.io/badge/tests-53%20passed-brightgreen)](TEST_LOG.md)
 [![CI](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml)
 
 Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环，从毫秒级到天级，让 AI 在无人唤醒时也能思考，在无人纠正时也能进化。
@@ -50,13 +50,15 @@ Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环
 
 ### 统一网关
 
-8 通道接入，跨平台会话共享上下文：
+跨平台会话共享上下文，统一消息协议。接入状态如实标注：
 
-```
-飞书 / 企业微信 / 钉钉 / Telegram / Discord / Slack / CLI / Web API
-```
+| 状态 | 通道 |
+|:-----|:-----|
+| ✅ 已实现 ChannelAdapter（`gateway/channels/`） | Telegram / Discord / Slack |
+| ✅ 独立平台 Bot（`gateway/platforms/`，未走适配器接口） | 飞书 / 企业微信 / 钉钉 |
+| 🚧 骨架/待接入 | 微信个人号（Wechaty 依赖外部服务）/ CLI / Web API |
 
-- 统一消息协议，所有通道归一化为 UnifiedMessage
+- 统一消息协议，已接入通道归一化为 UnifiedMessage
 - 会话管理带持久化和过期回收（72 小时自动清理）
 - 审计日志记录每条消息的 who/what/when/result/cost 五要素
 
@@ -141,7 +143,7 @@ python agent_core/eco_loops_integration.py --self-test
 ## 项目结构
 
 ```
-gateway/           8 通道统一网关
+gateway/           统一网关（6 通道已接入，CLI/Web/微信骨架待接入）
 agent_core/        五层循环 + 多智能体 + 记忆 + 技能 + 进化 + 自愈
 _scripts/          自动化工具脚本（质量审计、lint、修复流水线）
 skills/            技能库（自动进化生成）

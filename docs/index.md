@@ -24,11 +24,12 @@
 
 ### 51 个连接器
 
-覆盖 12 类第三方服务（消息/代码/文档/项目/数据/AI/邮件/日历/设计/金融/存储/政务），AES-256 加密
+覆盖 12 类第三方服务（消息/代码/文档/项目/数据/AI/邮件/日历/设计/金融/存储/政务），Fernet（AES-128-CBC + HMAC）加密存储凭证
 
-### 8 通道网关
+### 统一网关
 
-飞书、企微、钉钉、Telegram、Discord、Slack、CLI、Web API
+已接入：Telegram / Discord / Slack（ChannelAdapter）+ 飞书 / 企微 / 钉钉（独立 Bot）。
+骨架/待接入：CLI、Web API、微信个人号（Wechaty 依赖外部服务）。
 
 ## 快速开始
 
