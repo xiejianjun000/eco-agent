@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Memory Tree data (runtime generated)
+memory-tree/data/
+*.db
+*.sqlite
+
+# Logs
+*.log
+logs/
+
+# Temp
+tmp/
+temp/

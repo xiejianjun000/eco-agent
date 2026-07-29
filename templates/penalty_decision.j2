@@ -1,0 +1,95 @@
+{%- set now = now or "____年__月__日" -%}
+# 生态环境保护主管部门
+# 行政处罚决定书
+
+**{{ case_no }}**
+
+---
+
+## 当事人信息
+
+| 项目 | 内容 |
+|:-----|:------|
+| 当事人名称 | {{ party_name }} |
+| 统一社会信用代码 | {{ credit_code }} |
+| 法定代表人 | {{ legal_representative }} |
+| 地址 | {{ address }} |
+
+---
+
+## 案件来源和调查经过
+
+{{ investigation_process }}
+
+---
+
+## 违法事实和证据
+
+### 违法事实
+
+{{ violation_facts }}
+
+### 证据清单
+
+{% for evidence in evidence_list %}
+{{ loop.index }}. {{ evidence }}
+{% endfor %}
+
+---
+
+## 违反的法律条款
+
+违反了以下规定：
+
+{% for law in laws_violated %}
+{{ loop.index }}. {{ law }}
+{% endfor %}
+
+---
+
+## 处罚依据和裁量
+
+依据以下规定：
+
+{% for law in laws_basis %}
+{{ loop.index }}. {{ law }}
+{% endfor %}
+
+### 裁量因素
+
+{% for factor in discretion_factors %}
+- {{ factor }}
+{% endfor %}
+
+### 参考裁量基准
+
+{% for bench in benchmark_refs %}
+- {{ bench }}
+{% endfor %}
+
+---
+
+## 处罚决定
+
+根据上述法律规定，本机关决定对你（单位）作出如下行政处罚：
+
+{% for penalty in penalties %}
+{{ loop.index }}. {{ penalty }}
+{% endfor %}
+
+---
+
+## 履行方式和期限
+
+{{ execution_method }}
+
+---
+
+## 权利告知
+
+如不服本处罚决定，可在收到本决定书之日起六十日内向{{复议机关}}申请行政复议，也可以在六个月内向{{人民法院}}提起行政诉讼。逾期不申请行政复议，也不提起行政诉讼，又不履行本处罚决定的，本机关将依法申请人民法院强制执行。
+
+---
+
+**处罚机关**：{{处罚机关}}
+**日期**：{{ now }}

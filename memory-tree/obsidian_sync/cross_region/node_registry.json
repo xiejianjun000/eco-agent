@@ -1,0 +1,104 @@
+{
+  "node-test-001": {
+    "node_id": "node-test-001",
+    "region": "测试省",
+    "name": "ECO-测试省",
+    "host": "localhost",
+    "port": 9090,
+    "public_key": "",
+    "status": "active",
+    "last_seen": "2026-07-29T08:02:00.236639",
+    "version": "2.0.0",
+    "capabilities": [
+      "share_case",
+      "sync_benchmark",
+      "query_statute",
+      "cooperative_review"
+    ]
+  },
+  "node-test-002": {
+    "node_id": "node-test-002",
+    "region": "测试省2",
+    "name": "ECO-测试省2",
+    "host": "localhost",
+    "port": 9090,
+    "public_key": "",
+    "status": "active",
+    "last_seen": "2026-07-29T08:02:00.284050",
+    "version": "2.0.0",
+    "capabilities": [
+      "share_case",
+      "sync_benchmark",
+      "query_statute",
+      "cooperative_review"
+    ]
+  },
+  "node-zj-001": {
+    "node_id": "node-zj-001",
+    "region": "浙江省",
+    "name": "ECO-浙江省",
+    "host": "localhost",
+    "port": 9090,
+    "public_key": "",
+    "status": "active",
+    "last_seen": "2026-07-29T08:02:00.458425",
+    "version": "2.0.0",
+    "capabilities": [
+      "share_case",
+      "sync_benchmark",
+      "query_statute",
+      "cooperative_review"
+    ]
+  },
+  "node-js-001": {
+    "node_id": "node-js-001",
+    "region": "江苏省",
+    "name": "ECO-江苏省",
+    "host": "localhost",
+    "port": 9090,
+    "public_key": "",
+    "status": "active",
+    "last_seen": "2026-07-29T08:02:00.584461",
+    "version": "2.0.0",
+    "capabilities": [
+      "share_case",
+      "sync_benchmark",
+      "query_statute",
+      "cooperative_review"
+    ]
+  },
+  "node-gd-001": {
+    "node_id": "node-gd-001",
+    "region": "广东省",
+    "name": "ECO-广东省",
+    "host": "localhost",
+    "port": 9090,
+    "public_key": "",
+    "status": "active",
+    "last_seen": "2026-07-29T08:02:00.638816",
+    "version": "2.0.0",
+    "capabilities": [
+      "share_case",
+      "sync_benchmark",
+      "query_statute",
+      "cooperative_review"
+    ]
+  },
+  "dashboard-node": {
+    "node_id": "dashboard-node",
+    "region": "中心",
+    "name": "ECO-中心",
+    "host": "localhost",
+    "port": 9090,
+    "public_key": "",
+    "status": "active",
+    "last_seen": "2026-07-29T08:02:39.780399",
+    "version": "2.0.0",
+    "capabilities": [
+      "share_case",
+      "sync_benchmark",
+      "query_statute",
+      "cooperative_review"
+    ]
+  }
+}

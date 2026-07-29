@@ -1,0 +1,66 @@
+{
+  "version": "0.1.0",
+  "description": "ECO AGENT 多 Agent 团队编排配置",
+  "orchestrator": "主 Agent (Orchestrator)",
+  "agents": {
+    "indexer": {
+      "name": "Indexer Agent",
+      "role": "法规索引与知识图谱维护"
+    },
+    "searcher": {
+      "name": "Searcher Agent",
+      "role": "法规检索与条文溯源"
+    },
+    "reviewer": {
+      "name": "Reviewer Agent",
+      "role": "法条审查与质量校验（ACE Reflector）"
+    },
+    "memory": {
+      "name": "Memory Agent",
+      "role": "执法案例记忆与经验提取"
+    },
+    "security": {
+      "name": "Security Agent",
+      "role": "执法风险扫描与权限管控"
+    },
+    "planner": {
+      "name": "Planner Agent",
+      "role": "执法计划分解与多步编排"
+    },
+    "writer": {
+      "name": "Writer Agent",
+      "role": "执法文书生成与模板管理"
+    },
+    "watcher": {
+      "name": "Watcher Agent",
+      "role": "法规时效监控与更新提醒"
+    }
+  },
+  "workflows": {
+    "执法问答": [
+      "searcher",
+      "reviewer",
+      "writer"
+    ],
+    "法规检索": [
+      "searcher"
+    ],
+    "案例积累": [
+      "memory",
+      "indexer"
+    ],
+    "法规监控": [
+      "watcher",
+      "indexer"
+    ],
+    "文书生成": [
+      "searcher",
+      "reviewer",
+      "writer"
+    ],
+    "风险审查": [
+      "security",
+      "planner"
+    ]
+  }
+}

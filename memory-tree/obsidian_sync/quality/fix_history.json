@@ -1,0 +1,237 @@
+[
+  {
+    "timestamp": "2026-07-29T09:20:21.267464",
+    "duration_s": 0.3,
+    "files_scanned": 82,
+    "issues_found": 38,
+    "issues_fixed": 0,
+    "fix_rate": "0%",
+    "details": [
+      {
+        "file": "CHANGELOG.md",
+        "issues": [
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "CLAUDE.md",
+        "issues": [
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "hazy-mapping-whistle.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          },
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "README.md",
+        "issues": [
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "开发实施方案.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          },
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "开发日记.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          },
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "项目说明书.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          },
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "gateway\\ARCHITECTURE.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          }
+        ]
+      },
+      {
+        "file": "gateway\\SETUP_GUIDE.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          }
+        ]
+      },
+      {
+        "file": "memory-tree\\ARCHITECTURE.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          },
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "skills\\enforcement-qa-skill.md",
+        "issues": [
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "skills\\查询大气污染物排放标准-skill.md",
+        "issues": [
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "skills\\法规检索-skill.md",
+        "issues": [
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "skills\\裁量建议-skill.md",
+        "issues": [
+          {
+            "type": "missing_source_pointer",
+            "line": 0,
+            "desc": "缺少 §§ 原文指针 段落"
+          }
+        ]
+      },
+      {
+        "file": "profiles\\agents\\indexer_soul.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          }
+        ]
+      },
+      {
+        "file": "profiles\\agents\\memory_soul.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          }
+        ]
+      },
+      {
+        "file": "profiles\\agents\\planner_soul.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          }
+        ]
+      },
+      {
+        "file": "profiles\\agents\\reviewer_soul.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          }
+        ]
+      },
+      {
+        "file": "profiles\\agents\\searcher_soul.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          }
+        ]
+      },
+      {
+        "file": "profiles\\agents\\security_soul.md",
+        "issues": [
+          {
+            "type": "missing_frontmatter",
+            "line": 0,
+            "desc": "缺少 YAML frontmatter"
+          }
+        ]
+      }
+    ]
+  }
+]

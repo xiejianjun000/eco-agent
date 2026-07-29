@@ -1,0 +1,16 @@
+{
+  "id": "plugin_037ee477",
+  "name": "法规检索",
+  "version": "1.0",
+  "description": "test",
+  "author": "eco",
+  "category": "search",
+  "rating": 0.0,
+  "downloads": 0,
+  "installed": 0,
+  "published_at": "2026-07-29T10:03:15.035939",
+  "updated_at": "2026-07-29T10:03:15.035969",
+  "files": [],
+  "dependencies": [],
+  "eco_version": ">=3.0.0"
+}

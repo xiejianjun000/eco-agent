@@ -1,0 +1,664 @@
+#!/usr/bin/env python3
+"""eco-knowledge-mcp — ECO AGENT 法规知识库 MCP 服务
+
+MCP 协议（JSON-RPC 2.0 over stdio）实现。
+桥接 FlowWiki Obsidian Vault，提供法规检索、溯源、图谱查询功能。
+
+协议：JSON-RPC 2.0
+传输：stdin/stdout
+"""
+
+import json
+import sys
+import os
+import glob
+import re
+import fnmatch
+from pathlib import Path
+from datetime import datetime
+
+# ===== 配置 =====
+
+# Obsidian Vault 路径（自动检测 + 环境变量覆盖）
+_DEFAULT_VAULTS = [
+    os.path.expanduser("~/Documents/Obsidian Vault"),
+    os.path.expanduser("~\\Documents\\Obsidian Vault"),
+    "C:\\Users\\Administrator\\Documents\\Obsidian Vault",
+    "/c/Users/Administrator/Documents/Obsidian Vault",
+]
+
+OBSIDIAN_VAULT = os.environ.get("OBSIDIAN_VAULT", "")
+if not OBSIDIAN_VAULT or not os.path.isdir(OBSIDIAN_VAULT):
+    for p in _DEFAULT_VAULTS:
+        if os.path.isdir(os.path.join(p, "raw")):
+            OBSIDIAN_VAULT = p
+            break
+    else:
+        OBSIDIAN_VAULT = _DEFAULT_VAULTS[0]
+
+# 支持的 raw/ 子目录
+RAW_SUBDIRS = [
+    "01_法律法规", "02_复函", "03_部长信箱回复",
+    "05_标准规范", "06_年报公报"
+]
+
+# ===== 工具定义 =====
+
+TOOLS = [
+    {
+        "name": "eco_search",
+        "description": "检索生态环境法规知识库（FlowWiki），支持关键词搜索和全文本检索",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "搜索关键词（支持多个用空格分隔）"
+                },
+                "scope": {
+                    "type": "string",
+                    "enum": ["all", "wiki", "raw"],
+                    "description": "搜索范围：wiki（知识层）、raw（原文层）、all（全部）",
+                    "default": "all"
+                },
+                "max_results": {
+                    "type": "integer",
+                    "description": "最大返回结果数",
+                    "default": 10,
+                    "maximum": 30
+                },
+                "env_tag": {
+                    "type": "string",
+                    "description": "环境要素过滤（如 env/air, env/water, env/soil）",
+                }
+            },
+            "required": ["query"]
+        }
+    },
+    {
+        "name": "eco_retrieve",
+        "description": "获取指定法规或知识条目的详细内容",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "文件路径（相对 vault 根目录，如 wiki/01_生态环境/大气污染防治.md）"
+                },
+                "statute_name": {
+                    "type": "string",
+                    "description": "法规名称（如 大气污染防治法、生态环境法典），与 path 二选一"
+                }
+            }
+        }
+    },
+    {
+        "name": "eco_statute_query",
+        "description": "按法规名称查询具体条文内容",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "statute": {
+                    "type": "string",
+                    "description": "法规名称（如 大气污染防治法）"
+                },
+                "article": {
+                    "type": "string",
+                    "description": "条文号（如 第X条、第X章、第X节），可选"
+                }
+            },
+            "required": ["statute"]
+        }
+    },
+    {
+        "name": "eco_graph_query",
+        "description": "查询法规知识图谱，获取某法规或要素的关联关系",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "node": {
+                    "type": "string",
+                    "description": "知识图谱节点名称（如法规名、要素名）"
+                },
+                "relation_type": {
+                    "type": "string",
+                    "enum": ["all", "references", "referenced_by", "related"],
+                    "description": "关联类型",
+                    "default": "all"
+                }
+            },
+            "required": ["node"]
+        }
+    },
+    {
+        "name": "eco_list_statutes",
+        "description": "列出指定环境要素或分类下的所有法规",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "description": "分类（如 大气、水、土壤、固废、噪声、放射性、生态保护、海洋）"
+                },
+                "scope": {
+                    "type": "string",
+                    "enum": ["raw", "wiki"],
+                    "default": "raw"
+                }
+            },
+            "required": ["category"]
+        }
+    }
+]
+
+# ===== 核心检索函数 =====
+
+
+def find_vault_path():
+    """定位 Obsidian Vault 路径"""
+    vault = Path(OBSIDIAN_VAULT)
+    if vault.exists() and (vault / "raw").exists():
+        return vault
+    return vault
+
+
+def search_in_files(file_paths, query, max_results=10):
+    """在文件列表中搜索关键词，返回匹配结果"""
+    keywords = query.lower().split()
+    results = []
+
+    for fpath in file_paths:
+        if len(results) >= max_results:
+            break
+        try:
+            with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read(50000)  # 读取前 50KB
+
+            # 关键词匹配评分
+            content_lower = content.lower()
+            match_count = sum(1 for kw in keywords if kw in content_lower)
+            if match_count == 0:
+                continue
+
+            # 提取匹配段落（前后文）
+            snippet = extract_snippet(content, keywords, max_length=300)
+            # 提取 frontmatter
+            frontmatter = extract_frontmatter(content)
+
+            rel_path = fpath.relative_to(find_vault_path()) if find_vault_path() in fpath.parents else fpath
+
+            results.append({
+                "path": str(rel_path.as_posix()),
+                "score": match_count / len(keywords),
+                "title": frontmatter.get("title", fpath.stem),
+                "snippet": snippet,
+                "tags": frontmatter.get("tags", []),
+                "updated": frontmatter.get("updated", ""),
+            })
+        except (IOError, OSError):
+            continue
+
+    # 按评分排序
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:max_results]
+
+
+def extract_snippet(content, keywords, max_length=300):
+    """提取关键词周围的上下文片段"""
+    content_lower = content.lower()
+    # 跳过 frontmatter
+    body_start = content.find("---", 2)
+    if body_start != -1:
+        body_start = content.find("\n", body_start) + 1
+        body = content[body_start:]
+    else:
+        body = content
+
+    body_lower = body.lower()
+    # 找第一个关键词位置
+    first_pos = -1
+    for kw in keywords:
+        pos = body_lower.find(kw)
+        if pos != -1 and (first_pos == -1 or pos < first_pos):
+            first_pos = pos
+
+    if first_pos == -1:
+        return body[:max_length].strip()
+
+    start = max(0, first_pos - 100)
+    end = min(len(body), first_pos + 200)
+    snippet = body[start:end].strip()
+    if start > 0:
+        snippet = "..." + snippet
+    if end < len(body):
+        snippet = snippet + "..."
+    return snippet[:max_length]
+
+
+def extract_frontmatter(content):
+    """提取 YAML frontmatter"""
+    fm = {}
+    if content.startswith("---"):
+        end = content.find("---", 3)
+        if end != -1:
+            yaml_text = content[3:end]
+            for line in yaml_text.strip().split("\n"):
+                if ":" in line:
+                    key, _, value = line.partition(":")
+                    key = key.strip()
+                    value = value.strip()
+                    # 解析列表
+                    if value.startswith("["):
+                        try:
+                            value = json.loads(value)
+                        except json.JSONDecodeError:
+                            value = [v.strip().strip('"\'') for v in value.strip("[]").split(",")]
+                    else:
+                        value = value.strip('"\'')
+                    fm[key] = value
+    return fm
+
+
+def collect_wiki_files(vault_root):
+    """收集 wiki/ 目录下所有 .md 文件"""
+    return list((vault_root / "wiki").rglob("*.md"))
+
+
+def collect_raw_files(vault_root, category=None):
+    """收集 raw/ 目录下法规文件"""
+    raw_root = vault_root / "raw"
+    if not raw_root.exists():
+        return []
+
+    if category:
+        # 按分类筛选
+        for subdir in RAW_SUBDIRS:
+            target = raw_root / subdir
+            if target.exists():
+                files = list(target.rglob("*.md"))
+                # 根据分类名称过滤
+                if category.lower() in subdir.lower():
+                    return files
+        # 如果没找到精确匹配，返回所有并过滤
+        all_files = []
+        for subdir in RAW_SUBDIRS:
+            target = raw_root / subdir
+            if target.exists():
+                all_files.extend(list(target.rglob("*.md")))
+        return [f for f in all_files if category.lower() in f.stem.lower()]
+    else:
+        files = []
+        for subdir in RAW_SUBDIRS:
+            target = raw_root / subdir
+            if target.exists():
+                files.extend(list(target.rglob("*.md")))
+        return files
+
+
+def find_statute_file(vault_root, statute_name):
+    """按法规名称查找对应文件"""
+    # 先搜 wiki/
+    for pattern in [
+        f"wiki/**/*{statute_name}*.md",
+        f"wiki/**/{statute_name}*.md",
+    ]:
+        matches = list(vault_root.glob(pattern))
+        if matches:
+            return matches[0]
+
+    # 再搜 raw/
+    for pattern in [
+        f"raw/**/*{statute_name}*.md",
+        f"raw/**/{statute_name}*.md",
+    ]:
+        matches = list(vault_root.glob(pattern))
+        if matches:
+            return matches[0]
+
+    return None
+
+
+def extract_article(content, article=None):
+    """从法规内容中提取指定条文"""
+    if not article:
+        # 返回文件前 2000 字作为摘要
+        body = content
+        fm_end = content.find("---", 2)
+        if fm_end != -1:
+            body_start = content.find("\n", fm_end) + 1
+            body = content[body_start:]
+        return body[:2000].strip()
+
+    # 搜索具体条文
+    pattern = re.compile(rf"(##?\s*{re.escape(article)}[\s\S]*?)(?=##?\s*第|\Z)", re.IGNORECASE)
+    match = pattern.search(content)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+# ===== MCP 协议处理 =====
+
+
+def handle_request(request):
+    """处理 JSON-RPC 2.0 请求"""
+    req_id = request.get("id")
+    method = request.get("method", "")
+    params = request.get("params", {})
+
+    if method == "mcp.list_tools":
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {"tools": TOOLS}
+        }
+
+    elif method == "mcp.call_tool":
+        tool_name = params.get("name", "")
+        tool_args = params.get("arguments", {})
+        return handle_tool_call(req_id, tool_name, tool_args)
+
+    elif method == "mcp.ping":
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {"status": "ok", "timestamp": datetime.now().isoformat()}
+        }
+
+    else:
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "error": {"code": -32601, "message": f"Method '{method}' not found"}
+        }
+
+
+def handle_tool_call(req_id, tool_name, args):
+    """处理工具调用"""
+    vault = find_vault_path()
+
+    try:
+        if tool_name == "eco_search":
+            query = args.get("query", "")
+            scope = args.get("scope", "all")
+            max_results = min(args.get("max_results", 10), 30)
+            env_tag = args.get("env_tag", "")
+
+            results = []
+            if scope in ("all", "wiki"):
+                wiki_files = collect_wiki_files(vault)
+                wiki_results = search_in_files(wiki_files, query, max_results)
+                for r in wiki_results:
+                    r["source"] = "wiki"
+                    # 环境要素过滤
+                    if env_tag:
+                        tags = r.get("tags", [])
+                        if isinstance(tags, str):
+                            tags = [tags]
+                        if env_tag not in tags:
+                            continue
+                    results.append(r)
+
+            if scope in ("all", "raw") and len(results) < max_results:
+                raw_files = collect_raw_files(vault)
+                raw_results = search_in_files(raw_files, query, max_results - len(results))
+                for r in raw_results:
+                    r["source"] = "raw"
+                    results.append(r)
+
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": json.dumps({
+                                "query": query,
+                                "total_results": len(results),
+                                "results": results
+                            }, ensure_ascii=False, indent=2)
+                        }
+                    ]
+                }
+            }
+
+        elif tool_name == "eco_retrieve":
+            file_path = args.get("path", "")
+            statute_name = args.get("statute_name", "")
+
+            target_path = None
+            if file_path:
+                target_path = vault / file_path
+                if not target_path.exists():
+                    target_path = vault / "wiki" / file_path
+                if not target_path.exists():
+                    target_path = vault / "raw" / file_path
+
+            elif statute_name:
+                target_path = find_statute_file(vault, statute_name)
+
+            if not target_path or not target_path.exists():
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32000, "message": f"未找到: {file_path or statute_name}"}
+                }
+
+            try:
+                with open(target_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": f"## {target_path.name}\n\n```markdown\n{content[:10000]}\n```\n\n*（显示前 10000 字符，全文共 {len(content)} 字符）*"
+                            }
+                        ]
+                    }
+                }
+            except IOError as e:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32000, "message": f"读取失败: {e}"}
+                }
+
+        elif tool_name == "eco_statute_query":
+            statute = args.get("statute", "")
+            article = args.get("article", "")
+
+            target_path = find_statute_file(vault, statute)
+            if not target_path:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32000, "message": f"未找到法规: {statute}"}
+                }
+
+            with open(target_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+
+            if article:
+                article_content = extract_article(content, article)
+                if article_content:
+                    result_text = f"## {statute} {article}\n\n{article_content}"
+                else:
+                    result_text = f"未在 {statute} 中找到 {article}，以下是全文摘要：\n\n{extract_article(content)}"
+            else:
+                result_text = f"## {statute}（概览）\n\n{extract_article(content)}"
+                # 添加章节导航
+                chapters = re.findall(r'^##\s+(.+)$', content, re.MULTILINE)
+                if chapters:
+                    result_text += f"\n\n### 章节结构\n\n" + "\n".join(f"- {c}" for c in chapters[:30])
+
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [{"type": "text", "text": result_text}]
+                }
+            }
+
+        elif tool_name == "eco_graph_query":
+            node = args.get("node", "")
+            relation_type = args.get("relation_type", "all")
+
+            # 基于 wiki 文件间的 wikilink 进行图谱分析
+            wiki_files = collect_wiki_files(vault)
+            related = []
+
+            node_lower = node.lower()
+
+            for wf in wiki_files:
+                try:
+                    with open(wf, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+
+                    # 检查是否引用了目标节点
+                    links = re.findall(r'\[\[([^\]|]+)(?:\|[^\]]+)?\]\]', content)
+                    for link in links:
+                        if node_lower in link.lower():
+                            rel_path = wf.relative_to(vault).as_posix()
+                            related.append({
+                                "file": rel_path,
+                                "relation": "references",
+                                "target": link.strip()
+                            })
+
+                    # 检查目标节点是否引用了本文件
+                    if node_lower in wf.stem.lower():
+                        for link in links:
+                            rel_path = wf.relative_to(vault).as_posix()
+                            related.append({
+                                "file": rel_path,
+                                "relation": "referenced_by",
+                                "target": link.strip()
+                            })
+                except (IOError, OSError):
+                    continue
+
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": json.dumps({
+                                "node": node,
+                                "relations_count": len(related),
+                                "relations": related[:30]
+                            }, ensure_ascii=False, indent=2)
+                        }
+                    ]
+                }
+            }
+
+        elif tool_name == "eco_list_statutes":
+            category = args.get("category", "")
+            scope = args.get("scope", "raw")
+
+            if scope == "wiki":
+                root_dir = vault / "wiki"
+            else:
+                root_dir = vault / "raw"
+
+            if not root_dir.exists():
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32000, "message": f"目录不存在: {root_dir}"}
+                }
+
+            # 搜索所有 .md 文件，按文件名筛选
+            all_files = list(root_dir.rglob("*.md"))
+            matched = []
+            for f in all_files:
+                if category.lower() in f.stem.lower():
+                    rel_path = f.relative_to(vault).as_posix()
+                    matched.append({
+                        "path": rel_path,
+                        "name": f.stem,
+                        "dir": f.parent.relative_to(vault).as_posix()
+                    })
+
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": json.dumps({
+                                "category": category,
+                                "total": len(matched),
+                                "statutes": matched
+                            }, ensure_ascii=False, indent=2)
+                        }
+                    ]
+                }
+            }
+
+        else:
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": {"code": -32601, "message": f"Unknown tool: {tool_name}"}
+            }
+
+    except Exception as e:
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "error": {"code": -32000, "message": f"Internal error: {str(e)}"}
+        }
+
+
+# ===== 主循环 =====
+
+
+def main():
+    """MCP 服务器主循环：从 stdin 读取 JSON-RPC 请求，处理，写入 stdout"""
+    # 启动通知
+    startup_msg = json.dumps({
+        "jsonrpc": "2.0",
+        "method": "mcp.startup",
+        "params": {
+            "server_name": "eco-knowledge-mcp",
+            "version": "0.1.0",
+            "vault_path": str(find_vault_path()),
+            "tools_count": len(TOOLS)
+        }
+    }, ensure_ascii=False)
+    sys.stdout.write(startup_msg + "\n")
+    sys.stdout.flush()
+
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+
+        try:
+            request = json.loads(line)
+        except json.JSONDecodeError:
+            error_resp = json.dumps({
+                "jsonrpc": "2.0",
+                "id": None,
+                "error": {"code": -32700, "message": "Parse error"}
+            })
+            sys.stdout.write(error_resp + "\n")
+            sys.stdout.flush()
+            continue
+
+        response = handle_request(request)
+        resp_str = json.dumps(response, ensure_ascii=False)
+        sys.stdout.write(resp_str + "\n")
+        sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()

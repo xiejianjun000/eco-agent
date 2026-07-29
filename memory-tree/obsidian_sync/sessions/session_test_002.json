@@ -1,0 +1,15 @@
+{
+  "session_id": "session_test_002",
+  "parent_session_id": "session_test_001",
+  "timestamp": "2026-07-28T17:39:22.194613",
+  "message_count": 2,
+  "summary": "查询: 大气污染防治法有哪些规定？",
+  "operations": [],
+  "entities": [
+    "大气污染防治法",
+    "生态环境法典"
+  ],
+  "skill_hints": [],
+  "token_estimate": 83,
+  "compression_ratio": 3.3
+}

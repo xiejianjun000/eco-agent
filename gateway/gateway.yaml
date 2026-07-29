@@ -1,0 +1,217 @@
+# ECO AGENT Gateway 统一配置
+# Hermes Gateway 多平台消息中间件
+
+gateway:
+  name: "eco-agent-gateway"
+  version: "0.1.0"
+
+  # 启用的平台
+  enabled_platforms:
+    - feishu
+    - wecom
+    - dingtalk
+    # - wechat    # 微信当前不可用
+
+  # 消息去重缓存
+  dedup:
+    enabled: true
+    ttl_seconds: 86400  # 24 小时
+    backend: "memory"   # memory / redis
+
+  # 频率限制
+  rate_limit:
+    enabled: true
+    per_user_per_minute: 20
+    per_platform_per_minute: 200
+
+  # 敏感内容过滤
+  content_filter:
+    enabled: true
+    patterns:
+      - "1[3-9]\\d{9}"        # 手机号
+      - "\\d{17}[\\dXx]"      # 身份证号
+      - "(?:\\d{3,4}-)?\\d{7,8}"  # 固定电话
+    replacement: "[已脱敏]"
+
+  # 平台配置
+  platforms:
+
+    # ===== 飞书 =====
+    feishu:
+      enabled: true            # ✅ 已启用（凭证已配置）
+      type: "feishu"
+      adapter: "hermes.gateway.platforms.feishu"
+
+      bot:
+        name: "ECO AGENT 执法助手"
+        description: "生态环境执法 AI 辅助系统"
+
+      credentials:
+        app_id_env: "FEISHU_APP_ID"
+        app_secret_env: "FEISHU_APP_SECRET"
+        verification_token_env: "FEISHU_VERIFICATION_TOKEN"
+
+      webhook:
+        port: 7070
+        path: "/webhook/feishu"
+        # ngrok: "https://your-ngrok.ngrok.io"  # 开发用
+
+      event_subscriptions:
+        - "im.message.receive_v1"       # 接收消息
+        - "approval.approved"           # 审批通过
+        - "approval.rejected"           # 审批拒绝
+        - "application.bot.menu_v6"     # Bot 菜单事件
+
+      # 审批收件箱
+      approval:
+        enabled: true
+        risk_threshold: "medium"
+        notification_card: true
+
+      # 权限
+      permissions:
+        chat: ["send", "receive", "history"]
+        contact: ["read_basic"]
+        drive: ["read"]
+        approval: ["read", "approve"]
+
+      # 定时消息
+      scheduled_messages:
+        - cron: "0 9 * * 1-5"       # 工作日 9:00
+          template: "daily_brief"
+        - cron: "0 18 * * 1-5"      # 工作日 18:00
+          template: "daily_summary"
+
+    # ===== 企业微信 =====
+    wecom:
+      enabled: false
+      type: "wecom"
+      adapter: "hermes.gateway.platforms.wecom"
+
+      bot:
+        name: "ECO AGENT"
+        description: "生态环境执法 AI 辅助系统"
+
+      credentials:
+        corp_id_env: "WECOM_CORP_ID"
+        agent_id_env: "WECOM_AGENT_ID"
+        secret_env: "WECOM_SECRET"
+        token_env: "WECOM_TOKEN"
+        encoding_aes_key_env: "WECOM_ENCODING_AES_KEY"
+
+      webhook:
+        port: 7071
+        path: "/webhook/wecom"
+
+      event_subscriptions:
+        - "text"
+        - "image"
+        - "event.subscribe"
+        - "event.unsubscribe"
+        - "event.enter_agent"
+        - "approval"                # 审批通知
+
+      # 审批收件箱（企业微信审批）
+      approval:
+        enabled: true
+        risk_threshold: "medium"
+
+      # 菜单配置
+      menu:
+        - name: "法规检索"
+          type: "click"
+          key: "MENU_SEARCH"
+        - name: "执法问答"
+          type: "click"
+          key: "MENU_QA"
+        - name: "案例查询"
+          type: "click"
+          key: "MENU_CASE"
+
+    # ===== 钉钉 =====
+    dingtalk:
+      enabled: false
+      type: "dingtalk"
+      adapter: "hermes.gateway.platforms.dingtalk"
+
+      bot:
+        name: "ECO AGENT"
+        description: "生态环境执法 AI 辅助系统"
+
+      credentials:
+        app_key_env: "DINGTALK_APP_KEY"
+        app_secret_env: "DINGTALK_APP_SECRET"
+        robot_code_env: "DINGTALK_ROBOT_CODE"
+
+      webhook:
+        port: 7072
+        path: "/webhook/dingtalk"
+
+      event_subscriptions:
+        - "robot_single_chat"       # 单聊
+        - "robot_group_chat"        # 群聊
+        - "bpms_instance_change"    # 审批变更
+
+      approval:
+        enabled: true
+        risk_threshold: "medium"
+
+      # 快捷命令
+      shortcuts:
+        - name: "查法规"
+          command: "/法规"
+        - name: "问执法"
+          command: "/执法"
+        - name: "查案例"
+          command: "/案例"
+
+  # ===== 消息模板 =====
+  message_templates:
+    welcome:
+      feishu: "欢迎使用 ECO AGENT 执法助手！\n发送法规名称查询法律条文\n发送违法事实获取裁量建议"
+      wecom: "欢迎使用 ECO AGENT 执法助手！\n发送法规名称查询法律条文\n发送违法事实获取裁量建议"
+      dingtalk: "欢迎使用 ECO AGENT 执法助手！\n发送法规名称查询法律条文\n发送违法事实获取裁量建议"
+
+    help:
+      feishu: "**ECO AGENT 执法助手使用说明**\n\n📖 法规检索：发送法规名称\n⚖️ 执法问答：描述违法事实\n📁 案例查询：发送「案例」+关键词\n🆘 帮助：发送「帮助」"
+      wecom: "ECO AGENT 执法助手使用说明\n\n[法规检索] 发送法规名称\n[执法问答] 描述违法事实\n[案例查询] 发送「案例」+关键词\n[帮助] 发送「帮助」"
+      dingtalk: "ECO AGENT 执法助手使用说明\n\n📖 法规检索：发送法规名称\n⚖️ 执法问答：描述违法事实\n📁 案例查询：发送「案例」+关键词\n🆘 帮助：发送「帮助」"
+
+    error:
+      feishu: "⚠️ 处理请求时出现异常，请稍后重试。\n如果问题持续，请联系管理员。"
+      wecom: "[ERROR] 处理请求时出现异常，请稍后重试。"
+      dingtalk: "⚠️ 处理请求时出现异常，请稍后重试。"
+
+    rate_limit:
+      feishu: "⏳ 消息频率过高，请稍后再发。"
+      wecom: "[WARN] 消息频率过高，请稍后再发。"
+      dingtalk: "⏳ 消息频率过高，请稍后再发。"
+
+    approval_notification:
+      feishu:
+        title: "🔴 ECO AGENT 执法风险操作审批"
+        content: |
+          操作类型：{operation}
+          风险等级：{risk_level}
+          操作详情：{details}
+          请点击下方按钮审批。
+        approve_text: "✅ 批准"
+        reject_text: "❌ 拒绝"
+
+      wecom:
+        title: "[审批] ECO AGENT 执法风险操作"
+        content: |
+          操作类型：{operation}
+          风险等级：{risk_level}
+          操作详情：{details}
+        approve_text: "批准"
+        reject_text: "拒绝"
+
+      dingtalk:
+        title: "🔴 ECO AGENT 执法风险操作审批"
+        content: |
+          操作类型：{operation}
+          风险等级：{risk_level}
+          操作详情：{details}
+        approve_text: "✅ 批准"
+        reject_text: "❌ 拒绝"
