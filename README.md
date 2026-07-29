@@ -78,7 +78,7 @@ Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环
 | 金融 | 4 | Stripe、GitHub Sponsors、Open Collective、Ko-fi |
 | 存储 | 4 | 本地文件、Obsidian、SQLite、Redis |
 
-凭证全部 AES-256-GCM 加密存储，磁盘无明文。
+凭证全部采用 Fernet（AES-128-CBC + HMAC-SHA256，cryptography 库）加密存储，磁盘无明文；主密钥由环境变量 `ECO_MASTER_KEY` 提供，未设置时启动随机生成并明确告警。
 
 ### 开发治理（G 方法论）
 
@@ -104,6 +104,16 @@ cd eco-agent
 
 # 安装依赖
 pip install -r requirements.txt
+
+# 配置环境变量（Kimi LLM + 加密主密钥）
+cp .env.example .env
+# 编辑 .env 填入 KIMI_API_KEY（https://platform.moonshot.cn 申请）与 ECO_MASTER_KEY
+
+# 运行单元测试（离线规则降级模式，不耗 API 配额）
+pytest tests/
+
+# 真实 LLM 冒烟测试（需要有效 KIMI_API_KEY）
+python scripts/smoke_kimi.py
 
 # 启动守护进程
 python gateway/daemon.py start

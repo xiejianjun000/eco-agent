@@ -30,24 +30,29 @@ except: CRYPTO_AVAIL = False
 # ═══════════════════════════════════
 
 class SecureStore:
-    """AES-256-GCM 凭证加密存储"""
+    """Fernet (AES-128-CBC + HMAC) 凭证加密存储"""
 
     def __init__(self, master_key: str = ""):
+        if not CRYPTO_AVAIL:
+            raise RuntimeError("[SecureStore] cryptography 库不可用，已拒绝静默降级为明文存储")
         if not master_key:
-            master_key = os.environ.get("ECO_MASTER_KEY", "eco-agent-default-master-key-change-me")
+            master_key = os.environ.get("ECO_MASTER_KEY", "")
+        if not master_key:
+            master_key = base64.urlsafe_b64encode(os.urandom(32)).decode()
+            logger.warning("[SecureStore] 未设置 ECO_MASTER_KEY，已生成随机临时主密钥——重启后历史密文将无法解密，请立即配置 ECO_MASTER_KEY")
         self._key = base64.urlsafe_b64encode(hashlib.sha256(master_key.encode()).digest())
-        self._cipher = Fernet(self._key) if CRYPTO_AVAIL else None
+        self._cipher = Fernet(self._key)
         self._db = DATA_DIR / "vault.enc"
         self._cache: Dict[str, str] = {}
 
     def save(self, service: str, credentials: dict):
-        encrypted = self._cipher.encrypt(json.dumps(credentials, ensure_ascii=False).encode()).decode() if self._cipher else json.dumps(credentials, ensure_ascii=False)
+        encrypted = self._cipher.encrypt(json.dumps(credentials, ensure_ascii=False).encode()).decode()
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         vault = {}
         if self._db.exists(): vault = json.loads(self._db.read_text("utf-8", errors="replace"))
         vault[service] = encrypted
         self._db.write_text(json.dumps(vault, ensure_ascii=False), encoding="utf-8")
-        self._cache[service] = str(credentials)
+        self._cache[service] = json.dumps(credentials, ensure_ascii=False)
         logger.info(f"[SecureStore] 已保存: {service}")
 
     def load(self, service: str) -> Optional[dict]:
@@ -58,7 +63,7 @@ class SecureStore:
         encrypted = vault.get(service)
         if not encrypted: return None
         try:
-            decrypted = self._cipher.decrypt(encrypted.encode()).decode() if self._cipher else encrypted
+            decrypted = self._cipher.decrypt(encrypted.encode()).decode()
             data = json.loads(decrypted)
             self._cache[service] = decrypted
             return data

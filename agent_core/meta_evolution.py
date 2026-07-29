@@ -20,6 +20,15 @@ from typing import Optional, List, Dict, Any
 logger = logging.getLogger("meta_evolution")
 
 ROOT = Path(__file__).resolve().parent.parent
+
+try:
+    from agent_core.llm_client import get_default_client
+except Exception:  # 直接脚本运行时包导入失败
+    try:
+        from llm_client import get_default_client
+    except Exception:
+        def get_default_client():
+            return None
 DATA_DIR = ROOT / "memory-tree" / "data"
 EVOLUTION_DIR = DATA_DIR / "evolution"
 EVOLUTION_DIR.mkdir(parents=True, exist_ok=True)
@@ -118,6 +127,30 @@ class MetaEvolution:
 
         return {"version": current_version, "snapshot_path": str(snapshot_dir), "retained_versions": len(versions)}
 
+    def _llm_narrative(self, phases: Dict) -> Optional[str]:
+        """元认知分析（LLM 生成）——失败时跳过并记日志"""
+        try:
+            client = get_default_client()
+            if not client or not client.available():
+                return None
+            replay = phases.get("experience_replay", {})
+            gaps = phases.get("gap_analysis", {})
+            prompt = (
+                f"以下是 Eco Agent 本次进化循环的数据：\n"
+                f"- 回放任务 {replay.get('total_replayed', 0)} 个，"
+                f"成功率 {replay.get('success_rate', 'N/A')}，"
+                f"失败 {replay.get('fail_count', 0)} 个\n"
+                f"- 发现差距: {'; '.join(gaps.get('gaps', [])) or '无'}\n"
+                f"请作为元认知分析模块，用 2~4 条要点评估本次经验萃取的有效性和改进方向。"
+            )
+            text = client.complete(prompt, system="你是 Eco Agent 的元认知分析模块。", max_tokens=512)
+            if text:
+                return text
+            logger.warning("[Evolve] LLM 元认知分析返回空，跳过该章节")
+        except Exception as e:
+            logger.warning(f"[Evolve] LLM 元认知分析失败，跳过该章节: {e}")
+        return None
+
     def _generate_report(self, phases: Dict, elapsed_ms: float) -> str:
         """生成进化报告"""
         report = [
@@ -154,6 +187,14 @@ class MetaEvolution:
             f"- 本地保留版本数：{phases['self_versioning']['retained_versions']}",
 
         ]
+        narrative = self._llm_narrative(phases)
+        if narrative:
+            report += [
+                f"",
+                f"## 元认知分析（LLM 生成）",
+                f"",
+                narrative,
+            ]
         report_path = self._report_dir / f"evolution_report_v{self._version}.md"
         report_path.write_text("\n".join(report), encoding="utf-8")
         return str(report_path)

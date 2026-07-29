@@ -23,6 +23,15 @@ logger = logging.getLogger("react_loop")
 
 ROOT = Path(__file__).resolve().parent.parent
 
+try:
+    from agent_core.llm_client import get_default_client
+except Exception:  # 直接脚本运行时包导入失败
+    try:
+        from llm_client import get_default_client
+    except Exception:
+        def get_default_client():
+            return None
+
 
 # ═══════════════════════════════════
 # 循环状态
@@ -53,6 +62,17 @@ class ReActPlusPlus:
         self._max_retries = 3
         self._confidence_threshold = 0.4
         self._max_steps = 20
+        self._current_state: Optional[ReActState] = None
+
+    def _llm(self):
+        """获取 LLM 客户端（不可用返回 None）"""
+        try:
+            client = get_default_client()
+            if client and client.available():
+                return client
+        except Exception as e:
+            logger.warning(f"[ReAct++] LLM 客户端不可用: {e}")
+        return None
 
     def register_tool(self, name: str, handler: Callable, description: str = ""):
         """注册工具"""
@@ -70,6 +90,7 @@ class ReActPlusPlus:
         # 保存检查点（支持回滚）
         checkpoint = {"task": task, "context": context, "started_at": datetime.now().isoformat()}
         state.rollback_point = checkpoint
+        self._current_state = state
 
         for step in range(1, self._max_steps + 1):
             state.step = step
@@ -109,6 +130,7 @@ class ReActPlusPlus:
                 if state.retry_count < self._max_retries:
                     state.retry_count += 1
                     state.paused = True
+                    self._rollback(state)  # 重试前回滚状态到检查点
                     continue  # 重试
                 break
 
@@ -136,12 +158,32 @@ class ReActPlusPlus:
             "interrupted": state.interrupted,
         }
         self._history.append(result)
+        self._current_state = None
         return result
 
     # ── THINK 阶段 ──
 
     def _think(self, state: ReActState, context: dict) -> str:
-        """推理当前状态和下一步"""
+        """推理当前状态和下一步（优先真实 LLM，不可用降级规则）"""
+        client = self._llm()
+        if client:
+            try:
+                tools_desc = ", ".join(self._tools.keys()) or "无"
+                prompt = (
+                    f"任务: {state.observation[:200]}\n"
+                    f"当前步骤: {state.step}\n"
+                    f"上一步结果: {str(state.action_result)[:200] or '无'}\n"
+                    f"最近错误: {state.error[:200] or '无'}\n"
+                    f"可用工具: {tools_desc}\n"
+                    f"请用一两句话说明下一步应该怎么思考和行动。"
+                )
+                thought = client.complete(prompt, system="你是 Eco Agent 的推理引擎，简洁输出下一步思考。",
+                                          max_tokens=512)
+                if thought:
+                    return thought
+                logger.warning("[ReAct++] LLM 思考返回空，降级规则模式")
+            except Exception as e:
+                logger.warning(f"[ReAct++] LLM 思考失败，降级规则模式: {e}")
         if state.step == 1:
             return f"理解任务: {state.observation[:60]}"
         if state.error:
@@ -149,7 +191,26 @@ class ReActPlusPlus:
         return f"继续执行步骤{state.step}，基于: {str(state.action_result)[:60]}"
 
     def _estimate_confidence(self, thought: str, state: ReActState) -> float:
-        """置信度评估"""
+        """置信度评估（优先 LLM 打分，解析失败/不可用降级规则）"""
+        client = self._llm()
+        if client:
+            try:
+                prompt = (
+                    f"任务: {state.observation[:200]}\n"
+                    f"当前思考: {thought[:300]}\n"
+                    f"请只输出一个 0 到 1 之间的小数，表示该思考能成功推进任务的置信度。"
+                )
+                text = client.complete(prompt, system="你只输出数字。", max_tokens=16)
+                if text:
+                    import re
+                    m = re.search(r"0?\.\d+|^[01](?:\.0+)?$", text.strip())
+                    if m:
+                        val = float(m.group(0))
+                        if 0.0 <= val <= 1.0:
+                            return val
+                logger.warning("[ReAct++] LLM 置信度解析失败，降级规则模式")
+            except Exception as e:
+                logger.warning(f"[ReAct++] LLM 置信度评估失败，降级规则模式: {e}")
         if state.error:
             return 0.2
         if state.retry_count > 0:
@@ -159,7 +220,24 @@ class ReActPlusPlus:
     # ── PAUSE & REFLECT ──
 
     def _pause_reflect(self, state: ReActState, context: dict) -> dict:
-        """暂停并反思"""
+        """暂停并反思（优先 LLM 生成诊断+替代方案，不可用降级规则）"""
+        client = self._llm()
+        if client:
+            try:
+                tools_desc = ", ".join(self._tools.keys()) or "无"
+                prompt = (
+                    f"任务: {state.observation[:200]}\n"
+                    f"当前置信度过低（{state.confidence:.2f}），步骤: {state.step}，"
+                    f"最近错误: {state.error[:200] or '无'}\n"
+                    f"可用工具: {tools_desc}\n"
+                    f"请诊断问题根因并给出一个可行的替代方案（两三句话）。"
+                )
+                diagnosis = client.complete(prompt, system="你是 Eco Agent 的反思模块。", max_tokens=512)
+                if diagnosis:
+                    return {"action": "continue", "new_confidence": 0.7, "llm_diagnosis": diagnosis}
+                logger.warning("[ReAct++] LLM 反思返回空，降级规则模式")
+            except Exception as e:
+                logger.warning(f"[ReAct++] LLM 反思失败，降级规则模式: {e}")
         alternatives = []
         for tool_name in self._tools:
             alternatives.append(f"使用工具: {tool_name}")
@@ -209,7 +287,24 @@ class ReActPlusPlus:
 
     def interrupt(self):
         """中断注入——允许用户在循环任意节点打断"""
-        pass  # 状态标记由外部设置
+        if self._current_state is not None:
+            self._current_state.interrupted = True
+            logger.info(f"[ReAct++] 已注入中断（步骤{self._current_state.step}）")
+        else:
+            logger.warning("[ReAct++] 无运行中的循环，中断无效")
+
+    def _rollback(self, state: ReActState):
+        """原子化回滚——将可变状态恢复到检查点，保留重试计数与错误记录"""
+        checkpoint = dict(state.rollback_point or {})
+        checkpoint["rollback_count"] = checkpoint.get("rollback_count", 0) + 1
+        state.observation = checkpoint.get("task", state.observation)
+        state.thought = ""
+        state.action = ""
+        state.action_result = ""
+        state.confidence = 1.0
+        state.paused = False
+        state.rollback_point = checkpoint
+        logger.info(f"[ReAct++] 已回滚状态到检查点（第{checkpoint['rollback_count']}次）")
 
     # ── 统计 ──
 
