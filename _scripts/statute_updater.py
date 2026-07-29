@@ -15,15 +15,11 @@ statute_updater.py — ECO AGENT 法规自动更新管道
   python _scripts/statute_updater.py --cron     # 定时任务模式
 """
 
-import os
-import sys
 import json
-import re
 import logging
-import hashlib
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger("statute_updater")
 
@@ -89,11 +85,11 @@ class StatuteUpdater:
     def __init__(self, memory_tree=None):
         self._mt = memory_tree
         self._sources = dict(UPDATE_SOURCES)
-        self._update_log: List[Dict] = []
+        self._update_log: list[dict] = []
         self._register_file = UPDATE_DIR / "source_registry.json"
         self._load_state()
 
-    def check_all(self) -> Dict[str, Any]:
+    def check_all(self) -> dict[str, Any]:
         """检查所有数据源"""
         now = datetime.now()
         results = {"timestamp": now.isoformat(), "sources_checked": 0, "updates_found": 0, "details": []}
@@ -111,7 +107,7 @@ class StatuteUpdater:
         logger.info(f"[Updater] 检查完成: {results['sources_checked']} 源, {results['updates_found']} 更新")
         return results
 
-    def _check_source(self, source_id: str, source: Dict) -> Dict:
+    def _check_source(self, source_id: str, source: dict) -> dict:
         """检查单个数据源（模拟）"""
         last_check = source.get("last_check", "")
         now = datetime.now().isoformat()
@@ -135,7 +131,7 @@ class StatuteUpdater:
         self._sources[source_id]["last_check"] = now
         return result
 
-    def process_updates(self, check_result: Optional[Dict] = None) -> int:
+    def process_updates(self, check_result: dict | None = None) -> int:
         """处理更新"""
         if not check_result:
             check_result = self.check_all()
@@ -161,7 +157,7 @@ class StatuteUpdater:
 
         return processed
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         return {"total_sources": len(self._sources), "enabled_sources": sum(1 for s in self._sources.values() if s.get("enabled"))}
 
     def _load_state(self):

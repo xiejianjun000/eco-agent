@@ -11,7 +11,8 @@ smoke_kimi.py — 真实 Kimi LLM 冒烟测试
   python scripts/smoke_kimi.py
 """
 
-import sys, logging
+import sys
+import logging
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent

@@ -12,10 +12,14 @@ daemon.py — Eco Agent 后台守护服务
   python gateway/daemon.py foreground     # 前台运行（调试）
 """
 
-import os, sys, json, time, signal, logging, threading, subprocess, socket
+import os
+import sys
+import time
+import signal
+import logging
+import threading
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict
 
 logger = logging.getLogger("daemon")
 
@@ -30,8 +34,8 @@ class DaemonService:
 
     def __init__(self):
         self._running = False
-        self._services: Dict[str, dict] = {}
-        self._threads: List[threading.Thread] = []
+        self._services: dict[str, dict] = {}
+        self._threads: list[threading.Thread] = []
         self._health = {"status": "starting", "started_at": "", "uptime": 0}
 
     def register(self, name: str, start_fn, stop_fn=None, health_check=None):
@@ -90,7 +94,7 @@ class DaemonService:
                     if not h.get("ok", True):
                         all_ok = False
                     status = "ok" if h.get("ok", True) else "degraded"
-                except:
+                except Exception:
                     status = "error"
                     all_ok = False
             services[name] = status
@@ -110,7 +114,7 @@ class DaemonService:
             h, m = divmod(total, 3600)
             m, s = divmod(m, 60)
             return f"{h}h{m}m{s}s"
-        except:
+        except Exception:
             return "?"
 
     def _write_pid(self):
@@ -129,7 +133,7 @@ class DaemonService:
             pid = int(PID_FILE.read_text().strip())
             os.kill(pid, 0)
             return True
-        except:
+        except Exception:
             return False
 
 
@@ -160,8 +164,17 @@ def run_start():
         return
     pid = os.fork() if hasattr(os, 'fork') else 0
     if pid == 0:
-        # 子进程
+        # 子进程：脱离父进程会话，stdout/stderr 重定向到日志，避免占用调用方管道
+        try:
+            os.setsid()
+        except OSError:
+            pass
         sys.stdin.close()
+        log_path = LOG_DIR / "daemon.out.log"
+        fd = os.open(str(log_path), os.O_WRONLY | os.O_CREAT | os.O_APPEND)
+        os.dup2(fd, sys.stdout.fileno())
+        os.dup2(fd, sys.stderr.fileno())
+        os.close(fd)
         run_foreground()
     else:
         print(f"Daemon 已启动 (PID: {pid})")

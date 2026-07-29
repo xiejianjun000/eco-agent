@@ -22,15 +22,12 @@ enforcement_cases.py — ECO AGENT 执法案例模块
   bench = bm.match_benchmark("大气", "超标排放", "浙江省")
 """
 
-import os
-import sys
 import json
 import re
-import hashlib
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 from difflib import SequenceMatcher
 
 logger = logging.getLogger("enforcement_cases")
@@ -85,11 +82,11 @@ class CaseManager:
 
     def __init__(self, memory_tree=None):
         self._mt = memory_tree
-        self._cases: List[Dict[str, Any]] = []
+        self._cases: list[dict[str, Any]] = []
         self._case_dir = PROJECT_ROOT / "memory-tree" / "obsidian_sync" / "cases"
         self._case_dir.mkdir(parents=True, exist_ok=True)
 
-    def add_case(self, case_data: Dict[str, Any]) -> str:
+    def add_case(self, case_data: dict[str, Any]) -> str:
         """添加案例"""
         # 生成案例 ID
         year = datetime.now().year
@@ -128,7 +125,7 @@ class CaseManager:
         logger.info(f"案例添加成功: {case_id} - {case['title'][:30]}")
         return case_id
 
-    def get_case(self, case_id: str) -> Optional[Dict[str, Any]]:
+    def get_case(self, case_id: str) -> dict[str, Any] | None:
         """获取案例详情"""
         file_path = self._case_dir / f"{case_id}.md"
         if file_path.exists():
@@ -141,7 +138,7 @@ class CaseManager:
                 return mt_results[0]
         return None
 
-    def find_similar(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def find_similar(self, query: str, top_k: int = 5) -> list[dict[str, Any]]:
         """查找相似案例"""
         # 优先通过 Memory Tree 检索
         if self._mt:
@@ -173,9 +170,9 @@ class CaseManager:
         scores.sort(key=lambda x: x[0], reverse=True)
         return [case for _, case in scores[:top_k]]
 
-    def list_cases(self, type: Optional[str] = None,
-                   region: Optional[str] = None,
-                   limit: int = 50) -> List[Dict[str, Any]]:
+    def list_cases(self, type: str | None = None,
+                   region: str | None = None,
+                   limit: int = 50) -> list[dict[str, Any]]:
         """列出案例"""
         cases = []
         for f in self._case_dir.rglob("*.md"):
@@ -190,7 +187,7 @@ class CaseManager:
         cases.sort(key=lambda x: x.get("updated_at", ""), reverse=True)
         return cases[:limit]
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """案例统计"""
         cases = self.list_cases(limit=10000)
         stats = {
@@ -216,7 +213,7 @@ class CaseManager:
 
         return stats
 
-    def find_similar_by_case(self, case_id: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def find_similar_by_case(self, case_id: str, top_k: int = 5) -> list[dict[str, Any]]:
         """基于案例查找相似案例"""
         case = self.get_case(case_id)
         if not case:
@@ -226,7 +223,7 @@ class CaseManager:
 
     # ── 内部方法 ──
 
-    def _calc_initial_score(self, case: Dict[str, Any]) -> float:
+    def _calc_initial_score(self, case: dict[str, Any]) -> float:
         """计算初始评分"""
         score = 60.0
         if case.get("confidence") == "high":
@@ -241,7 +238,7 @@ class CaseManager:
             score += 5
         return min(score, 100)
 
-    def _format_case_content(self, case: Dict[str, Any]) -> str:
+    def _format_case_content(self, case: dict[str, Any]) -> str:
         """格式化案例内容为 Markdown"""
         lines = [
             f"## 案情摘要\n\n{case.get('facts', '')}\n",
@@ -258,7 +255,7 @@ class CaseManager:
             )
         return "\n".join(lines)
 
-    def _write_case_file(self, file_path: Path, case: Dict[str, Any]):
+    def _write_case_file(self, file_path: Path, case: dict[str, Any]):
         """写入案例文件"""
         fm_lines = [
             "---",
@@ -280,11 +277,11 @@ class CaseManager:
         content = "\n".join(fm_lines) + "\n" + body
         file_path.write_text(content, encoding="utf-8")
 
-    def _parse_case_file(self, file_path: Path) -> Optional[Dict[str, Any]]:
+    def _parse_case_file(self, file_path: Path) -> dict[str, Any] | None:
         """解析案例文件"""
         try:
             content = file_path.read_text(encoding="utf-8", errors="ignore")
-        except IOError:
+        except OSError:
             return None
 
         case = dict(CASE_TEMPLATE)
@@ -348,7 +345,7 @@ class CaseManager:
             return "\n".join(lines).strip()
         return ""
 
-    def _list_case_files(self) -> List[Path]:
+    def _list_case_files(self) -> list[Path]:
         """列出所有案例文件"""
         return sorted(self._case_dir.rglob("*.md"))
 
@@ -358,11 +355,11 @@ class BenchmarkManager:
 
     def __init__(self, memory_tree=None):
         self._mt = memory_tree
-        self._benchmarks: List[Dict[str, Any]] = []
+        self._benchmarks: list[dict[str, Any]] = []
         self._benchmark_dir = PROJECT_ROOT / "memory-tree" / "obsidian_sync" / "benchmarks"
         self._benchmark_dir.mkdir(parents=True, exist_ok=True)
 
-    def add_benchmark(self, data: Dict[str, Any]) -> str:
+    def add_benchmark(self, data: dict[str, Any]) -> str:
         """添加裁量基准"""
         count = len(self._list_benchmark_files()) + 1
         bm_id = f"BM-{count:04d}"
@@ -391,7 +388,7 @@ class BenchmarkManager:
         return bm_id
 
     def match_benchmark(self, category: str, violation_desc: str,
-                        region: str = "national") -> List[Dict[str, Any]]:
+                        region: str = "national") -> list[dict[str, Any]]:
         """匹配裁量基准"""
         benchmarks = self.list_benchmarks(category=category, region=region)
         if not benchmarks:
@@ -418,8 +415,8 @@ class BenchmarkManager:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [bm for _, bm in scored[:5]]
 
-    def list_benchmarks(self, category: Optional[str] = None,
-                        region: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_benchmarks(self, category: str | None = None,
+                        region: str | None = None) -> list[dict[str, Any]]:
         """列出裁量基准"""
         benchmarks = []
         for f in self._benchmark_dir.rglob("*.md"):
@@ -432,7 +429,7 @@ class BenchmarkManager:
                 benchmarks.append(bm)
         return benchmarks
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """裁量基准统计"""
         benchmarks = self.list_benchmarks()
         stats = {
@@ -447,7 +444,7 @@ class BenchmarkManager:
             stats["by_region"][reg] = stats["by_region"].get(reg, 0) + 1
         return stats
 
-    def _write_benchmark_file(self, file_path: Path, bm: Dict[str, Any]):
+    def _write_benchmark_file(self, file_path: Path, bm: dict[str, Any]):
         """写入裁量基准文件"""
         lines = [
             "---",
@@ -470,11 +467,11 @@ class BenchmarkManager:
         content = "\n".join(lines) + "\n".join(body_parts)
         file_path.write_text(content, encoding="utf-8")
 
-    def _parse_benchmark_file(self, file_path: Path) -> Optional[Dict[str, Any]]:
+    def _parse_benchmark_file(self, file_path: Path) -> dict[str, Any] | None:
         """解析裁量基准文件"""
         try:
             content = file_path.read_text(encoding="utf-8", errors="ignore")
-        except IOError:
+        except OSError:
             return None
 
         bm = dict(BENCHMARK_TEMPLATE)
@@ -518,7 +515,7 @@ class BenchmarkManager:
             return "\n".join(lines).strip()
         return ""
 
-    def _list_benchmark_files(self) -> List[Path]:
+    def _list_benchmark_files(self) -> list[Path]:
         """列出裁量基准文件"""
         return sorted(self._benchmark_dir.rglob("*.md"))
 
@@ -625,7 +622,7 @@ def seed_demo_data():
     for case in cases:
         cm.add_case(case)
 
-    print(f"[OK] 演示数据创建完成")
+    print("[OK] 演示数据创建完成")
     print(f"  - 裁量基准: {bm.get_stats()['total']} 条")
     print(f"  - 案例: {cm.get_stats()['total']} 条")
 
@@ -638,7 +635,9 @@ def test():
     import sys as _sys
     _sys.path.insert(0, str(PROJECT_ROOT))
     from _scripts.memory_tree import MemoryTree
-    import tempfile, shutil, time as _time
+    import tempfile
+    import shutil
+    import time as _time
 
     db_path = Path(tempfile.mkdtemp()) / "test.db"
     mt = MemoryTree(db_path)
@@ -679,5 +678,4 @@ def test():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    import time
     test()

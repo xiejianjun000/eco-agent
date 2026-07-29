@@ -11,10 +11,13 @@ hermes_features.py — ECO AGENT Hermes 对标补全
   from _scripts.hermes_features import MoA, PromptCache, Kaban
 """
 
-import os, sys, json, re, time, logging, threading, sqlite3, hashlib
+import json
+import time
+import logging
+import threading
+import sqlite3
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Callable
+from datetime import datetime
 
 logger = logging.getLogger("hermes")
 
@@ -32,11 +35,11 @@ class MoA:
         self._providers = []
         self._aggregator = None
 
-    def configure(self, provider_names: List[str], aggregator: str = None):
+    def configure(self, provider_names: list[str], aggregator: str = None):
         self._providers = provider_names
         self._aggregator = aggregator or (provider_names[0] if provider_names else None)
 
-    def query(self, prompt: str, system_prompt: str = "") -> Dict:
+    def query(self, prompt: str, system_prompt: str = "") -> dict:
         """多模型并发查询并聚合"""
         if not self._providers:
             return {"error": "未配置模型提供者", "responses": [], "aggregated": ""}
@@ -52,7 +55,7 @@ class MoA:
         aggregated = self._aggregate(results, prompt)
         return {"responses": results, "aggregated": aggregated, "providers_used": len(results)}
 
-    def _aggregate(self, results: List[Dict], original_prompt: str) -> str:
+    def _aggregate(self, results: list[dict], original_prompt: str) -> str:
         """聚合器：综合多个模型输出"""
         ok_results = [r for r in results if r["status"] == "ok"]
         if not ok_results:
@@ -79,7 +82,7 @@ class PromptCache:
     }
 
     def __init__(self):
-        self._cache: Dict[str, Dict] = {}
+        self._cache: dict[str, dict] = {}
         self._hits = 0
         self._misses = 0
 
@@ -92,7 +95,7 @@ class PromptCache:
             return "context"
         return "volatile"
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         entry = self._cache.get(key)
         if not entry:
             self._misses += 1
@@ -112,7 +115,7 @@ class PromptCache:
             tier = self.classify(content)
         self._cache[key] = {"content": content, "tier": tier, "cached_at": datetime.now(), "access_count": 0}
 
-    def get_tier_config(self) -> Dict:
+    def get_tier_config(self) -> dict:
         return self.TIERS
 
     def get_stats(self) -> dict:
@@ -135,7 +138,7 @@ class Kaban:
         self._db_path = db_path
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
-        self._workers: Dict[str, threading.Thread] = {}
+        self._workers: dict[str, threading.Thread] = {}
 
     def _init_db(self):
         with sqlite3.connect(self._db_path) as conn:
@@ -164,7 +167,7 @@ class Kaban:
                 )
             """)
 
-    def create_workflow(self, name: str, tasks: List[Dict]) -> str:
+    def create_workflow(self, name: str, tasks: list[dict]) -> str:
         """创建工作流"""
         wf_id = f"wf_{int(time.time())}_{hash(name) % 10000:04d}"
         now = datetime.now().isoformat()
@@ -180,7 +183,7 @@ class Kaban:
         logger.info(f"[Kaban] 创建工作流: {wf_id} ({name}, {len(tasks)} 任务)")
         return wf_id
 
-    def get_next_task(self, agent_name: str = None) -> Optional[Dict]:
+    def get_next_task(self, agent_name: str = None) -> dict | None:
         """获取下一个可执行的任务"""
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -204,7 +207,7 @@ class Kaban:
         with sqlite3.connect(self._db_path) as conn:
             conn.execute("UPDATE tasks SET status='failed', output=?, updated_at=? WHERE id=?", (error, now, task_id))
 
-    def get_workflow_status(self, wf_id: str) -> Optional[Dict]:
+    def get_workflow_status(self, wf_id: str) -> dict | None:
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
             wf = conn.execute("SELECT * FROM workflows WHERE id=?", (wf_id,)).fetchone()

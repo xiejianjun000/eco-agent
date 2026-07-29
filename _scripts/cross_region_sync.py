@@ -16,14 +16,11 @@ cross_region_sync.py — ECO AGENT 跨省执法协同模块
 """
 
 import os
-import sys
 import json
 import hashlib
 import logging
-import time
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field, asdict
 
 logger = logging.getLogger("cross_region_sync")
@@ -57,7 +54,7 @@ class RegionNode:
     status: str = "active"
     last_seen: str = ""
     version: str = "2.0.0"
-    capabilities: List[str] = field(default_factory=lambda: [
+    capabilities: list[str] = field(default_factory=lambda: [
         "share_case", "sync_benchmark", "query_statute", "cooperative_review"
     ])
 
@@ -94,14 +91,14 @@ class NodeRegistry:
             return True
         return False
 
-    def discover(self, region: Optional[str] = None) -> List[RegionNode]:
+    def discover(self, region: str | None = None) -> list[RegionNode]:
         """发现节点"""
         nodes = [n for n in self._nodes.values() if n.status == "active"]
         if region:
             nodes = [n for n in nodes if n.region == region]
         return sorted(nodes, key=lambda n: n.last_seen or "", reverse=True)
 
-    def get_node(self, node_id: str) -> Optional[RegionNode]:
+    def get_node(self, node_id: str) -> RegionNode | None:
         return self._nodes.get(node_id)
 
     def heartbeat(self, node_id: str) -> bool:
@@ -227,7 +224,7 @@ class CrossRegionSync:
 
     # ── 案例共享 ──
 
-    def share_case(self, case_data: dict, target_regions: Optional[List[str]] = None) -> dict:
+    def share_case(self, case_data: dict, target_regions: list[str] | None = None) -> dict:
         """共享案例到其他地区"""
         payload = {
             "type": "share_case",
@@ -258,7 +255,7 @@ class CrossRegionSync:
         logger.info(f"[CRS] 案例共享: {case_data.get('title','')[:30]} → {delivered} 个节点")
         return {"delivered": delivered, "total_targets": len(targets)}
 
-    def receive_case(self, encrypted: str, signature: str) -> Optional[dict]:
+    def receive_case(self, encrypted: str, signature: str) -> dict | None:
         """接收共享案例"""
         payload = self.crypto.decrypt(encrypted)
         if "error" in payload:
@@ -275,7 +272,7 @@ class CrossRegionSync:
 
     # ── 裁量基准同步 ──
 
-    def sync_benchmarks(self, benchmarks: List[dict]) -> dict:
+    def sync_benchmarks(self, benchmarks: list[dict]) -> dict:
         """同步裁量基准到其他节点"""
         payload = {
             "type": "sync_benchmark",
@@ -301,7 +298,7 @@ class CrossRegionSync:
 
     # ── 跨省查询 ──
 
-    def cross_region_query(self, query: str, target_regions: List[str]) -> List[dict]:
+    def cross_region_query(self, query: str, target_regions: list[str]) -> list[dict]:
         """跨省法规/案例查询"""
         results = []
         targets = [n for n in self.registry.discover() if n.region in target_regions]
@@ -345,7 +342,7 @@ class CrossRegionSync:
         logger.info(f"[CRS] 裁量校准发起: {category}, {len(nodes)-1} 个地区参与")
         return calibration
 
-    def _send_to_node(self, node: RegionNode, encrypted: str, signature: str) -> Optional[dict]:
+    def _send_to_node(self, node: RegionNode, encrypted: str, signature: str) -> dict | None:
         """发送到节点（本地模拟或真实网络）"""
         # 本地模式：写入文件作为模拟通信
         msg_dir = SYNC_DIR / "messages" / node.node_id

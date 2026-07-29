@@ -12,11 +12,15 @@ evolution_v2.py — Eco Agent 自进化引擎 v2
   python agent_core/evolution_v2.py
 """
 
-import os, sys, json, time, uuid, hashlib, logging, random, threading
+import json
+import time
+import uuid
+import hashlib
+import logging
+import re
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, field, asdict
+from datetime import datetime
+from collections.abc import Callable
 
 logger = logging.getLogger("evolution_v2")
 
@@ -33,19 +37,19 @@ class ActiveLearner:
     """主动学习——基于使用模式预测并预生成技能"""
 
     def __init__(self):
-        self._patterns: List[Dict] = []
+        self._patterns: list[dict] = []
         self._db_path = DATA_DIR / "active_learning.json"
         self._load()
 
     def _load(self):
         if self._db_path.exists():
             try: self._patterns = json.loads(self._db_path.read_text("utf-8", errors="replace"))
-            except: pass
+            except Exception: pass
 
     def _save(self):
         self._db_path.write_text(json.dumps(self._patterns[-200:], ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def record_action(self, action_type: str, context: Dict):
+    def record_action(self, action_type: str, context: dict):
         """记录用户操作"""
         self._patterns.append({
             "type": action_type, "context": context,
@@ -53,7 +57,7 @@ class ActiveLearner:
         })
         self._save()
 
-    def predict_next(self) -> List[Dict]:
+    def predict_next(self) -> list[dict]:
         """预测下一个可能需要的技能"""
         if len(self._patterns) < 3:
             return []
@@ -73,7 +77,7 @@ class ActiveLearner:
                 })
         return predictions
 
-    def identify_pattern(self) -> Optional[Dict]:
+    def identify_pattern(self) -> dict | None:
         """识别重复模式（适合生成技能）"""
         if len(self._patterns) < 5:
             return None
@@ -97,7 +101,7 @@ class ActiveLearner:
 class SkillComposer:
     """技能组合——技能可组合/可继承/可版本控制"""
 
-    def compose(self, base_skills: List[str], goal: str) -> Dict:
+    def compose(self, base_skills: list[str], goal: str) -> dict:
         """组合多个技能完成新目标"""
         return {
             "id": f"combo_{uuid.uuid4().hex[:8]}",
@@ -107,7 +111,7 @@ class SkillComposer:
             "created_at": datetime.now().isoformat(),
         }
 
-    def inherit(self, parent_skill_id: str, modifications: Dict) -> Dict:
+    def inherit(self, parent_skill_id: str, modifications: dict) -> dict:
         """继承并修改已有技能"""
         return {
             "id": f"inherit_{uuid.uuid4().hex[:8]}",
@@ -125,11 +129,26 @@ class SkillComposer:
 class ABTest:
     """A/B 测试——技能上线前自动对比评测"""
 
-    def __init__(self):
-        self._tests: Dict[str, Dict] = {}
-        self._results: List[Dict] = []
+    def __init__(self, scorer: Callable[[str, str], float] | None = None):
+        """
+        scorer(skill_text, test_case) -> 0~1 分数。
+        默认使用确定性启发式（关键词重合度），同输入必得同分数；
+        生产环境可注入基于 LLM/评测集的真实 scorer。
+        """
+        self._tests: dict[str, dict] = {}
+        self._results: list[dict] = []
+        self._scorer = scorer or self._heuristic_score
 
-    def create_test(self, skill_a: str, skill_b: str, test_cases: List[str] = None) -> str:
+    @staticmethod
+    def _heuristic_score(skill_text: str, test_case: str) -> float:
+        """确定性评分：技能描述与用例的关键词重合度（可复现，无随机）"""
+        kw_skill = set(re.findall(r'[一-鿿]{2,4}|\w{3,}', skill_text))
+        kw_case = set(re.findall(r'[一-鿿]{2,4}|\w{3,}', test_case))
+        if not kw_case:
+            return 0.5
+        return round(0.5 + 0.5 * len(kw_skill & kw_case) / len(kw_case), 2)
+
+    def create_test(self, skill_a: str, skill_b: str, test_cases: list[str] = None) -> str:
         """创建 A/B 测试"""
         test_id = f"ab_{uuid.uuid4().hex[:8]}"
         self._tests[test_id] = {
@@ -140,15 +159,15 @@ class ABTest:
         }
         return test_id
 
-    def run(self, test_id: str) -> Dict:
+    def run(self, test_id: str) -> dict:
         """执行测试"""
         test = self._tests.get(test_id)
         if not test:
             return {"error": "测试不存在"}
         results = []
         for case in test["test_cases"]:
-            score_a = random.uniform(0.6, 1.0)
-            score_b = random.uniform(0.6, 1.0)
+            score_a = self._scorer(test["skill_a"], case)
+            score_b = self._scorer(test["skill_b"], case)
             results.append({"case": case, "score_a": round(score_a, 2), "score_b": round(score_b, 2),
                            "winner": "A" if score_a > score_b else "B"})
         avg_a = sum(r["score_a"] for r in results) / len(results)
@@ -170,10 +189,10 @@ class SwarmIntelligence:
     """群体智慧——匿名化跨用户技能共享"""
 
     def __init__(self):
-        self._shared_skills: List[Dict] = []
-        self._ratings: Dict[str, List[float]] = {}
+        self._shared_skills: list[dict] = []
+        self._ratings: dict[str, list[float]] = {}
 
-    def share_skill(self, skill_data: Dict, anonymize: bool = True) -> str:
+    def share_skill(self, skill_data: dict, anonymize: bool = True) -> str:
         """共享技能（自动匿名化）"""
         shared = dict(skill_data)
         if anonymize:
@@ -199,7 +218,7 @@ class SwarmIntelligence:
                 skill["rating"] = round(sum(ratings) / len(ratings), 1)
                 skill["downloads"] += 1
 
-    def get_trending(self, limit: int = 10) -> List[Dict]:
+    def get_trending(self, limit: int = 10) -> list[dict]:
         """获取热门技能"""
         return sorted(self._shared_skills, key=lambda s: s.get("rating", 0), reverse=True)[:limit]
 
@@ -207,12 +226,13 @@ class SwarmIntelligence:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
     print("[TEST] Evolution v2 Engine", flush=True)
 
     al = ActiveLearner()
-    for i in range(10):
+    for _ in range(10):
         al.record_action("法规检索", {"query": "test"})
         al.record_action("执法问答", {"facts": "test"})
     predictions = al.predict_next()

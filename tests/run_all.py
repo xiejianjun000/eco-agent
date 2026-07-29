@@ -9,7 +9,10 @@ Eco Agent 并行测试执行器
   python tests/run_all.py --report-only       # 仅重新生成报告（不跑测试）
 """
 
-import os, sys, json, time, subprocess, glob, re
+import sys
+import time
+import subprocess
+import re
 from pathlib import Path
 from datetime import datetime
 
@@ -32,11 +35,27 @@ def discover_tests():
     return modules
 
 
+def _xdist_available() -> bool:
+    """检测 pytest-xdist 是否可用（决定能否用 -n auto 并行）"""
+    try:
+        import xdist  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
 def run_pytest(args: list = None) -> dict:
     """运行 pytest 并捕获结果"""
-    cmd = ["python3", "-m", "pytest"]
-    if args:
-        cmd.extend(args)
+    cmd = [sys.executable, "-m", "pytest"]
+
+    # 并行参数仅在 pytest-xdist 可用时注入（存量 bug：无条件传 -n auto，
+    # 未装 xdist 时 pytest 直接报 unrecognized arguments，0 个用例被执行）
+    args = list(args or [])
+    if "-n" in args and not _xdist_available():
+        i = args.index("-n")
+        del args[i:i + 2]
+        print("[Harness] pytest-xdist 未安装，回退串行执行")
+    cmd.extend(args)
 
     # 默认参数
     cmd.extend([
@@ -47,32 +66,37 @@ def run_pytest(args: list = None) -> dict:
     ])
 
     start = time.time()
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, cwd=str(ROOT))
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=str(ROOT))
     elapsed = time.time() - start
 
-    # 解析结果
+    # 解析结果：从最后一行汇总（"==== N passed, M failed in X.XXs ===="）提取，
+    # 逐字段独立匹配——存量 bug：要求 "passed" 与 "failed" 出现在同一行才解析，
+    # 全通过时该行不含 "failed"，导致永远解析为 0。
     passed = failed = skipped = errors = 0
-    last_line = ""
-    for line in result.stdout.split("\n"):
-        if "passed" in line and "failed" in line:
-            last_line = line
-    if last_line:
-        m = re.search(r"(\d+)\s+passed", last_line)
-        if m: passed = int(m.group(1))
-        m = re.search(r"(\d+)\s+failed", last_line)
-        if m: failed = int(m.group(1))
-        m = re.search(r"(\d+)\s+skipped", last_line)
-        if m: skipped = int(m.group(1))
-    # 如果解析失败，从"="行提取
-    if passed == 0 and failed == 0:
-        for line in result.stdout.split("\n"):
-            m = re.match(r"=+\s*(\d+)\s+passed", line)
-            if m: passed = int(m.group(1))
-            m = re.match(r"=+\s*(\d+)\s+failed", line)
-            if m: failed = int(m.group(1))
+    summary_lines = [l for l in result.stdout.split("\n") if re.search(r"=+.*\bin\b.*=+\s*$", l)]
+    if summary_lines:
+        line = summary_lines[-1]
+        for key, pat in (("passed", r"(\d+)\s+passed"), ("failed", r"(\d+)\s+failed"),
+                         ("skipped", r"(\d+)\s+skipped"), ("errors?", r"(\d+)\s+errors?")):
+            m = re.search(pat, line)
+            if not m:
+                continue
+            if key == "passed":
+                passed = int(m.group(1))
+            elif key == "failed":
+                failed = int(m.group(1))
+            elif key == "skipped":
+                skipped = int(m.group(1))
+            else:
+                errors = int(m.group(1))
+
+    # pytest 进程级失败（如参数错误/收集错误）如实上报为 error，绝不静默当 0
+    collection_failed = result.returncode not in (0, 1) and passed + failed + skipped == 0
 
     return {
-        "passed": passed, "failed": failed, "skipped": skipped, "errors": errors,
+        "passed": passed, "failed": failed, "skipped": skipped,
+        "errors": errors + (1 if collection_failed else 0),
+        "returncode": result.returncode,
         "elapsed_s": round(elapsed, 2),
         "stdout": result.stdout[-3000:] if len(result.stdout) > 3000 else result.stdout,
         "stderr": result.stderr[-1000:] if len(result.stderr) > 1000 else result.stderr,
@@ -86,25 +110,25 @@ def generate_report(results: dict, modules: dict) -> str:
     pass_rate = round(results["passed"] / max(total, 1) * 100, 1)
 
     report = [
-        f"# Eco Agent 测试报告",
-        f"",
+        "# Eco Agent 测试报告",
+        "",
         f"> **运行时间**: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}",
         f"> **运行耗时**: {results['elapsed_s']}s",
-        f"> **测试模式**: 并行 pytest",
-        f"",
-        f"## 汇总",
-        f"",
-        f"| 指标 | 数值 |",
-        f"|:-----|:----:|",
+        "> **测试模式**: 并行 pytest",
+        "",
+        "## 汇总",
+        "",
+        "| 指标 | 数值 |",
+        "|:-----|:----:|",
         f"| 总用例 | {total} |",
         f"| ✅ 通过 | {results['passed']} |",
         f"| ❌ 失败 | {results['failed']} |",
         f"| ⏭ 跳过 | {results['skipped']} |",
         f"| ⚠ 错误 | {results['errors']} |",
         f"| **通过率** | **{pass_rate}%** |",
-        f"",
-        f"## 模块详情",
-        f"",
+        "",
+        "## 模块详情",
+        "",
     ]
 
     for mod_name, info in modules.items():
@@ -232,7 +256,7 @@ def main():
     # 打印摘要
     total_all = results["passed"] + results["failed"] + results["skipped"] + results["errors"]
     print(f"\n{'='*50}")
-    print(f"  Eco Agent 测试完成")
+    print("  Eco Agent 测试完成")
     print(f"  {'='*50}")
     print(f"  总用例: {total_all}")
     print(f"  通过:   {results['passed']}")
@@ -243,7 +267,7 @@ def main():
     print(f"  报告:   {report_file}")
     print(f"  {'='*50}")
 
-    if results["failed"] > 0:
+    if results["failed"] > 0 or results["errors"] > 0:
         sys.exit(1)
 
 

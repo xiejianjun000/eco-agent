@@ -1,14 +1,15 @@
 """Discord 通道适配器"""
 
-import os, sys, json, logging, time, threading
-from typing import Optional, List, Dict
+import os
+import sys
+import logging
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from gateway.gateway_core import ChannelAdapter, UnifiedMessage, MessageType
 
 logger = logging.getLogger("channel.discord")
 
 try: import requests
-except: requests = None
+except Exception: requests = None
 
 
 class DiscordAdapter(ChannelAdapter):
@@ -35,13 +36,13 @@ class DiscordAdapter(ChannelAdapter):
             return r.status_code == 200
         except Exception as e: logger.warning(f"Discord 发送失败: {e}"); return False
 
-    def send_card(self, channel_id: str, title: str, content: str, actions: List[Dict] = None) -> bool:
+    def send_card(self, channel_id: str, title: str, content: str, actions: list[dict] = None) -> bool:
         embed = {"title": title, "description": content, "color": 0x00ff00}
         if actions:
             embed["fields"] = [{"name": a.get("name",""), "value": a.get("value",""), "inline": True} for a in actions[:5]]
         return self.send_message(channel_id, f"**{title}**\n\n{content}")
 
-    def parse_webhook(self, raw_data: dict) -> Optional[UnifiedMessage]:
+    def parse_webhook(self, raw_data: dict) -> UnifiedMessage | None:
         try:
             d = raw_data.get("d", {})
             content = d.get("content", "")
@@ -49,7 +50,7 @@ class DiscordAdapter(ChannelAdapter):
             return UnifiedMessage(platform="discord", channel_id=str(d.get("channel_id","")),
                     user_id=str(d.get("author",{}).get("id","")), user_name=d.get("author",{}).get("username",""),
                     content=content, msg_type=MessageType.TEXT, raw=raw_data)
-        except: return None
+        except Exception: return None
 
 
 if __name__ == "__main__":

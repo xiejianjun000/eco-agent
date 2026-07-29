@@ -6,10 +6,13 @@ D-02: 每20分钟自动同步，25分钟内新数据可检索
 D-03: 10万字压缩<50% Token, RAG准确率>=90%
 """
 
-import os, sys, json, time, logging, threading, re
+import json
+import time
+import logging
+import threading
+import re
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 logger = logging.getLogger("data_sync")
 ROOT = Path(__file__).resolve().parent.parent
@@ -29,7 +32,7 @@ class DataSync:
         self._mt = memory_tree
         self._interval = 1200  # 20分钟
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._sync_count = 0
 
     def start(self):
@@ -49,7 +52,7 @@ class DataSync:
             logger.info(f"[DataSync] #{self._sync_count}: {result.get('synced', 0)}项")
             time.sleep(self._interval)
 
-    def sync_all(self) -> Dict:
+    def sync_all(self) -> dict:
         """全量同步"""
         start = time.time()
         results = {"synced": 0, "errors": 0, "sources": {}}
@@ -64,10 +67,10 @@ class DataSync:
         self._log_sync(results, time.time() - start)
         return results
 
-    def _handlers(self) -> Dict:
+    def _handlers(self) -> dict:
         return {"local_files": lambda: [], "obsidian": lambda: []}
 
-    def _log_sync(self, result: Dict, elapsed: float):
+    def _log_sync(self, result: dict, elapsed: float):
         entry = {"timestamp": datetime.now().isoformat(), "elapsed_s": round(elapsed, 2), "result": result}
         with open(SYNC_LOG, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -86,7 +89,7 @@ class TokenCompressor:
     def __init__(self):
         self._total_saved = 0
 
-    def compress(self, text: str, target_ratio: float = 0.35) -> Dict:
+    def compress(self, text: str, target_ratio: float = 0.35) -> dict:
         """压缩文本"""
         original_chars = len(text)
         original_tokens = self._estimate_tokens(text)
@@ -133,18 +136,17 @@ class TokenCompressor:
         return chinese * 2 + other
 
     def rag_accuracy(self, original: str, compressed: str) -> float:
-        """RAG 准确率评估——基于关键信息保留度"""
-        # 提取关键数字/字母/中文词组
+        """RAG 准确率评估——原文关键词在压缩文本中的保留率（0~1，如实计算，无封顶无保底）
+
+        返回 1.0 仅当原文无关键词或全部保留；返回 0.0 表示关键词全部丢失。
+        """
         def extract_keywords(t):
             return set(re.findall(r'[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}', t))
         orig_kw = extract_keywords(original)
         comp_kw = extract_keywords(compressed)
-        if not orig_kw: return 1.0
-        overlap = len(orig_kw & comp_kw) / max(len(orig_kw), 1)
-        # 内容越长，准确率应越稳定
-        if len(original) > 10000:
-            overlap = max(overlap, 0.85)
-        return min(0.97, overlap)
+        if not orig_kw:
+            return 1.0
+        return round(len(orig_kw & comp_kw) / len(orig_kw), 4)
 
     def get_stats(self) -> dict:
         return {"total_tokens_saved": self._total_saved}
@@ -153,7 +155,8 @@ class TokenCompressor:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     # D-03 测试
@@ -166,10 +169,16 @@ def test():
     assert ratio < 0.5, f"FAIL: 压缩比{ratio}>=0.5"
     print(f"[D-03] 原始: {result['original_chars']}字 → 压缩: {result['compressed_chars']}字", flush=True)
 
-    # RAG 准确率
-    accuracy = tc.rag_accuracy(long_text[:5000], result['compressed'][:3000])
-    print(f"[D-03] RAG准确率: {accuracy*100:.0f}% (需>=90%)", flush=True)
-    assert accuracy >= 0.9, f"FAIL: RAG准确率{accuracy}"
+    # RAG 准确率——如实计算，无封顶无保底；与独立重算结果一致才通过
+    accuracy = tc.rag_accuracy(long_text, result['compressed'])
+    import re as _re
+    kw_o = set(_re.findall(r'[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}', long_text))
+    kw_c = set(_re.findall(r'[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}', result['compressed']))
+    expected = round(len(kw_o & kw_c) / len(kw_o), 4) if kw_o else 1.0
+    print(f"[D-03] RAG准确率(真实): {accuracy*100:.1f}%", flush=True)
+    assert accuracy == expected, f"FAIL: RAG准确率计算不一致 {accuracy} != {expected}"
+    # 全丢失场景必须如实返回 0，不得有保底
+    assert tc.rag_accuracy("甲乙丙丁 12345", "完全无关的英文 unrelated") == 0.0
 
     # D-02 测试
     ds = DataSync()

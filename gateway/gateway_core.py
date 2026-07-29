@@ -16,10 +16,15 @@ Phase 1 交付物 1/7：统一会话管理 + 多通道抽象层
   python gateway/gateway_core.py --dev    # 开发模式
 """
 
-import os, sys, json, time, uuid, hashlib, logging, threading, asyncio
+import json
+import time
+import uuid
+import logging
+import threading
+from abc import ABC, abstractmethod
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Callable
+from datetime import datetime
+from collections.abc import Callable
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 
@@ -88,7 +93,7 @@ class Session:
     updated_at: str = ""
     active: bool = True
     context: dict = field(default_factory=dict)
-    history: List[Dict] = field(default_factory=list)
+    history: list[dict] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
 
     def add_message(self, msg: UnifiedMessage, response: str = ""):
@@ -107,20 +112,30 @@ class Session:
 # 通道适配器——所有通道实现此接口
 # ═══════════════════════════════════
 
-class ChannelAdapter:
-    """通道适配器接口"""
+class ChannelAdapter(ABC):
+    """通道适配器抽象接口——所有通道必须实现以下四个成员
+
+    当前已接入：telegram / discord / slack（gateway/channels/）
+    独立平台 bot（未走适配器接口）：feishu / wecom / dingtalk / wechat（gateway/platforms/）
+    枚举预留待接入：CLI / API / WEB / QQ / WHATSAPP（见 Platform）
+    """
 
     @property
-    def platform(self) -> str: raise NotImplementedError
+    @abstractmethod
+    def platform(self) -> str:
+        """通道平台标识（对应 Platform 枚举值）"""
 
+    @abstractmethod
     def send_message(self, channel_id: str, message: str, reply_to: str = "") -> bool:
-        raise NotImplementedError
+        """发送文本消息，成功返回 True"""
 
-    def send_card(self, channel_id: str, title: str, content: str, actions: List[Dict] = None) -> bool:
-        raise NotImplementedError
+    @abstractmethod
+    def send_card(self, channel_id: str, title: str, content: str, actions: list[dict] = None) -> bool:
+        """发送卡片消息，成功返回 True"""
 
-    def parse_webhook(self, raw_data: dict) -> Optional[UnifiedMessage]:
-        raise NotImplementedError
+    @abstractmethod
+    def parse_webhook(self, raw_data: dict) -> UnifiedMessage | None:
+        """解析平台 webhook 原始数据为统一消息，无法解析返回 None"""
 
 
 # ═══════════════════════════════════
@@ -131,7 +146,7 @@ class SessionManager:
     """跨通道会话管理——统一状态、持久化、过期回收"""
 
     def __init__(self):
-        self._sessions: Dict[str, Session] = {}
+        self._sessions: dict[str, Session] = {}
         self._db_path = DATA_DIR / "sessions.json"
         self._lock = threading.Lock()
         self._load()
@@ -139,7 +154,7 @@ class SessionManager:
     def _load(self):
         if self._db_path.exists():
             try: data = json.loads(self._db_path.read_text("utf-8", errors="replace"))
-            except: data = {}
+            except Exception: data = {}
             for sid, sdata in data.items():
                 self._sessions[sid] = Session(**sdata)
 
@@ -167,7 +182,7 @@ class SessionManager:
             self._save()
             return session
 
-    def get(self, session_id: str) -> Optional[Session]:
+    def get(self, session_id: str) -> Session | None:
         return self._sessions.get(session_id)
 
     def cleanup_stale(self, max_hours: int = 72):
@@ -179,7 +194,7 @@ class SessionManager:
                 updated = datetime.fromisoformat(session.updated_at)
                 if (now - updated).total_seconds() > max_hours * 3600:
                     stale.append(sid)
-            except: stale.append(sid)
+            except Exception: stale.append(sid)
         with self._lock:
             for sid in stale:
                 del self._sessions[sid]
@@ -202,7 +217,7 @@ class MessageRouter:
 
     def __init__(self, session_mgr: SessionManager):
         self._session_mgr = session_mgr
-        self._handlers: Dict[str, Callable] = {}
+        self._handlers: dict[str, Callable] = {}
         self._audit_log = DATA_DIR / "audit.jsonl"
         self._audit_log.parent.mkdir(parents=True, exist_ok=True)
 
@@ -210,7 +225,7 @@ class MessageRouter:
         """注册消息处理器"""
         self._handlers[name] = handler
 
-    def route(self, msg: UnifiedMessage) -> Dict:
+    def route(self, msg: UnifiedMessage) -> dict:
         """路由消息"""
         start = time.time()
 
@@ -263,7 +278,7 @@ class MessageRouter:
         try:
             with open(self._audit_log, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        except: pass
+        except Exception: pass
 
     def get_stats(self) -> dict:
         return {"handlers": list(self._handlers.keys()),
@@ -276,18 +291,18 @@ class MessageRouter:
 
 class ChannelFactory:
     def __init__(self):
-        self._adapters: Dict[str, ChannelAdapter] = {}
+        self._adapters: dict[str, ChannelAdapter] = {}
 
     def register(self, adapter: ChannelAdapter):
         self._adapters[adapter.platform] = adapter
 
-    def get(self, platform: str) -> Optional[ChannelAdapter]:
+    def get(self, platform: str) -> ChannelAdapter | None:
         return self._adapters.get(platform)
 
-    def list_platforms(self) -> List[str]:
+    def list_platforms(self) -> list[str]:
         return list(self._adapters.keys())
 
-    def broadcast(self, message: str, platforms: List[str] = None) -> Dict[str, bool]:
+    def broadcast(self, message: str, platforms: list[str] = None) -> dict[str, bool]:
         """向所有/指定平台广播消息"""
         results = {}
         targets = platforms or self.list_platforms()
@@ -295,7 +310,7 @@ class ChannelFactory:
             adapter = self.get(p)
             if adapter:
                 try: results[p] = adapter.send_message("broadcast", message)
-                except: results[p] = False
+                except Exception: results[p] = False
         return results
 
 
@@ -311,7 +326,7 @@ class GatewayService:
         self.router = MessageRouter(self.sessions)
         self.channels = ChannelFactory()
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
 
     def start(self):
         """启动网关"""
@@ -337,7 +352,7 @@ class GatewayService:
 
     def process_message(self, platform: str, channel_id: str, content: str,
                         user_id: str = "", user_name: str = "",
-                        msg_type: MessageType = MessageType.TEXT) -> Dict:
+                        msg_type: MessageType = MessageType.TEXT) -> dict:
         """统一消息入口——任何通道调用此方法即可发送消息进系统"""
         msg = UnifiedMessage(
             platform=platform, channel_id=channel_id, user_id=user_id,

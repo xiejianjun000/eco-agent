@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """飞书 Bot 自动回复处理器"""
 
-import os, sys, json, time, subprocess, logging, importlib.util
+import json
+import time
+import subprocess
+import logging
+import importlib.util
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent
@@ -44,7 +48,7 @@ def handle_message(event):
         cmd = [LARK_CLI, "im", "+messages-reply", "--message-id", message_id,
                "--text", reply, "--as", "bot", "--format", "json"]
         r = subprocess.run(cmd, capture_output=True, text=False, timeout=20)
-        out = r.stdout.decode('utf-8', errors='replace') if r.stdout else ""
+        out = r.stdout.decode('utf-8', errors='replace') if r.stdout else ""  # noqa: F841 预留：回执解析
         err = r.stderr.decode('utf-8', errors='replace') if r.stderr else ""
         if r.returncode == 0:
             logger.info(f"回复成功: {content[:30]}")
@@ -118,7 +122,7 @@ def watch_loop():
                 except Exception as e:
                     logger.warning(f"处理 {f.name}: {e}")
                     try: f.unlink(missing_ok=True)
-                    except: pass
+                    except Exception: pass
         except Exception as e:
             logger.warning(f"循环异常: {e}")
         time.sleep(3)

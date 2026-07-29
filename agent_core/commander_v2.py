@@ -13,11 +13,13 @@ commander_v2.py — Eco Agent 指挥官 v2（Phase 3 多智能体协作深化）
   G-03 DAG循环检测：5秒告警并自动破环
 """
 
-import os, sys, json, time, uuid, logging, threading, queue, re
+import time
+import uuid
+import logging
+import threading
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Set
-from dataclasses import dataclass, field, asdict
+from datetime import datetime
+from dataclasses import dataclass, field
 from enum import Enum
 
 logger = logging.getLogger("commander_v2")
@@ -44,9 +46,9 @@ class Task:
     id: str = ""; description: str = ""; agent_role: AgentRole = AgentRole.CUSTOM
     priority: int = 5; status: TaskStatus = TaskStatus.PENDING
     input: dict = field(default_factory=dict); output: str = ""; error: str = ""
-    depends_on: List[str] = field(default_factory=list)
+    depends_on: list[str] = field(default_factory=list)
     replan_count: int = 0; max_replans: int = 2
-    worktree: str = ""; file_locks: List[str] = field(default_factory=list)
+    worktree: str = ""; file_locks: list[str] = field(default_factory=list)
     created_at: str = ""; started_at: str = ""; completed_at: str = ""
     execution_time_ms: float = 0.0
 
@@ -59,7 +61,7 @@ class AgentInstance:
     id: str = ""; name: str = ""; role: AgentRole = AgentRole.CUSTOM
     model: str = ""; status: str = "idle"; current_task: str = ""
     spawned_at: str = ""; task_count: int = 0; success_count: int = 0
-    worktree: str = ""; file_locks: Set[str] = field(default_factory=set)
+    worktree: str = ""; file_locks: set[str] = field(default_factory=set)
     metadata: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -77,7 +79,7 @@ class WorktreeManager:
     def __init__(self, base_dir: str = None):
         self._base = Path(base_dir or (ROOT / "worktrees"))
         self._base.mkdir(parents=True, exist_ok=True)
-        self._locks: Dict[str, str] = {}
+        self._locks: dict[str, str] = {}
 
     def create(self, agent_id: str) -> str:
         wt = self._base / f"wt_{agent_id[:8]}"
@@ -115,7 +117,7 @@ class AgentPoolV2:
     """Agent 池 v2——弹性伸缩"""
 
     def __init__(self):
-        self._agents: Dict[str, AgentInstance] = {}
+        self._agents: dict[str, AgentInstance] = {}
         self._lock = threading.Lock()
         self._max_agents = 20
         self._queue_depth = 0
@@ -194,7 +196,7 @@ class DAGValidator:
     """DAG 循环依赖检测"""
 
     @staticmethod
-    def has_cycle(tasks: List[Task]) -> Optional[List[str]]:
+    def has_cycle(tasks: list[Task]) -> list[str] | None:
         deps = {t.id: list(t.depends_on) for t in tasks}
         visited = set(); path = set()
         def dfs(nid):
@@ -211,7 +213,7 @@ class DAGValidator:
         return None
 
     @staticmethod
-    def break_cycle(tasks: List[Task]) -> List[Task]:
+    def break_cycle(tasks: list[Task]) -> list[Task]:
         cycle = DAGValidator.has_cycle(tasks)
         if not cycle: return tasks
         # 自动破环：移除循环中最低优先级的依赖
@@ -247,7 +249,7 @@ class TaskDecomposerV2:
                      ("验证结果", AgentRole.REVIEWER), ("交付输出", AgentRole.CUSTOM)],
         }
 
-    def decompose(self, goal: str, context: dict = None) -> List[Task]:
+    def decompose(self, goal: str, context: dict = None) -> list[Task]:
         """分解目标（B-01：≥5子任务，10秒内）"""
         gl = goal.lower()
         pattern = self._patterns.get("通用")
@@ -271,9 +273,9 @@ class Negotiator:
     """跨 Agent 协商——资源争用避让"""
 
     def __init__(self):
-        self._pending: Dict[str, List[Dict]] = {}
+        self._pending: dict[str, list[dict]] = {}
 
-    def request(self, agent_id: str, resource: str, task_id: str) -> Dict:
+    def request(self, agent_id: str, resource: str, task_id: str) -> dict:
         key = resource.replace("\\", "/")
         if key not in self._pending: self._pending[key] = []
         # 检查是否已有等待
@@ -310,11 +312,11 @@ class CommanderV2:
         self.decomposer = TaskDecomposerV2()
         self.dag = DAGValidator()
         self.negotiator = Negotiator()
-        self._tasks: Dict[str, Task] = {}
-        self._results: List[Dict] = []
+        self._tasks: dict[str, Task] = {}
+        self._results: list[dict] = []
         self._lock = threading.Lock()
 
-    def execute(self, goal: str, context: dict = None) -> Dict:
+    def execute(self, goal: str, context: dict = None) -> dict:
         start = time.time()
         logger.info(f"[CommanderV2] 目标: {goal[:40]}")
         # B-01：10秒内分解≥5
@@ -377,7 +379,7 @@ class CommanderV2:
             self.pool.complete_task(agent.id, False)
         task.execution_time_ms = (time.time() - st) * 1000
 
-    def _summarize(self, elapsed_ms: float) -> Dict:
+    def _summarize(self, elapsed_ms: float) -> dict:
         tasks = list(self._tasks.values())
         return {"total_tasks": len(tasks),
                 "completed": sum(1 for t in tasks if t.status == TaskStatus.COMPLETED),
@@ -395,7 +397,8 @@ class CommanderV2:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     cmd = CommanderV2()

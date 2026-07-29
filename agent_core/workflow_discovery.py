@@ -6,10 +6,12 @@ B-03: 从历史执行日志中提炼高频协作序列 → 标准工作流模板
 G-02: >1小时任务每10分钟自动快照，崩溃恢复<1分钟
 """
 
-import os, sys, json, time, uuid, logging, hashlib, shutil
+import json
+import uuid
+import logging
+import hashlib
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
 from collections import Counter
 
 logger = logging.getLogger("workflow_discovery")
@@ -29,13 +31,13 @@ class WorkflowDiscoverer:
     def __init__(self):
         self._templates_dir = DATA_DIR / "workflow_templates"
         self._templates_dir.mkdir(parents=True, exist_ok=True)
-        self._logs: List[Dict] = []
+        self._logs: list[dict] = []
 
-    def ingest(self, execution_logs: List[Dict]):
+    def ingest(self, execution_logs: list[dict]):
         """注入历史执行日志"""
         self._logs.extend(execution_logs)
 
-    def discover(self, min_frequency: int = 3) -> List[Dict]:
+    def discover(self, min_frequency: int = 3) -> list[dict]:
         """发现高频协作序列并生成工作流模板"""
         sequences = self._extract_sequences()
         frequent = [s for s in sequences if s["count"] >= min_frequency]
@@ -47,7 +49,7 @@ class WorkflowDiscoverer:
         logger.info(f"[Discovery] 从{len(self._logs)}条日志发现{len(frequent)}个高频序列, 生成{len(templates)}个模板")
         return templates
 
-    def _extract_sequences(self) -> List[Dict]:
+    def _extract_sequences(self) -> list[dict]:
         """提取任务执行序列"""
         seq_counter = Counter()
         seq_details = {}
@@ -67,7 +69,7 @@ class WorkflowDiscoverer:
                             "descriptions": seq_details[seq_str]["descriptions"]})
         return results
 
-    def _to_template(self, seq: Dict) -> Dict:
+    def _to_template(self, seq: dict) -> dict:
         """将高频序列转换为工作流模板"""
         tmpl_id = f"ecoflow_{hashlib.md5(seq['sequence'].encode()).hexdigest()[:8]}"
         return {"id": tmpl_id, "name": f"自动流程: {seq['sequence'][:30]}", "roles": seq["roles"],
@@ -76,15 +78,15 @@ class WorkflowDiscoverer:
                 "steps": [{"order": i+1, "role": r, "task": seq["descriptions"][i] if i < len(seq["descriptions"]) else ""}
                           for i, r in enumerate(seq["roles"])]}
 
-    def _save_template(self, template: Dict):
+    def _save_template(self, template: dict):
         path = self._templates_dir / f"{template['id']}.json"
         path.write_text(json.dumps(template, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def list_templates(self) -> List[Dict]:
+    def list_templates(self) -> list[dict]:
         templates = []
         for f in sorted(self._templates_dir.glob("*.json")):
             try: templates.append(json.loads(f.read_text("utf-8", errors="replace")))
-            except: pass
+            except Exception: pass
         return templates
 
     def get_stats(self) -> dict:
@@ -110,7 +112,7 @@ class LongTaskSnapshot:
         path.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
         return snapshot["snapshot_id"]
 
-    def restore(self, task_id: str) -> Optional[Dict]:
+    def restore(self, task_id: str) -> dict | None:
         """恢复快照"""
         path = SNAPSHOT_DIR / f"{task_id}.json"
         if not path.exists():
@@ -120,13 +122,13 @@ class LongTaskSnapshot:
             elapsed = (datetime.now() - datetime.fromisoformat(data["timestamp"])).total_seconds()
             data["recovery_time_s"] = round(elapsed, 1)
             return data
-        except: return None
+        except Exception: return None
 
     def cleanup_old(self, max_hours: int = 72):
         now = datetime.now()
         for f in SNAPSHOT_DIR.glob("*.json"):
             try: mtime = datetime.fromtimestamp(f.stat().st_mtime)
-            except: continue
+            except Exception: continue
             if (now - mtime).total_seconds() > max_hours * 3600: f.unlink()
 
     def get_stats(self) -> dict:
@@ -136,13 +138,14 @@ class LongTaskSnapshot:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     # B-03 测试
     wd = WorkflowDiscoverer()
     logs = []
-    for i in range(20):
+    for _ in range(20):
         logs.append({"tasks": [
             {"agent": "analyst", "description": "分析需求"},
             {"agent": "planner", "description": "制定计划"},

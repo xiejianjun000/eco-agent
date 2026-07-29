@@ -13,9 +13,11 @@ llm_client.py — Eco Agent 统一 LLM 调用层（Kimi / Moonshot OpenAI 兼容
   - 进程级单例 get_default_client()
 """
 
-import os, time, json, logging, threading
+import os
+import time
+import logging
+import threading
 from pathlib import Path
-from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger("llm_client")
 
@@ -29,7 +31,7 @@ TIMEOUT = 30.0
 CIRCUIT_BREAK_SECONDS = 60
 
 
-def _load_dotenv():
+def _load_dotenv() -> None:
     """自动加载 .env（不覆盖已有环境变量）"""
     env_file = ROOT / ".env"
     if not env_file.exists():
@@ -70,24 +72,22 @@ class LLMClient:
             return False
         if not self.api_key:
             return False
-        if time.time() < self._circuit_open_until:
-            return False
-        return True
+        return time.time() >= self._circuit_open_until
 
-    def _on_failure(self):
+    def _on_failure(self) -> None:
         with self._lock:
             self._fail_count += 1
             if self._fail_count >= MAX_RETRIES:
                 self._circuit_open_until = time.time() + CIRCUIT_BREAK_SECONDS
                 logger.warning(f"[LLM] 连续失败 {self._fail_count} 次，熔断 {CIRCUIT_BREAK_SECONDS}s")
 
-    def _on_success(self):
+    def _on_success(self) -> None:
         with self._lock:
             self._fail_count = 0
             self._circuit_open_until = 0.0
 
-    def chat(self, messages: List[Dict[str, str]], max_tokens: int = 512,
-             temperature: float = 0.7, model: str = "") -> Optional[str]:
+    def chat(self, messages: list[dict[str, str]], max_tokens: int = 512,
+             temperature: float = 0.7, model: str = "") -> str | None:
         """调用 chat/completions，失败返回 None"""
         if not self.available():
             return None
@@ -150,7 +150,7 @@ class LLMClient:
         self._on_failure()
         return None
 
-    def complete(self, prompt: str, system: str = "", **kw) -> Optional[str]:
+    def complete(self, prompt: str, system: str = "", **kw) -> str | None:
         messages = []
         if system:
             messages.append({"role": "system", "content": system})
@@ -158,7 +158,7 @@ class LLMClient:
         return self.chat(messages, **kw)
 
 
-_default_client: Optional[LLMClient] = None
+_default_client: LLMClient | None = None
 _default_lock = threading.Lock()
 
 

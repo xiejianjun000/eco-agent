@@ -13,11 +13,13 @@ react_loop.py — Eco Agent L1 微观行动循环 (ReAct++)
   result = loop.execute("查询大气污染防治法", tools=[...])
 """
 
-import os, sys, json, time, uuid, logging, traceback
+import time
+import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any, Callable
-from dataclasses import dataclass, field, asdict
+from typing import Any
+from collections.abc import Callable
+from dataclasses import dataclass, field
 
 logger = logging.getLogger("react_loop")
 
@@ -57,12 +59,12 @@ class ReActPlusPlus:
     """L1 微观行动循环——ReAct++：带置信度门控、暂停-反思、中断注入、原子化回滚"""
 
     def __init__(self):
-        self._tools: Dict[str, Callable] = {}
-        self._history: List[Dict] = []
+        self._tools: dict[str, Callable] = {}
+        self._history: list[dict] = []
         self._max_retries = 3
         self._confidence_threshold = 0.4
         self._max_steps = 20
-        self._current_state: Optional[ReActState] = None
+        self._current_state: ReActState | None = None
 
     def _llm(self):
         """获取 LLM 客户端（不可用返回 None）"""
@@ -74,13 +76,13 @@ class ReActPlusPlus:
             logger.warning(f"[ReAct++] LLM 客户端不可用: {e}")
         return None
 
-    def register_tool(self, name: str, handler: Callable, description: str = ""):
+    def register_tool(self, name: str, handler: Callable, description: str = "") -> None:
         """注册工具"""
         self._tools[name] = handler
 
     # ── 主执行入口 ──
 
-    def execute(self, task: str, context: dict = None, observer=None) -> Dict:
+    def execute(self, task: str, context: dict = None, observer=None) -> dict:
         """执行 ReAct++ 循环"""
         state = ReActState()
         state.observation = task
@@ -94,7 +96,6 @@ class ReActPlusPlus:
 
         for step in range(1, self._max_steps + 1):
             state.step = step
-            elapsed = time.time() - start_time
 
             # 检查中断注入
             if state.interrupted:
@@ -285,7 +286,7 @@ class ReActPlusPlus:
 
     # ── 外部控制 ──
 
-    def interrupt(self):
+    def interrupt(self) -> None:
         """中断注入——允许用户在循环任意节点打断"""
         if self._current_state is not None:
             self._current_state.interrupted = True
@@ -293,7 +294,7 @@ class ReActPlusPlus:
         else:
             logger.warning("[ReAct++] 无运行中的循环，中断无效")
 
-    def _rollback(self, state: ReActState):
+    def _rollback(self, state: ReActState) -> None:
         """原子化回滚——将可变状态恢复到检查点，保留重试计数与错误记录"""
         checkpoint = dict(state.rollback_point or {})
         checkpoint["rollback_count"] = checkpoint.get("rollback_count", 0) + 1
@@ -321,14 +322,15 @@ class ReActPlusPlus:
             "interrupted": sum(1 for r in self._history if r["interrupted"]),
         }
 
-    def clear_history(self):
+    def clear_history(self) -> None:
         self._history = []
 
 
 # ===== 快速测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     loop = ReActPlusPlus()

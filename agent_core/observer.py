@@ -15,10 +15,10 @@ observer.py — Eco Agent 观察 Agent
   result = observer.verify("task_id", output_data)
 """
 
-import os, sys, json, time, logging, re
+import time
+import logging
+import re
 from pathlib import Path
-from datetime import datetime
-from typing import Optional, List, Dict, Any
 
 logger = logging.getLogger("observer")
 
@@ -29,9 +29,9 @@ class Observer:
     """观察 Agent——执行验证与反馈"""
 
     def __init__(self):
-        self._history: List[Dict] = []
+        self._history: list[dict] = []
 
-    def verify(self, task_desc: str, output: str, expected: str = "") -> Dict:
+    def verify(self, task_desc: str, output: str, expected: str = "") -> dict:
         """三阶段验证任务执行结果"""
         start = time.time()
 
@@ -62,7 +62,7 @@ class Observer:
         logger.info(f"[Observer] 验证: {'PASS' if passed else 'FAIL'} (score={final_score:.2f})")
         return result
 
-    def _pre_check(self, output: str) -> Dict:
+    def _pre_check(self, output: str) -> dict:
         """存在性检查"""
         issues = []
         if not output:
@@ -71,7 +71,7 @@ class Observer:
             issues.append("输出过短")
         return {"score": 0.9 if not issues else 0.3, "issues": issues}
 
-    def _runtime_check(self, output: str, task_desc: str) -> Dict:
+    def _runtime_check(self, output: str, task_desc: str) -> dict:
         """质量检查"""
         issues = []
         # 错误检测
@@ -95,7 +95,7 @@ class Observer:
         score = max(0.1, 0.9 - len(issues) * 0.25)
         return {"score": score, "issues": issues, "relevance": round(overlap, 2)}
 
-    def _post_check(self, output: str, expected: str) -> Dict:
+    def _post_check(self, output: str, expected: str) -> dict:
         """与预期结果对比"""
         if not expected:
             return {"match": True, "score": 0.8, "note": "无预期结果可对比"}
@@ -104,7 +104,7 @@ class Observer:
         score = overlap / total
         return {"match": score > 0.3, "score": score}
 
-    def _generate_feedback(self, pre: Dict, runtime: Dict, post: Dict) -> str:
+    def _generate_feedback(self, pre: dict, runtime: dict, post: dict) -> str:
         """生成可执行的反馈"""
         all_issues = pre.get("issues", []) + runtime.get("issues", []) + post.get("issues", [])
         if not all_issues:
@@ -124,7 +124,8 @@ class Observer:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
     print("[TEST] Observer Agent", flush=True)
 

@@ -15,14 +15,12 @@ writer_agent.py — ECO AGENT 执法文书生成 Agent
   wa.ace_review(doc)
 """
 
-import os
-import sys
 import json
 import re
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger("writer_agent")
 
@@ -125,15 +123,15 @@ class WriterAgent:
     def __init__(self, memory_tree=None):
         self._mt = memory_tree
         self._engine = TemplateEngine()
-        self._documents: List[Dict[str, Any]] = []
+        self._documents: list[dict[str, Any]] = []
 
-    def list_templates(self) -> Dict[str, Any]:
+    def list_templates(self) -> dict[str, Any]:
         """列出可用模板"""
         return {k: {"name": v["name"], "required_fields": v["required_fields"]}
                 for k, v in self.DOC_TYPES.items()}
 
-    def generate(self, doc_type: str, data: Dict[str, Any],
-                 author: str = "ECO AGENT") -> Dict[str, Any]:
+    def generate(self, doc_type: str, data: dict[str, Any],
+                 author: str = "ECO AGENT") -> dict[str, Any]:
         """生成执法文书"""
         if doc_type not in self.DOC_TYPES:
             return {"success": False, "error": f"不支持的文书类型: {doc_type}"}
@@ -186,7 +184,7 @@ class WriterAgent:
     # ACE 三阶段审查
     # ═══════════════════════════════════
 
-    def ace_review(self, document: Dict[str, Any]) -> Dict[str, Any]:
+    def ace_review(self, document: dict[str, Any]) -> dict[str, Any]:
         """ACE 三阶段审查文书"""
         if not document.get("success", False):
             return {"success": False, "error": "文书生成失败，无法审查"}
@@ -228,7 +226,7 @@ class WriterAgent:
                     f"[{curator_result['recommendation']}]")
         return {"success": True, "ace": ace, "document": doc}
 
-    def _reflector_check(self, doc: Dict[str, Any]) -> Dict[str, Any]:
+    def _reflector_check(self, doc: dict[str, Any]) -> dict[str, Any]:
         """Reflector 校验文书"""
         content = doc.get("content", "")
         checks = {}
@@ -279,8 +277,8 @@ class WriterAgent:
             "passed": overall >= 70,
         }
 
-    def _curator_decision(self, doc: Dict[str, Any],
-                          reflector: Dict[str, Any]) -> Dict[str, Any]:
+    def _curator_decision(self, doc: dict[str, Any],
+                          reflector: dict[str, Any]) -> dict[str, Any]:
         """Curator 最终决策"""
         score = reflector["overall_score"]
         issues = reflector["issues"]
@@ -317,7 +315,7 @@ class WriterAgent:
     # 导出
     # ═══════════════════════════════════
 
-    def export(self, document: Dict[str, Any], format: str = "md") -> Dict[str, Any]:
+    def export(self, document: dict[str, Any], format: str = "md") -> dict[str, Any]:
         """导出文书到文件"""
         if not document.get("success", False):
             return {"success": False, "error": "无效文书"}
@@ -371,15 +369,15 @@ class WriterAgent:
 
         return {"success": False, "error": f"不支持的格式: {format}"}
 
-    def list_documents(self, status: Optional[str] = None,
-                       limit: int = 20) -> List[Dict[str, Any]]:
+    def list_documents(self, status: str | None = None,
+                       limit: int = 20) -> list[dict[str, Any]]:
         """列出已生成的文书"""
         docs = self._documents
         if status:
             docs = [d for d in docs if d.get("status") == status]
         return docs[:limit]
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """获取文书统计"""
         return {
             "total": len(self._documents),
@@ -401,7 +399,8 @@ def test():
     import sys as _sys
     _sys.path.insert(0, str(PROJECT_ROOT))
     from _scripts.memory_tree import MemoryTree
-    import tempfile, shutil
+    import tempfile
+    import shutil
 
     db_path = Path(tempfile.mkdtemp()) / "test_writer.db"
     mt = MemoryTree(db_path)
@@ -445,7 +444,7 @@ def test():
 
     import gc; gc.collect()
     try: shutil.rmtree(db_path.parent)
-    except: pass
+    except Exception: pass
     print("\n[OK] 执法文书模块测试通过")
 
 

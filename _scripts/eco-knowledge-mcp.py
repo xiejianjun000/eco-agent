@@ -11,9 +11,7 @@ MCP 协议（JSON-RPC 2.0 over stdio）实现。
 import json
 import sys
 import os
-import glob
 import re
-import fnmatch
 from pathlib import Path
 from datetime import datetime
 
@@ -171,7 +169,7 @@ def search_in_files(file_paths, query, max_results=10):
         if len(results) >= max_results:
             break
         try:
-            with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(fpath, encoding='utf-8', errors='ignore') as f:
                 content = f.read(50000)  # 读取前 50KB
 
             # 关键词匹配评分
@@ -195,7 +193,7 @@ def search_in_files(file_paths, query, max_results=10):
                 "tags": frontmatter.get("tags", []),
                 "updated": frontmatter.get("updated", ""),
             })
-        except (IOError, OSError):
+        except OSError:
             continue
 
     # 按评分排序
@@ -446,7 +444,7 @@ def handle_tool_call(req_id, tool_name, args):
                 }
 
             try:
-                with open(target_path, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(target_path, encoding='utf-8', errors='ignore') as f:
                     content = f.read()
                 return {
                     "jsonrpc": "2.0",
@@ -460,7 +458,7 @@ def handle_tool_call(req_id, tool_name, args):
                         ]
                     }
                 }
-            except IOError as e:
+            except OSError as e:
                 return {
                     "jsonrpc": "2.0",
                     "id": req_id,
@@ -479,7 +477,7 @@ def handle_tool_call(req_id, tool_name, args):
                     "error": {"code": -32000, "message": f"未找到法规: {statute}"}
                 }
 
-            with open(target_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(target_path, encoding='utf-8', errors='ignore') as f:
                 content = f.read()
 
             if article:
@@ -493,7 +491,7 @@ def handle_tool_call(req_id, tool_name, args):
                 # 添加章节导航
                 chapters = re.findall(r'^##\s+(.+)$', content, re.MULTILINE)
                 if chapters:
-                    result_text += f"\n\n### 章节结构\n\n" + "\n".join(f"- {c}" for c in chapters[:30])
+                    result_text += "\n\n### 章节结构\n\n" + "\n".join(f"- {c}" for c in chapters[:30])
 
             return {
                 "jsonrpc": "2.0",
@@ -515,7 +513,7 @@ def handle_tool_call(req_id, tool_name, args):
 
             for wf in wiki_files:
                 try:
-                    with open(wf, 'r', encoding='utf-8', errors='ignore') as f:
+                    with open(wf, encoding='utf-8', errors='ignore') as f:
                         content = f.read()
 
                     # 检查是否引用了目标节点
@@ -538,7 +536,7 @@ def handle_tool_call(req_id, tool_name, args):
                                 "relation": "referenced_by",
                                 "target": link.strip()
                             })
-                except (IOError, OSError):
+                except OSError:
                     continue
 
             return {

@@ -4,17 +4,18 @@ connector_system.py — Eco Agent D-01 50+ 第三方服务连接器系统
 
 OAuth 2.0 / API Key 认证、令牌加密存储、统一接口。
 
-覆盖 11 类 50+ 连接器（P0验收项）：
+覆盖 12 类 51 个连接器（P0验收项）：
   消息(6) / 代码(4) / 文档(5) / 项目(4) / 数据(5) /
   AI(3) / 邮件(3) / 日历(3) / 设计(4) / 金融(4) / 政务(6) / 存储(4)
 """
 
-import os, sys, json, time, uuid, logging, base64, hashlib, threading
+import os
+import json
+import logging
+import base64
+import hashlib
 from pathlib import Path
-from datetime import datetime
-from typing import Optional, List, Dict, Any, Callable
-from dataclasses import dataclass, field, asdict
-from enum import Enum
+from dataclasses import dataclass, field
 
 logger = logging.getLogger("connector_system")
 ROOT = Path(__file__).resolve().parent.parent
@@ -22,7 +23,7 @@ DATA_DIR = ROOT / "memory-tree" / "data" / "connectors"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 try: from cryptography.fernet import Fernet; CRYPTO_AVAIL = True
-except: CRYPTO_AVAIL = False
+except Exception: CRYPTO_AVAIL = False
 
 
 # ═══════════════════════════════════
@@ -43,9 +44,9 @@ class SecureStore:
         self._key = base64.urlsafe_b64encode(hashlib.sha256(master_key.encode()).digest())
         self._cipher = Fernet(self._key)
         self._db = DATA_DIR / "vault.enc"
-        self._cache: Dict[str, str] = {}
+        self._cache: dict[str, str] = {}
 
-    def save(self, service: str, credentials: dict):
+    def save(self, service: str, credentials: dict) -> None:
         encrypted = self._cipher.encrypt(json.dumps(credentials, ensure_ascii=False).encode()).decode()
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         vault = {}
@@ -55,7 +56,7 @@ class SecureStore:
         self._cache[service] = json.dumps(credentials, ensure_ascii=False)
         logger.info(f"[SecureStore] 已保存: {service}")
 
-    def load(self, service: str) -> Optional[dict]:
+    def load(self, service: str) -> dict | None:
         if service in self._cache:
             return json.loads(self._cache[service])
         if not self._db.exists(): return None
@@ -67,9 +68,9 @@ class SecureStore:
             data = json.loads(decrypted)
             self._cache[service] = decrypted
             return data
-        except: return None
+        except Exception: return None
 
-    def delete(self, service: str):
+    def delete(self, service: str) -> None:
         if not self._db.exists(): return
         vault = json.loads(self._db.read_text("utf-8", errors="replace"))
         vault.pop(service, None)
@@ -86,10 +87,10 @@ class ConnectorDef:
     """连接器定义"""
     id: str; name: str; category: str; auth_type: str  # oauth2 / apikey / basic / none
     doc_url: str = ""; status: str = "active"
-    scopes: List[str] = field(default_factory=list)
+    scopes: list[str] = field(default_factory=list)
     icon: str = ""
 
-CONNECTOR_REGISTRY: List[ConnectorDef] = [
+CONNECTOR_REGISTRY: list[ConnectorDef] = [
     # 消息 (6)
     ConnectorDef("feishu","飞书","messaging","oauth2",scopes=["im:message","contact:contact"]),
     ConnectorDef("wecom","企业微信","messaging","oauth2"),
@@ -165,14 +166,14 @@ class ConnectorManager:
 
     def __init__(self):
         self._secure = SecureStore()
-        self._connections: Dict[str, bool] = {}
+        self._connections: dict[str, bool] = {}
         self._connectors = {c.id: c for c in CONNECTOR_REGISTRY}
 
-    def list_all(self) -> List[Dict]:
+    def list_all(self) -> list[dict]:
         return [{"id": c.id, "name": c.name, "category": c.category, "auth_type": c.auth_type,
                  "connected": c.id in self._connections, "status": c.status} for c in CONNECTOR_REGISTRY]
 
-    def list_by_category(self, category: str) -> List[Dict]:
+    def list_by_category(self, category: str) -> list[dict]:
         return [c for c in self.list_all() if c["category"] == category]
 
     def get_stats(self) -> dict:
@@ -182,7 +183,7 @@ class ConnectorManager:
         return {"total": len(CONNECTOR_REGISTRY), "connected": len(self._connections),
                 "by_category": cats, "categories": len(cats)}
 
-    def connect(self, service_id: str, credentials: dict) -> Dict:
+    def connect(self, service_id: str, credentials: dict) -> dict:
         """连接服务——保存凭证并验证"""
         if service_id not in self._connectors:
             return {"success": False, "error": f"未知服务: {service_id}"}
@@ -197,7 +198,7 @@ class ConnectorManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def disconnect(self, service_id: str) -> Dict:
+    def disconnect(self, service_id: str) -> dict:
         self._connections.pop(service_id, None)
         self._secure.delete(service_id)
         return {"success": True, "service": service_id}
@@ -212,10 +213,10 @@ class ConnectorManager:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
     cm = ConnectorManager()
-    all_c = cm.list_all()
     stats = cm.get_stats()
     print(f"[D-01] 连接器总数: {stats['total']} (需≥50)", flush=True)
     print(f"[D-01] 分类数: {stats['categories']}", flush=True)

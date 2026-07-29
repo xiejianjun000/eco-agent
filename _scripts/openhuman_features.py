@@ -11,10 +11,9 @@ openhuman_features.py — ECO AGENT OPENHUMAN 对标补全
   from _scripts.openhuman_features import HybridRetriever, DataIngestion, SubAgentFleet
 """
 
-import os, sys, json, re, time, logging, math, random, hashlib, threading
+import time
+import logging
 from pathlib import Path
-from datetime import datetime
-from typing import Optional, List, Dict, Any
 
 logger = logging.getLogger("openhuman")
 
@@ -31,7 +30,7 @@ class HybridRetriever:
     def __init__(self, memory_tree=None):
         self._mt = memory_tree
 
-    def search(self, query: str, top_k: int = 10) -> List[Dict]:
+    def search(self, query: str, top_k: int = 10) -> list[dict]:
         """混合检索：多路召回 + RRF 融合"""
         keywords = query.lower().split()
 
@@ -49,13 +48,13 @@ class HybridRetriever:
 
         return reranked[:top_k]
 
-    def _bm25_search(self, query: str, top_k: int) -> List[Dict]:
+    def _bm25_search(self, query: str, top_k: int) -> list[dict]:
         """BM25 模拟检索"""
         if self._mt:
             return self._mt.search(query, max_results=top_k)
         return [{"id": f"bm25_{i}", "title": f"BM25 结果{i}", "score": 0.9 - i * 0.1, "snippet": query[:50], "source": "bm25"} for i in range(min(top_k, 5))]
 
-    def _vector_search(self, query: str, top_k: int) -> List[Dict]:
+    def _vector_search(self, query: str, top_k: int) -> list[dict]:
         """语义向量检索（基于标题与查询的字面重叠度模拟）"""
         if self._mt:
             results = self._mt.search(query, max_results=top_k)
@@ -64,7 +63,7 @@ class HybridRetriever:
             return results
         return [{"id": f"vec_{i}", "title": f"Vector 结果{i}", "score": 0.8 - i * 0.1, "snippet": "向量匹配", "source": "vector"} for i in range(min(top_k, 5))]
 
-    def _rrf_fuse(self, result_lists: List[List[Dict]], top_k: int, k: int = 60) -> List[Dict]:
+    def _rrf_fuse(self, result_lists: list[list[dict]], top_k: int, k: int = 60) -> list[dict]:
         """RRF 融合——Reciprocal Rank Fusion"""
         scores = {}
         for results in result_lists:
@@ -75,7 +74,7 @@ class HybridRetriever:
                 doc["scores"]["rrf"] = scores[doc_id]
         return sorted(results, key=lambda d: scores.get(d.get("id", ""), 0), reverse=True)[:top_k]
 
-    def _bge_rerank(self, results: List[Dict], query: str) -> List[Dict]:
+    def _bge_rerank(self, results: list[dict], query: str) -> list[dict]:
         """BGE 重排序——交叉编码器风格重排序"""
         for r in results:
             title = r.get("title", "")
@@ -113,7 +112,7 @@ class DataIngestion:
         self._ingested = 0
         self._failed = 0
 
-    def ingest_all(self) -> Dict:
+    def ingest_all(self) -> dict:
         """触发全部启用的数据源"""
         results = {"total": 0, "success": 0, "failed": 0, "items": []}
         for sid, src in self._sources.items():
@@ -131,7 +130,7 @@ class DataIngestion:
                 results["items"].append({"source": sid, "count": 0, "status": f"fail: {e}"})
         return results
 
-    def _ingest_source(self, sid: str, src: Dict) -> List[str]:
+    def _ingest_source(self, sid: str, src: dict) -> list[str]:
         """摄取单个数据源（模拟）"""
         time.sleep(0.1)
         items = [f"{src['name']}_item_{i}" for i in range(5)]
@@ -140,10 +139,10 @@ class DataIngestion:
                 try:
                     self._mt.create_node(type="statute", title=item, content=f"from {src['name']}",
                                         tags=[f"source/{sid}"], score=60, source="import")
-                except: pass
+                except Exception: pass
         return items
 
-    def add_source(self, source_id: str, config: Dict):
+    def add_source(self, source_id: str, config: dict):
         self._sources[source_id] = config
 
     def get_stats(self) -> dict:
@@ -178,9 +177,9 @@ class SubAgentFleet:
     }
 
     def __init__(self):
-        self._active_fleets: Dict[str, List[Dict]] = {}
+        self._active_fleets: dict[str, list[dict]] = {}
 
-    def delegate(self, task: str, depth: int = 1) -> Dict:
+    def delegate(self, task: str, depth: int = 1) -> dict:
         """三层 delegation"""
         delegation_id = f"fleet_{int(time.time())}_{len(self._active_fleets)}"
 
@@ -215,7 +214,7 @@ class SubAgentFleet:
         if any(kw in t for kw in ["协调", "分配", "沟通"]): return "coordinator"
         return "consultant"
 
-    def get_fleet(self, delegation_id: str) -> Optional[List[Dict]]:
+    def get_fleet(self, delegation_id: str) -> list[dict] | None:
         return self._active_fleets.get(delegation_id)
 
     def get_stats(self) -> dict:

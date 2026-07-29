@@ -12,10 +12,11 @@ meta_evolution.py — Eco Agent L4 元认知进化循环 (Evolve Loop)
 触发条件：任务完成 / 每日凌晨2:00 / 用户主动触发
 """
 
-import os, sys, json, time, uuid, hashlib, logging, shutil
+import time
+import logging
+import shutil
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 logger = logging.getLogger("meta_evolution")
 
@@ -45,14 +46,14 @@ class MetaEvolution:
         self._version = 1
         self._load_version()
 
-    def _load_version(self):
+    def _load_version(self) -> None:
         vfile = EVOLUTION_DIR / "version.txt"
         if vfile.exists():
             try: self._version = int(vfile.read_text().strip()) + 1
-            except: pass
+            except Exception: pass
         vfile.write_text(str(self._version))
 
-    def run_full_cycle(self, task_history: List[Dict] = None) -> Dict:
+    def run_full_cycle(self, task_history: list[dict] = None) -> dict:
         """执行完整五阶段进化"""
         logger.info(f"[Evolve] v{self._version} 进化循环开始")
         start = time.time()
@@ -81,7 +82,7 @@ class MetaEvolution:
         logger.info(f"[Evolve] v{self._version-1} 进化完成 ({elapsed:.0f}ms)")
         return {"phases": phases, "report_path": report, "elapsed_ms": elapsed}
 
-    def _experience_replay(self, history: List[Dict]) -> Dict:
+    def _experience_replay(self, history: list[dict]) -> dict:
         """阶段1：经验回放"""
         success_nodes = []
         fail_nodes = []
@@ -93,14 +94,14 @@ class MetaEvolution:
         return {"total_replayed": len(history), "success_count": len(success_nodes),
                 "fail_count": len(fail_nodes), "success_rate": f"{len(success_nodes)/max(len(history),1)*100:.0f}%"}
 
-    def _gap_analysis(self, replay: Dict) -> Dict:
+    def _gap_analysis(self, replay: dict) -> dict:
         """阶段2：差距分析"""
         gaps = []
         if replay.get("success_rate", "100%") < "80%":
             gaps.append("任务成功率偏低，需要优化常用技能")
         return {"gaps": gaps, "gap_count": len(gaps)}
 
-    def _skill_generation(self, gap: Dict) -> Dict:
+    def _skill_generation(self, gap: dict) -> dict:
         """阶段3：技能生成/优化"""
         generated = 0
         optimized = 0
@@ -108,11 +109,11 @@ class MetaEvolution:
             optimized += 1
         return {"generated": generated, "optimized": optimized}
 
-    def _memory_consolidation(self) -> Dict:
+    def _memory_consolidation(self) -> dict:
         """阶段4：记忆固化"""
         return {"working_to_episodic": "consolidated", "semantic_updated": True}
 
-    def _self_versioning(self) -> Dict:
+    def _self_versioning(self) -> dict:
         """阶段5：自我版本迭代——保留最近3个版本"""
         current_version = self._version
         snapshot_dir = VERSIONS_DIR / f"v{current_version}"
@@ -127,7 +128,7 @@ class MetaEvolution:
 
         return {"version": current_version, "snapshot_path": str(snapshot_dir), "retained_versions": len(versions)}
 
-    def _llm_narrative(self, phases: Dict) -> Optional[str]:
+    def _llm_narrative(self, phases: dict) -> str | None:
         """元认知分析（LLM 生成）——失败时跳过并记日志"""
         try:
             client = get_default_client()
@@ -151,38 +152,38 @@ class MetaEvolution:
             logger.warning(f"[Evolve] LLM 元认知分析失败，跳过该章节: {e}")
         return None
 
-    def _generate_report(self, phases: Dict, elapsed_ms: float) -> str:
+    def _generate_report(self, phases: dict, elapsed_ms: float) -> str:
         """生成进化报告"""
         report = [
             f"# Eco Agent 进化报告 v{self._version}",
-            f"",
+            "",
             f"> 进化时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}",
             f"> 进化耗时：{elapsed_ms:.0f}ms",
-            f"",
-            f"## 阶段1：经验回放",
-            f"",
+            "",
+            "## 阶段1：经验回放",
+            "",
             f"- 重放任务：{phases['experience_replay']['total_replayed']} 个",
             f"- 成功：{phases['experience_replay']['success_count']}",
             f"- 失败：{phases['experience_replay']['fail_count']}",
             f"- 成功率：{phases['experience_replay']['success_rate']}",
-            f"",
-            f"## 阶段2：差距分析",
-            f"",
+            "",
+            "## 阶段2：差距分析",
+            "",
             f"- 发现差距：{phases['gap_analysis']['gap_count']} 项",
             f"{chr(10).join('  - ' + g for g in phases['gap_analysis']['gaps'])}" if phases['gap_analysis']['gaps'] else "- 无显著差距",
-            f"",
-            f"## 阶段3：技能生成/优化",
-            f"",
+            "",
+            "## 阶段3：技能生成/优化",
+            "",
             f"- 新增技能：{phases['skill_gen']['generated']} 个",
             f"- 优化技能：{phases['skill_gen']['optimized']} 个",
-            f"",
-            f"## 阶段4：记忆固化",
-            f"",
-            f"- 工作记忆→情景记忆：已完成",
-            f"- 语义记忆更新：已完成",
-            f"",
-            f"## 阶段5：版本快照",
-            f"",
+            "",
+            "## 阶段4：记忆固化",
+            "",
+            "- 工作记忆→情景记忆：已完成",
+            "- 语义记忆更新：已完成",
+            "",
+            "## 阶段5：版本快照",
+            "",
             f"- 当前版本：v{phases['self_versioning']['version']}",
             f"- 本地保留版本数：{phases['self_versioning']['retained_versions']}",
 
@@ -190,9 +191,9 @@ class MetaEvolution:
         narrative = self._llm_narrative(phases)
         if narrative:
             report += [
-                f"",
-                f"## 元认知分析（LLM 生成）",
-                f"",
+                "",
+                "## 元认知分析（LLM 生成）",
+                "",
                 narrative,
             ]
         report_path = self._report_dir / f"evolution_report_v{self._version}.md"
@@ -203,7 +204,8 @@ class MetaEvolution:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     evo = MetaEvolution()

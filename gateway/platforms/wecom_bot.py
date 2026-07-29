@@ -13,10 +13,8 @@ wecom_bot.py — 企业微信 Bot 集成工具
 """
 
 import os
-import json
 import time
 import logging
-from typing import Optional, List
 
 try:
     import requests
@@ -111,7 +109,7 @@ class WecomBot:
         logger.error(f"企业微信卡片发送失败: {result}")
         return False
 
-    def send_news(self, user_id: str, articles: List[dict]) -> bool:
+    def send_news(self, user_id: str, articles: list[dict]) -> bool:
         """发送图文消息"""
         token = self._get_token()
         if not token:
@@ -130,7 +128,7 @@ class WecomBot:
         logger.error(f"企业微信图文发送失败: {result}")
         return False
 
-    def get_user_info(self, user_id: str) -> Optional[dict]:
+    def get_user_info(self, user_id: str) -> dict | None:
         """获取成员信息"""
         token = self._get_token()
         if not token:
@@ -142,8 +140,8 @@ class WecomBot:
             return data
         return None
 
-    def create_approval(self, creator_id: str, approver_id: List[str],
-                        template_id: str, details: dict) -> Optional[str]:
+    def create_approval(self, creator_id: str, approver_id: list[str],
+                        template_id: str, details: dict) -> str | None:
         """创建审批申请
 
         返回审批实例 ID

@@ -11,10 +11,10 @@ openworker_features.py — ECO AGENT OPENWORKER 对标补全
   from _scripts.openworker_features import OperatingModes, AgentTypes, Connectors
 """
 
-import os, sys, json, re, time, logging, hashlib
+import time
+import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any, Callable
 
 logger = logging.getLogger("openworker")
 
@@ -70,7 +70,7 @@ class OperatingModes:
         self._current_mode = "discuss"
         self._config = dict(self.MODES)
 
-    def set_mode(self, mode: str, custom_config: Dict = None) -> Dict:
+    def set_mode(self, mode: str, custom_config: dict = None) -> dict:
         if mode not in self.MODES and mode != "custom":
             return {"error": f"未知模式: {mode}, 可选: {list(self.MODES.keys())}"}
         self._current_mode = mode
@@ -78,7 +78,7 @@ class OperatingModes:
             self._config["custom"].update(custom_config)
         return {"mode": mode, "config": self._config[mode]}
 
-    def get_mode(self) -> Dict:
+    def get_mode(self) -> dict:
         return {"current": self._current_mode, "config": self._config[self._current_mode]}
 
     def can_auto_execute(self) -> bool:
@@ -137,9 +137,9 @@ class AgentTypes:
     }
 
     def __init__(self):
-        self._active: Dict[str, Dict] = {}
+        self._active: dict[str, dict] = {}
 
-    def spawn(self, agent_type: str, config: Dict = None) -> Dict:
+    def spawn(self, agent_type: str, config: dict = None) -> dict:
         if agent_type not in self.TYPES:
             return {"error": f"未知 Agent 类型: {agent_type}, 可选: {list(self.TYPES.keys())}"}
         agent_id = f"agent_{agent_type}_{int(time.time())}"
@@ -147,10 +147,10 @@ class AgentTypes:
         self._active[agent_id] = instance
         return instance
 
-    def get_agent(self, agent_id: str) -> Optional[Dict]:
+    def get_agent(self, agent_id: str) -> dict | None:
         return self._active.get(agent_id)
 
-    def list_active(self) -> List[Dict]:
+    def list_active(self) -> list[dict]:
         return list(self._active.values())
 
     def get_stats(self) -> dict:
@@ -201,21 +201,21 @@ class Connectors:
     }
 
     def __init__(self):
-        self._active_connections: Dict[str, bool] = {}
+        self._active_connections: dict[str, bool] = {}
 
-    def connect(self, name: str, config: Dict = None) -> Dict:
+    def connect(self, name: str, config: dict = None) -> dict:
         if name not in self.CONNECTOR_REGISTRY:
             return {"error": f"未知连接器: {name}"}
         connector = self.CONNECTOR_REGISTRY[name]
         self._active_connections[name] = True
         return {"name": name, "status": "connected", "type": connector["type"]}
 
-    def disconnect(self, name: str) -> Dict:
+    def disconnect(self, name: str) -> dict:
         if name in self._active_connections:
             del self._active_connections[name]
         return {"name": name, "status": "disconnected"}
 
-    def list_by_type(self, connector_type: str = None) -> List[Dict]:
+    def list_by_type(self, connector_type: str = None) -> list[dict]:
         results = []
         for name, info in self.CONNECTOR_REGISTRY.items():
             if connector_type and info["type"] != connector_type: continue

@@ -30,7 +30,6 @@ import base64
 import logging
 import argparse
 from datetime import datetime
-from typing import Optional
 
 # ===== 条件导入 FastAPI =====
 try:
@@ -102,7 +101,6 @@ class ECOAgentHandler:
 
         # 提取用户消息
         user_msg = unified.get("message", {}).get("content", "").strip()
-        user_id = unified.get("user", {}).get("id", "")
 
         if not user_msg:
             return self._reply_text("请发送消息内容。")
@@ -252,7 +250,7 @@ class ECOAgentHandler:
         # 降级：关键词匹配
         return self._reply_text(self._keyword_match(user_msg))
 
-    async def _mcp_search(self, query: str) -> Optional[str]:
+    async def _mcp_search(self, query: str) -> str | None:
         """通过 MCP 工具检索知识库"""
         try:
             # 直接调用 eco-knowledge-mcp 的搜索逻辑
@@ -266,7 +264,7 @@ class ECOAgentHandler:
             wiki_files = collect_wiki_files(vault)
             results = search_in_files(wiki_files, query, max_results=3)
             if results:
-                lines = [f"**{r['title']}**"]
+                lines = [f"**{results[0]['title']}**"]
                 for r in results:
                     snippet = r.get("snippet", "")[:150]
                     lines.append(f"- {r['path']}: {snippet}")

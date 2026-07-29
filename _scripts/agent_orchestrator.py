@@ -12,10 +12,12 @@ agent_orchestrator.py — ECO AGENT 多 Agent 编排引擎
     → 返回用户
 """
 
-import os, sys, json, time, logging, importlib.util, threading
+import json
+import logging
+import importlib.util
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger("orchestrator")
 
@@ -28,7 +30,7 @@ class AgentOrchestrator:
     def __init__(self):
         self._config = self._load_config()
         self._workflows = self._config.get("workflows", {})
-        self._results: List[Dict] = []
+        self._results: list[dict] = []
 
     def _load_config(self) -> dict:
         config_path = ROOT / "profiles" / "agents" / "orchestrator.json"
@@ -36,7 +38,7 @@ class AgentOrchestrator:
             return json.loads(config_path.read_text("utf-8", errors="replace"))
         return {"agents": {}, "workflows": {}}
 
-    def run(self, workflow: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    def run(self, workflow: str, input_data: dict[str, Any]) -> dict[str, Any]:
         """运行指定工作流"""
         if workflow not in self._workflows:
             return {"success": False, "error": f"未知工作流: {workflow}，可选: {list(self._workflows.keys())}"}
@@ -82,7 +84,7 @@ class AgentOrchestrator:
         self._results.append(result)
         return result
 
-    def _call_agent(self, agent_name: str, context: Dict) -> Any:
+    def _call_agent(self, agent_name: str, context: dict) -> Any:
         """调用单个 Agent"""
         query = context.get("query", context.get("facts", ""))
 
@@ -105,7 +107,7 @@ class AgentOrchestrator:
         else:
             return {"error": f"未知 Agent: {agent_name}"}
 
-    def _agent_searcher(self, query: str, ctx: Dict) -> Dict:
+    def _agent_searcher(self, query: str, ctx: dict) -> dict:
         """Searcher: 法规检索"""
         try:
             spec = importlib.util.spec_from_file_location("mcp", str(ROOT / "_scripts" / "eco-knowledge-mcp.py"))
@@ -119,31 +121,31 @@ class AgentOrchestrator:
             logger.warning(f"Searcher 异常: {e}")
         return {"search_results": [], "total_found": 0, "note": "检索不可用"}
 
-    def _agent_reviewer(self, query: str, ctx: Dict) -> Dict:
+    def _agent_reviewer(self, query: str, ctx: dict) -> dict:
         search_results = ctx.get("search_results", [])
         issues = []
         if not search_results:
             issues.append("未检索到相关法规")
         return {"review_status": "passed" if not issues else "issues_found", "issues": issues, "reviewed_count": len(search_results)}
 
-    def _agent_writer(self, query: str, ctx: Dict) -> Dict:
+    def _agent_writer(self, query: str, ctx: dict) -> dict:
         search_results = ctx.get("search_results", [])
         laws = [r["title"] for r in search_results[:3]]
         return {"draft": f"基于对 {', '.join(laws) if laws else query} 的分析...", "law_refs": laws}
 
-    def _agent_indexer(self, query: str, ctx: Dict) -> Dict:
+    def _agent_indexer(self, query: str, ctx: dict) -> dict:
         return {"indexed_entities": [], "relations": []}
 
-    def _agent_memory(self, query: str, ctx: Dict) -> Dict:
+    def _agent_memory(self, query: str, ctx: dict) -> dict:
         return {"similar_cases": [], "memory_note": "案例库就绪"}
 
-    def _agent_security(self, query: str, ctx: Dict) -> Dict:
+    def _agent_security(self, query: str, ctx: dict) -> dict:
         return {"risk_level": "low", "permitted": True}
 
-    def _agent_planner(self, query: str, ctx: Dict) -> Dict:
+    def _agent_planner(self, query: str, ctx: dict) -> dict:
         return {"steps": ["检索法规", "审查条款", "生成文书"], "estimated_time": "30秒"}
 
-    def _agent_watcher(self, query: str, ctx: Dict) -> Dict:
+    def _agent_watcher(self, query: str, ctx: dict) -> dict:
         return {"statute_status": "现行有效", "last_checked": datetime.now().isoformat()}
 
     def get_stats(self) -> dict:

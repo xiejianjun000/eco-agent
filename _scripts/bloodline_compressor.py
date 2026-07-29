@@ -15,15 +15,12 @@ bloodline_compressor.py — ECO AGENT 血统压缩机制
   lineage = bc.trace_lineage(session_id)
 """
 
-import os
-import sys
 import json
 import re
-import hashlib
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger("bloodline_compressor")
 
@@ -37,15 +34,15 @@ class BloodlineCompressor:
 
     def __init__(self, memory_tree=None):
         self._mt = memory_tree
-        self._lineage: Dict[str, Dict[str, Any]] = {}
+        self._lineage: dict[str, dict[str, Any]] = {}
 
     # ═══════════════════════════════════
     # 会话摘要生成
     # ═══════════════════════════════════
 
-    def compress_session(self, session_id: str, messages: List[Dict[str, Any]],
-                         parent_session_id: Optional[str] = None,
-                         max_tokens: int = 500) -> Dict[str, Any]:
+    def compress_session(self, session_id: str, messages: list[dict[str, Any]],
+                         parent_session_id: str | None = None,
+                         max_tokens: int = 500) -> dict[str, Any]:
         """压缩会话生成血统记录"""
         logger.info(f"[Bloodline] 压缩会话: {session_id} ({len(messages)} 条消息)")
 
@@ -97,7 +94,7 @@ class BloodlineCompressor:
                     f"(比率 {lineage_record['compression_ratio']:.1f}x)")
         return lineage_record
 
-    def _generate_summary(self, messages: List[Dict[str, Any]],
+    def _generate_summary(self, messages: list[dict[str, Any]],
                           max_chars: int = 500) -> str:
         """生成会话摘要"""
         if not messages:
@@ -114,9 +111,7 @@ class BloodlineCompressor:
 
             if role == "user":
                 queries.append(content[:100])
-            elif role == "assistant":
-                pass
-            elif role == "tool":
+            elif role == "assistant" or role == "tool":
                 pass
 
             op = msg.get("operation", "")
@@ -131,7 +126,7 @@ class BloodlineCompressor:
         summary = " | ".join(parts) if parts else f"共 {len(messages)} 条消息"
         return summary[:max_chars]
 
-    def _extract_operations(self, messages: List[Dict[str, Any]]) -> List[str]:
+    def _extract_operations(self, messages: list[dict[str, Any]]) -> list[str]:
         """提取操作类型"""
         ops = set()
         for msg in messages:
@@ -149,7 +144,7 @@ class BloodlineCompressor:
                 ops.add(op)
         return list(ops)
 
-    def _extract_entities(self, messages: List[Dict[str, Any]]) -> List[str]:
+    def _extract_entities(self, messages: list[dict[str, Any]]) -> list[str]:
         """提取关键实体"""
         entities = set()
         for msg in messages:
@@ -162,7 +157,7 @@ class BloodlineCompressor:
                 entities.add(m.group(0)[:20])
         return list(entities)
 
-    def _extract_skill_hints(self, operations: List[str]) -> List[str]:
+    def _extract_skill_hints(self, operations: list[str]) -> list[str]:
         """提取技能线索"""
         hints = []
         if "法规检索" in operations:
@@ -179,7 +174,7 @@ class BloodlineCompressor:
                 hints.append("文书生成操作频繁，可结晶为 Skill")
         return hints
 
-    def _estimate_tokens(self, messages: List[Dict[str, Any]]) -> int:
+    def _estimate_tokens(self, messages: list[dict[str, Any]]) -> int:
         """估算 token 数"""
         total = 0
         for msg in messages:
@@ -190,7 +185,7 @@ class BloodlineCompressor:
             total += chinese_chars * 2 + other_chars
         return total
 
-    def _calc_compression_ratio(self, messages: List[Dict[str, Any]],
+    def _calc_compression_ratio(self, messages: list[dict[str, Any]],
                                 summary: str) -> float:
         """计算压缩比率"""
         original_tokens = self._estimate_tokens(messages)
@@ -204,7 +199,7 @@ class BloodlineCompressor:
     # ═══════════════════════════════════
 
     def trace_lineage(self, session_id: str,
-                      max_depth: int = 10) -> List[Dict[str, Any]]:
+                      max_depth: int = 10) -> list[dict[str, Any]]:
         """追溯血统链"""
         lineage = []
         current_id = session_id
@@ -310,9 +305,7 @@ class BloodlineCompressor:
                 line.strip().startswith("class ") or
                 line.strip().startswith("#") or
                 line.strip().startswith("import ") or
-                line.strip().startswith("from ")):
-                compressed.append(line)
-            elif line.strip().startswith(("    def ", "    class ")):
+                line.strip().startswith("from ")) or line.strip().startswith(("    def ", "    class ")):
                 compressed.append(line)
         result = "\n".join(compressed)
         return result if result else content[:1000]
@@ -322,9 +315,7 @@ class BloodlineCompressor:
         lines = content.split("\n")
         compressed = []
         for line in lines:
-            if "ERROR" in line or "WARN" in line:
-                compressed.append(line)
-            elif "INFO" in line and len(compressed) % 3 == 0:
+            if "ERROR" in line or "WARN" in line or "INFO" in line and len(compressed) % 3 == 0:
                 compressed.append(line)
         return "\n".join(compressed)[:2000]
 
@@ -333,9 +324,7 @@ class BloodlineCompressor:
         lines = content.split("\n")
         compressed = []
         for line in lines:
-            if line.startswith("#") or line.startswith("-") or line.startswith("|"):
-                compressed.append(line)
-            elif line.strip() == "":
+            if line.startswith("#") or line.startswith("-") or line.startswith("|") or line.strip() == "":
                 compressed.append(line)
         return "\n".join(compressed)[:2000]
 
@@ -348,7 +337,7 @@ class BloodlineCompressor:
     # 持久化
     # ═══════════════════════════════════
 
-    def _persist_lineage(self, session_id: str, record: Dict[str, Any]):
+    def _persist_lineage(self, session_id: str, record: dict[str, Any]):
         """持久化血统记录"""
         file_path = LINEAGE_DIR / f"{session_id[:20]}.json"
         file_path.write_text(
@@ -356,13 +345,13 @@ class BloodlineCompressor:
             encoding="utf-8",
         )
 
-    def _load_lineage(self, session_id: str) -> Optional[Dict[str, Any]]:
+    def _load_lineage(self, session_id: str) -> dict[str, Any] | None:
         """加载血统记录"""
         file_path = LINEAGE_DIR / f"{session_id[:20]}.json"
         if file_path.exists():
             try:
                 return json.loads(file_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 pass
         return None
 
@@ -370,7 +359,7 @@ class BloodlineCompressor:
     # 统计
     # ═══════════════════════════════════
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """获取统计"""
         total_tokens = sum(
             r.get("token_estimate", 0) for r in self._lineage.values()
@@ -406,7 +395,7 @@ def test():
 
     # 血统压缩
     record = bc.compress_session("session_test_001", messages)
-    print(f"[TEST] 血统压缩:")
+    print("[TEST] 血统压缩:")
     print(f"  消息数: {record['message_count']}")
     print(f"  摘要: {record['summary'][:60]}...")
     print(f"  操作: {', '.join(record['operations'])}")
@@ -414,14 +403,14 @@ def test():
     print(f"  压缩比: {record['compression_ratio']}x")
 
     # 血统链
-    print(f"\n[TEST] 血统链追踪:")
+    print("\n[TEST] 血统链追踪:")
     bc.compress_session("session_test_002", messages[:2],
                         parent_session_id="session_test_001")
     lineage = bc.trace_lineage("session_test_002")
     print(f"  深度: {len(lineage)}")
 
     # Token 压缩
-    print(f"\n[TEST] Token 压缩:")
+    print("\n[TEST] Token 压缩:")
     log_content = "\n".join([
         "INFO: 开始执法检查",
         "ERROR: 法规引用异常: 大气污染防治法已废止",

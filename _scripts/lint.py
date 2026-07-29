@@ -19,7 +19,6 @@ lint.py — ECO AGENT 项目健康检查工具
 
 import os
 import re
-import sys
 import argparse
 from pathlib import Path
 from datetime import datetime
@@ -112,9 +111,9 @@ def check_large_files():
 
 def check_git_status():
     """检查 Git 未提交文件"""
-    status = os.popen("cd /d \"{}\" && git status --short 2>nul".format(PROJECT_ROOT)).read().strip()
+    status = os.popen(f"cd /d \"{PROJECT_ROOT}\" && git status --short 2>nul").read().strip()
     if not status:
-        status = os.popen("git -C \"{}\" status --short 2>/dev/null".format(PROJECT_ROOT)).read().strip()
+        status = os.popen(f"git -C \"{PROJECT_ROOT}\" status --short 2>/dev/null").read().strip()
     untracked = []
     modified = []
     for line in status.split("\n"):

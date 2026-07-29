@@ -15,16 +15,13 @@ subconscious_watcher.py — ECO AGENT 法规时效监控模块（Subconscious）
   python _scripts/subconscious_watcher.py --report
 """
 
-import os
-import sys
 import json
-import re
 import time
 import logging
 import argparse
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger("subconscious_watcher")
 
@@ -111,14 +108,14 @@ class StatuteWatcher:
     def __init__(self, memory_tree=None):
         self._mt = memory_tree
         self._registry = dict(STATUTE_REGISTRY)
-        self._history: List[Dict[str, Any]] = []
+        self._history: list[dict[str, Any]] = []
         self._alert_count = 0
 
     # ═══════════════════════════════════
     # 检查
     # ═══════════════════════════════════
 
-    def check_all(self) -> Dict[str, Any]:
+    def check_all(self) -> dict[str, Any]:
         """执行全面检查"""
         now = datetime.now()
         results = {
@@ -150,8 +147,8 @@ class StatuteWatcher:
                     f"{results['alert_count']} 项告警")
         return results
 
-    def _check_statute(self, name: str, info: Dict[str, Any],
-                       now: datetime) -> Optional[Dict[str, Any]]:
+    def _check_statute(self, name: str, info: dict[str, Any],
+                       now: datetime) -> dict[str, Any] | None:
         """检查单部法规"""
         effective_str = info.get("effective")
         if not effective_str:
@@ -199,7 +196,7 @@ class StatuteWatcher:
     # 更新
     # ═══════════════════════════════════
 
-    def update_statute(self, name: str, updates: Dict[str, Any]) -> bool:
+    def update_statute(self, name: str, updates: dict[str, Any]) -> bool:
         """更新法规信息"""
         if name not in self._registry:
             self._registry[name] = {}
@@ -208,7 +205,7 @@ class StatuteWatcher:
         logger.info(f"[Watcher] 法规已更新: {name}")
         return True
 
-    def add_statute(self, name: str, info: Dict[str, Any]) -> bool:
+    def add_statute(self, name: str, info: dict[str, Any]) -> bool:
         """新增法规"""
         if name in self._registry:
             return False
@@ -220,7 +217,7 @@ class StatuteWatcher:
     # 报告
     # ═══════════════════════════════════
 
-    def generate_report(self, check_result: Optional[Dict[str, Any]] = None
+    def generate_report(self, check_result: dict[str, Any] | None = None
                         ) -> str:
         """生成法规时效报告"""
         if not check_result:
@@ -250,7 +247,7 @@ class StatuteWatcher:
                 icon = {"warning": "🔴", "info": "🟡", "error": "🔴"}.get(
                     alert.get("alert_level", ""), "⚪")
                 lines.append(f"### {icon} {alert['statute']}")
-                lines.append(f"")
+                lines.append("")
                 lines.append(f"- **状态**：{alert['status']}")
                 lines.append(f"- **生效日期**：{alert['effective_date']}")
                 lines.append(f"- **告警**：{alert['alert_message']}")
@@ -333,7 +330,7 @@ class StatuteWatcher:
     # 影响评估
     # ═══════════════════════════════════
 
-    def impact_assessment(self, statute_name: str) -> Dict[str, Any]:
+    def impact_assessment(self, statute_name: str) -> dict[str, Any]:
         """评估法规变更的影响"""
         info = self._registry.get(statute_name)
         if not info:

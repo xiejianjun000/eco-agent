@@ -1,13 +1,14 @@
 """Slack 通道适配器"""
 
-import os, sys, json, logging
-from typing import Optional, List, Dict
+import os
+import sys
+import logging
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from gateway.gateway_core import ChannelAdapter, UnifiedMessage, MessageType
 
 logger = logging.getLogger("channel.slack")
 try: import requests
-except: requests = None
+except Exception: requests = None
 
 
 class SlackAdapter(ChannelAdapter):
@@ -29,7 +30,7 @@ class SlackAdapter(ChannelAdapter):
             return r.json().get("ok", False)
         except Exception as e: logger.warning(f"Slack 发送失败: {e}"); return False
 
-    def send_card(self, channel_id: str, title: str, content: str, actions: List[Dict] = None) -> bool:
+    def send_card(self, channel_id: str, title: str, content: str, actions: list[dict] = None) -> bool:
         blocks = [{"type": "header", "text": {"type": "plain_text", "text": title}},
                   {"type": "section", "text": {"type": "mrkdwn", "text": content[:2000]}}]
         if actions:
@@ -39,7 +40,7 @@ class SlackAdapter(ChannelAdapter):
             json={"channel": channel_id, "blocks": blocks}, timeout=10)
         return r.json().get("ok", False)
 
-    def parse_webhook(self, raw_data: dict) -> Optional[UnifiedMessage]:
+    def parse_webhook(self, raw_data: dict) -> UnifiedMessage | None:
         try:
             event = raw_data.get("event", {})
             text = event.get("text", "")

@@ -15,11 +15,14 @@ Phase 1 核心交付：任务分解、智能体池动态管理、并行执行。
   python agent_core/commander.py
 """
 
-import os, sys, json, time, uuid, logging, threading, queue
+import time
+import uuid
+import logging
+import threading
+import queue
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any, Callable
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import Enum
 
 logger = logging.getLogger("commander")
@@ -61,7 +64,7 @@ class Task:
     input: dict = field(default_factory=dict)
     output: str = ""
     error: str = ""
-    depends_on: List[str] = field(default_factory=list)
+    depends_on: list[str] = field(default_factory=list)
     created_at: str = ""
     started_at: str = ""
     completed_at: str = ""
@@ -102,10 +105,10 @@ class AgentPool:
     """专业 Agent 池——动态创建、按需扩缩、生命周期管理"""
 
     def __init__(self):
-        self._agents: Dict[str, AgentInstance] = {}
+        self._agents: dict[str, AgentInstance] = {}
         self._lock = threading.Lock()
         self._work_queue: queue.Queue = queue.Queue()
-        self._workers: List[threading.Thread] = []
+        self._workers: list[threading.Thread] = []
         self._max_workers = 10
 
     def spawn(self, role: AgentRole = AgentRole.CUSTOM, name: str = "",
@@ -131,7 +134,7 @@ class AgentPool:
                 return True
         return False
 
-    def get_idle(self, role: Optional[AgentRole] = None) -> Optional[AgentInstance]:
+    def get_idle(self, role: AgentRole | None = None) -> AgentInstance | None:
         """获取空闲 Agent"""
         with self._lock:
             for agent in self._agents.values():
@@ -199,7 +202,7 @@ class TaskDecomposer:
     def __init__(self):
         self._patterns = self._init_patterns()
 
-    def _init_patterns(self) -> Dict:
+    def _init_patterns(self) -> dict:
         return {
             "开发": {
                 "tasks": [
@@ -236,7 +239,7 @@ class TaskDecomposer:
             }
         }
 
-    def decompose(self, goal: str, context: dict = None) -> List[Task]:
+    def decompose(self, goal: str, context: dict = None) -> list[Task]:
         """将目标分解为任务链"""
         goal_lower = goal.lower()
         pattern = self._patterns.get("通用")
@@ -267,10 +270,10 @@ class Commander:
     def __init__(self):
         self.pool = AgentPool()
         self.decomposer = TaskDecomposer()
-        self._tasks: Dict[str, Task] = {}
-        self._results: List[Dict] = []
+        self._tasks: dict[str, Task] = {}
+        self._results: list[dict] = []
 
-    def execute(self, goal: str, context: dict = None) -> Dict:
+    def execute(self, goal: str, context: dict = None) -> dict:
         """执行一个目标——分解→调度→执行→汇总"""
         logger.info(f"[Commander] 接收目标: {goal[:60]}")
 
@@ -328,7 +331,7 @@ class Commander:
         time.sleep(0.2)
         return f"[{agent.name}] 完成: {task.description[:40]}"
 
-    def _summarize(self) -> Dict:
+    def _summarize(self) -> dict:
         tasks = self._tasks.values()
         completed = sum(1 for t in tasks if t.status == TaskStatus.COMPLETED)
         failed = sum(1 for t in tasks if t.status == TaskStatus.FAILED)
@@ -355,7 +358,8 @@ class Commander:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     print("[TEST] Commander Agent + Agent Pool", flush=True)

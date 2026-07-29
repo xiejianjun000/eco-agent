@@ -1,5 +1,6 @@
 """L5 韧性自愈循环测试"""
-import sys, os, time
+import sys
+import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from agent_core.self_healing import SelfHealer, CheckpointSnapshot
 
@@ -26,7 +27,8 @@ class TestSelfHealing:
             raise ValueError("persistent")
         r1 = healer.protect(always_fail, "cb_test", max_retries=1)
         r2 = healer.protect(always_fail, "cb_test", max_retries=1)
-        assert r2['success'] is False
+        assert r1['success'] is False, "持久故障重试1次后必须如实失败"
+        assert r2['success'] is False, "熔断后不得恢复为成功"
 
     def test_checkpoint_snapshot(self):
         snap = CheckpointSnapshot()

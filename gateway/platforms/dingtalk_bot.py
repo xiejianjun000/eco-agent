@@ -18,7 +18,6 @@ import hmac
 import hashlib
 import base64
 import logging
-from typing import Optional
 
 try:
     import requests
@@ -155,7 +154,7 @@ class DingTalkBot:
         logger.error(f"钉钉卡片发送失败: {resp.text}")
         return False
 
-    def query_approval(self, process_instance_id: str) -> Optional[dict]:
+    def query_approval(self, process_instance_id: str) -> dict | None:
         """查询审批实例"""
         token = self._get_token()
         if not token:

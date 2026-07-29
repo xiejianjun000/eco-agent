@@ -11,10 +11,13 @@ Phase 2 核心交付：
 对标：Hermes 的学习闭环 + 超越目标
 """
 
-import os, sys, json, time, uuid, hashlib, logging, re
+import json
+import uuid
+import logging
+import re
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Any
 from dataclasses import dataclass, field, asdict
 
 logger = logging.getLogger("skill_system")
@@ -38,10 +41,10 @@ class Skill:
     description: str = ""
     category: str = "general"
     author: str = "system"
-    triggers: List[str] = field(default_factory=list)
-    steps: List[str] = field(default_factory=list)
-    examples: List[str] = field(default_factory=list)
-    requirements: List[str] = field(default_factory=list)
+    triggers: list[str] = field(default_factory=list)
+    steps: list[str] = field(default_factory=list)
+    examples: list[str] = field(default_factory=list)
+    requirements: list[str] = field(default_factory=list)
     usage_count: int = 0
     avg_score: float = 0.0
     created_at: str = ""
@@ -63,7 +66,7 @@ class SkillRegistry:
     """技能注册表——注册/发现/版本/持久化"""
 
     def __init__(self):
-        self._skills: Dict[str, Skill] = {}
+        self._skills: dict[str, Skill] = {}
         self._db_path = DATA_DIR / "skill_registry.json"
         self._load()
 
@@ -88,23 +91,21 @@ class SkillRegistry:
         logger.info(f"[Skill] 注册: {skill.name} v{skill.version}")
         return skill.id
 
-    def get(self, skill_id: str) -> Optional[Skill]:
+    def get(self, skill_id: str) -> Skill | None:
         return self._skills.get(skill_id)
 
-    def find(self, query: str) -> List[Skill]:
+    def find(self, query: str) -> list[Skill]:
         """按关键词查找技能"""
         q = query.lower()
         results = []
         for s in self._skills.values():
             if s.status != "active":
                 continue
-            if q in s.name.lower() or q in s.description.lower():
-                results.append(s)
-            elif any(q in t.lower() for t in s.triggers):
+            if q in s.name.lower() or q in s.description.lower() or any(q in t.lower() for t in s.triggers):
                 results.append(s)
         return sorted(results, key=lambda s: s.usage_count, reverse=True)[:10]
 
-    def list_by_category(self, category: str) -> List[Skill]:
+    def list_by_category(self, category: str) -> list[Skill]:
         return [s for s in self._skills.values() if s.category == category and s.status == "active"]
 
     def record_usage(self, skill_id: str, score: float = 0.0):
@@ -128,7 +129,7 @@ class SkillRegistry:
                 if age > max_age_days and s.usage_count < min_usage and s.status == "active":
                     s.status = "archived"
                     archived += 1
-            except: pass
+            except Exception: pass
         if archived:
             self._save()
             logger.info(f"[Skill] 归档 {archived} 个低效技能")
@@ -188,8 +189,8 @@ class AutoLearnEngine:
     def __init__(self, registry: SkillRegistry):
         self._registry = registry
 
-    def learn_from_task(self, task_desc: str, task_steps: List[str],
-                        task_output: str, score: float) -> Optional[str]:
+    def learn_from_task(self, task_desc: str, task_steps: list[str],
+                        task_output: str, score: float) -> str | None:
         """从单次任务执行中学习"""
         # 检查是否已有相似技能
         existing = self._registry.find(task_desc)
@@ -243,10 +244,10 @@ class CrossSessionMemory:
         self._db_path = DATA_DIR / "cross_session_memory.json"
         self._memory = self._load()
 
-    def _load(self) -> Dict:
+    def _load(self) -> dict:
         if self._db_path.exists():
             try: return json.loads(self._db_path.read_text("utf-8", errors="replace"))
-            except: pass
+            except Exception: pass
         return {"working": [], "episodic": [], "semantic": {}, "procedural": {}}
 
     def _save(self):
@@ -261,7 +262,7 @@ class CrossSessionMemory:
         })
         self._save()
 
-    def store_episodic(self, event: str, context: Dict):
+    def store_episodic(self, event: str, context: dict):
         """情景记忆——历史事件"""
         self._memory["episodic"].append({
             "event": event, "context": context,
@@ -278,12 +279,12 @@ class CrossSessionMemory:
         }
         self._save()
 
-    def store_procedural(self, skill_id: str, steps: List[str]):
+    def store_procedural(self, skill_id: str, steps: list[str]):
         """程序记忆——技能/工作流"""
         self._memory["procedural"][skill_id] = steps
         self._save()
 
-    def recall_working(self, key: str) -> Optional[Any]:
+    def recall_working(self, key: str) -> Any | None:
         """回忆工作记忆"""
         now = datetime.now()
         for e in self._memory["working"]:
@@ -292,16 +293,16 @@ class CrossSessionMemory:
                     expires = datetime.fromisoformat(e["expires_at"])
                     if now < expires:
                         return e["value"]
-            except: pass
+            except Exception: pass
         return None
 
-    def recall_episodic(self, query: str, limit: int = 5) -> List[Dict]:
+    def recall_episodic(self, query: str, limit: int = 5) -> list[dict]:
         """回忆情景记忆"""
         q = query.lower()
         results = [e for e in self._memory["episodic"] if q in e["event"].lower()]
         return results[-limit:]
 
-    def recall_semantic(self, key: str) -> Optional[Any]:
+    def recall_semantic(self, key: str) -> Any | None:
         return self._memory["semantic"].get(key, {}).get("value")
 
     def get_stats(self) -> dict:
@@ -316,7 +317,8 @@ class CrossSessionMemory:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
     print("[TEST] Skill System MVP", flush=True)
 

@@ -14,10 +14,11 @@ checkpoint.py — ECO AGENT Durable Checkpoint 断点续跑机制
   cm.resume(cp.id())  # 中断后恢复
 """
 
-import os, sys, json, time, logging
+import json
+import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger("checkpoint")
 
@@ -29,11 +30,11 @@ CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 class Checkpoint:
     """单个检查点"""
 
-    def __init__(self, cp_id: str, workflow: str, data: Dict):
+    def __init__(self, cp_id: str, workflow: str, data: dict):
         self._id = cp_id
         self._workflow = workflow
         self._data = dict(data)
-        self._steps: List[Dict] = []
+        self._steps: list[dict] = []
         self._status = "active"
         self._created = datetime.now().isoformat()
         self._updated = self._created
@@ -76,10 +77,10 @@ class CheckpointManager:
     """检查点管理器"""
 
     def __init__(self):
-        self._checkpoints: Dict[str, Checkpoint] = {}
+        self._checkpoints: dict[str, Checkpoint] = {}
         self._load_all()
 
-    def create(self, workflow: str, data: Dict = None) -> Checkpoint:
+    def create(self, workflow: str, data: dict = None) -> Checkpoint:
         cp_id = f"cp_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{len(self._checkpoints) + 1}"
         cp = Checkpoint(cp_id, workflow, data or {})
         self._checkpoints[cp_id] = cp
@@ -87,10 +88,10 @@ class CheckpointManager:
         logger.info(f"[CP] 创建: {cp_id} ({workflow})")
         return cp
 
-    def get(self, cp_id: str) -> Optional[Checkpoint]:
+    def get(self, cp_id: str) -> Checkpoint | None:
         return self._checkpoints.get(cp_id)
 
-    def resume(self, cp_id: str) -> Optional[Checkpoint]:
+    def resume(self, cp_id: str) -> Checkpoint | None:
         cp = self.get(cp_id)
         if not cp:
             logger.warning(f"[CP] 恢复失败，不存在: {cp_id}")
@@ -101,7 +102,7 @@ class CheckpointManager:
         logger.info(f"[CP] 恢复: {cp_id} (步骤 {len(cp.steps)}/{cp.workflow})")
         return cp
 
-    def list_active(self) -> List[Checkpoint]:
+    def list_active(self) -> list[Checkpoint]:
         return [cp for cp in self._checkpoints.values() if cp.status == "active"]
 
     def cleanup_old(self, days: int = 30):
@@ -115,7 +116,7 @@ class CheckpointManager:
                     if path.exists(): path.unlink()
                     del self._checkpoints[cp_id]
                     removed += 1
-            except: pass
+            except Exception: pass
         if removed:
             logger.info(f"[CP] 清理 {removed} 个过期检查点")
 
@@ -129,7 +130,7 @@ class CheckpointManager:
                 cp._created = data.get("created", "")
                 cp._updated = data.get("updated", "")
                 self._checkpoints[cp.id] = cp
-            except: pass
+            except Exception: pass
 
     def get_stats(self) -> dict:
         statuses = {}
@@ -152,10 +153,10 @@ class EnforcementFSM:
     def __init__(self, checkpoint_manager: CheckpointManager):
         self._cm = checkpoint_manager
 
-    def start_case(self, case_data: Dict) -> Checkpoint:
+    def start_case(self, case_data: dict) -> Checkpoint:
         return self._cm.create("执法程序", {"case": case_data, "fsm_step": 0})
 
-    def advance(self, cp_id: str) -> Optional[Dict]:
+    def advance(self, cp_id: str) -> dict | None:
         cp = self._cm.resume(cp_id)
         if not cp: return None
 

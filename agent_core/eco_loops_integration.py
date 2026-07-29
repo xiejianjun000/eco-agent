@@ -14,10 +14,9 @@ eco_loops_integration.py — Eco Agent 五层循环全集成
   python agent_core/eco_loops_integration.py --self-test  # 自检
 """
 
-import os, sys, json, time, logging, threading
+import sys
+import logging
 from pathlib import Path
-from datetime import datetime
-from typing import Optional, Dict, Any
 
 logger = logging.getLogger("eco_loops")
 
@@ -61,7 +60,7 @@ class EcoLoops:
     def stop(self):
         self.l3.stop()
 
-    def execute_task(self, goal: str) -> Dict:
+    def execute_task(self, goal: str) -> dict:
         """执行一个任务——贯穿五层循环"""
         logger.info(f"[EcoLoops] 执行: {goal[:40]}")
         # L5 保护 L2 执行
@@ -75,7 +74,7 @@ class EcoLoops:
         """触发进化循环"""
         return self.l4.run_full_cycle()
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         return {
             "l1_react": self.l1.get_stats(),
             "l2_commander": {"missions": len(self.l2._results)},
@@ -83,7 +82,7 @@ class EcoLoops:
             "l5_healing": self.l5.get_stats(),
         }
 
-    def self_test(self) -> Dict:
+    def self_test(self) -> dict:
         """自检——逐层验证"""
         logger.info("[SelfTest] 五层循环自检开始")
         results = {}
@@ -134,7 +133,8 @@ class EcoLoops:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     print("[TEST] Eco Loops 五层集成", flush=True)

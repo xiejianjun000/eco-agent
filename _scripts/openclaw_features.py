@@ -11,10 +11,10 @@ openclaw_features.py — ECO AGENT OpenClaw 对标补全
   from _scripts.openclaw_features import PlanRegistry, MCPGate, SkillLoader
 """
 
-import os, sys, json, re, logging, importlib.util, time
+import re
+import logging
 from pathlib import Path
-from datetime import datetime
-from typing import Optional, List, Dict, Any, Callable
+from typing import Any
 
 logger = logging.getLogger("openclaw")
 
@@ -29,7 +29,7 @@ class PlanRegistry:
     """执法流程注册表——将多步执法流程注册为 LLM 可调用工具"""
 
     def __init__(self):
-        self._plans: Dict[str, Dict] = {}
+        self._plans: dict[str, dict] = {}
         self._load_defaults()
 
     def _load_defaults(self):
@@ -58,14 +58,14 @@ class PlanRegistry:
             "risk_level": "high",
         })
 
-    def register(self, name: str, plan: Dict) -> bool:
+    def register(self, name: str, plan: dict) -> bool:
         self._plans[name] = plan
         return True
 
-    def get(self, name: str) -> Optional[Dict]:
+    def get(self, name: str) -> dict | None:
         return self._plans.get(name)
 
-    def suggest(self, query: str) -> List[Dict]:
+    def suggest(self, query: str) -> list[dict]:
         """根据用户输入推荐合适的流程"""
         results = []
         q = query.lower()
@@ -84,7 +84,7 @@ class PlanRegistry:
                  "steps": r["plan"]["steps"], "estimated_time": r["plan"]["estimated_time"],
                  "risk_level": r["plan"]["risk_level"]} for r in results]
 
-    def to_tool_schema(self) -> List[Dict]:
+    def to_tool_schema(self) -> list[dict]:
         """输出 OpenAI Function Calling 格式"""
         return [{
             "type": "function",
@@ -101,7 +101,7 @@ class PlanRegistry:
             }
         }]
 
-    def list_plans(self) -> List[str]:
+    def list_plans(self) -> list[str]:
         return list(self._plans.keys())
 
 
@@ -139,23 +139,23 @@ class MCPGate:
     }
 
     @classmethod
-    def visible_tools(cls, agent_name: str) -> List[str]:
+    def visible_tools(cls, agent_name: str) -> list[str]:
         """返回 Agent 可见的工具列表"""
         return cls.AGENT_MCP_MAP.get(agent_name, ["eco_search", "eco_retrieve"])
 
     @classmethod
-    def check_access(cls, agent_name: str, tool_name: str) -> Dict:
+    def check_access(cls, agent_name: str, tool_name: str) -> dict:
         """检查 Agent 是否有权限调用该工具"""
         allowed = tool_name in cls.visible_tools(agent_name)
         risk = cls.TOOL_RISK.get(tool_name, "read")
         if not allowed:
             return {"allowed": False, "reason": f"Agent '{agent_name}' 无权调用 '{tool_name}'", "risk": risk}
         if risk == "high_risk" and agent_name != "orchestrator":
-            return {"allowed": False, "reason": f"高危工具仅 Orchestrator 可调用", "risk": risk}
+            return {"allowed": False, "reason": "高危工具仅 Orchestrator 可调用", "risk": risk}
         return {"allowed": True, "risk": risk}
 
     @classmethod
-    def get_gate_config(cls) -> Dict:
+    def get_gate_config(cls) -> dict:
         return {
             "agents": {k: {"visible_tools": v} for k, v in cls.AGENT_MCP_MAP.items()},
             "tool_risks": cls.TOOL_RISK,
@@ -172,7 +172,7 @@ class SkillLoader:
     def __init__(self):
         self._skills_dir = ROOT / "skills"
         self._agent_profiles_dir = ROOT / "profiles" / "agents"
-        self._cache: Dict[str, Dict] = {}
+        self._cache: dict[str, dict] = {}
         self._load_all()
 
     def _load_all(self):
@@ -201,7 +201,7 @@ class SkillLoader:
             "char_count": len(content),
         }
 
-    def _extract_meta(self, content: str) -> Dict:
+    def _extract_meta(self, content: str) -> dict:
         """提取 meta 层——YAML frontmatter"""
         meta = {}
         if content.startswith("---"):
@@ -223,7 +223,7 @@ class SkillLoader:
                 return m.group(1).strip()[:2000]
         return content[:1000] if not content.startswith("---") else ""
 
-    def _extract_resources(self, content: str) -> List[str]:
+    def _extract_resources(self, content: str) -> list[str]:
         """提取 resources 层——引用的资源文件"""
         resources = []
         for link in re.findall(r'\[\[([^\]]+)\]\]', content):
@@ -245,7 +245,7 @@ class SkillLoader:
             return skill["resources"]
         return skill
 
-    def search_by_meta(self, key: str, value: str) -> List[Dict]:
+    def search_by_meta(self, key: str, value: str) -> list[dict]:
         """按 meta 字段搜索技能"""
         results = []
         for name, skill in self._cache.items():
@@ -253,7 +253,7 @@ class SkillLoader:
                 results.append({"name": name, "meta": skill["meta"]})
         return results
 
-    def list_by_level(self, level: str = "meta") -> List[Dict]:
+    def list_by_level(self, level: str = "meta") -> list[dict]:
         """列出指定层级可用的内容"""
         results = []
         for name, skill in self._cache.items():
@@ -267,7 +267,7 @@ class SkillLoader:
             results.append(item)
         return results
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         return {
             "total_skills": len(self._cache),
             "agents": sum(1 for s in self._cache.values() if s["is_agent"]),
@@ -299,7 +299,7 @@ def test():
     print(f"  Tool Schema: {len(schema)} 个")
 
     # 2. Per-Agent MCP
-    print(f"\n[MCPGate] 可见性管控:")
+    print("\n[MCPGate] 可见性管控:")
     for agent in ["searcher", "writer", "planner"]:
         tools = mcp_gate.visible_tools(agent)
         print(f"  {agent}: {tools}")
@@ -307,7 +307,7 @@ def test():
     print(f"  writer 调用 eco_delete: {'放行' if check['allowed'] else '拒绝'} ({check['reason']})")
 
     # 3. Progressive Skill
-    print(f"\n[SkillLoader] 三级加载:")
+    print("\n[SkillLoader] 三级加载:")
     print(f"  总技能数: {skill_loader.get_stats()['total_skills']}")
     enforcement = skill_loader.get_level("enforcement-qa-skill", "meta")
     print(f"  enforcement-qa-skill meta: {enforcement}")

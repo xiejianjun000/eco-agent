@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Feishu Bot auto-replier - reads events from consumer, replies via API"""
-import os, sys, json, time, importlib, requests, io
+import sys
+import json
+import time
+import importlib
+import requests
+import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8-sig', errors='replace')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8-sig', errors='replace')
 from pathlib import Path
@@ -77,7 +82,7 @@ while True:
             except Exception as e:
                 print(f"[E] {f.name}: {e}", flush=True)
                 try: f.unlink(missing_ok=True)
-                except: pass
+                except Exception: pass
     except Exception as e:
         print(f"[L] {e}", flush=True)
     time.sleep(2)

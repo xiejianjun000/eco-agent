@@ -8,10 +8,12 @@ heartbeat.py — Eco Agent L3 后台心跳循环 (Autonomous Pulse)
 节律：每5~20分钟（自适应）
 """
 
-import os, sys, json, time, logging, threading
+import time
+import logging
+import threading
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Callable
+from datetime import datetime
+from collections.abc import Callable
 
 logger = logging.getLogger("heartbeat")
 
@@ -25,14 +27,14 @@ class PulseLoop:
 
     def __init__(self):
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._pulse_count = 0
         self._interval = 600  # 默认10分钟
         self._min_interval = 300   # 5分钟
         self._max_interval = 1200  # 20分钟
         self._load_aware = True
-        self._listeners: Dict[str, Callable] = {}
-        self._pulse_log: List[Dict] = []
+        self._listeners: dict[str, Callable] = {}
+        self._pulse_log: list[dict] = []
 
     def register_listener(self, name: str, handler: Callable):
         """注册心跳监听器——每个STEP对应一个监听器"""
@@ -134,7 +136,8 @@ pulse = PulseLoop()
 
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     p = PulseLoop()

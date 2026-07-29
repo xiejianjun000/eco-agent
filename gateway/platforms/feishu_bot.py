@@ -17,7 +17,6 @@ import time
 import hashlib
 import base64
 import logging
-from typing import Optional
 
 try:
     import requests
@@ -135,7 +134,7 @@ class FeishuBot:
         logger.error(f"飞书卡片发送失败: {result}")
         return False
 
-    def get_user_info(self, user_id: str, id_type: str = "open_id") -> Optional[dict]:
+    def get_user_info(self, user_id: str, id_type: str = "open_id") -> dict | None:
         """获取用户信息"""
         if not self._get_tenant_token():
             return None
@@ -152,7 +151,7 @@ class FeishuBot:
         if not token:
             logger.warning("FEISHU_VERIFICATION_TOKEN 未配置")
             return True
-        challenge = body.get("challenge", "")
+        challenge = body.get("challenge", "")  # noqa: F841 预留：url_verification 应答
         event_token = body.get("token", "")
         return event_token == token
 
@@ -172,7 +171,6 @@ class FeishuBot:
 
 def test():
     """测试飞书 Bot"""
-    import sys
     bot = FeishuBot()
     print(f"App ID: {bot.app_id}")
     if bot.app_id:

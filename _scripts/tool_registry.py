@@ -19,8 +19,11 @@ tool_registry.py — ECO AGENT 自注册工具系统
   registry.list_tools()
 """
 
-import os, sys, json, inspect, logging
-from typing import Any, Callable, Dict, List, Optional
+import os
+import inspect
+import logging
+from typing import Any
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -33,9 +36,9 @@ class ToolEntry:
     name: str
     description: str
     handler: Callable
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     toolset: str = "eco"
-    requires_env: List[str] = field(default_factory=list)
+    requires_env: list[str] = field(default_factory=list)
     is_async: bool = False
     risk_level: str = "read"  # read | write | exec | external
     timeout: int = 30
@@ -48,14 +51,14 @@ class ToolRegistry:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._tools: Dict[str, ToolEntry] = {}
-            cls._instance._toolsets: Dict[str, List[str]] = {}
+            cls._instance._tools: dict[str, ToolEntry] = {}
+            cls._instance._toolsets: dict[str, list[str]] = {}
             cls._instance._discover_done = False
         return cls._instance
 
     def register(self, name: str = None, description: str = "",
                  toolset: str = "eco", risk_level: str = "read",
-                 requires_env: List[str] = None) -> Callable:
+                 requires_env: list[str] = None) -> Callable:
         """装饰器：注册工具"""
         def decorator(func: Callable) -> Callable:
             tool_name = name or func.__name__
@@ -89,15 +92,15 @@ class ToolRegistry:
             return func
         return decorator
 
-    def get(self, name: str) -> Optional[ToolEntry]:
+    def get(self, name: str) -> ToolEntry | None:
         return self._tools.get(name)
 
-    def list_tools(self, toolset: str = None) -> List[ToolEntry]:
+    def list_tools(self, toolset: str = None) -> list[ToolEntry]:
         if toolset:
             return [self._tools[n] for n in self._toolsets.get(toolset, []) if n in self._tools]
         return list(self._tools.values())
 
-    def get_openai_schemas(self, toolset: str = None) -> List[Dict]:
+    def get_openai_schemas(self, toolset: str = None) -> list[dict]:
         """输出 OpenAI Function Calling 格式的 schemas"""
         schemas = []
         for tool in self.list_tools(toolset):
@@ -136,7 +139,7 @@ class ToolRegistry:
         # 检查环境变量
         for env_key in tool.requires_env:
             if not os.environ.get(env_key):
-                raise EnvironmentError(f"缺少环境变量: {env_key}")
+                raise OSError(f"缺少环境变量: {env_key}")
 
         logger.info(f"[Registry] 调用工具: {name} kwargs={kwargs}")
         return tool.handler(**kwargs)

@@ -37,20 +37,18 @@ ECO AGENT 14 维质量评分卡ECO SCHEMA 2
   python _scripts/quality_audit.py --summary      # 仅摘要
 """
 
-import os
 import re
-import sys
 import json
 import argparse
 from pathlib import Path
 from datetime import datetime
 
 
-#  项目根目录 
+#  项目根目录
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-#  红线阈值ECO SCHEMA 2 
+#  红线阈值ECO SCHEMA 2
 REDLINES = {k.split("_", 1)[1] if "_" in k else k: v for k, v in {
     # 所有 D  85%关键项  90%
     # 孤岛率  5%断链率  3%
@@ -71,7 +69,7 @@ REDLINES = {k.split("_", 1)[1] if "_" in k else k: v for k, v in {
 }.items()}
 
 
-#  必备文件清单 
+#  必备文件清单
 REQUIRED_FILES = [
     "CLAUDE.md",
     "SCHEMA.md",
@@ -178,7 +176,7 @@ def count_file_lines():
                 lines = len(f.read_text(encoding="utf-8", errors="ignore").splitlines())
                 rel = f.relative_to(PROJECT_ROOT)
                 stats[str(rel.as_posix())] = lines
-            except:
+            except Exception:
                 pass
     return stats
 

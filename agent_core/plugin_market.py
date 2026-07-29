@@ -6,10 +6,12 @@ plugin_market.py — Eco Agent Phase 5 插件市场 + Web UI 后端
 C-03 验证：支持 CLI 和 Web UI 两种访问方式。
 """
 
-import os, sys, json, time, uuid, hashlib, logging, shutil, zipfile
+import json
+import uuid
+import logging
+import shutil
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
 
 logger = logging.getLogger("plugin_market")
 ROOT = Path(__file__).resolve().parent.parent
@@ -24,13 +26,13 @@ class PluginMarket:
 
     def __init__(self):
         self._local_db = MARKET_DIR / "registry.json"
-        self._plugins: Dict[str, Dict] = {}
+        self._plugins: dict[str, dict] = {}
         self._load()
 
     def _load(self):
         if self._local_db.exists():
             try: self._plugins = json.loads(self._local_db.read_text("utf-8", errors="replace"))
-            except: pass
+            except Exception: pass
 
     def _save(self):
         self._local_db.write_text(json.dumps(self._plugins, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -53,7 +55,7 @@ class PluginMarket:
         self._save()
         return pid
 
-    def search(self, query: str, category: str = "") -> List[Dict]:
+    def search(self, query: str, category: str = "") -> list[dict]:
         """搜索插件"""
         q = query.lower(); results = []
         for p in self._plugins.values():
@@ -62,7 +64,7 @@ class PluginMarket:
                 results.append({k: p[k] for k in ["id","name","version","description","author","category","rating","downloads"]})
         return sorted(results, key=lambda x: -x["rating"])[:20]
 
-    def install(self, plugin_id: str) -> Dict:
+    def install(self, plugin_id: str) -> dict:
         """安装插件"""
         plugin = self._plugins.get(plugin_id)
         if not plugin: return {"success": False, "error": "插件不存在"}
@@ -75,24 +77,24 @@ class PluginMarket:
         plugin["installed"] += 1; plugin["downloads"] += 1; self._save()
         return {"success": True, "plugin_id": plugin_id, "path": str(target)}
 
-    def uninstall(self, plugin_id: str) -> Dict:
+    def uninstall(self, plugin_id: str) -> dict:
         target = PLUGINS_DIR / plugin_id
         if target.exists(): shutil.rmtree(target)
         return {"success": True, "plugin_id": plugin_id}
 
-    def rate(self, plugin_id: str, rating: float) -> Dict:
+    def rate(self, plugin_id: str, rating: float) -> dict:
         plugin = self._plugins.get(plugin_id)
         if not plugin: return {"success": False, "error": "不存在"}
         plugin["rating"] = round((plugin["rating"] * plugin["downloads"] + rating) / (plugin["downloads"] + 1), 1)
         plugin["downloads"] += 1; self._save()
         return {"success": True, "new_rating": plugin["rating"]}
 
-    def list_installed(self) -> List[Dict]:
+    def list_installed(self) -> list[dict]:
         results = []
         for d in PLUGINS_DIR.iterdir():
             if d.is_dir() and (d / "plugin.json").exists():
                 try: results.append(json.loads((d / "plugin.json").read_text("utf-8")))
-                except: pass
+                except Exception: pass
         return results
 
     def get_stats(self) -> dict:
@@ -105,10 +107,10 @@ class PluginMarket:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys; _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+    import io; import sys as _sys; _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
     pm = PluginMarket()
     pid = pm.publish({"name":"法规检索增强","version":"1.0.0","description":"增强版法规语义检索","author":"eco-team","category":"search","files":["search_enhancer.py"]})
-    pid2 = pm.publish({"name":"文书模板","version":"0.5.0","description":"执法文书模板库","author":"eco-team","category":"document"})
+    pm.publish({"name":"文书模板","version":"0.5.0","description":"执法文书模板库","author":"eco-team","category":"document"})
     results = pm.search("法规")
     print(f"[Market] 搜索: {len(results)} 结果", flush=True)
     inst = pm.install(pid); print(f"[Market] 安装: {inst['success']}", flush=True)

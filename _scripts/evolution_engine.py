@@ -10,15 +10,12 @@ evolution_engine.py — ECO AGENT 自进化闭环引擎
   evo.run_cycle({"operation": "法规检索", "query": "大气污染防治法"})
 """
 
-import os
-import sys
 import json
 import re
-import hashlib
 import logging
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Callable
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger("evolution_engine")
 
@@ -36,14 +33,14 @@ class EvolutionEngine:
         self._mt = memory_tree
         self.session_id = session_id or f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self._cycle_count = 0
-        self._history: List[Dict[str, Any]] = []
+        self._history: list[dict[str, Any]] = []
         self._crystallized_count = 0
 
     # ═══════════════════════════════════════
     # 闭环主入口
     # ═══════════════════════════════════════
 
-    def run_cycle(self, operation: Dict[str, Any]) -> Dict[str, Any]:
+    def run_cycle(self, operation: dict[str, Any]) -> dict[str, Any]:
         """执行一次完整的自进化闭环"""
         self._cycle_count += 1
         cycle_id = f"cycle_{self._cycle_count}_{datetime.now().strftime('%H%M%S')}"
@@ -90,7 +87,7 @@ class EvolutionEngine:
     # 阶段 1: Execute — 执行操作
     # ═══════════════════════════════════════
 
-    def _execute(self, operation: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute(self, operation: dict[str, Any]) -> dict[str, Any]:
         """执行执法操作"""
         op_type = operation.get("operation", "")
         logger.info(f"  [Execute] 执行操作: {op_type}")
@@ -126,8 +123,8 @@ class EvolutionEngine:
     # 阶段 2: Track — 记录过程
     # ═══════════════════════════════════════
 
-    def _track(self, operation: Dict[str, Any],
-               execution: Dict[str, Any]) -> Dict[str, Any]:
+    def _track(self, operation: dict[str, Any],
+               execution: dict[str, Any]) -> dict[str, Any]:
         """记录操作过程"""
         record = {
             "timestamp": datetime.now().isoformat(),
@@ -149,7 +146,7 @@ class EvolutionEngine:
     # 阶段 3: Evaluate — 评估效果
     # ═══════════════════════════════════════
 
-    def _evaluate(self, track_record: Dict[str, Any]) -> Dict[str, Any]:
+    def _evaluate(self, track_record: dict[str, Any]) -> dict[str, Any]:
         """评估操作效果"""
         op = track_record.get("operation", {})
         execution = track_record.get("execution", {})
@@ -206,8 +203,8 @@ class EvolutionEngine:
     # 阶段 4: Reflect — 反思改进
     # ═══════════════════════════════════════
 
-    def _reflect(self, operation: Dict[str, Any],
-                 evaluation: Dict[str, Any]) -> Dict[str, Any]:
+    def _reflect(self, operation: dict[str, Any],
+                 evaluation: dict[str, Any]) -> dict[str, Any]:
         """反思改进点"""
         reflection = {
             "timestamp": datetime.now().isoformat(),
@@ -250,7 +247,7 @@ class EvolutionEngine:
                     f"{len(reflection['skill_candidate'] or [])} 个候选技能")
         return reflection
 
-    def _extract_steps(self, op_type: str) -> List[str]:
+    def _extract_steps(self, op_type: str) -> list[str]:
         """提取操作步骤"""
         op_lower = op_type.lower()
         if "检索" in op_lower or "查询" in op_lower:
@@ -283,8 +280,8 @@ class EvolutionEngine:
     # 阶段 5: Crystallize — 结晶为 Skill
     # ═══════════════════════════════════════
 
-    def _crystallize(self, operation: Dict[str, Any],
-                     reflection: Dict[str, Any]) -> Optional[str]:
+    def _crystallize(self, operation: dict[str, Any],
+                     reflection: dict[str, Any]) -> str | None:
         """将经验结晶为 Skill 文件"""
         candidate = reflection.get("skill_candidate")
         if not candidate:
@@ -306,7 +303,7 @@ class EvolutionEngine:
         logger.info(f"  [Crystallize] 新技能结晶: {skill_path.name}")
         return str(skill_path)
 
-    def _generate_skill_md(self, candidate: Dict[str, Any]) -> str:
+    def _generate_skill_md(self, candidate: dict[str, Any]) -> str:
         """生成 SKILL.md 格式技能文件"""
         skill_type = candidate.get("type", "通用")
         safe_type = re.sub(r'[^\w]', '', skill_type)
@@ -383,8 +380,8 @@ type: skill
     # 阶段 6: Store — 存入记忆
     # ═══════════════════════════════════════
 
-    def _store(self, track_record: Dict[str, Any],
-               skill_path: Optional[str] = None):
+    def _store(self, track_record: dict[str, Any],
+               skill_path: str | None = None):
         """将闭环记录存入 Memory Tree"""
         store_targets = []
 
@@ -427,7 +424,7 @@ type: skill
     # 批量处理
     # ═══════════════════════════════════════
 
-    def bulk_process(self, operations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def bulk_process(self, operations: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """批量处理多个操作"""
         results = []
         for op in operations:
@@ -435,7 +432,7 @@ type: skill
             results.append(result)
         return results
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """获取进化引擎统计"""
         return {
             "total_cycles": self._cycle_count,
@@ -454,7 +451,7 @@ class BackgroundReviewer:
         self._evo = evolution_engine
         self.interval = interval  # 每 N 轮审查一次
 
-    def check_and_review(self, cycle_count: int) -> Optional[Dict[str, Any]]:
+    def check_and_review(self, cycle_count: int) -> dict[str, Any] | None:
         """判断是否需要审查"""
         if cycle_count < self.interval:
             return None
@@ -462,7 +459,7 @@ class BackgroundReviewer:
             return None
         return self.run_review()
 
-    def run_review(self) -> Dict[str, Any]:
+    def run_review(self) -> dict[str, Any]:
         """执行背景审查"""
         logger.info(f"[BackgroundReviewer] 开始第 {self._evo._cycle_count} 轮背景审查")
 
@@ -520,7 +517,8 @@ def test():
     import sys as _sys
     _sys.path.insert(0, str(PROJECT_ROOT))
     from _scripts.memory_tree import MemoryTree
-    import tempfile, shutil
+    import tempfile
+    import shutil
 
     db_path = Path(tempfile.mkdtemp()) / "test_evo.db"
     mt = MemoryTree(db_path)
@@ -548,7 +546,7 @@ def test():
                   f"{len(review['new_skills'])} 新技能")
 
     stats = evo.get_stats()
-    print(f"\n[TEST] 进化统计:")
+    print("\n[TEST] 进化统计:")
     print(f"  总闭环次数: {stats['total_cycles']}")
     print(f"  结晶技能数: {stats['crystallized_skills']}")
     print(f"  历史记录数: {stats['history_count']}")
@@ -562,7 +560,7 @@ def test():
 
     import gc; gc.collect()
     try: shutil.rmtree(db_path.parent)
-    except: pass
+    except Exception: pass
     print("\n[OK] 自进化闭环测试通过")
 
 

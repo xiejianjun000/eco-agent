@@ -1,14 +1,17 @@
 """Telegram 通道适配器"""
 
-import os, sys, json, logging, time, threading
-from typing import Optional, List, Dict
+import os
+import sys
+import logging
+import time
+import threading
 
 # 允许独立运行
 if __name__ == "__main__":
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
-    from gateway.gateway_core import ChannelAdapter, UnifiedMessage, MessageType, Platform
+    from gateway.gateway_core import ChannelAdapter, UnifiedMessage, MessageType
 else:
-    from ..gateway_core import ChannelAdapter, UnifiedMessage, MessageType, Platform
+    from ..gateway_core import ChannelAdapter, UnifiedMessage, MessageType
 
 logger = logging.getLogger("channel.telegram")
 
@@ -31,7 +34,7 @@ class TelegramAdapter(ChannelAdapter):
         self._gateway = gateway
         self._offset = 0
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
 
     def is_configured(self) -> bool:
         return bool(self._token)
@@ -50,13 +53,13 @@ class TelegramAdapter(ChannelAdapter):
             return False
 
     def send_card(self, channel_id: str, title: str, content: str,
-                  actions: List[Dict] = None) -> bool:
+                  actions: list[dict] = None) -> bool:
         if not self.is_configured():
             return False
         text = f"*{title}*\n\n{content}"
         return self.send_message(channel_id, text)
 
-    def parse_webhook(self, raw_data: dict) -> Optional[UnifiedMessage]:
+    def parse_webhook(self, raw_data: dict) -> UnifiedMessage | None:
         try:
             msg = raw_data.get("message", {})
             chat = msg.get("chat", {})

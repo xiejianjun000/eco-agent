@@ -13,13 +13,11 @@ eco_dashboard.py — ECO AGENT 执法态势看板
   python _scripts/eco_dashboard.py --card feishu  # 推送飞书卡片
 """
 
-import os
-import sys
 import json
 import logging
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger("eco_dashboard")
 
@@ -30,7 +28,7 @@ try:
     _sys.path.insert(0, str(PROJECT_ROOT))
     from _scripts.memory_tree import MemoryTree
     from _scripts.enforcement_cases import CaseManager, BenchmarkManager
-    from _scripts.evolution_engine import EvolutionEngine
+    from _scripts.evolution_engine import EvolutionEngine  # noqa: F401 可用性探测
     from _scripts.writer_agent import WriterAgent
     from _scripts.cross_region_sync import CrossRegionSync
     HAS_MODULES = True
@@ -46,7 +44,7 @@ class Dashboard:
         self._mt = MemoryTree() if HAS_MODULES else None
         self._gather_time = datetime.now()
 
-    def gather_all(self) -> Dict[str, Any]:
+    def gather_all(self) -> dict[str, Any]:
         """聚合全模块数据"""
         report = {
             "timestamp": self._gather_time.isoformat(),
@@ -131,7 +129,7 @@ class Dashboard:
 
         return report
 
-    def generate_markdown_report(self, report: Optional[Dict] = None) -> str:
+    def generate_markdown_report(self, report: dict | None = None) -> str:
         """生成 Markdown 统计报告"""
         if not report:
             report = self.gather_all()
@@ -184,13 +182,13 @@ class Dashboard:
         git = r.get("git", {})
         if "latest_tag" in git:
             lines.extend(["", "## 四、版本信息", "", f"| 版本 | {git.get('latest_tag', '')} |",
-                          f"|:-----|:----:|", f"| 累计提交 | {git.get('total_commits', 0)} |"])
+                          "|:-----|:----:|", f"| 累计提交 | {git.get('total_commits', 0)} |"])
 
-        lines.extend(["", "---", "", f"*报告由 ECO AGENT Dashboard 自动生成*"])
+        lines.extend(["", "---", "", "*报告由 ECO AGENT Dashboard 自动生成*"])
         return "\n".join(lines)
 
-    def generate_card_data(self, report: Optional[Dict] = None,
-                           platform: str = "feishu") -> Dict[str, Any]:
+    def generate_card_data(self, report: dict | None = None,
+                           platform: str = "feishu") -> dict[str, Any]:
         """生成飞书/企微/钉钉卡片数据"""
         if not report:
             report = self.gather_all()
@@ -231,7 +229,7 @@ class Dashboard:
         else:
             return {"title": title, "content": content}
 
-    def save_report(self, report: Optional[Dict] = None) -> Path:
+    def save_report(self, report: dict | None = None) -> Path:
         """保存报告到文件"""
         if not report:
             report = self.gather_all()

@@ -20,7 +20,6 @@ memory_tree.py — ECO AGENT Memory Tree 核心引擎
 """
 
 import os
-import sys
 import json
 import re
 import time
@@ -28,8 +27,8 @@ import hashlib
 import sqlite3
 import logging
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger("memory_tree")
 
@@ -43,7 +42,7 @@ OBSIDIAN_VAULT = None  # 由 set_obsidian_vault() 设置
 class MemoryTree:
     """Memory Tree 核心引擎"""
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         self.db_path = db_path or DEFAULT_DB_PATH
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
@@ -73,9 +72,9 @@ class MemoryTree:
     # ── 节点 CRUD ──
 
     def create_node(self, type: str, title: str, content: str,
-                    tags: List[str] = None, score: float = 50.0,
+                    tags: list[str] = None, score: float = 50.0,
                     parent_id: str = None, source: str = "manual",
-                    confidence: str = "medium") -> Dict[str, Any]:
+                    confidence: str = "medium") -> dict[str, Any]:
         """创建新节点"""
         node_id = self._generate_id(type)
         tags_json = json.dumps(tags or [], ensure_ascii=False)
@@ -113,7 +112,7 @@ class MemoryTree:
         logger.info(f"节点创建成功: {node_id} ({type}) - {title[:30]}")
         return self.get_node(node_id)
 
-    def get_node(self, node_id: str) -> Optional[Dict[str, Any]]:
+    def get_node(self, node_id: str) -> dict[str, Any] | None:
         """获取节点详情"""
         with self._conn() as conn:
             row = conn.execute(
@@ -131,7 +130,7 @@ class MemoryTree:
             """, (node_id,))
             return node
 
-    def update_node(self, node_id: str, **kwargs) -> Optional[Dict[str, Any]]:
+    def update_node(self, node_id: str, **kwargs) -> dict[str, Any] | None:
         """更新节点属性"""
         allowed = {"title", "content", "score", "tags", "confidence", "parent_id"}
         updates = {k: v for k, v in kwargs.items() if k in allowed}
@@ -183,8 +182,8 @@ class MemoryTree:
         logger.info(f"节点已删除: {node_id}")
         return True
 
-    def list_nodes(self, type: Optional[str] = None, tags: Optional[List[str]] = None,
-                   limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+    def list_nodes(self, type: str | None = None, tags: list[str] | None = None,
+                   limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
         """列出节点，支持类型和标签过滤"""
         where_clauses = []
         params = []
@@ -219,8 +218,8 @@ class MemoryTree:
 
     # ── 检索 ──
 
-    def search(self, query: str, type: Optional[str] = None,
-               max_results: int = 10) -> List[Dict[str, Any]]:
+    def search(self, query: str, type: str | None = None,
+               max_results: int = 10) -> list[dict[str, Any]]:
         """混合检索（BM25 + 评分排序 + LIKE 降级）"""
         keywords = query.lower().split()
         if not keywords:
@@ -306,7 +305,7 @@ class MemoryTree:
 
             return results[:max_results]
 
-    def _generate_snippet(self, content: str, keywords: List[str],
+    def _generate_snippet(self, content: str, keywords: list[str],
                           max_len: int = 200) -> str:
         """生成关键词上下文摘要"""
         content_lower = content.lower()
@@ -325,10 +324,10 @@ class MemoryTree:
 
     # ── 关联分析 ──
 
-    def get_related(self, node_id: str, max_depth: int = 1) -> List[Dict[str, Any]]:
+    def get_related(self, node_id: str, max_depth: int = 1) -> list[dict[str, Any]]:
         """获取关联节点"""
         with self._conn() as conn:
-            rows = conn.execute(f"""
+            rows = conn.execute("""
                 SELECT DISTINCT n.*, e.relation, e.weight
                 FROM edges e
                 JOIN nodes n ON (n.id = e.target_id OR n.id = e.source_id)
@@ -361,7 +360,7 @@ class MemoryTree:
 
     # ── 同步到 Obsidian ──
 
-    def sync_to_obsidian(self, vault_path: Optional[Path] = None) -> Dict[str, Any]:
+    def sync_to_obsidian(self, vault_path: Path | None = None) -> dict[str, Any]:
         """同步节点到 Obsidian Markdown 文件"""
         target_dir = vault_path or OBSIDIAN_VAULT or OBSIDIAN_SYNC_DIR
         if not target_dir:
@@ -405,7 +404,7 @@ class MemoryTree:
             logger.info(f"Obsidian 同步完成: {stats['synced']} 成功, {stats['failed']} 失败")
         return stats
 
-    def _write_obsidian_file(self, base_dir: Path, node: Dict[str, Any]) -> Path:
+    def _write_obsidian_file(self, base_dir: Path, node: dict[str, Any]) -> Path:
         """将节点写入 Obsidian Markdown 文件"""
         # 按类型分目录
         type_dir_map = {
@@ -448,7 +447,7 @@ updated: {node['updated_at'][:10]}
 
     # ── 从 Obsidian 同步到 SQLite ──
 
-    def sync_from_obsidian(self, obsidian_dir: Optional[Path] = None) -> Dict[str, Any]:
+    def sync_from_obsidian(self, obsidian_dir: Path | None = None) -> dict[str, Any]:
         """从 Obsidian Markdown 文件同步到 SQLite"""
         source_dir = obsidian_dir or OBSIDIAN_VAULT or OBSIDIAN_SYNC_DIR
         if not source_dir or not source_dir.exists():
@@ -469,7 +468,7 @@ updated: {node['updated_at'][:10]}
 
         return stats
 
-    def _parse_obsidian_file(self, file_path: Path, content: str) -> Optional[Dict[str, Any]]:
+    def _parse_obsidian_file(self, file_path: Path, content: str) -> dict[str, Any] | None:
         """解析 Obsidian Markdown 文件"""
         if not content.startswith("---"):
             return None
@@ -524,7 +523,7 @@ updated: {node['updated_at'][:10]}
             "confidence": frontmatter.get("confidence", "medium"),
         }
 
-    def _upsert_node_from_obsidian(self, node: Dict[str, Any]):
+    def _upsert_node_from_obsidian(self, node: dict[str, Any]):
         """从解析的 Obsidian 节点更新或插入数据库"""
         tags_json = json.dumps(node["tags"], ensure_ascii=False)
         now = datetime.now().isoformat()
@@ -594,7 +593,7 @@ updated: {node['updated_at'][:10]}
 
         logger.info("评分重算完成")
 
-    def get_hot_nodes(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_hot_nodes(self, limit: int = 50) -> list[dict[str, Any]]:
         """获取热点节点（高分 + 高频访问）"""
         with self._conn() as conn:
             rows = conn.execute("""
@@ -611,7 +610,7 @@ updated: {node['updated_at'][:10]}
 
     # ── 统计 ──
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """获取 Memory Tree 统计信息"""
         with self._conn() as conn:
             total = conn.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
@@ -640,7 +639,7 @@ updated: {node['updated_at'][:10]}
         short_hash = hashlib.md5(hash_input.encode()).hexdigest()[:8]
         return f"node_{short_hash}"
 
-    def export_all(self) -> List[Dict[str, Any]]:
+    def export_all(self) -> list[dict[str, Any]]:
         """导出全部节点"""
         with self._conn() as conn:
             rows = conn.execute("SELECT * FROM nodes ORDER BY type, score DESC").fetchall()
@@ -689,7 +688,8 @@ def test():
     mt.db_path = None  # 确保无连接残留
     import gc
     gc.collect()
-    import shutil, time
+    import shutil
+    import time
     time.sleep(0.1)
     try:
         shutil.rmtree(db_path.parent)

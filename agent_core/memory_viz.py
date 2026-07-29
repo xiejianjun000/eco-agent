@@ -5,10 +5,10 @@ memory_viz.py — Eco Agent D-04 本地记忆树可视化后端
 Obsidian 风格知识图谱：节点浏览/编辑/删除/合并，系统不覆盖用户修改。
 """
 
-import os, sys, json, time, logging, hashlib
+import json
+import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
 
 logger = logging.getLogger("memory_viz")
 ROOT = Path(__file__).resolve().parent.parent
@@ -22,18 +22,18 @@ class MemoryViz:
     def __init__(self, memory_tree=None):
         self._mt = memory_tree
         self._overrides_file = DATA_DIR / "user_overrides.json"
-        self._user_overrides: Dict[str, Dict] = {}
+        self._user_overrides: dict[str, dict] = {}
         self._load_overrides()
 
     def _load_overrides(self):
         if self._overrides_file.exists():
             try: self._user_overrides = json.loads(self._overrides_file.read_text("utf-8", errors="replace"))
-            except: pass
+            except Exception: pass
 
     def _save_overrides(self):
         self._overrides_file.write_text(json.dumps(self._user_overrides, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def get_graph(self) -> Dict:
+    def get_graph(self) -> dict:
         """获取知识图谱数据（节点+边）"""
         nodes = []
         edges = []
@@ -58,11 +58,11 @@ class MemoryViz:
                     for r in related[:5]:
                         edges.append({"source": n["id"], "target": r.get("id", ""),
                                       "relation": r.get("relation", "related")})
-            except: pass
+            except Exception: pass
 
         return {"nodes": nodes, "edges": edges, "total_nodes": len(nodes), "total_edges": len(edges)}
 
-    def update_node(self, node_id: str, updates: dict) -> Dict:
+    def update_node(self, node_id: str, updates: dict) -> dict:
         """用户编辑节点——保存用户修改，系统不覆盖"""
         self._user_overrides[node_id] = {**self._user_overrides.get(node_id, {}), **updates,
                                          "edited_at": datetime.now().isoformat()}
@@ -70,14 +70,14 @@ class MemoryViz:
         logger.info(f"[MemoryViz] 用户编辑: {node_id}")
         return {"success": True, "node_id": node_id}
 
-    def delete_node(self, node_id: str) -> Dict:
+    def delete_node(self, node_id: str) -> dict:
         """用户删除节点"""
         self._user_overrides[node_id] = {"_deleted": True, "deleted_at": datetime.now().isoformat()}
         self._save_overrides()
         logger.info(f"[MemoryViz] 用户删除: {node_id}")
         return {"success": True, "node_id": node_id}
 
-    def merge_nodes(self, target_id: str, source_ids: List[str]) -> Dict:
+    def merge_nodes(self, target_id: str, source_ids: list[str]) -> dict:
         """用户合并节点"""
         merged = self._user_overrides.get(target_id, {})
         merged["_merged_from"] = source_ids
@@ -97,7 +97,8 @@ class MemoryViz:
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
     mv = MemoryViz()
     graph = mv.get_graph()

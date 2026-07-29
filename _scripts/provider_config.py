@@ -16,10 +16,8 @@ provider_config.py — ECO AGENT 多模型提供者配置与验证
 """
 
 import os
-import json
 import logging
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict
+from dataclasses import dataclass
 
 logger = logging.getLogger("provider_config")
 
@@ -121,22 +119,22 @@ class ProviderRouter:
 
     def __init__(self):
         self._providers = PROVIDER_REGISTRY
-        self._failures: Dict[str, int] = {}
+        self._failures: dict[str, int] = {}
         self._failover_threshold = 3
         logger.info(f"[Router] 注册 {len(self._providers)} 个模型提供者")
 
-    def list_available(self) -> List[ModelProvider]:
+    def list_available(self) -> list[ModelProvider]:
         """列出可用提供者"""
         return [p for p in self._providers if p.is_available()]
 
-    def get_primary(self) -> Optional[ModelProvider]:
+    def get_primary(self) -> ModelProvider | None:
         """获取主模型"""
         primary = [p for p in self._providers if p.category == "primary"]
         if primary and primary[0].is_available():
             return primary[0]
         return None
 
-    def get_fallback(self) -> Optional[ModelProvider]:
+    def get_fallback(self) -> ModelProvider | None:
         """获取降级模型"""
         fallbacks = [p for p in self._providers if p.category == "domestic" and p.is_available()]
         # 按优先级排序
@@ -171,7 +169,7 @@ class ProviderRouter:
         """实际调用 LLM 推理（通过 aisuite，兼容 Python 3.14+）"""
         try:
             import aisuite as ai
-        except (ImportError, AttributeError) as e:
+        except (ImportError, AttributeError):
             # aisuite 有 Python 3.14 兼容性问题时走直连 Anthropic
             return self._direct_inference(prompt, system_prompt, provider_name)
 
@@ -264,14 +262,14 @@ def verify_all():
         print(f"     API: {p.api_key_env}")
         print(f"     模型: {p.model_id}")
 
-    print(f"\n 路由状态:")
+    print("\n 路由状态:")
     config = router.get_router_config()
     print(f"  主模型: {config['primary']['name'] or '无'}")
     print(f"  降级模型: {config['fallback']['name'] or '无'}")
     print(f"  可用模型: {', '.join(config['all_available']) or '无'}")
     print(f"  当前失败计数: {config['current_failures']}")
 
-    print(f"\n 环境变量配置:")
+    print("\n 环境变量配置:")
     for p in PROVIDER_REGISTRY:
         key = p.api_key_env
         val = os.environ.get(key, "")

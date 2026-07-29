@@ -17,10 +17,13 @@ split_brain.py — ECO AGENT Split Brain 三重架构
   brain.subconscious.start()            # 启动后台
 """
 
-import os, sys, json, time, threading, logging
+import sys
+import time
+import threading
+import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger("split_brain")
 
@@ -43,7 +46,7 @@ class Reflex:
         self._cache = {}
         self._cache_ttl = 120  # 缓存 2 分钟
 
-    def process(self, query: str) -> Optional[Dict[str, Any]]:
+    def process(self, query: str) -> dict[str, Any] | None:
         """快速处理，如果匹配模式则返回，否则返回 None"""
         query_lower = query.strip().lower()
 
@@ -63,7 +66,7 @@ class Reflex:
 
         return None
 
-    def _handle_intent(self, intent: str, query: str) -> Dict[str, Any]:
+    def _handle_intent(self, intent: str, query: str) -> dict[str, Any]:
         responses = {
             "greeting": {
                 "type": "text",
@@ -95,10 +98,10 @@ class Reasoning:
     """深度推理层——复杂案件分析、多法综合、裁量建议"""
 
     def __init__(self):
-        self._tasks: List[Dict] = []
+        self._tasks: list[dict] = []
         self._max_concurrent = 3
 
-    def analyze_case(self, case_input: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_case(self, case_input: dict[str, Any]) -> dict[str, Any]:
         """分析案件"""
         task_id = f"task_{len(self._tasks) + 1}_{datetime.now().strftime('%H%M%S')}"
         task = {
@@ -116,7 +119,7 @@ class Reasoning:
 
         return task
 
-    def _do_analyze(self, case: Dict) -> Dict:
+    def _do_analyze(self, case: dict) -> dict:
         """执行分析"""
         facts = str(case.get("facts", case.get("query", "")))
         category = case.get("category", "unknown")
@@ -129,7 +132,7 @@ class Reasoning:
             "needs_review": True,
         }
 
-    def _identify_elements(self, facts: str) -> List[str]:
+    def _identify_elements(self, facts: str) -> list[str]:
         elements = []
         if "超标" in facts or "排放" in facts:
             elements.append("违法排放污染物")
@@ -139,7 +142,7 @@ class Reasoning:
             elements.append("危险废物非法处置")
         return elements or ["待进一步分析"]
 
-    def _find_applicable_laws(self, category: str) -> List[str]:
+    def _find_applicable_laws(self, category: str) -> list[str]:
         laws = {
             "大气": ["生态环境法典 第二编第二分编", "大气污染物综合排放标准"],
             "水": ["生态环境法典 第二编第三分编", "水污染物排放标准"],
@@ -160,7 +163,7 @@ class Subconscious:
 
     def __init__(self, memory_tree=None):
         self._mt = memory_tree
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._running = False
         self._cycle_count = 0
         self._tasks = {
@@ -203,7 +206,7 @@ class Subconscious:
 
             time.sleep(60)  # 每分钟检查一次
 
-    def _run_task(self, task_id: str, task: Dict):
+    def _run_task(self, task_id: str, task: dict):
         logger.info(f"[Subconscious] 执行: {task['name']}")
         if task_id == "statute_watch":
             try:
@@ -249,7 +252,7 @@ class SplitBrain:
         self._mt = memory_tree
         logger.info("[SplitBrain] 三脑架构初始化完成")
 
-    def process(self, query: str, context: Optional[Dict] = None) -> Dict[str, Any]:
+    def process(self, query: str, context: dict | None = None) -> dict[str, Any]:
         """统一入口：优先 Reflex 快速处理，不满足则走 Reasoning"""
         start = datetime.now()
 

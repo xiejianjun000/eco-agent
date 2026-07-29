@@ -14,10 +14,13 @@ Eco Agent 独创——竞品均未系统化实现。
   result = healer.protect(lambda: risky_operation())
 """
 
-import os, sys, json, time, uuid, logging, traceback, threading
+import json
+import time
+import uuid
+import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any, Callable
+from collections.abc import Callable
 
 logger = logging.getLogger("self_healing")
 
@@ -32,11 +35,11 @@ class SelfHealer:
     def __init__(self):
         self._heal_count = 0
         self._fail_count = 0
-        self._circuit_breakers: Dict[str, dict] = {}
+        self._circuit_breakers: dict[str, dict] = {}
 
     def protect(self, operation: Callable, context: str = "",
-                fallback: Optional[Callable] = None,
-                max_retries: int = 3, timeout_ms: int = 30000) -> Dict:
+                fallback: Callable | None = None,
+                max_retries: int = 3, timeout_ms: int = 30000) -> dict:
         """保护执行一个操作——自动异常捕获/分类/恢复"""
         start = time.time()
         operation_name = context or getattr(operation, '__name__', str(operation))
@@ -110,7 +113,7 @@ class SelfHealer:
             return base * (3 ** attempt)
         return base * attempt
 
-    def _apply_fallback(self, operation_name: str, fallback: Optional[Callable], reason: str) -> Dict:
+    def _apply_fallback(self, operation_name: str, fallback: Callable | None, reason: str) -> dict:
         """应用降级策略"""
         if fallback:
             try:
@@ -149,7 +152,7 @@ class CheckpointSnapshot:
     """检查点快照——任务执行前保存完整状态，可"时光倒流" """
 
     def __init__(self):
-        self._snapshots: List[Dict] = []
+        self._snapshots: list[dict] = []
         self._max_snapshots = 50
 
     def save(self, context: dict) -> str:
@@ -165,21 +168,22 @@ class CheckpointSnapshot:
             self._snapshots = self._snapshots[-self._max_snapshots:]
         return snapshot_id
 
-    def restore(self, snapshot_id: str) -> Optional[dict]:
+    def restore(self, snapshot_id: str) -> dict | None:
         """恢复到指定检查点"""
         for s in self._snapshots:
             if s["id"] == snapshot_id:
                 return s["context"]
         return None
 
-    def list_recent(self, limit: int = 10) -> List[Dict]:
+    def list_recent(self, limit: int = 10) -> list[dict]:
         return [{"id": s["id"], "timestamp": s["timestamp"][:19]} for s in self._snapshots[-limit:]]
 
 
 # ===== 测试 =====
 
 def test():
-    import io, sys as _sys
+    import io
+    import sys as _sys
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     print("[TEST] L5 Self-Healing Loop", flush=True)

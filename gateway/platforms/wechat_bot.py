@@ -18,11 +18,9 @@ wechat_bot.py — 微信集成工具
 """
 
 import os
-import json
 import time
 import hashlib
 import logging
-from typing import Optional
 
 try:
     import requests
@@ -85,7 +83,7 @@ class WechatBot:
         content = root.findtext("Content", "")
         from_user = root.findtext("FromUserName", "")
         to_user = root.findtext("ToUserName", "")
-        msg_id = root.findtext("MsgId", "0")
+        msg_id = root.findtext("MsgId", "0")  # noqa: F841 预留：消息去重
 
         if msg_type == "text":
             reply = self._generate_reply(content)
@@ -180,7 +178,7 @@ class WechatBot:
             print("[微信/Wechaty] 未配置 WECHATY_TOKEN，跳过")
             return False
         try:
-            url = f"https://api.chatie.io/v0/message/send"
+            url = "https://api.chatie.io/v0/message/send"
             headers = {
                 "Authorization": f"Bearer {self.wechaty_token}",
                 "Content-Type": "application/json",

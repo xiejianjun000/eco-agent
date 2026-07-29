@@ -10,10 +10,11 @@ codex_features.py — ECO AGENT CODEX 对标补全
   from _scripts.codex_features import FixPipeline
 """
 
-import os, sys, json, re, time, logging, importlib.util, hashlib
+import json
+import logging
+import importlib.util
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
 
 logger = logging.getLogger("codex")
 
@@ -30,18 +31,18 @@ class FixPipeline:
     def __init__(self):
         self._fix_log = ROOT / "memory-tree" / "obsidian_sync" / "quality" / "fix_history.json"
         self._fix_log.parent.mkdir(parents=True, exist_ok=True)
-        self._history: List[Dict] = []
+        self._history: list[dict] = []
         self._load()
 
     def _load(self):
         if self._fix_log.exists():
             try: self._history = json.loads(self._fix_log.read_text("utf-8", errors="replace"))
-            except: pass
+            except Exception: pass
 
     def _save(self):
         self._fix_log.write_text(json.dumps(self._history[-100:], ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def run(self, target_dir: str = None, auto_fix: bool = True) -> Dict:
+    def run(self, target_dir: str = None, auto_fix: bool = True) -> dict:
         """运行完整修复流水线"""
         start = datetime.now()
         issues_found = 0
@@ -79,18 +80,18 @@ class FixPipeline:
         self._save()
         return result
 
-    def _scan_files(self, target_dir: str = None) -> List[Path]:
+    def _scan_files(self, target_dir: str = None) -> list[Path]:
         root = ROOT / target_dir if target_dir else ROOT
         files = []
         for ext in ["*.md", "*.py", "*.yaml", "*.json"]:
             files.extend(root.rglob(ext))
         return [f for f in files if ".git" not in str(f) and "node_modules" not in str(f)]
 
-    def _lint_file(self, fpath: Path) -> List[Dict]:
+    def _lint_file(self, fpath: Path) -> list[dict]:
         issues = []
         try:
             content = fpath.read_text("utf-8", errors="replace")
-        except: return issues
+        except Exception: return issues
 
         if fpath.suffix == ".md":
             if not content.startswith("---") and fpath.name not in ("README.md", "CHANGELOG.md", "CLAUDE.md", "SCHEMA.md"):
@@ -105,11 +106,11 @@ class FixPipeline:
 
         return issues
 
-    def _fix_file(self, fpath: Path, issues: List[Dict]) -> List[str]:
+    def _fix_file(self, fpath: Path, issues: list[dict]) -> list[str]:
         fixed = []
         try:
             content = fpath.read_text("utf-8", errors="replace")
-        except: return fixed
+        except Exception: return fixed
 
         for issue in issues:
             if issue["type"] == "missing_shebang" and fpath.suffix == ".py":
@@ -149,7 +150,7 @@ class MoAJudge:
             self._moa = None
             logger.warning(f"MoA 加载失败: {e}")
 
-    def judge_quality(self, content: str, dimension: str = "accuracy") -> Dict:
+    def judge_quality(self, content: str, dimension: str = "accuracy") -> dict:
         """裁判内容质量"""
         if not self._moa:
             return {"judgment": "MoA 不可用", "score": 50, "dimension": dimension}
@@ -158,7 +159,7 @@ class MoAJudge:
         return {"judgment": result["aggregated"][:200], "score": 75, "dimension": dimension,
                 "providers": len(result["responses"])}
 
-    def judge_consistency(self, texts: List[str]) -> List[float]:
+    def judge_consistency(self, texts: list[str]) -> list[float]:
         """裁判多个回答的一致性"""
         if len(texts) < 2:
             return [1.0]

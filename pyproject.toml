@@ -27,3 +27,26 @@ packages = ["agent_core", "gateway"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 160
+
+[tool.ruff.lint]
+# 功能正确性优先：未使用导入/变量、裸 except、重复定义、语法级问题
+select = ["E", "F", "W", "B", "UP", "SIM"]
+ignore = [
+    "E402",   # sys.path 引导后的导入（本仓库脚本约定）
+    "E501",   # 行长从宽
+    "E701",   # 单行多语句：仓库紧凑风格，从宽
+    "E702",   # 分号多语句：同上
+    "E741",   # 单字母变量：局部惯例，从宽
+    "SIM102", # 嵌套 if 合并建议，风格类
+    "SIM116", # if-elif 查表改写建议，风格类
+    "SIM105", # contextlib.suppress 改写建议，风格类
+    "SIM108", # 三元改写建议，风格类
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]
+"_scripts/**" = ["F841", "B007"]  # 历史工具脚本，存量未使用变量暂不逐行清理

@@ -11,11 +11,12 @@ claude_features.py — ECO AGENT CLAUDE(FlowWiki) 对标补全
   from _scripts.claude_features import ACEPipeline, SourcePointer, SkillUpgrader
 """
 
-import os, sys, json, re, time, logging, hashlib
+import json
+import re
+import logging
+import hashlib
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, field
 
 logger = logging.getLogger("claude_features")
 
@@ -30,9 +31,9 @@ class ACEPipeline:
     """全自动 ACE 审查流水线"""
 
     def __init__(self):
-        self._history: List[Dict] = []
+        self._history: list[dict] = []
 
-    def run(self, content: str, metadata: Dict = None) -> Dict:
+    def run(self, content: str, metadata: dict = None) -> dict:
         """运行完整 ACE 三阶段审查"""
         generator = self._generate(content, metadata or {})
         reflector = self._reflect(generator)
@@ -43,12 +44,12 @@ class ACEPipeline:
         self._history.append(result)
         return result
 
-    def _generate(self, content: str, metadata: Dict) -> Dict:
+    def _generate(self, content: str, metadata: dict) -> dict:
         """Generator 阶段：记录分析内容"""
         return {"content_length": len(content), "sections": self._detect_sections(content),
                 "law_refs": self._extract_laws(content), "has_pointer": "## 原文指针" in content}
 
-    def _reflect(self, gen: Dict) -> Dict:
+    def _reflect(self, gen: dict) -> dict:
         """Reflector 阶段：逐项校验"""
         checks = {}
         issues = []
@@ -68,7 +69,7 @@ class ACEPipeline:
         score = sum(1 for v in checks.values() if v) / max(len(checks), 1) * 100
         return {"checks": checks, "issues": issues, "score": round(score, 1), "passed": score >= 70}
 
-    def _curate(self, gen: Dict, ref: Dict) -> Dict:
+    def _curate(self, gen: dict, ref: dict) -> dict:
         """Curator 阶段：最终决策"""
         score = ref["score"]
         if gen["law_refs"]: score += 5
@@ -82,10 +83,10 @@ class ACEPipeline:
 
         return {"score": round(score, 1), "recommendation": rec, "passed": passed}
 
-    def _detect_sections(self, content: str) -> List[str]:
+    def _detect_sections(self, content: str) -> list[str]:
         return re.findall(r'^##\s+(.+)$', content, re.MULTILINE)
 
-    def _extract_laws(self, content: str) -> List[str]:
+    def _extract_laws(self, content: str) -> list[str]:
         return re.findall(r'《[^》]+》', content)
 
     def get_stats(self) -> dict:
@@ -104,7 +105,7 @@ class SourcePointer:
         self._raw_dir = ROOT / ".." / "Obsidian Vault" / "raw"
         self._wiki_dir = ROOT / ".." / "Obsidian Vault" / "wiki"
 
-    def check_file(self, content: str, file_path: str = "") -> Dict:
+    def check_file(self, content: str, file_path: str = "") -> dict:
         """检查单个文件的原文指针"""
         result = {"has_pointer": False, "pointer_section": "", "pointers": [], "issues": [],
                   "source_files_found": 0, "source_files_missing": 0}
@@ -125,14 +126,14 @@ class SourcePointer:
 
         return result
 
-    def auto_fix(self, content: str, detected_laws: List[str]) -> str:
+    def auto_fix(self, content: str, detected_laws: list[str]) -> str:
         """自动补全原文指针段落"""
         if "## 原文指针" in content:
             return content
         pointer_section = "\n\n## 原文指针\n\n" + "\n".join(f"- {law}" for law in detected_laws[:5])
         return content.rstrip() + pointer_section
 
-    def validate_wiki(self, file_contents: List[str]) -> Dict:
+    def validate_wiki(self, file_contents: list[str]) -> dict:
         """批量验证 wiki 页面"""
         results = {"total": 0, "passed": 0, "failed": 0, "issues": []}
         for content in file_contents:
@@ -162,13 +163,13 @@ class SkillUpgrader:
     def _load(self):
         if self._usage_log.exists():
             try: self._usage = json.loads(self._usage_log.read_text("utf-8", errors="replace"))
-            except: self._usage = {}
+            except Exception: self._usage = {}
         else: self._usage = {"prompts": [], "upgraded": []}
 
     def _save(self):
         self._usage_log.write_text(json.dumps(self._usage, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def record_use(self, prompt_text: str, category: str = "通用", result: str = "") -> Dict:
+    def record_use(self, prompt_text: str, category: str = "通用", result: str = "") -> dict:
         """记录一次 Prompt 使用"""
         prompt_hash = hashlib.md5(prompt_text.encode()).hexdigest()[:12]
         existing = None
@@ -192,7 +193,7 @@ class SkillUpgrader:
             return self._try_upgrade(prompt)
         return {"status": "counting", "count": prompt["count"], "needs": 3 - prompt["count"], "upgraded": False}
 
-    def _try_upgrade(self, prompt: Dict) -> Dict:
+    def _try_upgrade(self, prompt: dict) -> dict:
         """尝试升级为 Skill（使用 3 次后）"""
         already = any(u["hash"] == prompt["hash"] for u in self._usage["upgraded"])
         if already:
@@ -237,7 +238,7 @@ type: skill
         return {"status": "upgraded", "count": prompt["count"], "skill_path": str(skill_path.relative_to(ROOT)),
                 "upgraded": True}
 
-    def list_candidates(self) -> List[Dict]:
+    def list_candidates(self) -> list[dict]:
         """列出达到升级条件的候选"""
         return [p for p in self._usage["prompts"] if p["count"] >= 3]
 
