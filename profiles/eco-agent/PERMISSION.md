@@ -27,9 +27,9 @@ allow:
   - path: "~/Desktop/ECO AGENT/**"
     reason: "项目文件读取"
   - path: "~/Documents/Obsidian Vault/raw/**"
-    reason: "法规原文只读检索"
+    reason: "知识原文只读检索"
   - path: "~/Documents/Obsidian Vault/wiki/**"
-    reason: "法规知识只读检索"
+    reason: "知识知识只读检索"
   - mcp_tools:
       - eco-knowledge/search
       - eco-knowledge/retrieve
@@ -116,7 +116,7 @@ require_approval:
 
 | 操作示例 | 等级 | 自动/审批 |
 |:---------|:----:|:---------:|
-| 查询法规条文 | L1 | 自动 |
+| 查询知识条文 | L1 | 自动 |
 | 检索相似案例 | L1 | 自动 |
 | 写入 Memory Tree | L2 | 自动 |
 | 运行质量审计 | L3 | 自动（白名单） |
