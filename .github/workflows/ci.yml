@@ -11,7 +11,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lint:
@@ -24,22 +24,10 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
       - run: pip install ruff
-      - run: ruff check --output-format=github .
-        continue-on-error: true
-      - run: pip install pyflakes
-      - name: Syntax check
+      - name: Lint check
         run: |
-          find . -name '*.py' -not -path './.git/*' -not -path './worktrees/*' \
-            -not -path './memory-tree/*' -exec python3 -c "
-          import ast, sys
-          for f in sys.argv[1:]:
-              try:
-                  ast.parse(open(f, encoding='utf-8').read())
-              except SyntaxError as e:
-                  print(f'Syntax error in {f}: {e}')
-                  sys.exit(1)
-          print(f'Checked {len(sys.argv[1:])} files OK')
-          " {} +
+          ruff check --output-format=github . --ignore E402,F401
+          echo "::notice::Lint passed"
 
   test:
     name: Tests
@@ -51,9 +39,36 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
-      - run: pip install -r requirements.txt 2>/dev/null || true
-      - name: Run self-tests
+      - run: pip install pytest pytest-xdist pytest-cov
+      - name: Run tests (parallel)
         run: |
-          python3 -c "import sys; sys.path.insert(0,'.'); from agent_core.eco_loops_integration import EcoLoops; l=EcoLoops(); r=l.self_test(); assert r.get('all_pass'), f'Loops failed: {r}'"
-          echo "::notice:: Five loops self-test passed"
-          python3 -c "import sys; sys.path.insert(0,'.'); from agent_core.commander_v2 import CommanderV2; c=CommanderV2(); r=c.execute('test task'); assert r['total_tasks']>=3; print(f'Commander: {r[\"total_tasks\"]} tasks OK')"
+          python -m pytest tests/modules/ -v -n auto --tb=short --junit-xml=test-results.xml
+      - name: Generate test report
+        run: |
+          python tests/run_all.py --report-only || true
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: tests/reports/
+      - name: Update README badges
+        run: |
+          TOTAL=$(python3 -c "import xml.etree.ElementTree as ET; r=ET.parse('test-results.xml').getroot(); s=r.get('tests','0'); f=r.get('failures','0'); e=r.get('errors','0'); print(int(s)-int(f)-int(e))")
+          echo "Passed: $TOTAL"
+          # Badge is updated by the runner script
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo="${{ github.repository }}" \
+            --title="Eco Agent ${{ github.ref_name }}" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
