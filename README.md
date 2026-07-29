@@ -2,6 +2,12 @@
 
 > **五层循环驱动，持续自我进化的 AI 智能体。**
 
+[![Version](https://img.shields.io/badge/version-5.0.0--alpha-blue)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.12%2B-orange)](https://python.org)
+[![Tests](https://img.shields.io/badge/tests-23%20passed-brightgreen)](TEST_LOG.md)
+[![CI](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml)
+
 Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环，从毫秒级到天级，让 AI 在无人唤醒时也能思考，在无人纠正时也能进化。
 
 ---
@@ -105,6 +111,20 @@ python gateway/daemon.py start
 # 五层循环自检
 python agent_core/eco_loops_integration.py --self-test
 ```
+
+---
+
+## 测试状态
+
+| 模块 | 文件 | 测试数 |
+|:-----|:-----|:------:|
+| L1 ReAct++ | tests/modules/test_react_loop.py | 3 |
+| L2 Commander | tests/modules/test_commander.py | 5 |
+| L5 Self-Healing | tests/modules/test_self_healing.py | 4 |
+| Memory + Token | tests/modules/test_memory.py | 5 |
+| Evolution + Skills | tests/modules/test_evolution.py | 6 |
+
+并行执行：`python tests/run_all.py` · 历史记录：[TEST_LOG.md](TEST_LOG.md)
 
 ---
 
