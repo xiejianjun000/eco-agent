@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.gitignore'
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install ruff
+      - run: ruff check --output-format=github .
+        continue-on-error: true
+      - run: pip install pyflakes
+      - name: Syntax check
+        run: |
+          find . -name '*.py' -not -path './.git/*' -not -path './worktrees/*' \
+            -not -path './memory-tree/*' -exec python3 -c "
+          import ast, sys
+          for f in sys.argv[1:]:
+              try:
+                  ast.parse(open(f, encoding='utf-8').read())
+              except SyntaxError as e:
+                  print(f'Syntax error in {f}: {e}')
+                  sys.exit(1)
+          print(f'Checked {len(sys.argv[1:])} files OK')
+          " {} +
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install -r requirements.txt 2>/dev/null || true
+      - name: Run self-tests
+        run: |
+          python3 -c "import sys; sys.path.insert(0,'.'); from agent_core.eco_loops_integration import EcoLoops; l=EcoLoops(); r=l.self_test(); assert r.get('all_pass'), f'Loops failed: {r}'"
+          echo "::notice:: Five loops self-test passed"
+          python3 -c "import sys; sys.path.insert(0,'.'); from agent_core.commander_v2 import CommanderV2; c=CommanderV2(); r=c.execute('test task'); assert r['total_tasks']>=3; print(f'Commander: {r[\"total_tasks\"]} tasks OK')"
