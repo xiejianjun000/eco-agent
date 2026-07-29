@@ -24,8 +24,16 @@ Thumbs.db
 
 # Memory Tree data (runtime generated)
 memory-tree/data/
+memory-tree/obsidian_sync/
 *.db
 *.sqlite
+
+# Runtime artifacts (agent runs generate these)
+worktrees/
+plugins/plugin_*/
+skills/auto_*.md
+skills/test*.md
+tests/reports/
 
 # Logs
 *.log
