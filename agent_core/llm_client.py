@@ -121,6 +121,51 @@ class LLMClient:
         except Exception as e:
             return {"_error": True}
 
+    def chat_stream(self, messages: list, on_chunk=None) -> str:
+        """Streaming chat — yields chunks via callback, returns full text
+        on_chunk(chunk_text: str) is called for each content chunk
+        """
+        if not self.available():
+            if on_chunk: on_chunk("[LLM not configured. Run: eco setup]")
+            return ""
+        model = self._provider["default_model"]
+        full_text = ""
+        try:
+            with self._httpx.stream(
+                "POST",
+                f"{self._provider['base_url']}/chat/completions",
+                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+                json={"model": model, "messages": messages, "temperature": 0.7, "stream": True},
+                timeout=120,
+            ) as resp:
+                for line in resp.iter_lines():
+                    if line:
+                        line = line.decode('utf-8') if isinstance(line, bytes) else line
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str.strip() == "[DONE]":
+                                break
+                            try:
+                                data = json.loads(data_str)
+                                delta = data.get("choices", [{}])[0].get("delta", {})
+                                chunk = delta.get("content", "")
+                                if chunk:
+                                    full_text += chunk
+                                    if on_chunk: on_chunk(chunk)
+                            except json.JSONDecodeError:
+                                pass
+        except Exception as e:
+            err = f"
+[Stream error: {e}]"
+            full_text += err
+            if on_chunk: on_chunk(err)
+        if not full_text and on_chunk:
+            r = self.chat(messages)
+            text = r.get("choices", [{}])[0].get("message", {}).get("content", "")
+            if on_chunk: on_chunk(text)
+            return text
+        return full_text
+
     def _call_kimi_fallback(self, messages, model, temp) -> Optional[dict]:
         kimi_key = os.environ.get("KIMI_API_KEY") or self._env.get("KIMI_API_KEY", "")
         if not self._httpx or not kimi_key:
