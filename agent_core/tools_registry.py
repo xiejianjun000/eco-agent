@@ -211,15 +211,75 @@ async def execute_tool(name: str, args: dict) -> str:
 
 @_tool("query_air_quality")
 def _query_air_quality(city: str, station: str = ""):
+    """查询空气质量（真实数据 — 中国环境监测总站）"""
+    try:
+        from govmcp.tools.government.cnemc import get_city_realtime_air_quality, CNEMCError
+        try:
+            data = get_city_realtime_air_quality(city)
+            return {
+                "city": data["city"],
+                "aqi": data["aqi"],
+                "pm25": data["pm25"],
+                "pm10": data["pm10"],
+                "so2": data["so2"],
+                "no2": data["no2"],
+                "co": data["co"],
+                "o3": data["o3"],
+                "level": data["level"],
+                "primary_pollutant": data["main_pollutant"],
+                "publish_time": data["publish_time"],
+                "source": "中国环境监测总站实时数据 (CNEMC)"
+            }
+        except (ImportError, CNEMCError) as e:
+            pass  # fallback to httpx direct
+    except ImportError:
+        pass  # govmcp not installed, try httpx direct
+
+    # 直连 CNEMC 官方接口
+    import httpx
+    try:
+        resp = httpx.post(
+            "https://air.cnemc.cn:18007/HourChangesPublish/GetAllAQIPublishLive",
+            content=b"",
+            headers={
+                "Accept": "*/*",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Origin": "https://air.cnemc.cn:18007",
+                "Referer": "https://air.cnemc.cn:18007/",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            },
+            timeout=10,
+        )
+        records = resp.json()
+        if isinstance(records, list):
+            # 模糊匹配城市
+            city_lower = city.replace("市", "").strip().lower()
+            matched = [r for r in records if city_lower in str(r.get("Area", "")).replace("市", "").strip().lower()]
+            if matched:
+                m = matched[0]
+                return {
+                    "city": m.get("Area", city),
+                    "aqi": m.get("AQI"),
+                    "pm25": m.get("PM2_5_24h"),
+                    "pm10": m.get("PM10_24h"),
+                    "so2": m.get("SO2_24h"),
+                    "no2": m.get("NO2_24h"),
+                    "co": m.get("CO_24h"),
+                    "o3": m.get("O3_8h_24h"),
+                    "level": m.get("Quality"),
+                    "primary_pollutant": m.get("Main_Pollutant", "").replace(",", ", "),
+                    "publish_time": m.get("TimePointStr", ""),
+                    "source": "中国环境监测总站实时数据"
+                }
+    except Exception:
+        pass
+
+    # 全失败时返回提示，不返回假数据
     return {
         "city": city,
-        "aqi": 85,
-        "pm25": 52,
-        "pm10": 78,
-        "o3": 112,
-        "level": "良",
-        "primary_pollutant": "PM2.5",
-        "source": "中国环境监测总站模拟数据"
+        "aqi": None,
+        "level": "数据暂时不可用",
+        "source": "CNEMC 平台连接失败，请稍后重试"
     }
 
 @_tool("search_regulation")
