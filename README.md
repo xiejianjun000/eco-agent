@@ -126,6 +126,26 @@ python agent_core/eco_loops_integration.py --self-test
 
 ---
 
+## 阶段A：自生成提示词安全 · 纠错采集 · EcoBench-mini
+
+### 1. 双层系统提示词安全机制（`agent_core/prompt_engine.py`）
+- **安全层硬编码**：AI 只辅助执法不替代签字、不得建议规避监管、不得提供破坏生态建议等核心准则，任何机制不得修改。
+- **动态层追加式注入**：所有动态提示词经规则校验（禁止覆盖/删除安全层语义、禁止解除限制 pattern、禁止词），违规注入拒绝并记日志。
+- **L1 反思结构化**：ReAct++ 的 PAUSE & REFLECT 输出 `{问题诊断, 修正指令}`，修正指令经校验后注入后续轮次提示尾部。
+- **SM3 链式审计**：每次动态提示词变更（来源/内容/时间/任务ID/是否接受）追加到 `~/.eco/prompt_audit.jsonl`（prev_hash + SM3），`PromptAuditChain().verify_chain()` 全链校验，`eco doctor` 与 `eco evolution --report` 自动展示链验证状态。
+- **三阶段执法状态机**：巡查 / 文书 / 评查三套动态层预设，`switch_phase()` 切换。
+
+### 2. 纠错采集（`agent_core/corrections.py`）
+- `eco chat` 中 `/correct <内容>` 或自然语言"不对，应该是……"自动识别纠错。
+- 持久化到 `~/.eco/corrections.jsonl`（内容/时间/上下文摘要/命中次数）。
+- 后续提问时相关纠错作为**高优先级动态注入**（经 prompt_engine 校验层）注入系统提示词。
+- 管理：`eco corrections list | remove <id> | clear`。
+
+### 3. EcoBench-mini（`benchmarks/ecobench/`）
+- 50 题金标准数据集（`dataset.jsonl`），覆盖法条引用 / 违法认定 / 处罚裁量 / 执法程序 / 法典新旧衔接五大类，每题含 golden_answer、required_citations、key_points。
+- `python benchmarks/ecobench/run_ecobench.py [--limit N] [--mock]`：逐题调 LLM，如实计算法条引用准确率与要点 F1，**无封顶/保底**；`ECO_LLM_DISABLE=1` 时走 mock 模式（CI/离线）。
+- 最近一次真实跑分（kimi-k2.5，--limit 10）：**法条引用准确率 0.40，要点 F1 0.615**（受 LLM 波动与超时影响，分数如实报告，见 `ecobench_report.json`）。
+
 ## 测试状态
 
 | 模块 | 文件 | 测试数 |
@@ -135,6 +155,9 @@ python agent_core/eco_loops_integration.py --self-test
 | L5 Self-Healing | tests/modules/test_self_healing.py | 4 |
 | Memory + Token | tests/modules/test_memory.py | 5 |
 | Evolution + Skills | tests/modules/test_evolution.py | 6 |
+| Prompt Engine（双层提示词/注入校验/审计链） | tests/modules/test_prompt_engine.py | 21 |
+| Corrections（纠错采集/注入/管理） | tests/modules/test_corrections.py | 13 |
+| EcoBench-mini（评分诚实性/mock 流程） | tests/modules/test_ecobench.py | 6 |
 
 并行执行：`python tests/run_all.py` · 历史记录：[TEST_LOG.md](TEST_LOG.md)
 
