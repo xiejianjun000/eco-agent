@@ -11,19 +11,17 @@ def run(args):
     query = args.query
     try:
         sys.path.insert(0, str(ROOT))
-        from agent_core.react_loop import ReActPlusPlus
-        from agent_core.llm_client import get_default_client
     except ImportError as e:
         log.error(f"Cannot load engine: {e}")
         return 1
-
     if query:
-        return _oneshot(query, ReActPlusPlus)
-    return _interactive(ReActPlusPlus)
+        return _oneshot(query)
+    return _interactive()
 
-def _get_answer(query, ReActPlusPlus):
-    """通过 ReAct++ + LLM fallback 获取真实回答"""
+def _get_answer(query):
+    """Get real answer via ReAct++ with LLM fallback"""
     try:
+        from agent_core.react_loop import ReActPlusPlus
         loop = ReActPlusPlus()
         result = loop.execute(query)
         if isinstance(result, dict):
@@ -40,31 +38,31 @@ def _get_answer(query, ReActPlusPlus):
     except Exception as e:
         return f"[Error: {e}]"
 
-def _oneshot(query, ReActPlusPlus):
+def _oneshot(query):
     print()
-    answer = _get_answer(query, ReActPlusPlus)
+    answer = _get_answer(query)
     print(answer)
     print()
     return 0
 
-def _interactive(ReActPlusPlus):
-    print("
-  ECO AGENT - Ask me anything about environmental regulations
-")
+def _interactive():
+    print()
+    print("  ECO AGENT - Ask me anything")
+    print()
     while True:
         try:
             q = input("eco> ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("
-Bye!"); break
+            print()
+            print("Bye!")
+            break
         if not q: continue
         if q in ("/exit", "/quit"): break
         if q == "/help":
-            print("  /help  /exit
-")
+            print("  /help  /exit")
             continue
         print()
-        answer = _get_answer(q, ReActPlusPlus)
+        answer = _get_answer(q)
         print(answer)
         print()
     return 0
