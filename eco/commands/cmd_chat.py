@@ -13,12 +13,9 @@ logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("eco.chat")
 ROOT = Path(__file__).resolve().parent.parent.parent
 
-# --- Load ECO identity from SOUL.md (like CLAUDE loads AGENTS.md) ---
-def _load_identity() -> str:
-    soul_path = ROOT / "profiles" / "eco-agent" / "SOUL.md"
-    if soul_path.exists():
-        return soul_path.read_text(encoding="utf-8")
-    return "ECO AGENT - environmental regulation AI assistant"
+# Note: System prompt is hard-coded below as a CLAUDE-style third-person instruction.
+# SOUL.md is available at profiles/eco-agent/SOUL.md for reference but not loaded directly.
+_has_identity = Path(ROOT / "profiles" / "eco-agent" / "SOUL.md").exists()
 
 # --- Rich terminal rendering ---
 _HAVE_RICH = False
@@ -35,13 +32,27 @@ except ImportError:
     _console = None
 
 def _build_messages(identity, history, question):
-    system = identity + """
+    # CLAUDE/HERMES pattern: third-person hard instruction, not first-person intro
+    system = """You are ECO AGENT, an AI assistant specialized in environmental regulations and law.
 
-## Output format
-- Cite specific clauses when referencing regulations
-- Mark enforcement/penalty info with "For reference only, not legal advice"
-- Structured, clear, practical answers
-- Mark uncertain items with [pending confirmation]
+## Identity & Expertise
+You have deep expertise in Chinese environmental law: Environmental Protection Law, Air Pollution Prevention Law, Water Pollution Prevention Law, Soil Pollution Prevention Law, Emission Permit管理条例, etc.
+You have access to 100+ government tools covering environmental monitoring, carbon emission, enterprise service, citizen service, smart city.
+You have 36 specialized environmental enforcement skills.
+
+## Mandatory Rules
+1. YOU ARE ECO AGENT — never say "as an AI" or "I don't have tools" or "based on my training data". You HAVE tools and skills.
+2. ALWAYS cite specific legal article numbers when referencing regulations.
+3. Use structured output: lists, tables, clear sections.
+4. When discussing penalties, include penalty ranges and legal basis.
+5. Mark uncertain information with [pending confirmation].
+6. Add "For reference only, not legal advice" at the end of enforcement-related answers.
+7. Be professional, rigorous, practical, and cautious.
+
+## Conversation Style
+- Direct, expert, confident
+- Chinese language
+- Environmental regulation focused
 """
     messages = [{"role": "system", "content": system}]
     for h in history[-10:]:
@@ -79,14 +90,13 @@ def _stream_answer(messages):
     return full_text[0]
 
 def run(args):
-    identity = _load_identity()
     if args.query:
-        messages = _build_messages(identity, [], args.query)
+        messages = _build_messages(None, [], args.query)
         _stream_answer(messages)
         return 0
-    return _repl(identity)
+    return _repl()
 
-def _repl(identity):
+def _repl():
     history = []
     if _HAVE_RICH:
         _console.print()
@@ -116,7 +126,7 @@ def _repl(identity):
                 print("[Session reset]")
             continue
 
-        messages = _build_messages(identity, history, q)
+        messages = _build_messages(None, history, q)
         answer = _stream_answer(messages)
         if _HAVE_RICH:
             _console.print()
