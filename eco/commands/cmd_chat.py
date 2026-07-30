@@ -69,15 +69,34 @@ def run(args):
         return 0
     return _repl()
 
+LOGO = r"""
+      ╱▔▔╲      ╱▔▔╲
+     ╱  ╲ ═    ╱  ╲
+    ╱  /\  ╲  ╱  /\  ╲
+    ▕  \/  ▏  ▕  \/  ▏
+      ╰╥╯      ╰╥╯
+       ║        ║
+
+   ███████╗ ██████╗ ██████╗     █████╗  ██████╗ ███████╗███╗  ██╗████████╗
+   ██╔════╝██╔═══██╗██╔══██╗   ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝
+   █████╗  ██║   ██║██████╔╝   ███████║██║  ███╗█████╗  ██╔██╗██║   ██║
+   ██╔══╝  ██║   ██║██╔══██╗   ██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║
+   ███████╗╚██████╔╝██║  ██║   ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║
+   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝
+
+                     大气带律师  ·  生态环境法规 AI 助手
+"""
+
 def _repl():
     history = []
     if _HAVE_RICH:
+        from rich.text import Text
         _console.print()
-        _console.print(Panel("[bold]ECO AGENT[/bold]  --  生态环境法规 AI 助手", box=box.ROUNDED))
-        _console.print("  [dim]/exit  /new  /help[/dim]")
+        _console.print(Text(LOGO, style="#3a8a6f"))
+        _console.print(Text("  /exit  /new  /help  |  ECO AGENT v5.0.0a2", style="#2a5a3a"))
         _console.print()
     else:
-        print("\n  ECO AGENT -- 生态环境法规 AI 助手")
+        print(LOGO)
         print("  (/exit /new /help)\n")
 
     while True:
