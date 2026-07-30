@@ -22,18 +22,15 @@ except ImportError:
 SYSTEM_PROMPT = "你是 ECO AGENT，生态环境法规领域的 AI 助手。精通中国生态环境法律法规。可以调用 100+ 政务工具。引用法规时标注具体条款号。涉及处罚标注免责声明。用中文回答。"
 
 LOGO = r"""
-    ___       ___
-   /   \ == /   \     EEEEEE   CCCCC   OOOO
-  |  / \ | |  / \ |   EE      CC      OO  OO
-  |  \ / | |  \ / |   EEEE    CC      OO  OO
-  |     | |     |     EE      CC      OO  OO
-   \___/   \___/      EEEEEE   CCCCC   OOOO
-
-     ||         ||          AGENT
-     ||         ||        da qi dai lv shi
+   ███████╗ ██████╗ ██████╗     █████╗  ██████╗ ███████╗███╗  ██╗████████╗
+   ██╔════╝██╔═══██╗██╔══██╗   ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝
+   █████╗  ██║   ██║██████╔╝   ███████║██║  ███╗█████╗  ██╔██╗██║   ██║
+   ██╔══╝  ██║   ██║██╔══██╗   ██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║
+   ███████╗╚██████╔╝██║  ██║   ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║
+   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝
 """
 
-LOGO_LINE = "  ECO AGENT  --  da qi dai lv shi  --  Environmental Law AI"
+LOGO_LINE = "  ECO AGENT  --  da qi dai lv shi  --  Environmental Regulation AI"
 
 def _build_messages(history, question):
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
