@@ -46,8 +46,17 @@ class TestToolNameNormalization:
         assert renamed.get("查.询/天气（北京）v2") == slug
 
     def test_duplicate_dedup_report(self):
-        dups = tr.get_duplicate_tools()
-        assert "query_air_quality" in dups
+        # 源头重复定义已清除；去重防线仍须对动态注入的重复生效
+        import copy
+        dup = copy.deepcopy(tr.ALL_TOOL_DEFS[0])
+        tr.ALL_TOOL_DEFS.append(dup)
+        try:
+            dups = tr.get_duplicate_tools()
+            assert dup["function"]["name"] in dups
+        finally:
+            tr.ALL_TOOL_DEFS.remove(dup)
+            tr._DUPLICATE_TOOLS.clear()
+        assert tr.get_duplicate_tools() == []
 
     def test_generic_invalid_name_fallback(self):
         """未知非法名走通用 slug 化，结果合法"""
