@@ -14,7 +14,10 @@ import os, time, logging, json
 from pathlib import Path
 from typing import Optional
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+# 抑制 httpx 的 HTTP Request 日志输出
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger("llm_client")
 
 PROVIDERS = {
