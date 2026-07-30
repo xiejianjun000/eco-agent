@@ -56,19 +56,30 @@ def _build_messages(history, question):
 
 def _stream_answer(messages):
     """
-    Agent Loop:
+    L1 ReAct++ 循环（真实 LLM 推理 + 工具调用）：
     1. 显示思考指示器
-    2. chat_with_tools → LLM <-> 工具循环
+    2. ReActPlusPlus.execute() → LLM think → decide → act → observe
     3. 流式输出最终回答
     """
+    from agent_core.react_loop import ReActPlusPlus
     from agent_core.llm_client import get_default_client
-    from agent_core.tools_registry import get_tools, get_tools_summary
+    from agent_core.tools_registry import get_tools
 
+    # 检查 LLM 可用
     c = get_default_client()
     if not c.available():
         msg = "[LLM not configured. Run: eco setup]"
         print(msg)
         return msg
+
+    # 提取用户问题
+    user_query = ""
+    for m in reversed(messages):
+        if m["role"] == "user":
+            user_query = m["content"]
+            break
+    if not user_query:
+        user_query = messages[-1]["content"] if messages else ""
 
     full_text = [""]
     first_chunk_received = [False]
@@ -91,25 +102,59 @@ def _stream_answer(messages):
     anim.start()
     time.sleep(0.05)
 
-    def on_chunk(chunk):
-        if not first_chunk_received[0]:
-            first_chunk_received[0] = True
-            sys.stdout.write("\r" + " " * 40 + "\r")
-            sys.stdout.flush()
-        full_text[0] += chunk
-        display = chunk.replace("**", "") if _IS_WINDOWS else chunk
-        sys.stdout.write(display)
-        sys.stdout.flush()
-
+    # 构建 ReAct++ 实例，注册工具
+    loop = ReActPlusPlus()
     tools = get_tools()
-    result = c.chat_with_tools(messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5)
+    for t in tools:
+        fn = t["function"]
+        name = fn["name"]
+        desc = fn["description"]
+        from agent_core.tools_registry import execute_tool
+        import asyncio
+        def make_handler(tool_name):
+            def handler(**kwargs):
+                try:
+                    # ReAct++ passes {"query": "用户问题"}, map to tool params
+                    args = dict(kwargs)
+                    if "query" in args and args["query"]:
+                        args["keyword"] = args["query"]
+                        args["city"] = args["query"][:20]
+                        args["company_name"] = args["query"][:20]
+                    result = asyncio.run(execute_tool(tool_name, args))
+                    return result
+                except Exception as e:
+                    return f"[工具执行错误: {e}]"
+            return handler
+        loop.register_tool(name, make_handler(name), desc)
+
+    # 执行 ReAct++ 循环
+    result = loop.execute(user_query)
     stop_animation[0] = True
 
+    # 清理指示器
     if not first_chunk_received[0]:
         sys.stdout.write("\r" + " " * 40 + "\r")
+
+    # 构建输出
+    output = ""
+    if isinstance(result, dict):
+        obs = result.get("final_observation", "")
+        if obs and obs != "任务完成":
+            output = obs
+        else:
+            thought = result.get("thought", "")
+            if thought:
+                output = thought
+            else:
+                output = f"任务完成 (共{result['steps']}步，置信度{result['confidence']:.2f})"
+
+    display = output.replace("**", "") if _IS_WINDOWS else output
+    sys.stdout.write(display)
     sys.stdout.write("\n")
     sys.stdout.flush()
-    return result
+
+    full_text[0] = output
+    return output
 
 
 def run(args):
