@@ -155,8 +155,7 @@ class LLMClient:
                             except json.JSONDecodeError:
                                 pass
         except Exception as e:
-            err = f"
-[Stream error: {e}]"
+            err = "[Stream error: " + str(e) + "]"
             full_text += err
             if on_chunk: on_chunk(err)
         if not full_text and on_chunk:
