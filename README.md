@@ -146,6 +146,35 @@ python agent_core/eco_loops_integration.py --self-test
 - `python benchmarks/ecobench/run_ecobench.py [--limit N] [--mock]`：逐题调 LLM，如实计算法条引用准确率与要点 F1，**无封顶/保底**；`ECO_LLM_DISABLE=1` 时走 mock 模式（CI/离线）。
 - 最近一次真实跑分（kimi-k2.5，--limit 10）：**法条引用准确率 0.40，要点 F1 0.615**（受 LLM 波动与超时影响，分数如实报告，见 `ecobench_report.json`）。
 
+### 4. EcoBench RAG A/B 对照实验（EHS 知识库检索增强）
+
+**方法**：同一模型 kimi-k2.5、同一评分器、同一批题（题序前 10 题，`--limit 10`）。
+- **baseline**：无检索，裸模型直接作答（`run_ecobench.py --limit 10`）。
+- **rag**：`--rag` 模式，每题作答前经 MCP（SSE `http://111.230.89.107:8000/sse`，工具 kb_search/kb_read）检索 EHS 知识库，将 top 片段（总长截断至 3000 字符）作为"参考资料"注入答题提示词，要求优先依据参考资料并注明出处；每题检索文件清单记入报告。
+
+**真实分数（本次，如实报告，无封顶/保底）**：
+
+| 组别 | 法条引用准确率 | 要点 F1 |
+|:-----|:--------------:|:-------:|
+| baseline（本次复跑） | 0.40 | 0.71 |
+| rag（EHS 知识库检索增强） | 0.20 | 0.52 |
+| rag（复跑第 2 次，稳定性校验） | 0.30 | 0.59 |
+
+逐题（cite / f1）：
+
+| 题号 | EB01 | EB02 | EB03 | EB04 | EB05 | EB06 | EB07 | EB08 | EB09 | EB10 |
+|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|
+| baseline | 1/.80 | 1/.60 | 0/1.0 | 0/1.0 | 0/.20 | 1/.50 | 0/1.0 | 0/1.0 | 0/.00 | 1/1.0 |
+| rag | 0/1.0 | 1/.80 | 0/.00* | 0/1.0 | 0/.60 | 0/.00* | 0/.80 | 0/.00 | 0/.00 | 1/1.0 |
+
+\* EB03 rag 组 LLM 返回空按兜底答案计 0；EB06 rag 组 LLM ReadTimeout 记 [error] 计 0（均如实保留）。
+
+**结论（如实）**：本轮对照中 RAG **未带来提升，反而显著下降**（引用准确率 0.40→0.20，复跑 0.30，均低于基线）。主因：
+1. 该 EHS 知识库内容为 flowwiki 技能/合规笔记，检索命中多为 Skill/执行报告模板类文件，**缺少干净的法条原文库**，注入的噪声上下文稀释了模型自身准确的法条记忆；
+2. 注入文本中的阿拉伯数字条款写法（"第99条"）诱导模型改用阿拉伯数字作答，与金标准"第九十九条"字面匹配失配（如 EB01 rag 答案内容正确但因写法失配引用计 0）；
+3. 长上下文 prompt 增加 LLM 超时风险（EB06）。
+启示：RAG 收益强依赖知识库内容质量（法条原文 + 条号规范写法），仅在知识库补齐法条原文后才值得复测。
+
 ## 测试状态
 
 | 模块 | 文件 | 测试数 |
@@ -158,6 +187,7 @@ python agent_core/eco_loops_integration.py --self-test
 | Prompt Engine（双层提示词/注入校验/审计链） | tests/modules/test_prompt_engine.py | 21 |
 | Corrections（纠错采集/注入/管理） | tests/modules/test_corrections.py | 13 |
 | EcoBench-mini（评分诚实性/mock 流程） | tests/modules/test_ecobench.py | 6 |
+| EcoBench RAG（检索注入流程 mock） | tests/modules/test_ecobench_rag.py | 8 |
 
 并行执行：`python tests/run_all.py` · 历史记录：[TEST_LOG.md](TEST_LOG.md)
 
