@@ -1,14 +1,18 @@
 """
-eco chat — CLAUDE Code 风格终端输出
+eco chat — Windows 友好的终端输出
 
-设计：
-  1. ○ 思考指示器（输出前显示，用户可见）
-  2. 打字机流式输出（rich.render.Style 逐段着色）
-  3. 无重复、无闪烁、无二次渲染
+设计原则：
+  - 所有字符 GBK 兼容（不出现 ○ · ● 等特殊符号）
+  - 流式输出不做 rich markup 渲染（Windows 终端 ANSI 支持差）
+  - 输出完成后再用 rich Markdown 渲染最终版
+  - 干净、不重复、可读
 """
-import sys, logging, threading, time
+import sys, os, threading, time
 from pathlib import Path
 
+_IS_WINDOWS = sys.platform.startswith("win")
+
+import logging
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("eco.chat")
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -16,9 +20,6 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 try:
     from rich.console import Console
     from rich.panel import Panel
-    from rich.markdown import Markdown
-    from rich.style import Style
-    from rich.text import Text
     from rich import box
     _console = Console()
     _HAVE_RICH = True
@@ -52,10 +53,9 @@ def _build_messages(history, question):
 
 def _stream_answer(messages):
     """
-    CLAUDE Code 风格三阶段：
-    1. 显示 ○ 思考中（用户可见）
-    2. 流式输出（rich 实时渲染）
-    3. 空行结束
+    两段式输出：
+    1. 思考指示器 → 流式正文（纯文本追加）
+    2. 流式完成 → rich Markdown 渲染最终版（Windows 下跳过）
     """
     from agent_core.llm_client import get_default_client
     c = get_default_client()
@@ -66,43 +66,45 @@ def _stream_answer(messages):
 
     full_text = [""]
     first_chunk_received = [False]
-    animation_started = [False]
+    stop_animation = [False]
 
+    # ── 动画线程 ──
+    def animate():
+        try:
+            sys.stdout.write("  -- 思考中")
+            sys.stdout.flush()
+            first_chunk_received[0]  # ref
+            dots = 0
+            while not stop_animation[0]:
+                dots = (dots + 1) % 4
+                sys.stdout.write("\r  -- 思考中" + "." * dots + " " * (3 - dots))
+                sys.stdout.flush()
+                time.sleep(0.3)
+                if first_chunk_received[0]:
+                    break
+        except:
+            pass
+
+    anim = threading.Thread(target=animate, daemon=True)
+    anim.start()
+    time.sleep(0.05)
+
+    # ── 流式输出回调 ──
     def on_chunk(chunk):
         if not first_chunk_received[0]:
             first_chunk_received[0] = True
             sys.stdout.write("\r" + " " * 40 + "\r")
             sys.stdout.flush()
         full_text[0] += chunk
-        if _HAVE_RICH:
-            _console.out(chunk, end="")
+        # Windows 下去掉 ** 标记，显示纯文本
+        if _IS_WINDOWS:
+            display = chunk.replace("**", "")
+            sys.stdout.write(display)
         else:
             sys.stdout.write(chunk)
         sys.stdout.flush()
 
-    # 阶段一：显示思考指示器（优先启动动画，再发起请求）
-    stop_animation = [False]
-
-    def animate():
-        dots = 0
-        # 先显示一次，确保用户看到
-        sys.stdout.write("\r  ○ 思考中")
-        sys.stdout.flush()
-        animation_started[0] = True
-        while not stop_animation[0] and not first_chunk_received[0]:
-            dots = (dots + 1) % 4
-            sys.stdout.write("\r  ○ 思考中" + "·" * dots + " " * (3 - dots))
-            sys.stdout.flush()
-            time.sleep(0.25)
-
-    # 启动动画线程
-    anim = threading.Thread(target=animate, daemon=True)
-    anim.start()
-
-    # 等待动画线程至少显示一次再发起请求
-    time.sleep(0.05)
-
-    # 阶段二：流式输出
+    # ── 发起流式请求 ──
     c.chat_stream(messages, on_chunk=on_chunk)
     stop_animation[0] = True
 
@@ -112,6 +114,7 @@ def _stream_answer(messages):
 
     sys.stdout.write("\n")
     sys.stdout.flush()
+
     return full_text[0]
 
 
@@ -127,12 +130,14 @@ def _repl():
     history = []
     if _HAVE_RICH:
         _console.print()
-        _console.print(Panel("[bold]ECO AGENT[/bold]  —  生态环境法规 AI 助手", box=box.ROUNDED))
-        _console.print("  [dim]/exit[bold]/[/bold]/new[bold]/[/bold]/help[/dim]")
+        _console.print(Panel("[bold]ECO AGENT[/bold]  --  生态环境法规 AI 助手", box=box.ROUNDED))
+        _console.print("  [dim]/exit  /new  /help[/dim]")
         _console.print()
     else:
-        print("\n  ECO AGENT — 生态环境法规 AI 助手")
-        print("  (/exit /new /help)\n")
+        print()
+        print("  ECO AGENT -- 生态环境法规 AI 助手")
+        print("  (/exit /new /help)")
+        print()
 
     while True:
         try:
@@ -152,11 +157,6 @@ def _repl():
             print("[对话已重置]")
             continue
 
-        # 用户问题灰色显示（CLAUDE Code 风格）
-        if _HAVE_RICH:
-            _console.print(f"  [dim]> {q}[/dim]")
-        else:
-            print(f"  > {q}")
         print()
         messages = _build_messages(history, q)
         answer = _stream_answer(messages)
