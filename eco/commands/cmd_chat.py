@@ -1,5 +1,5 @@
 """
-eco chat — Talk to ECO AGENT (via ReAct++ for real LLM responses)
+eco chat - Talk to ECO AGENT (direct LLM, clean output)
 """
 import sys, logging
 from pathlib import Path
@@ -19,50 +19,38 @@ def run(args):
     return _interactive()
 
 def _get_answer(query):
-    """Get real answer via ReAct++ with LLM fallback"""
+    """Get answer directly from LLM"""
     try:
-        from agent_core.react_loop import ReActPlusPlus
-        loop = ReActPlusPlus()
-        result = loop.execute(query)
-        if isinstance(result, dict):
-            obs = result.get("final_observation", "")
-            if obs and obs != "任务完成":
-                return obs
-        # Fallback: direct LLM
         from agent_core.llm_client import get_default_client
         c = get_default_client()
         if c.available():
             r = c.chat([{"role": "user", "content": query}])
-            return r.get("choices", [{}])[0].get("message", {}).get("content", str(result))
-        return str(result)
+            return r.get("choices", [{}])[0].get("message", {}).get("content", "")
+        return "[LLM not configured. Run: eco setup]"
     except Exception as e:
         return f"[Error: {e}]"
 
 def _oneshot(query):
-    print()
     answer = _get_answer(query)
     print(answer)
-    print()
     return 0
 
 def _interactive():
-    print()
-    print("  ECO AGENT - Ask me anything")
+    print("  ECO AGENT - ask me anything")
     print()
     while True:
         try:
             q = input("eco> ").strip()
         except (EOFError, KeyboardInterrupt):
             print()
-            print("Bye!")
             break
         if not q: continue
         if q in ("/exit", "/quit"): break
         if q == "/help":
-            print("  /help  /exit")
+            print("  /exit")
             continue
-        print()
         answer = _get_answer(q)
+        print()
         print(answer)
         print()
     return 0
