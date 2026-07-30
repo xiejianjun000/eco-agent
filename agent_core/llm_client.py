@@ -138,6 +138,7 @@ class LLMClient:
                 json={"model": model, "messages": messages, "temperature": 0.7, "stream": True},
                 timeout=120,
             ) as resp:
+                _last_chunk = ""
                 for line in resp.iter_lines():
                     if line:
                         line = line.decode('utf-8') if isinstance(line, bytes) else line
@@ -149,7 +150,9 @@ class LLMClient:
                                 data = json.loads(data_str)
                                 delta = data.get("choices", [{}])[0].get("delta", {})
                                 chunk = delta.get("content", "")
-                                if chunk:
+                                # Dedup: DeepSeek SSE sometimes resends the same chunk
+                                if chunk and chunk != _last_chunk:
+                                    _last_chunk = chunk
                                     full_text += chunk
                                     if on_chunk: on_chunk(chunk)
                             except json.JSONDecodeError:
