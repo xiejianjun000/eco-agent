@@ -58,8 +58,6 @@ def _build_messages(identity, history, question):
 - 结构化呈现
 """
     messages = [{"role": "system", "content": system}]
-    # Pre-fill: guide response style (CLAUDE/HERMES pattern)
-    messages.append({"role": "assistant", "content": "我是 ECO AGENT，生态环境法规领域的专业 AI 助手。"})
     for h in history[-10:]:
         messages.append(h)
     messages.append({"role": "user", "content": question})
