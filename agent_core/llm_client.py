@@ -10,7 +10,7 @@ Reads config from ~/.eco/.env:
   ECO_PROVIDER=deepseek|openai|anthropic|kimi|qwen|doubao
   DEEPSEEK_API_KEY=sk-...
 """
-import os, time, logging
+import os, time, logging, json
 from pathlib import Path
 from typing import Optional
 
