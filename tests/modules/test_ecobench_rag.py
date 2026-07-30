@@ -101,29 +101,116 @@ def test_retriever_search_failure_degrades():
     assert hit["files"] == [] and hit["context"] == ""
 
 
-def test_answer_question_rag_injects_context():
-    fake = make_fake_call_tool()
+# ── RAG v2：定位→直取 ─────────────────────────────────
+
+INDEX_TEXT = (
+    "# Wiki 索引\n\n### 核心概念\n"
+    "- [中华人民共和国大气污染防治法](concepts/02-中华人民共和国大气污染防治法.md)\n"
+    "- [中华人民共和国水污染防治法](concepts/03-中华人民共和国水污染防治法.md)\n"
+)
+
+LAW_FULL_TEXT = (
+    "---\ntitle: 中华人民共和国大气污染防治法\n---\n\n"
+    "# 中华人民共和国大气污染防治法\n\n"
+    "### 第九十八条\n\n前一条上下文。\n\n"
+    "### 第九十九条\n\n违反本法规定，超过大气污染物排放标准排放大气污染物的，"
+    "责令改正或者限制生产、停产整治，并处十万元以上一百万元以下的罚款。\n\n"
+    "### 第一百条\n\n后一条上下文。\n"
+)
+
+EB01_ITEM = {
+    "id": "EB01", "category": "法条引用",
+    "question": "企业向大气超标排放污染物，执法人员应依据哪部法律哪一条款进行查处？",
+    "required_citations": ["《大气污染防治法》第九十九条"],
+    "key_points": ["大气污染防治法", "第九十九条"],
+}
+
+
+def make_fake_call_tool_v2():
+    calls = []
+
+    def call_tool(server, tool, arguments):
+        calls.append((tool, arguments))
+        if tool == "kb_search":
+            return {"success": True, "text": KB_SEARCH_TEXT}
+        if tool == "kb_read":
+            path = arguments.get("relative_path", "")
+            if path.endswith("index.md"):
+                return {"success": True, "text": INDEX_TEXT}
+            if "大气污染防治法" in path:
+                return {"success": True, "text": LAW_FULL_TEXT}
+            return {"success": False, "error": "not found"}
+        return {"success": False, "error": "unknown tool"}
+
+    call_tool.calls = calls
+    return call_tool
+
+
+def test_retrieve_v2_locate_then_read():
+    fake = make_fake_call_tool_v2()
+    r = RagRetriever(call_tool=fake)
+    hit = r.retrieve_v2(EB01_ITEM)
+    assert hit["files"] == ["flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"]
+    assert hit["articles"] == [99]
+    assert "超过大气污染物排放标准排放大气污染物" in hit["context"]  # 目标条款正文
+    assert len(hit["context"]) <= 3000
+    # 直取 concepts 文件，无需 kb_search
+    assert [c[0] for c in fake.calls].count("kb_search") == 0
+
+
+def test_retrieve_v2_context_length_cap():
+    fake = make_fake_call_tool_v2()
+    r = RagRetriever(call_tool=fake)
+    big = LAW_FULL_TEXT + "### 第一百零一条\n\n" + "长文。" * 5000
+    def ct(server, tool, arguments):
+        if tool == "kb_read" and "index" not in arguments.get("relative_path", ""):
+            return {"success": True, "text": big}
+        return fake(server, tool, arguments)
+    r2 = RagRetriever(call_tool=ct)
+    hit = r2.retrieve_v2(EB01_ITEM)
+    assert len(hit["context"]) <= 3000
+
+
+def test_retrieve_v2_search_fallback_filters_skills():
+    """index 未命中时 kb_search 兜底，且只保留 concepts/ 非 Skill 路径"""
+    def ct(server, tool, arguments):
+        if tool == "kb_read" and arguments.get("relative_path", "").endswith("index.md"):
+            return {"success": False, "error": "no index"}
+        if tool == "kb_search":
+            return {"success": True, "text": (
+                "📄 flowwiki/wiki/skills/Skill_12.md\n18:x\n\n"
+                "📄 flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md\n18:y\n")}
+        if tool == "kb_read":
+            return {"success": True, "text": LAW_FULL_TEXT}
+        return {"success": False}
+    r = RagRetriever(call_tool=ct)
+    hit = r.retrieve_v2(EB01_ITEM)
+    assert hit["files"] == ["flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"]
+
+
+def test_answer_question_rag2_injects_context():
+    fake = make_fake_call_tool_v2()
     retriever = RagRetriever(call_tool=fake)
     client = FakeClient()
-    item = {"id": "EB01", "question": "企业向大气超标排放污染物，应依据哪条查处？"}
-    ans, files = answer_question(client, item, mock=False, retriever=retriever)
+    ans, files, articles = answer_question(client, EB01_ITEM, mock=False, retriever=retriever)
     assert "第九十九条" in ans
-    assert files  # 检索文件清单被记录
+    assert files and articles == [99]                       # 命中文件与条款被记录
     prompt = client.prompts[0]
-    assert "【参考资料】" in prompt and KB_READ_TEXT in prompt  # 注入参考资料
-    assert item["question"] in prompt
+    assert "【参考资料】" in prompt and "超过大气污染物排放标准" in prompt
+    assert "汉字数字形式" in prompt                          # v2 提示词要求
+    assert EB01_ITEM["question"] in prompt
 
 
 def test_answer_question_baseline_prompt_unchanged():
     """基线模式（无 retriever）提示词保持原样，保证对照公平"""
     client = FakeClient()
     item = {"id": "EB01", "question": "企业向大气超标排放污染物，应依据哪条查处？"}
-    ans, files = answer_question(client, item, mock=False)
-    assert files == []
+    ans, files, articles = answer_question(client, item, mock=False)
+    assert files == [] and articles == []
     assert client.prompts[0] == item["question"]
     assert ans
 
 
 def test_answer_question_mock_mode():
-    ans, files = answer_question(None, {"id": "X", "question": "q"}, mock=True)
-    assert ans.startswith("[mock]") and files == []
+    ans, files, articles = answer_question(None, {"id": "X", "question": "q"}, mock=True)
+    assert ans.startswith("[mock]") and files == [] and articles == []
