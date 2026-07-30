@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eco-agent"
-version = "5.0.0a0"
-description = "Eco Agent — 五层循环自我进化智能体"
+version = "5.0.0a1"
+description = "ECO AGENT - Five-layer loop driven autonomous AI agent system"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 dependencies = [
     "httpx>=0.27",
     "requests>=2.31",
@@ -18,11 +18,23 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/xiejianjun000/eco-agent"
+Repository = "https://github.com/xiejianjun000/eco-agent.git"
+
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+serve = ["sse-starlette>=1.0"]
+all = ["eco-agent[serve]"]
+
+[project.scripts]
+eco = "eco.cli:main"
 
 [tool.setuptools]
-packages = ["agent_core", "gateway"]
+packages = [
+    "agent_core", "gateway",
+    "eco", "eco.commands", "eco.config",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -33,20 +45,12 @@ target-version = "py310"
 line-length = 160
 
 [tool.ruff.lint]
-# 功能正确性优先：未使用导入/变量、裸 except、重复定义、语法级问题
 select = ["E", "F", "W", "B", "UP", "SIM"]
 ignore = [
-    "E402",   # sys.path 引导后的导入（本仓库脚本约定）
-    "E501",   # 行长从宽
-    "E701",   # 单行多语句：仓库紧凑风格，从宽
-    "E702",   # 分号多语句：同上
-    "E741",   # 单字母变量：局部惯例，从宽
-    "SIM102", # 嵌套 if 合并建议，风格类
-    "SIM116", # if-elif 查表改写建议，风格类
-    "SIM105", # contextlib.suppress 改写建议，风格类
-    "SIM108", # 三元改写建议，风格类
+    "E402", "E501", "E701", "E702", "E741",
+    "SIM102", "SIM116", "SIM105", "SIM108",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011"]
-"_scripts/**" = ["F841", "B007"]  # 历史工具脚本，存量未使用变量暂不逐行清理
+"_scripts/**" = ["F841", "B007"]

@@ -1,3 +1,75 @@
+## [2026-07-30] v5.0.0a1 — CLI + API Server (P0-P2)
+
+### Added
+- **`eco` CLI command tree** (9 subcommands)
+  - `eco chat` — interactive/one-shot chat mode
+  - `eco gateway` — message gateway lifecycle management
+  - `eco mcp serve` — MCP protocol server (stdio/HTTP/WebSocket)
+  - `eco serve` — OpenAI-compatible API server
+  - `eco setup` — interactive configuration wizard
+  - `eco config` — config management
+  - `eco doctor` — 8-item health check
+  - `eco skills` — skill management (ECOSKILLS 500+)
+  - `eco evolution` — L4 evolution loop trigger
+
+- **OpenAI-compatible API Server** (P2 core)
+  - `POST /v1/chat/completions` with SSE streaming
+  - `GET /v1/models` — list available models
+  - Optional API Key authentication
+  - Routes through 5-layer engine
+
+- **Package distribution**
+  - `pyproject.toml`: `[project.scripts] eco = "eco.cli:main"`
+  - `pip install eco-agent` ready to use
+  - Optional: `pip install eco-agent[serve]`
+
+### Changed
+- Version: 5.0.0a0 -> 5.0.0a1
+- License: MIT -> Apache-2.0
+- Added `eco/` `eco/commands/` `eco/config/` packages
+
+### Fixed
+- Windows GBK terminal compatibility for eco doctor
+- pyproject.toml encoding issues
+
+## [2026-07-30] v5.0.0a1 — P0-P2: CLI + 包分发 + API Server（G方法论交付）
+
+### Added (G2 工具化思维)
+
+- **`eco` CLI 命令树（9 个子命令，G3 渐进交付）**
+  - `eco chat`：交互式/单次对话模式，对接五层循环引擎
+  - `eco gateway start/stop/restart/status`：消息网关全生命周期管理
+  - `eco mcp serve`：MCP 协议服务器（stdio/HTTP/WebSocket 三模式）
+  - `eco setup`：交互式配置向导（5 步完成：提供商选择→API Key→依赖→平台→完成）
+  - `eco config show/get/set/init/path`：配置管理（~/.eco/.env）
+  - `eco doctor`：系统健康检查（8 项，支持 --fix 自动修复）
+  - `eco skills list/install/info`：技能管理（对接 ECOSKILLS 500+ 生态）
+  - `eco evolution`：L4 进化循环触发（支持 --dry-run/--report）
+  - `eco version`：版本信息
+
+- **OpenAI 兼容 API Server（P2 核心，G6 职责分离）**
+  - `eco serve` 命令：启动 FastAPI 服务
+  - `POST /v1/chat/completions`：OpenAI 格式请求，对接五层循环引擎
+  - `GET /v1/models`：列出可用模型
+  - 支持流式 SSE 响应
+  - 可选 API Key 认证
+
+- **包分发（G5 语义版本）**
+  - `pyproject.toml`：添加 `[project.scripts] eco` 入口点
+  - `pip install eco-agent` 即可安装
+  - `eco` 命令全局可用
+  - 可选依赖：`pip install eco-agent[serve]` 启用 API Server
+
+### Changed (G4 质量门禁)
+
+- `pyproject.toml`：版本 5.0.0a0 → 5.0.0a1，许可证 MIT → Apache-2.0
+- 重构项目包结构：新增 `eco/` `eco/commands/` `eco/config/` 包
+
+### Fixed
+
+- Windows GBK 终端兼容：emoji 符号自动降级为 ASCII 文本
+- `eco doctor`：UnicodeEncodeError 处理
+
 # Changelog
 
 ## [2026-07-28] v0.1.0 — ECO AGENT 项目初始化
