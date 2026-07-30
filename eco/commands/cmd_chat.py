@@ -1,20 +1,22 @@
 """
-eco chat - Conversational AI (CLAUDE/CODEX/HERMES pattern)
-  - Streaming output character by character
-  - No rich Live overhead - simple typewriter effect
-  - Chinese system prompt for DeepSeek compatibility
-  - Multi-turn conversation
+eco chat — CLAUDE Code 风格终端输出
+
+设计：
+  1. ○ 思考指示器（单行动画，自动消失）
+  2. 打字机流式输出（rich markup 实时渲染）
+  3. 无重复、无闪烁、无二次渲染
 """
-import sys, logging
+import sys, logging, threading, time
 from pathlib import Path
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("eco.chat")
 ROOT = Path(__file__).resolve().parent.parent.parent
 
-# --- Rich for welcome panel only ---
+# Rich 用于最终渲染和欢迎面板
 try:
     from rich.console import Console
+    from rich.markdown import Markdown
     from rich.panel import Panel
     from rich import box
     _console = Console()
@@ -23,8 +25,7 @@ except ImportError:
     _console = None
     _HAVE_RICH = False
 
-def _build_messages(history, question):
-    system = """## 你是谁
+SYSTEM_PROMPT = """## 你是谁
 你是 ECO AGENT，生态环境法规领域的 AI 助手。
 
 ## 你的能力
@@ -42,14 +43,22 @@ def _build_messages(history, question):
 6. 执法相关内容末尾加注「本回答仅供参考，不构成法律意见」
 7. 用中文回答，专业、严谨、务实
 """
-    messages = [{"role": "system", "content": system}]
+
+def _build_messages(history, question):
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     for h in history[-10:]:
         messages.append(h)
     messages.append({"role": "user", "content": question})
     return messages
 
+
 def _stream_answer(messages):
-    """Stream answer with simple typewriter effect (CLAUDE/CODEX pattern)"""
+    """
+    CLAUDE Code 风格三阶段输出：
+    1. ◉ 思考指示器（直到第一个 chunk）
+    2. 打字机输出（追加式）
+    3. rich Markdown 渲染最终版
+    """
     from agent_core.llm_client import get_default_client
     c = get_default_client()
     if not c.available():
@@ -58,17 +67,48 @@ def _stream_answer(messages):
         return msg
 
     full_text = [""]
-    started = [False]
+    first_chunk_received = [False]
 
     def on_chunk(chunk):
-        if not started[0]:
-            started[0] = True
+        if not first_chunk_received[0]:
+            # 清除思考指示器行
+            sys.stdout.write("\r" + " " * 30 + "\r")
+            sys.stdout.flush()
+            first_chunk_received[0] = True
         full_text[0] += chunk
-        print(chunk, end="", flush=True)
+        # CLAUDE Code 风格：使用 console.out 实时渲染 markup
+        if _HAVE_RICH:
+            _console.out(chunk, end="")
+        else:
+            sys.stdout.write(chunk)
+        sys.stdout.flush()
 
+    # 阶段一：显示思考指示器
+    sys.stdout.write("  ○  Thinking")
+    sys.stdout.flush()
+
+    # 后台运行动画（简单点的点）
+    stop_animation = [False]
+    def animate():
+        dots = 0
+        while not stop_animation[0] and not first_chunk_received[0]:
+            dots = (dots + 1) % 4
+            sys.stdout.write("\r  ○  Thinking" + "." * dots + " " * (3 - dots))
+            sys.stdout.flush()
+            time.sleep(0.3)
+
+    anim = threading.Thread(target=animate, daemon=True)
+    anim.start()
+
+    # 阶段二：流式输出
     c.chat_stream(messages, on_chunk=on_chunk)
-    print()
+    stop_animation[0] = True
+
+    # 阶段三：完成
+    sys.stdout.write("\n")
+
     return full_text[0]
+
 
 def run(args):
     if args.query:
@@ -77,18 +117,18 @@ def run(args):
         return 0
     return _repl()
 
+
 def _repl():
     history = []
+    # 欢迎面板
     if _HAVE_RICH:
         _console.print()
-        _console.print(Panel("[bold]ECO AGENT[/bold] - Environmental Regulation AI Assistant", box=box.ROUNDED))
+        _console.print(Panel("[bold]ECO AGENT[/bold]  —  生态环境法规 AI 助手", box=box.ROUNDED))
         _console.print("  [dim]/exit  /new  /help[/dim]")
         _console.print()
     else:
-        print()
-        print("  ECO AGENT - Environmental Regulation AI Assistant")
-        print("  (/exit /new /help)")
-        print()
+        print("\n  ECO AGENT  —  生态环境法规 AI 助手")
+        print("  (/exit  /new  /help)\n")
 
     while True:
         try:
@@ -105,14 +145,15 @@ def _repl():
             continue
         if q == "/new":
             history = []
-            print("[Session reset]")
+            print("[对话已重置]")
             continue
 
         messages = _build_messages(history, q)
         answer = _stream_answer(messages)
-        print()
+
         history.append({"role": "user", "content": q})
         history.append({"role": "assistant", "content": answer})
         if len(history) > 100:
             history = history[-50:]
+
     return 0
