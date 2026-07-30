@@ -121,8 +121,13 @@ class ReActPlusPlus:
             state.action = action
 
             if action == "__complete__":
-                # ChatGPT 风格：用上一次的思考作为输出
-                final = state.thought if state.thought else "任务完成"
+                # ChatGPT 风格：用上一次的思考作为输出；
+                # 但规则模式的“继续执行步骤N”占位思考不是结论——
+                # 工具已产出结果时不应用它覆盖最终观测
+                if state.thought and not state.thought.startswith("继续执行步骤"):
+                    final = state.thought
+                else:
+                    final = "任务完成"
                 state.action_result = final
                 logger.info(f"[ReAct++] 步骤{step}: 完成 - {final[:60]}")
                 break

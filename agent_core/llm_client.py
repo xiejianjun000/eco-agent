@@ -2,17 +2,22 @@
 """llm_client.py - Unified LLM client for ECO AGENT
 
 Architecture:
-  eco chat/serve -> EcoLoops -> ReAct++ -> LLMClient -> Direct LLM API (OpenAI compat)
-                                                     -> govmcp LLM Gateway (optional)
+  eco chat/serve -> EcoLoops -> ReAct++ -> LLMClient -> govmcp LLM Gateway (optional, GOVMCP_GATEWAY)
+                                                     -> Direct LLM API (OpenAI compat, PROVIDERS)
                                                      -> Kimi/Moonshot direct (fallback)
 
 Reads config from ~/.eco/.env:
   ECO_PROVIDER=deepseek|openai|anthropic|kimi|qwen|doubao
   DEEPSEEK_API_KEY=sk-...
+  GOVMCP_GATEWAY=http://127.0.0.1:9000   (optional; OpenAI-compatible /v1/chat/completions)
+  GOVMCP_GATEWAY_KEY=...                 (optional bearer token for the gateway)
+  ECO_LLM_DISABLE=1                      (force offline / rule-mode degradation)
 """
-import os, time, logging, json
+import os
+import time
+import logging
+import json
 from pathlib import Path
-from typing import Optional
 
 # 抑制 httpx 的 HTTP Request 日志输出
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -29,6 +34,10 @@ PROVIDERS = {
     "doubao": {"base_url": "https://ark.cn-beijing.volces.com/api/v3", "api_key_env": "DOUBAO_API_KEY", "default_model": "doubao-pro-32k"},
 }
 
+KIMI_BASE_URL = "https://api.moonshot.cn/v1"
+KIMI_FALLBACK_MODEL = "kimi-k2.5"
+
+
 class LLMClient:
     def __init__(self):
         env = {}
@@ -43,6 +52,9 @@ class LLMClient:
         prov = PROVIDERS.get(self._provider_name, PROVIDERS["deepseek"])
         self._provider = prov
         self._api_key = os.environ.get(prov["api_key_env"]) or env.get(prov["api_key_env"], "")
+        # govmcp LLM 网关（可选）：配置后优先走网关，失败降级 PROVIDERS 直连
+        self._gateway_url = (os.environ.get("GOVMCP_GATEWAY") or env.get("GOVMCP_GATEWAY", "")).rstrip("/")
+        self._gateway_key = os.environ.get("GOVMCP_GATEWAY_KEY") or env.get("GOVMCP_GATEWAY_KEY", "")
         self._stats = {"calls": 0, "errors": 0, "total_elapsed_s": 0.0}
         self._httpx = None
         try:
@@ -50,12 +62,49 @@ class LLMClient:
         except ImportError:
             logger.warning("httpx not installed")
 
+    @staticmethod
+    def _disabled() -> bool:
+        return os.environ.get("ECO_LLM_DISABLE", "").strip().lower() in ("1", "true", "yes", "on")
+
     def available(self) -> bool:
-        return self._httpx is not None and bool(self._api_key)
+        return self._httpx is not None and bool(self._api_key) and not self._disabled()
+
+    @staticmethod
+    def _resolve_temperature(model: str, temperature: float) -> float:
+        """kimi-k2.x 系列只接受 temperature=1，按模型名前缀自适应强制"""
+        if (model or "").lower().startswith("kimi-k2"):
+            return 1
+        return temperature
+
+    def _build_payload(self, model: str, messages: list, temperature: float = 0.7,
+                       max_tokens: int = 0, stream: bool = False, tools: list = None) -> dict:
+        """单一 payload 构建入口：所有调用路径的温度自适应都在这里收敛"""
+        payload = {"model": model, "messages": messages,
+                   "temperature": self._resolve_temperature(model, temperature), "stream": stream}
+        if max_tokens:
+            payload["max_tokens"] = max_tokens
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = "auto"
+        return payload
+
+    def _post_chat(self, base_url: str, api_key: str, payload: dict, timeout: int = 60):
+        """POST OpenAI 兼容 /chat/completions；返回 (dict|None, error_str|None)"""
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        try:
+            resp = self._httpx.post(
+                f"{base_url}/chat/completions", headers=headers, json=payload, timeout=timeout)
+            if resp.status_code == 200:
+                return resp.json(), None
+            return None, f"HTTP {resp.status_code}: {getattr(resp, 'text', '')[:200]}"
+        except Exception as e:
+            return None, f"{type(e).__name__}: {e}"
 
     def complete(self, prompt: str, system: str = "", max_tokens: int = 512) -> str:
         """Complete interface expected by ReAct++ (L1 micro-action loop)
-        
+
         Args:
             prompt: User message text
             system: System prompt text
@@ -70,59 +119,82 @@ class LLMClient:
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
-        try:
-            resp = self._httpx.post(
-                f"{self._provider['base_url']}/chat/completions",
-                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json={"model": self._provider["default_model"], "messages": messages,
-                       "temperature": 0.7, "max_tokens": max_tokens, "stream": False},
-                timeout=30,
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                return text.strip()
-            logger.warning(f"[complete] HTTP {resp.status_code}")
+        model = self._provider["default_model"]
+        payload = self._build_payload(model, messages, temperature=0.7, max_tokens=max_tokens)
+        data, err = self._post_chat(self._provider["base_url"], self._api_key, payload, timeout=30)
+        if err:
+            logger.warning(f"[complete] {err}")
             return ""
-        except Exception as e:
-            logger.warning(f"[complete] {e}")
-            return ""
+        return (data.get("choices", [{}])[0].get("message", {}).get("content", "") or "").strip()
 
     def chat(self, messages: list, model: str = "", stream: bool = False, temperature: float = 0.7) -> dict:
-        """OpenAI-compatible chat completions"""
+        """OpenAI-compatible chat completions.
+
+        调用链：govmcp 网关（若配置 GOVMCP_GATEWAY）-> PROVIDERS 直连 -> Kimi 直连兜底。
+        每级错误透传进错误链，最终失败时返回降级消息并携带 _error/_error_detail。
+        """
+        if self._disabled():
+            return {"_error": True, "_error_detail": "disabled via ECO_LLM_DISABLE",
+                    "choices": [{"message": {"content": "[LLM disabled]"}}]}
         if not self.available():
             return {"choices": [{"message": {"content": "[LLM unavailable: Run: eco setup]"}}]}
         if not model:
             model = self._provider["default_model"]
         start = time.time()
         self._stats["calls"] += 1
-        result = self._call_api(messages, model, temperature)
-        if result and not result.get("_error"):
-            self._stats["total_elapsed_s"] += time.time() - start
-            return result
-        result = self._call_kimi_fallback(messages, model, temperature)
-        if result and not result.get("_error"):
-            self._stats["total_elapsed_s"] += time.time() - start
+        errors = []
+        result = None
+        # 1) govmcp 网关优先（可选）
+        if self._gateway_url:
+            result, err = self._call_gateway(messages, model, temperature)
+            if err:
+                errors.append(f"gateway({self._gateway_url}): {err}")
+                logger.warning(f"[chat] gateway failed, fallback to direct: {err}")
+                result = None
+        # 2) PROVIDERS 直连
+        if result is None:
+            result, err = self._call_api(messages, model, temperature)
+            if err:
+                errors.append(f"direct({self._provider_name}): {err}")
+                result = None
+        # 3) Kimi 直连兜底
+        if result is None:
+            result, err = self._call_kimi_fallback(messages, model, temperature)
+            if err:
+                errors.append(f"kimi_fallback: {err}")
+                result = None
+        self._stats["total_elapsed_s"] += time.time() - start
+        if result is not None:
             return result
         self._stats["errors"] += 1
-        self._stats["total_elapsed_s"] += time.time() - start
-        return {"choices": [{"message": {"content": "[LLM unavailable: all backends failed]"} }]}
+        detail = " | ".join(errors) or "no backend attempted"
+        logger.warning(f"[chat] all backends failed: {detail}")
+        return {"_error": True, "_error_detail": detail,
+                "choices": [{"message": {"content": "[LLM unavailable: all backends failed]"}}]}
 
-    def _call_api(self, messages, model, temp) -> Optional[dict]:
+    def _call_gateway(self, messages, model, temp) -> tuple:
+        """走 govmcp 网关的 OpenAI 兼容端点。返回 (dict|None, error|None)"""
+        if not self._httpx:
+            return None, "httpx not installed"
+        payload = self._build_payload(model, messages, temperature=temp)
+        return self._post_chat(self._gateway_url, self._gateway_key, payload, timeout=60)
+
+    def _call_api(self, messages, model, temp) -> tuple:
+        """PROVIDERS 直连。返回 (dict|None, error|None)"""
         if not self._httpx or not self._api_key:
-            return None
-        try:
-            resp = self._httpx.post(
-                f"{self._provider['base_url']}/chat/completions",
-                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json={"model": model, "messages": messages, "temperature": temp, "stream": False},
-                timeout=60,
-            )
-            if resp.status_code == 200:
-                return resp.json()
-            return {"_error": True}
-        except Exception as e:
-            return {"_error": True}
+            return None, "no api key or httpx missing"
+        payload = self._build_payload(model, messages, temperature=temp)
+        return self._post_chat(self._provider["base_url"], self._api_key, payload, timeout=60)
+
+    def _call_kimi_fallback(self, messages, model, temp) -> tuple:
+        """Kimi/Moonshot 直连兜底（provider 本身即 kimi 时跳过，避免重复请求）"""
+        if self._provider_name == "kimi":
+            return None, "skipped (primary provider is already kimi)"
+        kimi_key = os.environ.get("KIMI_API_KEY") or self._env.get("KIMI_API_KEY", "")
+        if not self._httpx or not kimi_key:
+            return None, "no KIMI_API_KEY"
+        payload = self._build_payload(KIMI_FALLBACK_MODEL, messages, temperature=temp)
+        return self._post_chat(KIMI_BASE_URL, kimi_key, payload, timeout=30)
 
     def chat_stream(self, messages: list, on_chunk=None) -> str:
         """Streaming chat — yields chunks via callback, returns full text
@@ -138,7 +210,7 @@ class LLMClient:
                 "POST",
                 f"{self._provider['base_url']}/chat/completions",
                 headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json={"model": model, "messages": messages, "temperature": 0.7, "stream": True},
+                json=self._build_payload(model, messages, temperature=0.7, stream=True),
                 timeout=120,
             ) as resp:
                 _last_chunk = ""
@@ -195,17 +267,8 @@ class LLMClient:
         current_messages = list(messages)
         tool_results_displayed = [False]
 
-        for round_idx in range(max_tool_rounds + 1):
-            # 调用 LLM
-            body = {
-                "model": model,
-                "messages": current_messages,
-                "temperature": 0.7,
-                "stream": False,
-            }
-            if tools:
-                body["tools"] = tools
-                body["tool_choice"] = "auto"
+        for _round_idx in range(max_tool_rounds + 1):
+            body = self._build_payload(model, current_messages, temperature=0.7, tools=tools)
 
             try:
                 resp = self._httpx.post(
@@ -235,7 +298,7 @@ class LLMClient:
                     fn_name = tc["function"]["name"]
                     try:
                         fn_args = json.loads(tc["function"]["arguments"])
-                    except:
+                    except Exception:
                         fn_args = {}
                     args_str = "; ".join(f"{k}={v}" for k, v in fn_args.items())
 
@@ -270,7 +333,7 @@ class LLMClient:
                     tool_name = tc["function"]["name"]
                     try:
                         tool_args = json.loads(tc["function"]["arguments"])
-                    except:
+                    except Exception:
                         tool_args = {}
 
                     tool_result = asyncio.run(execute_tool(tool_name, tool_args))
@@ -293,7 +356,6 @@ class LLMClient:
                 chunk_size = 20
                 for i in range(0, len(content), chunk_size):
                     on_chunk(content[i:i+chunk_size])
-                    import time
                     time.sleep(0.01)
 
             return content
@@ -302,21 +364,6 @@ class LLMClient:
         fallback = "[工具调用次数过多，请简化问题]"
         if on_chunk: on_chunk(fallback)
         return fallback
-        kimi_key = os.environ.get("KIMI_API_KEY") or self._env.get("KIMI_API_KEY", "")
-        if not self._httpx or not kimi_key:
-            return None
-        try:
-            resp = self._httpx.post(
-                "https://api.moonshot.cn/v1/chat/completions",
-                headers={"Authorization": f"Bearer {kimi_key}"},
-                json={"model": "kimi-k2.5", "messages": messages, "temperature": temp, "stream": False},
-                timeout=30,
-            )
-            if resp.status_code == 200:
-                return resp.json()
-        except Exception:
-            pass
-        return None
 
     def get_stats(self) -> dict:
         s = dict(self._stats)
@@ -324,6 +371,7 @@ class LLMClient:
         s["provider"] = self._provider_name
         s["model"] = self._provider["default_model"]
         s["has_api_key"] = bool(self._api_key)
+        s["gateway"] = self._gateway_url or None
         return s
 
 _client = None
@@ -337,7 +385,8 @@ def chat(messages: list, **kwargs) -> dict:
     return get_default_client().chat(messages, **kwargs)
 
 if __name__ == "__main__":
-    import sys as _sys, io
+    import sys as _sys
+    import io
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
     c = get_default_client()
     if c.available():
