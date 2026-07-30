@@ -152,6 +152,12 @@ def _repl():
             print("[对话已重置]")
             continue
 
+        # 用户问题灰色显示（CLAUDE Code 风格）
+        if _HAVE_RICH:
+            _console.print(f"  [dim]> {q}[/dim]")
+        else:
+            print(f"  > {q}")
+        print()
         messages = _build_messages(history, q)
         answer = _stream_answer(messages)
 
