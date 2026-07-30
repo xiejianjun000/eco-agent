@@ -121,8 +121,10 @@ class ReActPlusPlus:
             state.action = action
 
             if action == "__complete__":
-                state.action_result = "任务完成"
-                logger.info(f"[ReAct++] 步骤{step}: 任务完成")
+                # ChatGPT 风格：用上一次的思考作为输出
+                final = state.thought if state.thought else "任务完成"
+                state.action_result = final
+                logger.info(f"[ReAct++] 步骤{step}: 完成 - {final[:60]}")
                 break
 
             if action == "__error__":
@@ -156,6 +158,7 @@ class ReActPlusPlus:
             "confidence": state.confidence,
             "retries": state.retry_count,
             "final_observation": state.action_result[:200] if state.action_result else "",
+            "thought": state.thought[:200] if state.thought else "",
             "interrupted": state.interrupted,
         }
         self._history.append(result)
@@ -262,16 +265,13 @@ class ReActPlusPlus:
         if state.action_result and not state.error and state.step > 1:
             return ("__complete__", {})
 
-        # 选择工具
-        obs = (state.observation + state.action_result).lower()
+        # 选择工具：LLM 思考中提到工具名时才调用
+        obs = (state.observation + state.action_result + state.thought).lower()
         for tool_name in self._tools:
             if tool_name.lower() in obs:
                 return (tool_name, {"query": state.observation[:100]})
 
-        if self._tools:
-            first_tool = list(self._tools.keys())[0]
-            return (first_tool, {"query": state.observation[:100]})
-
+        # 不匹配任何工具 = 纯对话模式，直接输出 LLM 的思考结果
         return ("__complete__", {})
 
     def _execute_action(self, action: str, params: dict) -> Any:
