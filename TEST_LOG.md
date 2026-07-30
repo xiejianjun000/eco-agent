@@ -109,3 +109,17 @@
 **初始化测试体系**：pytest 并行测试、模块化分层、自动报告生成。
 
 ---
+
+---
+
+## [2026-07-31 05:16] 测试运行 — EcoBench 70题扩充 + RAG v2 定位扩展
+
+| 指标 | 数值 |
+|:-----|:----:|
+| 总用例 | 129 |
+| 通过 | 129 |
+| 失败 | 0 |
+| 通过率 | 100.0% |
+| 范围 | tests/modules/（含 test_ecobench.py 8 例：70题结构完整性/法典题金标准自洽/过渡适用标注） |
+| 备注 | ruff 通过；真实跑分记录见 README「EcoBench 70 题全量对照」与 benchmarks/ecobench/ecobench_report.json |
+

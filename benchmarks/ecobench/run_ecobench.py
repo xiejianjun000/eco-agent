@@ -95,7 +95,18 @@ RAG2_PROMPT_SUFFIX = (
 
 INDEX_PATH = "flowwiki/wiki/index.md"          # 知识库总索引（前 100KB 含全部 concepts 链接）
 INDEX_LINK_RE = re.compile(r"\[([^\]]+)\]\((concepts/[^)\s]+)\)")
-ARTICLE_HEADING_RE = re.compile(r"^###\s*第([零一二三四五六七八九十百千两\d]+)条", re.M)
+ARTICLE_HEADING_RE = re.compile(r"^#{2,5}\s*第([零一二三四五六七八九十百千两\d]+)条", re.M)
+
+# 题干关键词 → 法典分编文件映射（法典题定位用；命中即在检索清单中加入对应编）
+CODEX_BOOK_MAP = [
+    (("罚", "法律责任", "拘留", "附则", "废止", "继承", "按日连续", "无证排污",
+      "超标", "排污口", "未批先建", "逃避监管", "第一千"), "第五编-法律责任和附则"),
+    (("大气", "水污染", "海洋", "土壤", "固体废物", "噪声", "放射性", "排污许可",
+      "分编", "重污染天气", "饮用水", "危险废物"), "第二编-污染防治"),
+    (("总则", "影响评价", "信息公开", "突发", "分区管控", "第一编"), "第一编-总则"),
+    (("生态系统", "物种", "自然保护地", "生态修复", "第三编"), "第三编-生态保护"),
+    (("绿色低碳", "循环经济", "气候变化", "第四编"), "第四编-绿色低碳发展"),
+]
 
 # 题干关键词 → 法律名映射（用于无 required_citations 时的兜底定位）
 KEYWORD_LAW_MAP = [
@@ -158,18 +169,20 @@ def parse_index_links(text: str) -> list[tuple[str, str]]:
 
 
 def extract_law_names(item: dict) -> list[str]:
-    """定位法律名：优先 required_citations 里的《法名》，否则题干关键词映射"""
+    """定位法律名：优先 required_citations 里的《法名》，再并集题干关键词映射
+    （法典题常同时涉及旧单行法名与《生态环境法典》，两者都需定位）"""
     names: list[str] = []
     for c in item.get("required_citations", []):
         for m in re.findall(r"《([^》]+)》", c or ""):
             short = m.replace("中华人民共和国", "")
             if short and short not in names:
                 names.append(short)
-    if not names:
-        q = item.get("question", "")
-        for kw, law in KEYWORD_LAW_MAP:
-            if kw in q and law not in names:
-                names.append(law)
+    q = item.get("question", "") + " " + item.get("golden_answer", "")[:0]
+    for kw, law in KEYWORD_LAW_MAP:
+        if kw in q and law not in names:
+            names.append(law)
+    if "法典" in q and "生态环境法典" not in names:
+        names.append("生态环境法典")
     return names
 
 
@@ -274,13 +287,28 @@ class RagRetriever:
             self._index_cache = parse_index_links(text)
         return self._index_cache
 
-    def locate_concept_files(self, law_names: list[str]) -> list[str]:
+    def locate_concept_files(self, law_names: list[str], question: str = "") -> list[str]:
         """按法律名定位 concepts/ 下的正文文件：
-        1) index.md 链接名匹配；2) kb_search 结果中筛选 concepts/ 非 Skill 路径"""
+        1) index.md 链接名匹配；2) kb_search 结果中筛选 concepts/ 非 Skill 路径。
+        法典题（生态环境法典）按题干关键词经 CODEX_BOOK_MAP 加定位对应分编文件。"""
         hits: list[str] = []
+        codex = any("生态环境法典" in n for n in law_names)
+        books: list[str] = []
+        if codex:
+            for kws, book in CODEX_BOOK_MAP:
+                if any(k in question for k in kws) and book not in books:
+                    books.append(book)
         for name in law_names:
+            if "生态环境法典" in name:
+                continue  # 法典名下挂多个分编文件，走下方 books 精确加定位，避免 hits[:3] 截断
             for link_name, path in self._index_links():
                 if name in link_name or link_name.replace("中华人民共和国", "") == name:
+                    if path not in hits:
+                        hits.append(path)
+        if codex:
+            for _link_name, path in self._index_links():
+                base = path.rsplit("/", 1)[-1].replace(".md", "")
+                if base in books or "总目录" in base:
                     if path not in hits:
                         hits.append(path)
         if not hits:
@@ -289,26 +317,66 @@ class RagRetriever:
                 for f in files:
                     if "/concepts/" in f and "Skill" not in f and f not in hits:
                         hits.append(f)
-        return hits[:3]
+        return hits[:4]
 
     def retrieve_v2(self, item: dict) -> dict:
         """定位→直取：法名定位 concepts 文件 → kb_read 取正文 → 按条款截取（≤3000 字符）。
         返回 {"files": [...], "articles": [...], "context": str}"""
         law_names = extract_law_names(item)
         article_nums = extract_article_nums(item)
-        files = self.locate_concept_files(law_names)
-        parts, hit_articles, used = [], [], []
+        files = self.locate_concept_files(law_names, question=item.get("question", ""))
+        reads: list[tuple[str, str]] = []
         for path in files:
             full = self.read(path)
-            if not full:
-                continue
-            used.append(path)
-            snippet, arts = extract_article_sections(
-                full, article_nums, max_chars=RAG_MAX_CONTEXT_CHARS - sum(len(p) for p in parts))
-            hit_articles += arts
-            parts.append(f"【{path}】\n{snippet}")
-            if sum(len(p) for p in parts) >= RAG_MAX_CONTEXT_CHARS:
+            if full:
+                reads.append((path, full))
+        parts, hit_articles, used = [], [], []
+        remaining = RAG_MAX_CONTEXT_CHARS
+        # 第一遍：目标条款直取（优先级最高，法典题常需跨文件定位到第五编）
+        filled: set[str] = set()
+        if article_nums:
+            for path, full in reads:
+                if remaining <= 0:
+                    break
+                snippet, arts = extract_article_sections(full, article_nums, max_chars=remaining)
+                if arts:
+                    hit_articles += arts
+                    used.append(path)
+                    filled.add(path)
+                    parts.append(f"【{path}】\n{snippet[:remaining]}")
+                    remaining -= len(parts[-1])
+        # 第二遍：骨架/对照表兜底填充（单文件上限，避免一个文件吃光预算）
+        fallback_cap = 1200 if len(reads) > 1 else RAG_MAX_CONTEXT_CHARS
+        for path, full in reads:
+            if remaining <= 0:
                 break
+            if path in filled:
+                continue
+            base = path.rsplit("/", 1)[-1]
+            if "总目录" in base or base.startswith(("第一编", "第二编", "第三编", "第四编", "第五编")):
+                # 法典编/总目录：骨架截取（标题+目录条目+结构概览），服务框架结构题
+                skel = [l for l in full.splitlines()
+                        if (l.lstrip().startswith(("#", "-", ">"))
+                            and not re.match(r"^#{4}\s*第.+条", l.strip()))
+                        or ("[" in l and "]" in l
+                            and ("-->" in l or re.match(r"^[A-F]\d?\[", l.strip())))]
+                snippet = "\n".join(skel)[:fallback_cap]
+            else:
+                # 概念文件优先截取"核心制度与法典继承"对照表（法典继承映射题金标准来源）
+                tbl = re.search(r"##\s*核心制度与法典继承[\s\S]{0,1500}", full)
+                head = full[:fallback_cap]
+                if tbl:
+                    fei = [l for l in full[:4000].splitlines() if "废止" in l]
+                    snippet = (tbl.group(0) + "\n" + "\n".join(fei[:6]) + "\n" + head)[:fallback_cap]
+                else:
+                    snippet = head
+            snippet = snippet[:remaining]
+            if not snippet.strip():
+                continue
+            if path not in used:
+                used.append(path)
+            parts.append(f"【{path}】\n{snippet}")
+            remaining -= len(parts[-1])
         return {"files": used, "articles": hit_articles,
                 "context": "\n\n".join(parts)[:RAG_MAX_CONTEXT_CHARS]}
 

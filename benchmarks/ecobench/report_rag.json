@@ -1,0 +1,1499 @@
+{
+  "summary": {
+    "n_questions": 70,
+    "mode": "rag",
+    "citation_accuracy": 0.45,
+    "citation_accuracy_raw": 0.45,
+    "keypoint_f1": 0.4164,
+    "keypoint_f1_raw": 0.41,
+    "elapsed_s": 1825.8,
+    "by_category": {
+      "处罚裁量": {
+        "n": 10,
+        "citation_accuracy": 0.3,
+        "keypoint_f1": 0.26
+      },
+      "执法程序": {
+        "n": 10,
+        "citation_accuracy": 0.2,
+        "keypoint_f1": 0.14
+      },
+      "法典-引用规范": {
+        "n": 5,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      },
+      "法典-新旧衔接": {
+        "n": 5,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      },
+      "法典-框架结构": {
+        "n": 5,
+        "citation_accuracy": 0.4,
+        "keypoint_f1": 0.4
+      },
+      "法典-继承映射": {
+        "n": 5,
+        "citation_accuracy": 0.2,
+        "keypoint_f1": 0.2
+      },
+      "法典新旧衔接": {
+        "n": 10,
+        "citation_accuracy": 0.1,
+        "keypoint_f1": 0.12
+      },
+      "法条引用": {
+        "n": 10,
+        "citation_accuracy": 0.9,
+        "keypoint_f1": 0.8
+      },
+      "违法认定": {
+        "n": 10,
+        "citation_accuracy": 0.35,
+        "keypoint_f1": 0.295
+      }
+    },
+    "retried_count": 0,
+    "timeout_count": 34
+  },
+  "results": [
+    {
+      "id": "EB01",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.8,
+      "keypoint_f1_raw": 0.8,
+      "answer": "**查处依据：**《中华人民共和国大气污染防治法》**第九十九条**第（二）项。\n\n**明确结论：** 企业超过大气污染物排放标准排放大气污染物的，由县级以上人民政府生态环境主管部门责令改正或者限制生产、停产整治，并处十万元以上一百万元以下的罚款；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。\n\n**要点覆盖：**\n1. **违法行为**：超过大气污染物排放标准排放大气污染物（或超过重点大气污染物排放总量控制指标）；\n2. **执法主体**：县级以上人民政府生态环境主管部门；\n3. **处罚种类**：包括责令改正、限制生产、停产整治、罚款（十万元以上一百万元以下）；情节严重时可报经批准后责令停业、关闭。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"
+      ],
+      "retrieved_articles": [
+        99
+      ],
+      "golden_answer": "应依据《中华人民共和国大气污染防治法》第九十九条。该条规定：违反本法规定，超标排放大气污染物（超过大气污染物排放标准排放大气污染物）的，由县级以上人民政府生态环境主管部门责令改正或者限制生产、停产整治，并处十万元以上一百万元以下的罚款；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。"
+    },
+    {
+      "id": "EB02",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.8,
+      "keypoint_f1_raw": 0.8,
+      "answer": "**结论：** 应适用**《中华人民共和国环境影响评价法》第三十一条**。\n\n**处罚要点：**\n1. **责令停止建设**；\n2. **罚款**：根据违法情节和危害后果，处建设项目总投资额**百分之一以上百分之五以下**的罚款；\n3. **恢复原状**：可以责令恢复原状；\n4. **行政处分**：对建设单位直接负责的主管人员和其他直接责任人员，依法给予行政处分。\n\n**注：** 若属于未依法备案环境影响登记表（而非未报批报告书/报告表），则适用该条第三款，由县级以上生态环境主管部门责令备案，处**五万元以下**的罚款；海洋工程建设项目则依照《中华人民共和国海洋环境保护法》处罚。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/10-中华人民共和国环境影响评价法.md"
+      ],
+      "retrieved_articles": [
+        31
+      ],
+      "golden_answer": "应依据《中华人民共和国环境影响评价法》第三十一条。建设单位未依法报批建设项目环境影响报告书、报告表，擅自开工建设的，由县级以上生态环境主管部门责令停止建设，根据违法情节和危害后果，处建设项目总投资额百分之一以上百分之五以下的罚款，并可以责令恢复原状。"
+    },
+    {
+      "id": "EB03",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "应依据《中华人民共和国水污染防治法》**第八十四条**处理。\n\n**明确结论**：企业违反法律、行政法规和国务院环境保护主管部门的规定设置排污口（非位于饮用水水源保护区且未经水行政主管部门同意情形），由县级以上地方人民政府环境保护主管部门**责令限期拆除**，处**二万元以上十万元以下**的罚款；逾期不拆除的，强制拆除且费用由违法者承担，并处**十万元以上五十万元以下**的罚款；情节严重的，可以责令停产整治。\n\n**要点覆盖**：\n1. **条款定位**：该条第二款专门规制\"违反法律、行政法规和国务院环境保护主管部门的规定设置排污口\"的行为。\n2. **处罚递进**：①先期责令限期拆除并处罚款；②逾期不拆除的，强制拆除+更高额度罚款；③情节严重的，可责令停产整治。\n3. **特殊情形区分**：\n   - 若排污口设在**饮用水水源保护区**内，适用该条**第一款**（限期拆除，处十万元以上五十万元以下罚款；逾期不拆的，处五十万元以上一百万元以下罚款）；\n   - 若**未经水行政主管部门或流域管理机构同意**新建、改建、扩建排污口，适用该条**第三款**，由水行政主管部门或流域管理机构按前款规定处罚。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/03-中华人民共和国水污染防治法.md"
+      ],
+      "retrieved_articles": [
+        84
+      ],
+      "golden_answer": "应依据《中华人民共和国水污染防治法》第八十四条。违反法律、行政法规和国务院生态环境主管部门的规定设置排污口的，由县级以上地方人民政府生态环境主管部门责令限期拆除，处二万元以上十万元以下的罚款；逾期不拆除的，强制拆除，所需费用由违法者承担，处十万元以上五十万元以下的罚款；情节严重的，可以责令停产整治。"
+    },
+    {
+      "id": "EB04",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "应适用**《中华人民共和国固体废物污染环境防治法》第一百一十二条第一款第一项**。\n\n**要点如下：**\n1. **违法行为**：危险废物产生单位未按照规定设置危险废物识别标志；\n2. **执法主体**：生态环境主管部门；\n3. **法律责任**：责令改正，处以罚款，没收违法所得；情节严重的，报经有批准权的人民政府批准，可以责令停业或者关闭；\n4. **罚款幅度**：处**十万元以上一百万元以下**的罚款。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/05-中华人民共和国固体废物污染环境防治法.md"
+      ],
+      "retrieved_articles": [
+        112
+      ],
+      "golden_answer": "应依据《中华人民共和国固体废物污染环境防治法》第一百一十二条。该条规定未按照规定设置危险废物识别标志的，由生态环境主管部门责令改正，处十万元以上一百万元以下的罚款，没收违法所得；情节严重的，报经有批准权的人民政府批准，可以责令停业或者关闭。"
+    },
+    {
+      "id": "EB05",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 3,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.6,
+      "keypoint_f1_raw": 0.6,
+      "answer": "**结论**：应引用**《中华人民共和国噪声污染防治法》第七十五条**。\n\n**要点**：\n- **适用情形**：工业企业无排污许可证或**超过噪声排放标准排放工业噪声**（即超标排放扰民）。\n- **执法主体**：生态环境主管部门。\n- **处罚措施**：责令改正或限制生产、停产整治，并处**二万元以上二十万元以下**罚款；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/06-中华人民共和国噪声污染防治法.md"
+      ],
+      "retrieved_articles": [
+        75
+      ],
+      "golden_answer": "2022年6月5日起应依据《中华人民共和国噪声污染防治法》第七十五条（工业噪声超标排放由生态环境主管部门责令改正，处五万元以上二十万元以下的罚款；情节严重的，报经有批准权的人民政府批准，责令停业、关闭）。原《环境噪声污染防治法》已被新法取代，不得再引用。"
+    },
+    {
+      "id": "EB06",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 0.75,
+      "answer": "应依据**《排污许可管理条例》第三十三条**查处。\n\n该条第一项规定：排污单位**未取得排污许可证排放污染物**的，由生态环境主管部门**责令改正或者限制生产、停产整治**，处**20万元以上100万元以下**的罚款；情节严重的，报经有批准权的人民政府批准，**责令停业、关闭**。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/38-排污许可管理条例.md"
+      ],
+      "retrieved_articles": [
+        33
+      ],
+      "golden_answer": "应依据《排污许可管理条例》第三十三条。未取得排污许可证排放污染物的，由生态环境主管部门责令改正或者限制生产、停产整治，处二十万元以上一百万元以下的罚款；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。"
+    },
+    {
+      "id": "EB07",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论：** 应依据《中华人民共和国水污染防治法》**第八十三条**处罚。\n\n**具体规定：**\n该条第（三）项明确规定：\"利用渗井、渗坑、裂隙、溶洞，私设暗管，篡改、伪造监测数据，或者不正常运行水污染防治设施等逃避监管的方式排放水污染物的\"。\n\n**法律责任：**\n由县级以上人民政府环境保护主管部门责令改正或者责令限制生产、停产整治，并处**十万元以上一百万元以下**的罚款；情节严重的，报经有批准权的人民政府批准，**责令停业、关闭**。\n\n**补充：** 若涉及《环境保护法》第六十三条，可对直接负责的主管人员和其他直接责任人员处**五日以上十五日以下拘留**（参考资料未覆盖，依据自身知识补充）。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/03-中华人民共和国水污染防治法.md"
+      ],
+      "retrieved_articles": [
+        83
+      ],
+      "golden_answer": "应依据《中华人民共和国水污染防治法》第八十三条。利用渗井、渗坑、裂隙、溶洞，私设暗管，篡改、伪造监测数据，或者不正常运行水污染防治设施等逃避监管的方式排放水污染物的，由县级以上人民政府生态环境主管部门责令改正或者责令限制生产、停产整治，并处十万元以上一百万元以下的罚款；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。"
+    },
+    {
+      "id": "EB08",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "应引用《建设项目环境保护管理条例》**第二十三条**。\n\n**结论**：建设单位未验先投（需要配套建设的环境保护设施未经验收即投入生产或使用），应依据该条例第二十三条进行处罚。\n\n**要点**：\n- **适用情形**：环保设施未建成、未经验收或验收不合格，建设项目即投入生产或使用，或在验收中弄虚作假；\n- **行政处罚**：责令限期改正，处20万元以上100万元以下罚款；逾期不改正的，处100万元以上200万元以下罚款；\n- **个人责任**：对直接负责的主管人员和其他责任人员，处5万元以上20万元以下罚款；\n- **严重后果**：造成重大环境污染或生态破坏的，责令停止生产或使用，或报经有批准权的人民政府批准责令关闭。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/41-建设项目环境保护管理条例.md"
+      ],
+      "retrieved_articles": [
+        23
+      ],
+      "golden_answer": "应依据《建设项目环境保护管理条例》第二十三条。需要配套建设的环境保护设施未建成、未经验收或者验收不合格，建设项目即投入生产或者使用的，由县级以上环境保护行政主管部门责令限期改正，处20万元以上100万元以下的罚款；逾期不改正的，处100万元以上200万元以下的罚款；对直接负责的主管人员和其他责任人员，处5万元以上20万元以下的罚款。"
+    },
+    {
+      "id": "EB09",
+      "category": "法条引用",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 4,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"
+      ],
+      "retrieved_articles": [
+        121
+      ],
+      "golden_answer": "应依据《中华人民共和国大气污染防治法》第一百二十一条。拒不执行重污染天气应急减排措施的，由县级以上人民政府生态环境主管部门责令改正，处一万元以上十万元以下的罚款。"
+    },
+    {
+      "id": "EB10",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.8,
+      "keypoint_f1_raw": 0.8,
+      "answer": "**结论**：社会组织提起环境民事公益诉讼的依据是**《中华人民共和国环境保护法》第五十八条**。\n\n**法律依据及要点**：\n\n《中华人民共和国环境保护法》**第五十八条**规定：\n\n1. **受案范围**：对**污染环境、破坏生态，损害社会公共利益**的行为；\n2. **主体资格**：符合下列条件的社会组织可以向人民法院提起诉讼：\n   - （一）依法在**设区的市级以上**人民政府民政部门登记；\n   - （二）**专门从事环境保护公益活动连续五年以上**且**无违法记录**；\n3. **司法保障**：符合前款规定的社会组织提起诉讼，人民法院**应当依法受理**；\n4. **禁止牟利**：提起诉讼的社会组织**不得通过诉讼牟取经济利益**。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md",
+        "flowwiki/wiki/concepts/139-环境保护法规解释管理办法.md"
+      ],
+      "retrieved_articles": [
+        58,
+        58
+      ],
+      "golden_answer": "应依据《中华人民共和国民事诉讼法》第五十八条以及《中华人民共和国环境保护法》第五十八条。符合在设区的市级以上人民政府民政部门登记、专门从事环境保护公益活动连续五年以上且无违法记录的社会组织，可以向人民法院提起诉讼。"
+    },
+    {
+      "id": "EB11",
+      "category": "违法认定",
+      "citation_hit": 1.0,
+      "citation_hits": 2,
+      "citation_total": 2,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.8,
+      "keypoint_f1_raw": 0.8,
+      "answer": "**结论：构成违法。**该行为违反《中华人民共和国固体废物污染环境防治法》第八十条之禁止性规定，属于“将危险废物提供或者委托给无许可证的单位或者其他生产经营者从事经营活动”的违法行为。\n\n**要点如下：**\n\n1. **禁止性规定**  \n   依据《中华人民共和国固体废物污染环境防治法》**第八十条**第三款：“禁止将危险废物提供或者委托给无许可证的单位或者其他生产经营者从事收集、贮存、利用、处置活动。”  \n   废酸液属于危险废物，化工厂将其交由无危险废物经营许可证的个人处置，直接触犯上述条款。\n\n2. **法律责任与处罚**  \n   依据《中华人民共和国固体废物污染环境防治法》**第一百一十二条**第一款第（四）项及第二款：  \n   - 由生态环境主管部门**责令改正**，处以**罚款**，**没收违法所得**；  \n   - 罚款幅度为**所需处置费用三倍以上五倍以下**；所需处置费用不足二十万元的，按**二十万元**计算（即最低罚款六十万元）；  \n   - 情节严重的，报经有批准权的人民政府批准，可以**责令停业或者关闭**。\n\n3. **补充说明**  \n   该行为同时违反**第七十九条**关于“产生危险废物的单位应当按照国家有关规定……处置危险废物”的要求，但处罚适用**第一百一十二条**第（四）项之专门规定。若造成环境污染后果，还可能涉及民事赔偿或刑事责任。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/05-中华人民共和国固体废物污染环境防治法.md"
+      ],
+      "retrieved_articles": [
+        80,
+        112
+      ],
+      "golden_answer": "构成违法。该行为违反《固体废物污染环境防治法》第八十条：禁止将危险废物提供或者委托给无许可证的单位或者其他生产经营者从事收集、贮存、利用、处置活动。依据第一百一十二条，可处所需处置费用三倍以上五倍以下的罚款，所需处置费用不足二十万元的，按二十万元计算。情节严重的，还可能涉嫌污染环境罪，移送司法机关。"
+    },
+    {
+      "id": "EB12",
+      "category": "违法认定",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 2,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/03-中华人民共和国水污染防治法.md",
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"
+      ],
+      "retrieved_articles": [
+        82,
+        100,
+        82,
+        100
+      ],
+      "golden_answer": "一般不直接认定为篡改。篡改要求主观故意实施干扰、修改数据的行为。但企业未按规定对自动监测设备进行运维校准，导致数据失真的，违反《大气污染防治法》第二十四条/《水污染防治法》第二十三条关于保证监测设备正常运行、数据真实准确的要求，可依相应罚则（大气法第一百条、水污染防治法第八十二条）处罚；若查明存在人为干扰采样、修改参数等故意行为，则构成篡改，适用更重的逃避监管条款。"
+    },
+    {
+      "id": "EB13",
+      "category": "违法认定",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 2,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.4,
+      "keypoint_f1_raw": 0.4,
+      "answer": "**结论**：该行为构成违反《畜禽规模养殖污染防治条例》第三十九条的违法行为。\n\n**认定要点**：\n1. **违法主体**：畜禽养殖场、养殖小区。\n2. **行为要件**：未建设污染防治配套设施，也未委托他人对畜禽养殖废弃物进行综合利用和无害化处理，即投入生产、使用（直接排放粪污属于此类情形）；",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/46-畜禽规模养殖污染防治条例.md"
+      ],
+      "retrieved_articles": [
+        39
+      ],
+      "golden_answer": "违反《畜禽规模养殖污染防治条例》第十三条，未建设污染防治配套设施或者配套设施不合格的，依该条例第三十九条由县级以上环境保护主管部门责令停止生产或者使用，可以处十万元以下的罚款。若向水体排放造成污染，还同时违反《水污染防治法》，可按第八十三条、第八十五条处罚。"
+    },
+    {
+      "id": "EB14",
+      "category": "违法认定",
+      "citation_hit": 1.0,
+      "citation_hits": 2,
+      "citation_total": 2,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论**：该行为属于**在饮用水水源一级保护区内新建与供水设施和保护水源无关的建设项目**，违反《中华人民共和国水污染防治法》第六十五条，应依据第九十一条承担法律责任。\n\n**要点覆盖**：\n\n1. **行为定性**  \n   依据《中华人民共和国水污染防治法》**第六十五条**第一款：\"禁止在饮用水水源一级保护区内新建、改建、扩建与供水设施和保护水源无关的建设项目\"。企业在一级保护区内新建与供水无关的项目，直接构成对该条款的违反。\n\n2. **法律责任**  \n   依据《中华人民共和国水污染防治法》**第九十一条**第一款第一项：  \n   - 由县级以上地方人民政府环境保护主管部门**责令停止违法行为**；  \n   - 处**十万元以上五十万元以下**的罚款；  \n   - 并**报经有批准权的人民政府批准**，责令拆除或者关闭。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/03-中华人民共和国水污染防治法.md"
+      ],
+      "retrieved_articles": [
+        65,
+        91
+      ],
+      "golden_answer": "违法。《水污染防治法》第六十五条禁止在饮用水水源一级保护区内新建、改建、扩建与供水设施和保护水源无关的建设项目；已建成的责令拆除或者关闭。依第九十一条，由县级以上地方人民政府责令停止违法行为，处十万元以上五十万元以下的罚款，并报经有批准权的人民政府批准，责令拆除或者关闭。"
+    },
+    {
+      "id": "EB15",
+      "category": "违法认定",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/06-中华人民共和国噪声污染防治法.md"
+      ],
+      "retrieved_articles": [
+        43
+      ],
+      "golden_answer": "持有许可不当然免责。《噪声污染防治法》规定在噪声敏感建筑物集中区域夜间施工原则上禁止（第四十三条），取得许可的抢修、抢险或工艺要求连续作业可以施工，但应当公告附近居民并采取措施减少噪声。若许可合法且采取措施，则不构成违法；若未公告或未采取降噪措施造成扰民，仍可责令改正、处罚。"
+    },
+    {
+      "id": "EB16",
+      "category": "违法认定",
+      "citation_hit": 0.5,
+      "citation_hits": 1,
+      "citation_total": 2,
+      "citation_hit_raw": 0.5,
+      "keypoint_tp": 3,
+      "keypoint_total": 4,
+      "keypoint_f1": 0.75,
+      "keypoint_f1_raw": 0.75,
+      "answer": "**结论**：该行为构成**未重新报批环境影响评价文件擅自开工建设**的违法行为，应依据《中华人民共和国环境影响评价法》第三十一条予以处罚。\n\n---\n\n### 一、违法认定要件\n\n| 要件 | 法律依据 | 具体认定标准 |\n|------|----------|--------------|\n| **前提条件** | 第二十四条 | 建设项目环境影响评价文件**已获批准** |\n| **事实要件** | 第二十四条 | **采用的生产工艺**发生**重大变动**（包括原料、产品、主要生产设备、反应机理等关键要素改变，导致不利环境影响显著变化） |\n| **程序违法** | 第二十四条、第三十一条 | 未依法**重新报批**环境影响评价文件，或未经原审批部门**重新审核**同意 |\n| **行为结果** | 第二十五条、第三十一条 | **擅自开工建设**（包括投入生产或试运行） |\n\n### 二、法律责任\n\n依据**《中华人民共和国环境影响评价法》第三十一条**：\n\n1. **行政命令**：由县级以上生态环境主管部门**责令停止建设**；\n2. **罚款**：根据违法情节和危害后果，处建设项目**总投资额百分之一以上百分之五以下**的罚款；\n3. **恢复原状**：**可以**责令恢复原状；\n4. **人员处分**：对建设单位直接负责的主管人员和其他直接责任人员，**依法给予行政处分**。\n\n### 三、补充说明（重大变动判定）\n\n虽第二十四条未细化\"重大变动\"标准，但生态环境执法实践中应参照《污染影响类建设项目重大变动清单（试行）》（环办环评函〔2020",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/10-中华人民共和国环境影响评价法.md"
+      ],
+      "retrieved_articles": [
+        24,
+        31
+      ],
+      "golden_answer": "属于违法行为。依据《环境影响评价法》第二十四条，建设项目的环境影响评价文件经批准后，项目的性质、规模、地点、生产工艺等发生重大变动的，建设单位应当重新报批环境影响评价文件。未重新报批擅自开工/投产的，按未批先建依第三十一条处理；已投产的还需结合《建设项目环境保护管理条例》未验先投条款处理。"
+    },
+    {
+      "id": "EB17",
+      "category": "违法认定",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md",
+        "flowwiki/wiki/concepts/139-环境保护法规解释管理办法.md"
+      ],
+      "retrieved_articles": [
+        65,
+        65
+      ],
+      "golden_answer": "构成违法。依据《环境保护法》第六十五条及《大气污染防治法》相关条款，环境监测机构对其监测数据的真实性、准确性负责；出具虚假报告的，由生态环境主管部门没收违法所得并处罚款（如大气法对篡改伪造监测数据的机构处十万元以上五十万元以下罚款），对直接负责人员依法处理；情节严重的撤销资质，构成犯罪的追究刑事责任。委托方明知虚假仍使用的，一并追责。"
+    },
+    {
+      "id": "EB18",
+      "category": "违法认定",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/05-中华人民共和国固体废物污染环境防治法.md"
+      ],
+      "retrieved_articles": [
+        102
+      ],
+      "golden_answer": "违法。《固体废物污染环境防治法》第三十六条规定产生工业固体废物的单位应当建立健全管理制度并按规定贮存、利用、处置；禁止将工业固体废物混入生活垃圾。依第一百零二条，擅自倾倒、堆放、丢弃、遗撒工业固体废物的，处所需处置费用一倍以上三倍以下的罚款，所需处置费用不足十万元的按十万元计算，没收违法所得。"
+    },
+    {
+      "id": "EB19",
+      "category": "违法认定",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 2,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"
+      ],
+      "retrieved_articles": [
+        81,
+        118
+      ],
+      "golden_answer": "违反《大气污染防治法》第八十一条：排放油烟的餐饮服务业经营者应当安装油烟净化设施并保持正常使用，使油烟达标排放。依第一百一十八条，由县级以上地方人民政府确定的监督管理部门责令改正，处五千元以上五万元以下的罚款；拒不改正的，责令停业整治。"
+    },
+    {
+      "id": "EB20",
+      "category": "违法认定",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md",
+        "flowwiki/wiki/concepts/139-环境保护法规解释管理办法.md"
+      ],
+      "retrieved_articles": [
+        63,
+        63
+      ],
+      "golden_answer": "属于拒不执行行政命令的违法行为。依据《环境保护主管部门实施限制生产、停产整治办法》及《环境保护法》第六十三条，被责令停产整治后擅自恢复生产的，生态环境主管部门可依法从重处罚，并将案件移送公安机关，对直接负责的主管人员和其他直接责任人员处十日以上十五日以下拘留（情节较轻的处五日以上十日以下拘留）。"
+    },
+    {
+      "id": "EB21",
+      "category": "处罚裁量",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "参考资料未涵盖该问题的具体处理规则。依据现行法律体系，处理如下：\n\n**一、法律依据**\n1. **《中华人民共和国行政处罚法》第三十三条**：\"违法行为轻微并及时改正，没有造成危害后果的，不予行政处罚。初次违法且危害后果轻微并及时改正的，可以不予行政处罚。\"\n2. **《中华人民共和国大气污染防治法》第九十九条**：规定超标排放大气污染物的一般罚则（责令改正或限制生产、停产整治，并处十万元以上一百万元以下罚款），但该条不排除适用《行政处罚法》第三十三条的不予处罚规定。\n\n**二、明确结论**\n可以**不予行政处罚**，但应当依法下达《不予行政处罚决定书》，并留存相关证据材料；同时应对当事人进行教育，督促其签署承诺书或改正确认书。\n\n**三、裁量要点**\n适用\"首违不罚\"或\"轻微不罚\"须同时满足：\n1. **首次违法**：该企业此前无生态环境违法记录；\n2. **危害后果轻微**：超标倍数低（如地方裁量基准规定的小于0.1倍或0.5倍等）、排放持续时间短、污染物种类单一且毒性较低；\n3. **及时改正**：在生态环境部门发现前主动改正，或在责令改正后立即完成整改并达标排放；\n4. **无主观故意**：因设备故障、操作失误等非主观故意原因导致；\n5. **地方裁量基准**：符合各省（区、市）制定的生态环境行政处罚裁量基准中关于\"首违不罚\"或\"轻微违法行为免罚清单\"的具体数值标准。\n\n**注**：不予处罚不免除当事人改正违法行为、消除环境危害的义务。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"
+      ],
+      "retrieved_articles": [
+        33
+      ],
+      "golden_answer": "依据《行政处罚法》第三十三条，违法行为轻微并及时改正，没有造成危害后果的，不予行政处罚；初次违法且危害后果轻微并及时改正的，可以不予行政处罚。生态环境部门应结合《生态环境行政处罚办法》和地方裁量基准，优先适用不予处罚或从轻处罚，并进行教育指导，同时仍应责令改正违法行为。"
+    },
+    {
+      "id": "EB22",
+      "category": "处罚裁量",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md",
+        "flowwiki/wiki/concepts/139-环境保护法规解释管理办法.md"
+      ],
+      "retrieved_articles": [
+        59,
+        59
+      ],
+      "golden_answer": "应依法从重处罚。考量因素：①属再犯，主观恶性较大，不符合从轻/不予处罚情形；②危害后果与超标倍数、持续时间；③整改态度与配合程度；④依据《大气污染防治法》第九十九条在十万元至一百万元幅度内从重裁量；⑤符合《环境保护法》第六十三条情形的，可移送行政拘留；⑥可依法实施按日连续处罚（《环境保护法》第五十九条）。"
+    },
+    {
+      "id": "EB23",
+      "category": "处罚裁量",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论：可以。** 企业超标排放被责令改正后拒不改正、持续超标的，生态环境主管部门可以依法实施按日连续处罚。\n\n**法律依据：**\n《中华人民共和国环境保护法》**第五十九条**规定：\"企业事业单位和其他生产经营者违法排放污染物，受到罚款处罚，被责令改正，拒不改正的，依法作出处罚决定的行政机关可以自责令改正之日的次日起，按照原处罚数额按日连续处罚。\"\n\n**适用要点：**\n1. **适用条件**：企业事业单位和其他生产经营者存在违法排放污染物行为，受到罚款处罚并被责令改正，且存在\"拒不改正\"情形（即持续超标排放）。\n2. **起算时间**：自责令改正之日的**次日**起计算。\n3. **计算标准**：按照原处罚数额**按日连续**计罚，直至违法行为改正之日止。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md",
+        "flowwiki/wiki/concepts/139-环境保护法规解释管理办法.md"
+      ],
+      "retrieved_articles": [
+        59,
+        59
+      ],
+      "golden_answer": "可以。《环境保护法》第五十九条规定：企业事业单位和其他生产经营者违法排放污染物，受到罚款处罚，被责令改正，拒不改正的，依法作出处罚决定的行政机关可以自责令改正之日的次日起，按照原处罚数额按日连续处罚。具体操作适用《环境保护主管部门实施按日连续处罚办法》。"
+    },
+    {
+      "id": "EB24",
+      "category": "处罚裁量",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "罚款数额由法定幅度与裁量基准决定，经营困难不是法定从轻、减轻或免除罚款的理由。但依据《行政处罚法》第六十六条，当事人确有经济困难，可以申请暂缓或者分期缴纳罚款，经行政机关批准可暂缓或分期缴纳；罚款本金和加处罚款不得因困难而减免（加处罚款在特定和解程序中可依法减免）。"
+    },
+    {
+      "id": "EB25",
+      "category": "处罚裁量",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "依据《行政处罚法》第三十二条，从轻或减轻处罚的情形包括：主动消除或者减轻违法行为危害后果的；受他人胁迫或者诱骗实施违法行为的；主动供述行政机关尚未掌握的违法行为的；配合行政机关查处违法行为有立功表现的；法律法规规章规定的其他情形。从轻是在法定幅度内取低限，减轻是低于法定最低限，减轻须有明确法定依据并经集体讨论。"
+    },
+    {
+      "id": "EB26",
+      "category": "处罚裁量",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "①责令停业、关闭属重大处罚，依《大气污染防治法》第九十九条须报经有批准权的人民政府批准；②依《行政处罚法》第六十三条，较大数额罚款、责令停产停业、责令关闭等，当事人享有要求听证的权利，处罚前应告知；③重大案件应经法制审核和负责人集体讨论决定（《行政处罚法》第五十七条、第五十八条）。"
+    },
+    {
+      "id": "EB27",
+      "category": "处罚裁量",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 4,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "可以。罚款与没收违法所得是不同种类的行政处罚，《行政处罚法》第九条规定二者可以并处。如《固体废物污染环境防治法》第一百一十二条明确'责令改正，处罚款，没收违法所得'。但须遵守一事不再罚款原则：对当事人的同一个违法行为，不得给予两次以上罚款的行政处罚（《行政处罚法》第二十九条）。"
+    },
+    {
+      "id": "EB28",
+      "category": "处罚裁量",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 3,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.6,
+      "keypoint_f1_raw": 0.6,
+      "answer": "**结论：** 原则上不再给予行政处罚；但违法行为具有连续或继续状态的，自行为终了之日起计算时效，未超过二年（特殊情形五年）的，仍可处罚。\n\n**法律依据：**\n1. 《中华人民共和国行政处罚法》第三十六条：\"违法行为在二年内未被发现的，不再给予行政处罚；涉及公民生命健康安全、金融安全且有危害后果的，上述期限延长至五年。法律另有规定的除外。前款规定的期限，从违法行为发生之日起计算；违法行为有连续或者继续状态的，从行为终了之日起计算。\"\n2. 《环境行政处罚办法》（环境保护部令第8号）第十一条亦作出相同规定。\n\n**要点：**\n- **一般时效：** 二年（涉及公民生命健康安全、金融安全",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "一般不能。《行政处罚法》第三十六条规定：违法行为在二年内未被发现的，不再给予行政处罚；涉及公民生命健康安全、金融安全且有危害后果的，期限延长至五年；法律另有规定的除外。期限从违法行为发生之日起计算；违法行为有连续或者继续状态的，从行为终了之日起计算。持续超标排放属继续状态，时效从停止排放之日起算。"
+    },
+    {
+      "id": "EB29",
+      "category": "处罚裁量",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md",
+        "flowwiki/wiki/concepts/139-环境保护法规解释管理办法.md"
+      ],
+      "retrieved_articles": [
+        59,
+        59
+      ],
+      "golden_answer": "依据《环境保护法》第五十九条和《环境保护主管部门实施按日连续处罚办法》：计罚日数为责令改正违法行为决定书送达之日的次日起，至生态环境部门复查发现违法排放行为改正之日止；再次复查仍拒不改正的，计罚日数累计执行。每日罚款数额为原处罚决定书确定的罚款数额，按日连续处罚总额=原罚款数额×计罚日数，不受法定幅度上限限制。"
+    },
+    {
+      "id": "EB30",
+      "category": "处罚裁量",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 4,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "依据《行政处罚法》第三十条：已满十四周岁不满十八周岁的未成年人有违法行为的，应当从轻或者减轻行政处罚；不满十四周岁的未成年人有违法行为的，不予行政处罚，责令监护人加以管教。实践中环境违法主体多为单位，涉个人责任（如直接责任人拘留）时注意年龄条款的适用。"
+    },
+    {
+      "id": "EB31",
+      "category": "执法程序",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "①两名以上执法人员并出示执法证件（《行政处罚法》第四十二条）；②制作现场检查（勘察）笔录，记录检查时间、地点、现场状况，由当事人签字确认，拒签的注明并邀请见证人；③可采样监测、拍照录像、查阅复制资料；④规范着装、文明执法；⑤对检查中发现的问题依法责令改正并固定证据；⑥注意保密与安全生产要求。"
+    },
+    {
+      "id": "EB32",
+      "category": "执法程序",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 6,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "依据《行政处罚法》和《生态环境行政处罚办法》：立案→调查取证（现场检查、询问、监测、查封扣押等）→案件调查终结报告→法制审核（重大案件）→告知当事人拟处罚内容及陈述申辩/听证权利→听取陈述申辩或组织听证→负责人审查决定（重大案件集体讨论）→制作并送达行政处罚决定书→执行→结案归档。"
+    },
+    {
+      "id": "EB33",
+      "category": "执法程序",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/75-生态环境行政处罚办法.md",
+        "flowwiki/wiki/concepts/108-环境保护主管部门实施查封、扣押办法.md",
+        "flowwiki/wiki/concepts/查封扣押.md",
+        "flowwiki/wiki/concepts/enforcement/行政执法文书制作指南.md"
+      ],
+      "retrieved_articles": [
+        18,
+        18
+      ],
+      "golden_answer": "依据《行政强制法》和《环境保护主管部门实施查封、扣押办法》：①须报经本部门负责人批准；②两名以上执法人员出示证件；③通知当事人到场并告知理由、依据及救济权利；④听取陈述申辩；⑤制作现场笔录；⑥当场交付查封、扣押决定书和清单；⑦期限一般不超过三十日，情况复杂经批准可延长三十日；⑧妥善保管，不得使用损毁，检测检验等费用由行政机关承担。"
+    },
+    {
+      "id": "EB34",
+      "category": "执法程序",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "程序违法，行政处罚决定可能被确认违法或撤销。《行政处罚法》第六十二条规定：行政机关及其执法人员在作出行政处罚决定之前，未依照规定向当事人告知拟作出的行政处罚内容及事实、理由、依据，或者拒绝听取当事人的陈述、申辩，不得作出行政处罚决定（当事人明确放弃的除外）。属于听证范围的案件未告知听证权利，复议或诉讼中将被撤销并责令重作。"
+    },
+    {
+      "id": "EB35",
+      "category": "执法程序",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 2,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "依据《行政处罚法》第五十九条，决定书应载明：当事人的姓名或名称、地址；违反法律法规规章的事实和证据；行政处罚的种类和依据；处罚的履行方式和期限；申请行政复议、提起行政诉讼的途径和期限；作出处罚决定的行政机关名称和日期，并加盖印章。送达依第六十一条：应当在宣告后当场交付当事人；当事人不在场的，七日内依照民事诉讼法送达（直接送达、留置送达、邮寄、公告送达等）。"
+    },
+    {
+      "id": "EB36",
+      "category": "执法程序",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "依据《行政处罚法》第七十二条：①到期不缴纳罚款的，每日按罚款数额的百分之三加处罚款（加处罚款数额不得超出罚款数额）；②将查封、扣押的财物依法拍卖、处理抵缴罚款；③申请人民法院强制执行（生态环境部门一般无自行强制执行权）；④将拒不履行信息纳入信用记录。申请法院强制执行的期限为复议诉讼期满之日起三个月内（《行政强制法》第五十三条）。"
+    },
+    {
+      "id": "EB37",
+      "category": "执法程序",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.8,
+      "keypoint_f1_raw": 0.8,
+      "answer": "根据《生态环境行政处罚办法》（生态环境部令第30号）规定，生态环境行政处罚案件的办案期限分为**立案期限**和**案件办理期限**：\n\n## 一、立案期限\n**第十八条**：生态环境主管部门对涉嫌违法行为应当进行初步审查，并在**十五日内**决定是否立案。特殊情况下，经本机关负责人批准，可以**延长十五日**。法律、法规另有规定的除外。\n\n## 二、案件办理期限\n**第五十七条**（参考资料未覆盖，依据现行规章补充）：生态环境主管部门应当自立案之日起**九十日内**作出处理决定。因案情复杂或者其他原因，不能在规定期限内作出处理决定的，经本机关负责人批准，可以延长**三十日**。\n\n案情特别复杂或者有其他特殊情况，经延期仍不能作出处理决定的，应当由本机关负责人集体讨论决定是否继续延期，决定继续延期的，继续延长期限不得超过**三十日**。\n\n## 结论\n1. **立案阶段**：一般15日，经批准可延长15日；\n2. **办案阶段**：一般90日，经批准可延长30日；特别复杂案件经集体讨论可再延长30日，**总期限最长150日**（不含检测、听证、公告等依法不计入期限的时间）。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "依据《生态环境行政处罚办法》：应当自立案之日起九十日内作出行政处罚决定；案情复杂不能在规定期限内作出的，经本机关负责人批准可以延长三十日；案情特别复杂或者有其他特殊情况，经延期仍不能作出的，经集体讨论决定是否继续延期。检测、检验、鉴定、听证、公告等时间不计入办案期限。"
+    },
+    {
+      "id": "EB38",
+      "category": "执法程序",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/126-环境监测管理办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "①采样人员具备相应能力，按国家环境监测技术规范采样（点位、频次、容器、保存剂、保存期限）；②采样记录完整（采样时间、点位、气象、工况），由当事人签字确认；③样品唯一性标识、规范运输与交接；④监测机构具备相应资质（CMA），出具监测报告；⑤超标认定执行相应排放标准；⑥当事人对监测数据有异议的可依法申请复检。"
+    },
+    {
+      "id": "EB39",
+      "category": "执法程序",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "依据《行政处罚法》第五十八条，下列情形作出处罚决定前应当进行法制审核，未经审核或审核未通过不得作出决定：①涉及重大公共利益的；②直接关系当事人或者第三人重大权益，经过听证程序的；③案件情况疑难复杂、涉及多个法律关系的；④法律法规规定应当法制审核的其他情形。审核内容包括主体权限、事实证据、法律适用、程序、裁量是否合法适当。"
+    },
+    {
+      "id": "EB40",
+      "category": "执法程序",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 3,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.6,
+      "keypoint_f1_raw": 0.4,
+      "answer": "**结论：** 生态环境部门发现涉嫌环境犯罪的，应当立即指定2名以上执法人员组成专案组核实，自核实之日起24小时内向公安机关移送；公安机关应在3日内审查决定是否立案。\n\n## 一、主要法律依据\n1. **《行政执法机关移送涉嫌犯罪案件的规定》**（国务院令第310号，2020年修订）**第五条、第六条、第八条、第十一条**；\n2. **《环境保护行政执法与刑事司法衔接工作办法》**（环环监〔2017〕17号）**第六条、第七条、第十条、第十二条**；\n3. **《中华人民共和国行政处罚法》**（2021年修订）**第五十七条**。\n\n## 二、移送程序要点\n\n### （一）移送准备\n- **核实与审批**：生态环境部门发现涉嫌犯罪线索，应立即指定**2名以上**行政",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/Phase2B_深度学习笔记_20260624.md",
+        "flowwiki/wiki/concepts/环境应急/Phase2B_深度学习笔记_20260624.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "依据《行政执法机关移送涉嫌犯罪案件的规定》及《环境保护行政执法与刑事司法衔接工作办法》：①执法人员发现涉嫌犯罪线索应立即报告；②指定2名以上执法人员组成专案组核实；③经本机关正职或主持工作的负责人审批决定移送；④24小时内向同级公安机关移送，并抄送同级人民检察院，附移送书、调查报告、证据材料清单、监测报告等；⑤公安机关3日内（重大复杂可延长）审查决定是否立案；⑥已作出的行政处罚不因移送而停止执行，但人身罚与财产罚依法折抵。"
+    },
+    {
+      "id": "EB41",
+      "category": "法典新旧衔接",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 3,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.6,
+      "keypoint_f1_raw": 0.6,
+      "answer": "**明确结论**：原《中华人民共和国环境噪声污染防治法》已于2022年6月5日废止，不再适用；噪声污染防治活动统一适用《中华人民共和国噪声污染防治法》（2022）。\n\n**法律依据与适用规则**：\n\n1. **废止条款**：依据《中华人民共和国噪声污染防治法》**第九十条**规定：\"本法自2022年6月5日起施行",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/06-中华人民共和国噪声污染防治法.md"
+      ],
+      "retrieved_articles": [
+        37
+      ],
+      "golden_answer": "《中华人民共和国噪声污染防治法》自2022年6月5日起施行，原《环境噪声污染防治法》同时废止。此后发生的噪声违法行为一律适用新法；2022年6月5日前发生且已查处完毕的适用旧法；行为发生在新法施行前、处理在新法施行后的，按'从旧兼从轻'原则（《行政处罚法》第三十七条）：适用违法行为发生时的法律法规，但新法不认为是违法或处罚较轻的，适用新法。"
+    },
+    {
+      "id": "EB42",
+      "category": "法典新旧衔接",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "生态环境法典采取'适度法典化'模式，在法典正式通过施行前，现行《环境保护法》《大气污染防治法》《水污染防治法》等单行法全部继续有效，执法引用仍以现行单行法及其行政法规、部门规章为准；法典草案本身不具有法律效力，不得作为执法依据引用。法典施行后，被吸收整合的单行法将按立法机关的决定废止或修订，过渡期内关注配套衔接规定。"
+    },
+    {
+      "id": "EB43",
+      "category": "法典新旧衔接",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 2,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.4,
+      "keypoint_f1_raw": 0.4,
+      "answer": "**结论**：原则上适用**违法行为发生时**的旧法；但如行政处罚决定作出时新法已施行，且新法处罚更轻或不认为是违法的，则适用**新法**（从旧兼从轻原则）。\n\n**法律依据**：《中华人民共和国行政处罚法》**第三十七条**规定：\"实施行政处罚，适用违法行为发生时的法律、法规、规章的规定。但是，作出行政处罚决定时，法律、法规、规章已被修改或者废止，且新的规定处罚较轻或者不认为是违法的，适用新的规定。\"\n\n**要点覆盖**：\n1. **基准时点**：以违法行为发生时的法律状态为适用基础；\n2. **比较标准**：对比新旧法律规定的处罚种类、幅度及违法构成要件，判断何者对当事人更为有利；\n3. **例外情形**：新法生效后处罚更轻（如降低罚款额度、减少处罚种类）或不认为是违法的，即便行为发生在新法施行前，也应适用新法；\n4. **持续行为**：违法行为有连续或继续状态的，行为终了时新法已施行的，直接适用新法。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "适用'从旧兼从轻'原则（《行政处罚法》第三十七条）：实施行政处罚，适用违法行为发生时的法律、法规、规章的规定；但是，作出行政处罚决定时，法律法规规章已被修改或者废止，且新的规定处罚较轻或者不认为是违法的，适用新的规定。程序问题（听证、期限等）一般适用决定作出时现行有效的程序法规定。"
+    },
+    {
+      "id": "EB44",
+      "category": "法典新旧衔接",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/05-中华人民共和国固体废物污染环境防治法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "主要变化：①大幅加严处罚，多数罚则上限提高（如危险废物相关违法行为罚款由旧法的数万元提高到十万元以上一百万元以下）；②新增按日连续处罚、查封扣押等条款衔接；③强化生产者责任延伸与全过程管理（转移联单电子化）；④将医疗废物、建筑垃圾、电器电子等管理要求细化；⑤违法行为发生跨越2020年9月1日（新法施行日）的，适用从旧兼从轻，但持续状态违法行为自新法施行后适用新法。"
+    },
+    {
+      "id": "EB45",
+      "category": "法典新旧衔接",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/38-排污许可管理条例.md",
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md",
+        "flowwiki/wiki/concepts/03-中华人民共和国水污染防治法.md"
+      ],
+      "retrieved_articles": [
+        33,
+        33,
+        33
+      ],
+      "golden_answer": "《排污许可管理条例》自2021年3月1日施行后，未取得排污许可证排放污染物、不按证排污等行为优先适用条例第三十三条、第三十四条等专门罚则（特别法优于一般法）；条例未规定的事项仍适用单行法。违法行为发生在条例施行前的无证排污，适用行为发生时的单行法罚则（大气法/水法对应条款），从旧兼从轻；持续排污跨越施行日的，施行后适用条例。"
+    },
+    {
+      "id": "EB46",
+      "category": "法典新旧衔接",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 2,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/执法实务/生态环境行政处罚案卷评查标准及量化评分细则.md",
+        "flowwiki/wiki/concepts/执法实务/环境监测机构数据弄虚作假执法取证指引.md",
+        "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "2021年7月15日新《行政处罚法》施行，程序性规定自施行日起适用于未办结案件：如立案期限、法制审核范围、听证范围扩大（没收较大数额违法所得、责令关闭等纳入听证）、办案期限、首违不罚（第三十三条）、从旧兼从轻（第三十七条）等新规则即时适用；实体罚款幅度仍适用行为发生时的实体法。已按旧法程序合法完成的部分不因新法施行而无效。"
+    },
+    {
+      "id": "EB47",
+      "category": "法典新旧衔接",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [],
+      "retrieved_articles": [],
+      "golden_answer": "按《立法法》确立的效力层级处理：地方性法规与部门规章之间对同一事项规定不一致、不能确定如何适用时，由国务院提出意见——国务院认为应适用地方性法规的，决定适用地方性法规；认为应适用部门规章的，提请全国人大常委会裁决。执法实践中优先适用本行政区域有效的地方性法规（特别规定），并关注省级裁量基准；不得自行选择适用更重的规定。"
+    },
+    {
+      "id": "EB48",
+      "category": "法典新旧衔接",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 1,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.2,
+      "keypoint_f1_raw": 0.2,
+      "answer": "**结论**：在执法引用中应遵循**\"特别法优于一般法\"**原则，单行污染防治法有具体规定的优先适用单行法；单行法没有规定或规定不明的，补充适用《环境保护法》；二者冲突时优先适用单行法，但新法与旧法冲突时适用新法。\n\n## 一、法律定位与适用原则\n\n**1. 基本定位**\n- 《环境保护法》（2014修订）是生态环境领域的**基础性、综合性法律**（一般法）\n- 单行污染防治法（如《大气污染防治法》《水污染防治法》《海洋环境保护法》《固体废物污染环境防治法》等）是针对特定环境要素的**特别法**\n\n**2. 适用规则**（依据《立法法》第九十二条）\n- **特别法优于一般法**：对同一事项，单行法有特别规定的，优先适用单行法\n- **新法优于旧法**：单行法与《环境保护法》就同一事项规定不一致且单行法制定或修订在后，适用单行法\n- **补充适用**：单行法没有规定的，适用《环境保护法》\n\n## 二、具体执法引用规则\n\n### （一）违法行为认定与处罚\n- **优先引用单行法**：对超标排放、违法倾倒等具体违法行为，应引用对应单行法的具体条款（如《海洋环境保护法》第五十八条关于禁止过境转移危险废物的规定）\n- **补充引用《",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md",
+        "flowwiki/wiki/concepts/139-环境保护法规解释管理办法.md"
+      ],
+      "retrieved_articles": [
+        59,
+        59
+      ],
+      "golden_answer": "《环境保护法》是环境保护领域的基础性、综合性法律。一般原则与制度（按日连续处罚、查封扣押、限产停产、行政拘留移送、公益诉讼等）引用环保法第五十九条至第六十五条；具体污染物超标、设施运行等违法认定与罚款幅度引用相应单行法（大气法、水法、固废法等）的具体罚则，二者可合并引用。单行法没有规定的，适用环保法的一般规定。"
+    },
+    {
+      "id": "EB49",
+      "category": "法典新旧衔接",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "**明确结论**",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/10-中华人民共和国环境影响评价法.md"
+      ],
+      "retrieved_articles": [
+        31
+      ],
+      "golden_answer": "依据《环境影响评价法》（2018修正）和《建设项目环境影响评价分类管理名录》：环境影响大的编报告书、轻的编报告表，分别报生态环境部门审批；影响很小填报登记表，实行网上备案，无需审批。未依法备案登记表的，依第三十一条责令备案，处五万元以下罚款；未批先建（报告书/表类项目）按第三十一条责令停止建设并处罚款。执法认定以适用违法行为发生时的名录版本为准。"
+    },
+    {
+      "id": "EB50",
+      "category": "法典新旧衔接",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "有效。法不溯及既往：依据当时有效的法律作出的行政处罚决定，其效力不因该法后来废止或被法典吸收而受影响；复议、诉讼中审查处罚决定合法性仍以行为时有效的法律为依据。但处罚决定作出在法典施行后、行为发生在施行前的，依从旧兼从轻处理；法典施行中的衔接条款（过渡条款）优先适用。"
+    },
+    {
+      "id": "EB51",
+      "category": "法典-继承映射",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 1,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 4,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md",
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [
+        1107
+      ],
+      "golden_answer": "由《生态环境法典》第一千一百零七条（第五编第二章第三节“违反排污许可管理规定”）继承。该条规定：违反本法规定，超过污染物排放标准或者超过重点污染物排放总量控制指标排放污染物的，由生态环境主管部门责令改正，处十万元以上一百万元以下的罚款，可以责令限制生产、停产整治；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。原《大气污染防治法》已于2026年8月15日废止。"
+    },
+    {
+      "id": "EB52",
+      "category": "法典-继承映射",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 2,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 4,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md",
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第二编-污染防治.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "纳入《生态环境法典》第二编（污染防治）第二分编（大气污染防治）第六章（重污染天气应对）。依据知识库《大气污染防治法》概念文件“核心制度与法典继承”对照表：重污染天气应对→第六章。"
+    },
+    {
+      "id": "EB53",
+      "category": "法典-继承映射",
+      "citation_hit": 1.0,
+      "citation_hits": 2,
+      "citation_total": 2,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 3,
+      "keypoint_total": 3,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论**：原《水污染防治法》中的“饮用水水源保护”制度，在《中华人民共和国生态环境法典》中继承位置为**第二编“污染防治”第三分编“水污染防治”第九章“饮用水水源和其他特殊水体保护”**。\n\n**引用依据**：\n1. 根据《中华人民共和国生态环境法典》（2026年3月12日通过，2026年8月15日起施行）编章结构，第二编“污染防治”第三分编“水污染防治”下设：**第七章　一般规定**、**第八章　水污染防治措施**（分四节）、**第九章　饮用水水源和其他特殊水体保护**、**第十章　重点流域水污染防治**（见【flowwiki/wiki/concepts/第二编-污染防治.md】）。\n2. 制度对应表明确载明：原《水污染防治法》“饮用水水源保护”制度继承至法典**第九章**（见【flowwiki/wiki/concepts/03-中华人民共和国水污染防治法.md】核心制度与法典继承表）。\n\n**要点覆盖**：\n- **编**：第二编　污染防治；\n- **分编**：第三分编　水污染防治；\n- **章**：第九章　饮用水水源和其他特殊水体保护（原制度",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/03-中华人民共和国水污染防治法.md",
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第二编-污染防治.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "纳入《生态环境法典》第二编（污染防治）第三分编（水污染防治）第九章（饮用水水源和其他特殊水体保护）。依据知识库《水污染防治法》概念文件“核心制度与法典继承”对照表：饮用水水源保护→第九章。"
+    },
+    {
+      "id": "EB54",
+      "category": "法典-继承映射",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 2,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 3,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/05-中华人民共和国固体废物污染环境防治法.md",
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第二编-污染防治.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "纳入《生态环境法典》第二编（污染防治）第六分编（固体废物污染防治）第二十三章（危险废物污染防治）。依据知识库《固体废物污染环境防治法》概念文件“核心制度与法典继承”对照表：危险废物→第二十三章。"
+    },
+    {
+      "id": "EB55",
+      "category": "法典-继承映射",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 3,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 4,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "根据《中华人民共和国生态环境法典》的编纂结构，原《环境影响评价法》",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/10-中华人民共和国环境影响评价法.md",
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第一编-总则.md",
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "纳入《生态环境法典》第一编（总则）第五章（生态环境影响评价）第三节（建设项目的生态环境影响评价）。依据知识库《环境影响评价法》概念文件“核心制度与法典继承”对照表：建设项目环评→第一编第五章第三节。"
+    },
+    {
+      "id": "EB56",
+      "category": "法典-新旧衔接",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 3,
+      "keypoint_total": 3,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论**  \n《中华人民共和国大气污染防治法》的废止日期为**2026年8月15日**；废止原因是**被《中华人民共和国生态环境法典》取代**，全部制度内容经编订纂修后纳入该法典污染防治编第二分编（大气污染防治）。\n\n**要点说明**  \n1. **废止日期**：该法自2026年8月15日起终止施行。  \n2. **废止原因及继承关系**：因《中华人民共和国生态环境法典》的施行而废止。原《大气污染防治法》确立的一般规定、燃煤与能源污染防治、工业污染防治、机动车船污染防治、扬尘污染防治、农业污染防治、重点区域联合防治及重污染天气应对等制度，已整体并入生态环境法典污染防治编第二分编第三章至第六章。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "《大气污染防治法》于2026年8月15日废止，废止原因是被《中华人民共和国生态环境法典》取代——法典自2026年8月15日起施行，原法全部内容经编订纂修后纳入法典污染防治编第二分编（大气污染防治）。"
+    },
+    {
+      "id": "EB57",
+      "category": "法典-新旧衔接",
+      "citation_hit": 1.0,
+      "citation_hits": 2,
+      "citation_total": 2,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论**：《中华人民共和国生态环境法典》于**2026年3月12日**由第十四届全国人民代表大会第四次会议通过，自**2026年8月15日**起施行；法典共**五编**，**一千二百四十二条**。\n\n**要点覆盖**：\n1. **通过时间与主体**：2026年3月12日，第十四届全国人民代表大会第四次会议；\n2. **施行时间**：2026年8月15日；\n3. **体例结构**：五编（分别为总则、污染防治、生态保护、绿色低碳发展、法律责任和附则），总计一千二百四十二条。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "《生态环境法典》于2026年3月12日由第十四届全国人民代表大会第四次会议通过，自2026年8月15日起施行，共五编、一千二百四十二条（1242条）。"
+    },
+    {
+      "id": "EB58",
+      "category": "法典-新旧衔接",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "《中华人民共和国生态环境法典》第一千二百四十二条（附则）规定以下两项内容：\n\n**一、施行日期**\n本法自**2026年8月15日**起施行。\n\n**二、同时废止的法律**\n下列10部法律同时废止：\n1. 《中华人民共和国环境保护法》\n2. 《中华人民共和国环境影响评价法》\n3. 《中华人民共和国海洋环境保护法》\n4. 《中华人民共和国大气污染防治法》\n5. 《中华人民共和国水污染防治法》\n6. 《中华人民共和国土壤污染防治法》\n7. 《中华人民共和国固体废物污染环境防治法》\n8. 《中华人民共和国噪声污染防治法》\n9. 《中华人民共和国放射性污染防治法》\n10. 《中华人民共和国清洁生产促进法》\n\n**结论**：该条款为法典的时间效力条款，明确了2026年8月15日的生效日期，并宣告上述10部单行环保法律自该日起全部废止，实现生态环境法律体系的法典化整合。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [
+        1242
+      ],
+      "golden_answer": "《生态环境法典》第一千二百四十二条规定：本法自2026年8月15日起施行，《环境保护法》《环境影响评价法》《海洋环境保护法》《大气污染防治法》《水污染防治法》《土壤污染防治法》《固体废物污染环境防治法》《噪声污染防治法》《放射性污染防治法》《清洁生产促进法》共10部法律同时废止。"
+    },
+    {
+      "id": "EB59",
+      "category": "法典-新旧衔接",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论**：依据《中华人民共和国生态环境法典》**第一千零五十七条**确定法律适用，即**从旧兼从轻**原则。\n\n**要点覆盖**：\n\n1. **基本原则**：实施行政处罚，**适用违法行为发生时**的生态环境法律、法规、规章的规定（从旧）。\n\n2. **例外情形（从轻）**：作出行政处罚决定时，生态环境法律、法规、规章已被修改或者废止，**且新的规定处罚较轻或者不认为是违法的，适用新的规定**。\n\n3. **适用逻辑**：违法行为发生在法典施行前，处罚决定在法典施行后作出的，应比较行为时旧法与法典规定的处罚轻重；若法典处罚较轻或不认为是违法，则适用法典；否则适用行为时的旧法。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [
+        1057
+      ],
+      "golden_answer": "依据《生态环境法典》第一千零五十七条：实施行政处罚，适用违法行为发生时的生态环境法律、法规、规章的规定；但是，作出行政处罚决定时，生态环境法律、法规、规章已被修改或者废止，且新的规定处罚较轻或者不认为是违法的，适用新的规定。即从旧兼从轻原则。"
+    },
+    {
+      "id": "EB60",
+      "category": "法典-新旧衔接",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论：** 原《环境保护法》第五十九条确立的按日连续处罚制度，由**《中华人民共和国生态环境法典》第一千零六十条**继承。\n\n**条款引用：**\n《中华人民共和国生态环境法典》第五编“法律责任和附则”**第一千零六十条**规定：\n> “企业事业单位和其他生产经营者违法排放、倾倒、处置污染物、废弃物或者其他物质，受到罚款处罚，被责令改正的，依法作出处罚决定的部门或者机构应当组织复查，发现其继续实施该违法行为、拒不改正或者拒绝、阻挠复查的，可以自责令改正之日的次日起，按照原罚款数额按日连续处罚，并及时采取措施制止违法行为。”\n\n**要点覆盖：**\n1. **适用条件**：违法排放/倾倒/处置污染物等物质 → 受到罚款处罚并被责令改正 → 复查发现继续实施违法行为、拒不改正或拒绝/阻挠复查。\n2. **起算时间**：自责令改正之日的次日起。\n3. **处罚标准**：按原罚款数额按日连续处罚（原罚款数额根据污染防治设施运行成本、直接损失或违法所得等因素在法定幅度内确定）。\n4. **授权规定**：地方性法规可根据实际需要，增加按日连续处罚的违法行为种类。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [
+        1060
+      ],
+      "golden_answer": "由《生态环境法典》第一千零六十条（第五编第一章法律责任通则第一节）继承：企业事业单位和其他生产经营者违法排放、倾倒、处置污染物受到罚款处罚被责令改正的，作出处罚决定的部门或机构应当组织复查，发现其继续实施该违法行为、拒不改正或拒绝、阻挠复查的，可以自责令改正之日的次日起按照原罚款数额按日连续处罚。"
+    },
+    {
+      "id": "EB61",
+      "category": "法典-框架结构",
+      "citation_hit": 1.0,
+      "citation_hits": 5,
+      "citation_total": 5,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 6,
+      "keypoint_total": 6,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "根据《中华人民共和国生态环境法典》（2026年3月12日第十四届全国人民代表大会第四次会议通过，自2026年8月15日起施行）的法典结构，**共分为以下五编**：\n\n**第一编　总则**（九章）  \n**第二编　污染防治**（九个分编、三十六章）  \n**第三编　生态保护**（七章）  \n**第四编　绿色低碳发展**（四章）  \n**第五编　法律责任和附则**（三章）\n\n该法典共计一千二百四十二条，上述五编涵盖了生态环境领域的基础制度、各类污染防治、生态系统保护、绿色低碳发展以及法律责任等完整内容体系。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "《生态环境法典》共五编：第一编总则、第二编污染防治、第三编生态保护、第四编绿色低碳发展、第五编法律责任和附则。"
+    },
+    {
+      "id": "EB62",
+      "category": "法典-框架结构",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 2,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第二编-污染防治.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "第二编（污染防治）下设九个分编、三十六章，包括：第一分编通则、第二分编大气污染防治、第三分编水污染防治、第四分编海洋污染防治、第五分编土壤污染防治、第六分编固体废物污染防治、第七分编噪声污染防治、第八分编放射性污染防治、第九分编化学物质污染风险管控、电磁辐射和光污染防治。"
+    },
+    {
+      "id": "EB63",
+      "category": "法典-框架结构",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 3,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 4,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "第五编为“法律责任和附则”，下设三章：第一章法律责任通则（含一般规定、责任主体、责任追究三节）、第二章法律责任分则、第三章附则。法律责任分则按监管领域设十四节，如违反生态环境监测管理规定、违反生态环境影响评价管理规定、违反排污许可管理规定、违反大气污染防治规定、违反水污染防治规定等。"
+    },
+    {
+      "id": "EB64",
+      "category": "法典-框架结构",
+      "citation_hit": 1.0,
+      "citation_hits": 2,
+      "citation_total": 2,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论**：生态环境影响评价制度位于《中华人民共和国生态环境法典》**第一编 总则 第五章**；该章共分**三节**。\n\n**法律依据与结构**：\n- **位置**：《中华人民共和国生态环境法典》第一编 总则 第五章（生态环境影响评价）。\n- **节数**：该章下设三节，分别为：\n  1. **第一节**　一般规定；\n  2. **第二节**　规划的生态环境影响评价；\n  3. **第三节**　建设项目的生态环境影响评价。\n\n（参见《中华人民共和国生态环境法典》目录结构：第一编 总则—第五章 生态环境影响评价）",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/10-中华人民共和国环境影响评价法.md",
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第一编-总则.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "位于《生态环境法典》第一编（总则）第五章（生态环境影响评价），该章分三节：第一节一般规定、第二节规划的生态环境影响评价、第三节建设项目的生态环境影响评价。"
+    },
+    {
+      "id": "EB65",
+      "category": "法典-框架结构",
+      "citation_hit": 0.0,
+      "citation_hits": 0,
+      "citation_total": 2,
+      "citation_hit_raw": 0.0,
+      "keypoint_tp": 0,
+      "keypoint_total": 5,
+      "keypoint_f1": 0.0,
+      "keypoint_f1_raw": 0.0,
+      "answer": "[mock] 本题需依据相关法律法规处理，具体条款略。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第三编-生态保护.md",
+        "flowwiki/wiki/concepts/第四编-绿色低碳发展.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "第三编为生态保护，设七章（一般规定、生态系统保护、自然资源保护与可持续利用、物种保护、重要地理单元保护、生态退化的预防和治理、生态修复）；第四编为绿色低碳发展，设四章（一般规定、发展循环经济、能源节约与绿色低碳转型、应对气候变化）。"
+    },
+    {
+      "id": "EB66",
+      "category": "法典-引用规范",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论**：2026年8月15日起，查处企业超过大气污染物排放标准排放大气污染物的行为，执法决定书应引用**《中华人民共和国生态环境法典》第一千一百零七条**。\n\n**要点与依据**：\n\n1. **条款引用**  \n   根据《中华人民共和国生态环境法典》第五编（法律责任和附则）**第一千一百零七条**：“违反本法规定，超过污染物排放标准或者超过重点污染物排放总量控制指标排放污染物的，由生态环境主管部门责令改正，处十万元以上一百万元以下的罚款，可以责令限制生产、停产整治；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。”\n\n2. **法律适用**  \n   该条款为综合性罚则，涵盖大气、水、土壤等各类污染物超标排放行为。大气污染物超标排放属于“超过污染物排放标准排放污染物”的情形，应直接适用本条。\n\n3. **旧法废止**  \n   原《中华人民共和国大气污染防治法》第九十九条已于2026年8月15日《生态环境法典》施行之日同步废止，此后不再引用。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md",
+        "flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [
+        1107
+      ],
+      "golden_answer": "应引用《生态环境法典》第一千一百零七条，不得再引用已废止的《大气污染防治法》第九十九条。依据第一千一百零七条：超过污染物排放标准排放污染物的，由生态环境主管部门责令改正，处十万元以上一百万元以下的罚款，可以责令限制生产、停产整治；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。"
+    },
+    {
+      "id": "EB67",
+      "category": "法典-引用规范",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论：** 应引用《中华人民共和国生态环境法典》**第一千零九十五条第一款**。\n\n**要点：**\n1. **条款定位**：该条位于法典**第五编**（法律责任和附则），针对违反第一编第五章（生态环境影响评价）第三节（建设项目的生态环境影响评价）的“未批先建”行为设定罚则。\n2. **处罚内容**：由生态环境主管部门责令**停止建设**，并可以责令**恢复原状**；对报批类型为生态环境影响**报告书**的，处**二十万元以上一百万元以下**罚款；情节严重的，处**一百万元以上一千万元以下**罚款。\n3. **配套处罚**：拒不执行停止建设或恢复原状决定的，依据同款第二段，对直接责任人员可处**五日至十五日拘留**（由公安机关或海警机构执行）。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md",
+        "flowwiki/wiki/concepts/10-中华人民共和国环境影响评价法.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [
+        1095
+      ],
+      "golden_answer": "应引用《生态环境法典》第一千零九十五条（第五编第二章第二节违反生态环境影响评价管理规定）：责令停止建设，并可以责令恢复原状；报批类型为生态环境影响报告书的，处二十万元以上一百万元以下的罚款，情节严重的处一百万元以上一千万元以下的罚款；报告表的处十万元以上五十万元以下，情节严重处五十万元以上五百万元以下；拒不执行停止建设或恢复原状的，移送公安机关对责任人员处拘留。"
+    },
+    {
+      "id": "EB68",
+      "category": "法典-引用规范",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**明确结论**：应引用《中华人民共和国生态环境法典》**第一千一百零九条**。\n\n**要点覆盖**：\n\n1. **一般违法设置排污口**（对应原《水污染防治法》第八十四条第一款）  \n   违反法典及其他法律法规、国务院生态环境主管部门规定、排污许可证规定设置排污口的，由生态环境主管部门责令限期拆除；逾期不拆除的，强制拆除，所需费用由违法者承担，并处二万元以上十万元以下罚款；情节严重的，处十万元以上五十万元以下罚款，责令限制生产、停产整治。\n\n2. **特殊保护区域设置排污口**（对应原《水污染防治法》第八十四条第二款）  \n   在饮用水水源保护区内设置排污口，或者在自然保护地水体等具有特殊经济文化价值的水体、生态保护红线区域及其他需要特别保护的区域新设排污口的，由县级以上地方人民政府责令限期拆除；逾期不拆除的，强制拆除，所需费用由违法者承担，由生态环境主管部门处十万元以上五十万元以下罚款；情节严重的，处五十万元以上一百万元以下罚款，责令限制生产、停产整治。\n\n3. **入海排污口未备案**（对应原《水污染防治法》第八十四条第三款）  \n   设置入海排污口未备案的，由生态环境主管部门责令改正，处二万元以上十万元以下罚款。\n\n**说明**：原《水污染防治法》第八十四条已于2026年8月15日废止，其规范内容整体并入《生态环境法典》第一千一百零九条，执法查处应直接引用该条款。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md",
+        "flowwiki/wiki/concepts/03-中华人民共和国水污染防治法.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [
+        1109
+      ],
+      "golden_answer": "应引用《生态环境法典》第一千一百零九条（第五编第二章第三节违反排污许可管理规定）：由生态环境主管部门责令限期拆除，逾期不拆除的强制拆除，所需费用由违法者承担，处二万元以上十万元以下的罚款；情节严重的，处十万元以上五十万元以下的罚款，责令限制生产、停产整治。在饮用水水源保护区等特殊区域新设排污口的，处十万元以上五十万元以下，情节严重处五十万元以上一百万元以下。"
+    },
+    {
+      "id": "EB69",
+      "category": "法典-引用规范",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论**：应引用**《中华人民共和国生态环境法典》第一千一百零二条**。\n\n**要点说明**：\n\n1. **条款定位**  \n   该条位于**第五编“法律责任和附则”**之“生态环境保护行政责任”一节（第一千一百零一条明确违反第二编第一分编第二章“排污许可管理”等规定，适用本节行政处罚）。\n\n2. **适用情形**  \n   针对**未依法取得排污许可证排放污染物**（即“无证排污”）的行为。\n\n3. **处罚内容**  \n   - **罚款**：二十万元以上一百万元以下（污染物为工业噪声的，二万元以上二十万元以下）；  \n   - **行政命令**：责令改正，并可以责令限制生产、停产整治；  \n   - **情节严重**：报经有批准权的人民政府批准，责令停业、关闭；  \n   - **拒不停止排污**：移送公安机关，对直接负责的主管人员和其他直接责任人员处五日以上十五日以下拘留。\n\n**注意区分**：若企业已取得排污许可证，但未按证载明种类、浓度、排放量或限值排放的，应适用同法**第一千一百零三条**（超许可排污），而非第一千一百零二条。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md",
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第二编-污染防治.md"
+      ],
+      "retrieved_articles": [
+        1102
+      ],
+      "golden_answer": "应引用《生态环境法典》第一千一百零二条（第五编第二章第三节违反排污许可管理规定）：由生态环境主管部门责令改正，处二十万元以上一百万元以下的罚款，并可以责令限制生产、停产整治；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。拒不停止排放的，移送公安机关对直接负责的主管人员和其他直接责任人员处十日以上十五日以下拘留，情节较轻处五日以上十日以下拘留。"
+    },
+    {
+      "id": "EB70",
+      "category": "法典-引用规范",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论：** 应引用《中华人民共和国生态环境法典》**第一千一百零八条**。\n\n**要点：**\n1. **违法行为**：通过暗管、渗井、渗坑、灌注、裂隙、溶洞、篡改或伪造监测数据、以逃避现场检查为目的的临时停产、非紧急情况下开启应急排放通道、不正常运行污染防治设施等逃避监管的方式排放污染物。\n\n2. **行政处罚**：\n   - 责令改正；\n   - 罚款：**十万元以上一百万元以下**；\n   - 责令限制生产、停产整治。\n\n3. **行政强制与刑事移送**：\n   - 将案件移送公安机关，对直接负责的主管人员和其他直接责任人员处**五日以上十日以下拘留**。\n\n4. **情节严重加重处罚**：\n   - 吊销排污许可证；\n   - 报经有批准权的地方人民政府批准，责令停业、关闭；\n   - 由公安机关对直接负责的主管人员和其他直接责任人员处**十日以上十五日以下拘留**。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/第五编-法律责任和附则.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [
+        1108
+      ],
+      "golden_answer": "应引用《生态环境法典》第一千一百零八条（第五编第二章第三节违反排污许可管理规定）：通过暗管、渗井、渗坑、灌注、裂隙、溶洞、篡改或者伪造监测数据、不正常运行污染防治设施等逃避监管方式排放污染物的，由生态环境主管部门责令改正，处十万元以上一百万元以下的罚款，责令限制生产、停产整治，并将案件移送公安机关，对直接负责的主管人员和其他直接责任人员处五日以上十日以下拘留；情节严重的，吊销排污许可证，责令停业、关闭，并处十日以上十五日以下拘留。"
+    }
+  ]
+}
