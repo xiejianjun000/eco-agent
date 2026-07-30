@@ -83,6 +83,41 @@ def _handle_resume_intent(q):
         return ws
     return None
 
+def _restore_session(args):
+    """会话恢复：--resume <slug> 按名恢复；--continue 恢复最近活跃工作区。
+    从 ~/.eco/workspaces/<slug>/history.jsonl 重建 history（user/assistant 事件）。"""
+    slug = getattr(args, "resume", None)
+    cont = getattr(args, "continue_session", False)
+    if not slug and not cont:
+        return []
+    from agent_core.workspace import get_workspace_manager
+    mgr = get_workspace_manager()
+    ws = None
+    if slug:
+        ws = mgr.open(slug)
+        if ws is None:
+            print(f"[resume] 未找到工作区: {slug}（eco workspace list 查看可恢复会话）")
+            return []
+    else:
+        cands = mgr.list()
+        if not cands:
+            print("[continue] 暂无历史工作区可恢复")
+            return []
+        cands.sort(key=lambda m: m.get("updated_at", ""), reverse=True)
+        ws = mgr.open(cands[0]["slug"])
+    if ws is None:
+        return []
+    history = []
+    for rec in ws.history():
+        kind, content = rec.get("kind"), rec.get("content")
+        if kind == "user":
+            history.append({"role": "user", "content": content})
+        elif kind == "assistant":
+            history.append({"role": "assistant", "content": content})
+    print(f"[session] 已恢复工作区「{ws.meta.get('name', ws.path.name)}」"
+          f"会话历史 {len(history)} 条消息")
+    return history
+
 def _maybe_swarm(q, context="", tracer=None):
     """复杂执法任务启用三角色协作；简单问答返回 None"""
     from agent_core.role_swarm import get_role_swarm, is_complex_task
@@ -143,20 +178,23 @@ def _stream_answer(messages, tracer=None):
 def run(args):
     from eco.trace import set_verbose, get_tracer
     set_verbose(getattr(args, "verbose", False))
+    restored = _restore_session(args)
     if args.query:
         tracer = get_tracer()
         _handle_resume_intent(args.query)
         extra = _workspace_system_extra(args.query, tracer=tracer)
         answer = _maybe_swarm(args.query, tracer=tracer)
         if answer is None:
-            messages = _build_messages([], args.query, system_extra=extra)
+            messages = _build_messages(restored, args.query, system_extra=extra)
             _stream_answer(messages, tracer=tracer)
         print()
         return 0
-    return _repl()
+    return _repl(history=restored)
 
-def _repl():
-    history = []
+def _repl(history=None):
+    history = list(history or [])
+    if history:
+        print(f"[session] 继续上次会话（已载入 {len(history)} 条消息，/new 可清空重来）")
     if _HAVE_RICH:
         from rich.text import Text
         _console.print()

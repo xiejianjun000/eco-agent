@@ -58,7 +58,7 @@ class Workspace:
             return {}
 
     def _save_meta(self, meta: dict):
-        meta["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        meta["updated_at"] = datetime.now().isoformat(timespec="milliseconds")
         self.meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2),
                                   encoding="utf-8")
 
@@ -75,6 +75,8 @@ class Workspace:
         rec.update(extra)
         with self.history_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        # 事件即活动：刷新 updated_at，保证"最近活跃工作区"排序正确
+        self.touch()
 
     def history(self, limit: int = 0) -> list[dict]:
         if not self.history_path.exists():
@@ -186,7 +188,7 @@ class WorkspaceManager:
             "name": name, "slug": slug, "category": category,
             "tags": tags or [],
             "created_at": datetime.now().isoformat(timespec="seconds"),
-            "updated_at": datetime.now().isoformat(timespec="seconds"),
+            "updated_at": datetime.now().isoformat(timespec="milliseconds"),
             "correction_refs": [],
         }
         ws.meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")

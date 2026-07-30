@@ -14,6 +14,10 @@ def _build_parser():
     p.add_argument("--provider", default=None)
     p.add_argument("--verbose", "-v", action="store_true",
                    help="轨迹模式：显示思考/工具调用/结果与 swarm 阶段耗时（写入 SM3 审计链 source=trace）")
+    p.add_argument("--continue", "-c", dest="continue_session", action="store_true",
+                   help="恢复最近活跃工作区的会话历史继续对话")
+    p.add_argument("--resume", "-r", dest="resume", default=None, metavar="SLUG",
+                   help="按工作区名/slug 恢复指定会话历史")
 
     p = sub.add_parser("gateway", help="Manage gateway")
     p.add_argument("action", choices=["start","stop","restart","status"])
