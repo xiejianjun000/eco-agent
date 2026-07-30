@@ -171,7 +171,137 @@ class LLMClient:
             return text
         return full_text
 
-    def _call_kimi_fallback(self, messages, model, temp) -> Optional[dict]:
+    def chat_with_tools(self, messages: list, tools: list, on_chunk=None, max_tool_rounds: int = 5) -> str:
+        """
+        CLAUDE/CODEX/HERMES 风格 Agent 循环：
+        1. 发送消息 + 工具定义给 LLM
+        2. 如果 LLM 返回 tool_calls → 执行工具 → 追加结果 → 循环
+        3. 如果 LLM 返回文本 → 流式输出 → 完成
+
+        Args:
+            messages: 对话消息列表 (system + user + history)
+            tools: 工具定义列表 (OpenAI function calling 格式)
+            on_chunk: 流式回调函数
+            max_tool_rounds: 最大工具调用轮数
+        Returns:
+            最终回答文本
+        """
+        if not self.available():
+            msg = "[LLM not configured]"
+            if on_chunk: on_chunk(msg)
+            return msg
+
+        model = self._provider["default_model"]
+        current_messages = list(messages)
+        tool_results_displayed = [False]
+
+        for round_idx in range(max_tool_rounds + 1):
+            # 调用 LLM
+            body = {
+                "model": model,
+                "messages": current_messages,
+                "temperature": 0.7,
+                "stream": False,
+            }
+            if tools:
+                body["tools"] = tools
+                body["tool_choice"] = "auto"
+
+            try:
+                resp = self._httpx.post(
+                    f"{self._provider['base_url']}/chat/completions",
+                    headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+                    json=body,
+                    timeout=60,
+                )
+                if resp.status_code != 200:
+                    err = f"[API Error: {resp.status_code}]"
+                    if on_chunk: on_chunk(err)
+                    return err
+
+                data = resp.json()
+                msg = data.get("choices", [{}])[0].get("message", {})
+
+            except Exception as e:
+                err = f"[Error: {e}]"
+                if on_chunk: on_chunk(err)
+                return err
+
+            # 检查是否有 tool_calls
+            tool_calls = msg.get("tool_calls")
+            if tool_calls:
+                # 显示工具调用信息（CLAUDE Code 风格）
+                for tc in tool_calls:
+                    fn_name = tc["function"]["name"]
+                    try:
+                        fn_args = json.loads(tc["function"]["arguments"])
+                    except:
+                        fn_args = {}
+                    args_str = "; ".join(f"{k}={v}" for k, v in fn_args.items())
+
+                    if on_chunk and not tool_results_displayed[0]:
+                        on_chunk(f"\n  → 正在查询 {fn_name}...\n")
+                        tool_results_displayed[0] = True
+                    elif on_chunk:
+                        on_chunk(f"\n  → 调用 {fn_name}({args_str})\n")
+
+                # 执行工具
+                from agent_core.tools_registry import execute_tool
+                import asyncio
+
+                # 追加 assistant 消息（含 tool_calls）
+                assistant_msg = {"role": "assistant", "content": msg.get("content") or None}
+                # OpenAI 格式：tool_calls 在 assistant message 中
+                assistant_msg["tool_calls"] = [
+                    {
+                        "id": tc["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tc["function"]["name"],
+                            "arguments": tc["function"]["arguments"]
+                        }
+                    }
+                    for tc in tool_calls
+                ]
+                current_messages.append(assistant_msg)
+
+                # 执行每个工具并追加结果
+                for tc in tool_calls:
+                    tool_name = tc["function"]["name"]
+                    try:
+                        tool_args = json.loads(tc["function"]["arguments"])
+                    except:
+                        tool_args = {}
+
+                    tool_result = asyncio.run(execute_tool(tool_name, tool_args))
+
+                    current_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": tool_result
+                    })
+
+                continue  # 继续循环
+
+            # 没有 tool_calls，有文本回答 → 流式输出
+            content = msg.get("content", "")
+            if not content:
+                content = str(msg)
+
+            if on_chunk:
+                # 模拟流式输出（逐段展示）
+                chunk_size = 20
+                for i in range(0, len(content), chunk_size):
+                    on_chunk(content[i:i+chunk_size])
+                    import time
+                    time.sleep(0.01)
+
+            return content
+
+        # 超过最大工具轮数
+        fallback = "[工具调用次数过多，请简化问题]"
+        if on_chunk: on_chunk(fallback)
+        return fallback
         kimi_key = os.environ.get("KIMI_API_KEY") or self._env.get("KIMI_API_KEY", "")
         if not self._httpx or not kimi_key:
             return None
