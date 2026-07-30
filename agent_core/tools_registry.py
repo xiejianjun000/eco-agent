@@ -326,8 +326,25 @@ ALL_TOOL_DEFS = [
       "description": "工业碳排放分析",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，用于匹配其工业碳排放台账"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "分析年度（YYYY），定位对应年度排放数据"
+                },
+                "industry": {
+                        "type": "string",
+                        "description": "可选，行业类别（钢铁/化工/电力等），用于同行业对标"
+                }
+        },
+        "required": [
+                "company_name",
+                "year"
+        ]
+}
     }
   },
   {
@@ -337,8 +354,21 @@ ALL_TOOL_DEFS = [
       "description": "审批电子签章",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "审批事项编号，定位需签章的审批单"
+                },
+                "signer_name": {
+                        "type": "string",
+                        "description": "签章人姓名，用于核验签章权限"
+                }
+        },
+        "required": [
+                "approval_id",
+                "signer_name"
+        ]
+}
     }
   },
   {
@@ -348,8 +378,25 @@ ALL_TOOL_DEFS = [
       "description": "办理营业执照",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "拟注册企业名称，用于核名与登记"
+                },
+                "legal_person": {
+                        "type": "string",
+                        "description": "法定代表人姓名"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，登记机关所在地区（如 赣州市）"
+                }
+        },
+        "required": [
+                "company_name",
+                "legal_person"
+        ]
+}
     }
   },
   {
@@ -359,8 +406,21 @@ ALL_TOOL_DEFS = [
       "description": "申请碳核查",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申请碳核查的企业全称"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "核查年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name",
+                "year"
+        ]
+}
     }
   },
   {
@@ -370,8 +430,20 @@ ALL_TOOL_DEFS = [
       "description": "申请清洁生产审核",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申请清洁生产审核的企业全称"
+                },
+                "industry": {
+                        "type": "string",
+                        "description": "可选，所属行业，用于匹配审核技术规范"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -381,8 +453,24 @@ ALL_TOOL_DEFS = [
       "description": "申请残疾人补贴",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "申请人姓名"
+                },
+                "disability_level": {
+                        "type": "string",
+                        "description": "可选，残疾等级（一至四级），用于核定补贴标准"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，户籍所在地区"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -392,8 +480,20 @@ ALL_TOOL_DEFS = [
       "description": "申请药品经营许可证",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申请药品经营许可的企业全称"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，经营场所所在地区"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -403,8 +503,20 @@ ALL_TOOL_DEFS = [
       "description": "申请老年人优待证",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "老年人姓名"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，常住地区，用于确定发卡机构"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -414,8 +526,20 @@ ALL_TOOL_DEFS = [
       "description": "申请食品经营许可证",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申请食品经营许可的主体名称"
+                },
+                "business_type": {
+                        "type": "string",
+                        "description": "可选，经营业态（餐饮/销售/食堂等）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -425,8 +549,20 @@ ALL_TOOL_DEFS = [
       "description": "申请高新技术企业认定",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申报高新技术企业认定的企业全称"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，申报批次年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -436,8 +572,20 @@ ALL_TOOL_DEFS = [
       "description": "办理公积金开户",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "办理公积金开户的企业全称"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，公积金管理中心所在城市"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -447,8 +595,24 @@ ALL_TOOL_DEFS = [
       "description": "申请公积金提取",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "提取人姓名"
+                },
+                "reason": {
+                        "type": "string",
+                        "description": "可选，提取事由（购房/租房/退休等）"
+                },
+                "amount": {
+                        "type": "string",
+                        "description": "可选，拟提取金额（元）"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -458,8 +622,20 @@ ALL_TOOL_DEFS = [
       "description": "申请知识产权保护",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申请知识产权保护的主体名称"
+                },
+                "ip_type": {
+                        "type": "string",
+                        "description": "可选，知识产权类型（专利/商标/著作权）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -469,8 +645,24 @@ ALL_TOOL_DEFS = [
       "description": "申领发票",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申领发票的纳税人名称"
+                },
+                "invoice_type": {
+                        "type": "string",
+                        "description": "可选，发票种类（增值税专用/普通发票）"
+                },
+                "amount": {
+                        "type": "string",
+                        "description": "可选，申领数量（份）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -480,8 +672,20 @@ ALL_TOOL_DEFS = [
       "description": "申请低保救助",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "低保申请人姓名"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，户籍所在地，用于确定受理街道"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -491,8 +695,20 @@ ALL_TOOL_DEFS = [
       "description": "申请医疗器械经营许可证",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申请医疗器械经营许可的企业全称"
+                },
+                "device_class": {
+                        "type": "string",
+                        "description": "可选，器械类别（二类/三类）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -502,8 +718,20 @@ ALL_TOOL_DEFS = [
       "description": "办理社保开户",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "办理社保开户的企业全称"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，参保登记地"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -513,8 +741,24 @@ ALL_TOOL_DEFS = [
       "description": "申报科技项目",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "project_name": {
+                        "type": "string",
+                        "description": "申报科技项目的名称"
+                },
+                "company_name": {
+                        "type": "string",
+                        "description": "可选，申报单位全称"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，申报年度（YYYY）"
+                }
+        },
+        "required": [
+                "project_name"
+        ]
+}
     }
   },
   {
@@ -524,8 +768,24 @@ ALL_TOOL_DEFS = [
       "description": "预约婚姻登记",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "预约人姓名"
+                },
+                "partner_name": {
+                        "type": "string",
+                        "description": "可选，配偶姓名"
+                },
+                "date": {
+                        "type": "string",
+                        "description": "可选，预约登记日期（YYYY-MM-DD）"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -535,8 +795,28 @@ ALL_TOOL_DEFS = [
       "description": "智慧医疗预约",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "patient_name": {
+                        "type": "string",
+                        "description": "就诊人姓名"
+                },
+                "hospital": {
+                        "type": "string",
+                        "description": "可选，目标医院名称"
+                },
+                "department": {
+                        "type": "string",
+                        "description": "可选，挂号科室"
+                },
+                "date": {
+                        "type": "string",
+                        "description": "可选，预约日期（YYYY-MM-DD）"
+                }
+        },
+        "required": [
+                "patient_name"
+        ]
+}
     }
   },
   {
@@ -546,8 +826,25 @@ ALL_TOOL_DEFS = [
       "description": "计算碳足迹",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "核算主体的企业全称"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "核算年度（YYYY）"
+                },
+                "scope": {
+                        "type": "string",
+                        "description": "可选，核算边界（范围一/二/三）"
+                }
+        },
+        "required": [
+                "company_name",
+                "year"
+        ]
+}
     }
   },
   {
@@ -557,8 +854,21 @@ ALL_TOOL_DEFS = [
       "description": "配置审批权限",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "role_name": {
+                        "type": "string",
+                        "description": "待配置的角色名称"
+                },
+                "permission_level": {
+                        "type": "string",
+                        "description": "权限级别（查看/办理/审批/管理）"
+                }
+        },
+        "required": [
+                "role_name",
+                "permission_level"
+        ]
+}
     }
   },
   {
@@ -568,8 +878,21 @@ ALL_TOOL_DEFS = [
       "description": "智慧交通信号灯控制",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "intersection_id": {
+                        "type": "string",
+                        "description": "路口编号，定位受控信号灯"
+                },
+                "action": {
+                        "type": "string",
+                        "description": "控制动作（延长绿灯/强制红灯/恢复自动）"
+                }
+        },
+        "required": [
+                "intersection_id",
+                "action"
+        ]
+}
     }
   },
   {
@@ -579,8 +902,24 @@ ALL_TOOL_DEFS = [
       "description": "土壤污染检测",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "site_name": {
+                        "type": "string",
+                        "description": "地块名称或编号，定位检测场地"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，地块所在地区"
+                },
+                "pollutant": {
+                        "type": "string",
+                        "description": "可选，目标污染物（重金属/VOCs 等）"
+                }
+        },
+        "required": [
+                "site_name"
+        ]
+}
     }
   },
   {
@@ -590,8 +929,21 @@ ALL_TOOL_DEFS = [
       "description": "应急指挥调度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "event_id": {
+                        "type": "string",
+                        "description": "突发事件编号，定位调度对象"
+                },
+                "command_type": {
+                        "type": "string",
+                        "description": "指令类型（人员调度/物资调拨/现场封控）"
+                }
+        },
+        "required": [
+                "event_id",
+                "command_type"
+        ]
+}
     }
   },
   {
@@ -601,8 +953,21 @@ ALL_TOOL_DEFS = [
       "description": "生成审批文书",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "审批事项编号，关联待生成文书的审批单"
+                },
+                "doc_type": {
+                        "type": "string",
+                        "description": "文书类型（批复/许可证/不予许可决定书）"
+                }
+        },
+        "required": [
+                "approval_id",
+                "doc_type"
+        ]
+}
     }
   },
   {
@@ -612,8 +977,21 @@ ALL_TOOL_DEFS = [
       "description": "生成碳排放报告",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "报告主体的企业全称"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "报告年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name",
+                "year"
+        ]
+}
     }
   },
   {
@@ -623,8 +1001,21 @@ ALL_TOOL_DEFS = [
       "description": "审批加签处理",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "需加签的审批事项编号"
+                },
+                "signer_name": {
+                        "type": "string",
+                        "description": "加签人姓名"
+                }
+        },
+        "required": [
+                "approval_id",
+                "signer_name"
+        ]
+}
     }
   },
   {
@@ -634,8 +1025,21 @@ ALL_TOOL_DEFS = [
       "description": "审批委托代理",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "待委托的审批事项编号"
+                },
+                "delegate_to": {
+                        "type": "string",
+                        "description": "被委托代理人姓名"
+                }
+        },
+        "required": [
+                "approval_id",
+                "delegate_to"
+        ]
+}
     }
   },
   {
@@ -645,8 +1049,20 @@ ALL_TOOL_DEFS = [
       "description": "审批会签处理",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "需会签的审批事项编号"
+                },
+                "departments": {
+                        "type": "string",
+                        "description": "可选，参与会签的部门列表"
+                }
+        },
+        "required": [
+                "approval_id"
+        ]
+}
     }
   },
   {
@@ -656,8 +1072,21 @@ ALL_TOOL_DEFS = [
       "description": "审批挂起恢复",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "目标审批事项编号"
+                },
+                "action": {
+                        "type": "string",
+                        "description": "操作类型（suspend 挂起 / resume 恢复）"
+                }
+        },
+        "required": [
+                "approval_id",
+                "action"
+        ]
+}
     }
   },
   {
@@ -667,8 +1096,21 @@ ALL_TOOL_DEFS = [
       "description": "审批改签处理",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "待改签的审批事项编号"
+                },
+                "transfer_to": {
+                        "type": "string",
+                        "description": "改签目标办理人姓名"
+                }
+        },
+        "required": [
+                "approval_id",
+                "transfer_to"
+        ]
+}
     }
   },
   {
@@ -678,8 +1120,25 @@ ALL_TOOL_DEFS = [
       "description": "发起审批流程",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "workflow_type": {
+                        "type": "string",
+                        "description": "流程类型（许可/备案/处罚等）"
+                },
+                "applicant": {
+                        "type": "string",
+                        "description": "发起人姓名或单位"
+                },
+                "title": {
+                        "type": "string",
+                        "description": "可选，审批事项标题"
+                }
+        },
+        "required": [
+                "workflow_type",
+                "applicant"
+        ]
+}
     }
   },
   {
@@ -689,8 +1148,25 @@ ALL_TOOL_DEFS = [
       "description": "录入企业碳排放数据",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "数据所属企业全称"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "数据年度（YYYY）"
+                },
+                "emission_amount": {
+                        "type": "string",
+                        "description": "可选，排放量数值（吨CO2当量）"
+                }
+        },
+        "required": [
+                "company_name",
+                "year"
+        ]
+}
     }
   },
   {
@@ -700,8 +1176,20 @@ ALL_TOOL_DEFS = [
       "description": "审批归档管理",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "审批事项编号，定位归档案卷"
+                },
+                "action": {
+                        "type": "string",
+                        "description": "可选，操作类型（归档/借阅/移交）"
+                }
+        },
+        "required": [
+                "approval_id"
+        ]
+}
     }
   },
   {
@@ -711,8 +1199,20 @@ ALL_TOOL_DEFS = [
       "description": "审批模板管理",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "template_name": {
+                        "type": "string",
+                        "description": "审批模板名称"
+                },
+                "action": {
+                        "type": "string",
+                        "description": "可选，操作类型（新增/修改/停用）"
+                }
+        },
+        "required": [
+                "template_name"
+        ]
+}
     }
   },
   {
@@ -722,8 +1222,24 @@ ALL_TOOL_DEFS = [
       "description": "智慧供热管理",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "community_name": {
+                        "type": "string",
+                        "description": "供热小区名称"
+                },
+                "action": {
+                        "type": "string",
+                        "description": "可选，操作类型（升温/降温/检修）"
+                },
+                "temperature": {
+                        "type": "string",
+                        "description": "可选，目标供水温度（℃）"
+                }
+        },
+        "required": [
+                "community_name"
+        ]
+}
     }
   },
   {
@@ -733,8 +1249,24 @@ ALL_TOOL_DEFS = [
       "description": "智慧路灯管理",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "road_name": {
+                        "type": "string",
+                        "description": "道路名称，定位路灯分组"
+                },
+                "action": {
+                        "type": "string",
+                        "description": "可选，操作类型（开灯/关灯/调光）"
+                },
+                "brightness": {
+                        "type": "string",
+                        "description": "可选，目标亮度百分比"
+                }
+        },
+        "required": [
+                "road_name"
+        ]
+}
     }
   },
   {
@@ -744,8 +1276,20 @@ ALL_TOOL_DEFS = [
       "description": "智慧水务监控",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "监控区域名称（城区/流域）"
+                },
+                "indicator": {
+                        "type": "string",
+                        "description": "可选，监控指标（水压/流量/水质）"
+                }
+        },
+        "required": [
+                "region"
+        ]
+}
     }
   },
   {
@@ -755,19 +1299,21 @@ ALL_TOOL_DEFS = [
       "description": "碳排放预测分析",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_air_quality",
-      "description": "查询空气质量监测数据",
-      "parameters": {
-        "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "预测对象企业全称"
+                },
+                "target_year": {
+                        "type": "string",
+                        "description": "预测目标年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name",
+                "target_year"
+        ]
+}
     }
   },
   {
@@ -777,8 +1323,16 @@ ALL_TOOL_DEFS = [
       "description": "查询审批进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "审批事项编号，查询其办理进度"
+                }
+        },
+        "required": [
+                "approval_id"
+        ]
+}
     }
   },
   {
@@ -788,8 +1342,20 @@ ALL_TOOL_DEFS = [
       "description": "查询审批统计分析",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "可选，统计区域"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "统计年度（YYYY）"
+                }
+        },
+        "required": [
+                "year"
+        ]
+}
     }
   },
   {
@@ -799,8 +1365,17 @@ ALL_TOOL_DEFS = [
       "description": "查询审批时限预警",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "可选，预警查询区域"
+                },
+                "days": {
+                        "type": "string",
+                        "description": "可选，临期天数阈值（默认 3 天）"
+                }
+        }
+}
     }
   },
   {
@@ -810,8 +1385,20 @@ ALL_TOOL_DEFS = [
       "description": "查询建筑许可审批进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "project_name": {
+                        "type": "string",
+                        "description": "建设项目名称，查询其施工许可进度"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，项目所在地区"
+                }
+        },
+        "required": [
+                "project_name"
+        ]
+}
     }
   },
   {
@@ -821,8 +1408,16 @@ ALL_TOOL_DEFS = [
       "description": "查询企业工商登记信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询其工商登记信息"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -832,8 +1427,16 @@ ALL_TOOL_DEFS = [
       "description": "查询碳资产账户",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询其碳资产账户"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -843,8 +1446,20 @@ ALL_TOOL_DEFS = [
       "description": "查询碳排放监测数据",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询其碳监测数据"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，数据年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -854,8 +1469,20 @@ ALL_TOOL_DEFS = [
       "description": "查询碳排放配额",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询其碳配额"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，配额年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -865,8 +1492,16 @@ ALL_TOOL_DEFS = [
       "description": "查询驾驶证信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "id_number": {
+                        "type": "string",
+                        "description": "身份证号，查询驾驶证信息"
+                }
+        },
+        "required": [
+                "id_number"
+        ]
+}
     }
   },
   {
@@ -876,8 +1511,16 @@ ALL_TOOL_DEFS = [
       "description": "查询生态红线保护区信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "地区名称，查询生态保护红线范围"
+                }
+        },
+        "required": [
+                "region"
+        ]
+}
     }
   },
   {
@@ -887,8 +1530,20 @@ ALL_TOOL_DEFS = [
       "description": "查询能源消耗统计",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询其能耗统计"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，统计年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -898,8 +1553,16 @@ ALL_TOOL_DEFS = [
       "description": "查询企业信用报告",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询其信用报告"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -909,8 +1572,16 @@ ALL_TOOL_DEFS = [
       "description": "查询环保竣工验收信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "project_name": {
+                        "type": "string",
+                        "description": "建设项目名称，查询环保竣工验收信息"
+                }
+        },
+        "required": [
+                "project_name"
+        ]
+}
     }
   },
   {
@@ -920,8 +1591,20 @@ ALL_TOOL_DEFS = [
       "description": "查询环境应急响应信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "地区名称，查询环境应急响应记录"
+                },
+                "level": {
+                        "type": "string",
+                        "description": "可选，响应级别（Ⅰ-Ⅳ级）"
+                }
+        },
+        "required": [
+                "region"
+        ]
+}
     }
   },
   {
@@ -931,8 +1614,20 @@ ALL_TOOL_DEFS = [
       "description": "查询环保设施运行数据",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询其环保设施运行数据"
+                },
+                "facility_type": {
+                        "type": "string",
+                        "description": "可选，设施类型（废水/废气/固废）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -942,30 +1637,16 @@ ALL_TOOL_DEFS = [
       "description": "查询环评审批进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_environmental_impact_assessment",
-      "description": "查询环境影响评价信息",
-      "parameters": {
-        "type": "object",
-        "properties": {}
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_environmental_penalty",
-      "description": "查询环保处罚记录",
-      "parameters": {
-        "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "project_name": {
+                        "type": "string",
+                        "description": "建设项目名称，查询环评审批进度"
+                }
+        },
+        "required": [
+                "project_name"
+        ]
+}
     }
   },
   {
@@ -975,8 +1656,16 @@ ALL_TOOL_DEFS = [
       "description": "查询消防审批进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "project_name": {
+                        "type": "string",
+                        "description": "工程名称，查询消防审批进度"
+                }
+        },
+        "required": [
+                "project_name"
+        ]
+}
     }
   },
   {
@@ -986,8 +1675,21 @@ ALL_TOOL_DEFS = [
       "description": "查询政府采购招标信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "project_name": {
+                        "type": "string",
+                        "description": "可选，采购项目名称"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，采购地区"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，公告年度（YYYY）"
+                }
+        }
+}
     }
   },
   {
@@ -997,8 +1699,20 @@ ALL_TOOL_DEFS = [
       "description": "查询绿电交易",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "交易主体企业全称"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，交易年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1008,8 +1722,20 @@ ALL_TOOL_DEFS = [
       "description": "网格化管理查询",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "grid_id": {
+                        "type": "string",
+                        "description": "网格编号，查询网格化管理信息"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，网格所在地区"
+                }
+        },
+        "required": [
+                "grid_id"
+        ]
+}
     }
   },
   {
@@ -1019,8 +1745,20 @@ ALL_TOOL_DEFS = [
       "description": "查询危险废物转移联单",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询其危废转移联单"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，联单年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1030,8 +1768,16 @@ ALL_TOOL_DEFS = [
       "description": "查询户籍信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "id_number": {
+                        "type": "string",
+                        "description": "身份证号，查询户籍信息"
+                }
+        },
+        "required": [
+                "id_number"
+        ]
+}
     }
   },
   {
@@ -1041,8 +1787,20 @@ ALL_TOOL_DEFS = [
       "description": "查询公积金账户",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "缴存人姓名"
+                },
+                "id_number": {
+                        "type": "string",
+                        "description": "可选，身份证号，用于精确匹配"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -1052,8 +1810,16 @@ ALL_TOOL_DEFS = [
       "description": "查询公积金贷款进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "借款人姓名，查询公积金贷款进度"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -1063,8 +1829,16 @@ ALL_TOOL_DEFS = [
       "description": "查询身份证办理进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "id_number": {
+                        "type": "string",
+                        "description": "身份证号，查询身份证办理进度"
+                }
+        },
+        "required": [
+                "id_number"
+        ]
+}
     }
   },
   {
@@ -1074,8 +1848,16 @@ ALL_TOOL_DEFS = [
       "description": "查询上市辅导进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询上市辅导进度"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1085,8 +1867,20 @@ ALL_TOOL_DEFS = [
       "description": "查询医保账户",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "参保人姓名"
+                },
+                "id_number": {
+                        "type": "string",
+                        "description": "可选，身份证号"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -1096,19 +1890,20 @@ ALL_TOOL_DEFS = [
       "description": "查询医保结算记录",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_noise_monitoring",
-      "description": "查询噪声监测数据",
-      "parameters": {
-        "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "参保人姓名，查询医保结算记录"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，结算年度（YYYY）"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -1118,19 +1913,20 @@ ALL_TOOL_DEFS = [
       "description": "查询专利申请进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_pollution_discharge_permit",
-      "description": "查询排污许可证信息",
-      "parameters": {
-        "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申请人（企业）全称"
+                },
+                "patent_name": {
+                        "type": "string",
+                        "description": "可选，专利名称，用于精确查询"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1140,8 +1936,20 @@ ALL_TOOL_DEFS = [
       "description": "查询不动产登记信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "property_address": {
+                        "type": "string",
+                        "description": "不动产坐落地址"
+                },
+                "owner_name": {
+                        "type": "string",
+                        "description": "可选，权利人姓名"
+                }
+        },
+        "required": [
+                "property_address"
+        ]
+}
     }
   },
   {
@@ -1151,8 +1959,20 @@ ALL_TOOL_DEFS = [
       "description": "查询公共自行车",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "城区名称，查询公共自行车站点"
+                },
+                "station_name": {
+                        "type": "string",
+                        "description": "可选，站点名称"
+                }
+        },
+        "required": [
+                "region"
+        ]
+}
     }
   },
   {
@@ -1162,8 +1982,16 @@ ALL_TOOL_DEFS = [
       "description": "查询公共停车位",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "城区名称，查询公共停车位分布"
+                }
+        },
+        "required": [
+                "region"
+        ]
+}
     }
   },
   {
@@ -1173,8 +2001,20 @@ ALL_TOOL_DEFS = [
       "description": "查询辐射环境监测数据",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "地区名称，查询辐射环境监测数据"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，数据年度（YYYY）"
+                }
+        },
+        "required": [
+                "region"
+        ]
+}
     }
   },
   {
@@ -1184,8 +2024,16 @@ ALL_TOOL_DEFS = [
       "description": "查询居住证办理进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "id_number": {
+                        "type": "string",
+                        "description": "身份证号，查询居住证办理进度"
+                }
+        },
+        "required": [
+                "id_number"
+        ]
+}
     }
   },
   {
@@ -1195,8 +2043,20 @@ ALL_TOOL_DEFS = [
       "description": "智慧城管执法查询",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "城区名称，查询城管执法案件"
+                },
+                "case_type": {
+                        "type": "string",
+                        "description": "可选，案件类型（占道/违建/扬尘等）"
+                }
+        },
+        "required": [
+                "region"
+        ]
+}
     }
   },
   {
@@ -1206,8 +2066,20 @@ ALL_TOOL_DEFS = [
       "description": "智慧社区服务查询",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "community_name": {
+                        "type": "string",
+                        "description": "社区名称，查询社区服务事项"
+                },
+                "service_type": {
+                        "type": "string",
+                        "description": "可选，服务类型（报修/缴费/活动）"
+                }
+        },
+        "required": [
+                "community_name"
+        ]
+}
     }
   },
   {
@@ -1217,8 +2089,21 @@ ALL_TOOL_DEFS = [
       "description": "智慧教育服务查询",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "school_name": {
+                        "type": "string",
+                        "description": "可选，学校名称"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，所在地区"
+                },
+                "service_type": {
+                        "type": "string",
+                        "description": "可选，服务类型（招生/成绩/资助）"
+                }
+        }
+}
     }
   },
   {
@@ -1228,8 +2113,20 @@ ALL_TOOL_DEFS = [
       "description": "智慧养老服务查询",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "community_name": {
+                        "type": "string",
+                        "description": "社区名称，查询养老服务资源"
+                },
+                "service_type": {
+                        "type": "string",
+                        "description": "可选，服务类型（助餐/护理/日间照料）"
+                }
+        },
+        "required": [
+                "community_name"
+        ]
+}
     }
   },
   {
@@ -1239,8 +2136,20 @@ ALL_TOOL_DEFS = [
       "description": "雪亮工程视频监控查询",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "地区名称，查询雪亮工程监控点位"
+                },
+                "camera_id": {
+                        "type": "string",
+                        "description": "可选，监控点位编号"
+                }
+        },
+        "required": [
+                "region"
+        ]
+}
     }
   },
   {
@@ -1250,8 +2159,20 @@ ALL_TOOL_DEFS = [
       "description": "查询社保账户信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "参保人姓名"
+                },
+                "id_number": {
+                        "type": "string",
+                        "description": "可选，身份证号"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -1261,8 +2182,20 @@ ALL_TOOL_DEFS = [
       "description": "查询社保缴费记录",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "缴费单位全称"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，缴费年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1272,8 +2205,20 @@ ALL_TOOL_DEFS = [
       "description": "查询固废处理监管信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "企业全称，查询其固废处理监管信息"
+                },
+                "waste_type": {
+                        "type": "string",
+                        "description": "可选，固废类别（一般工业固废/危废）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1283,8 +2228,16 @@ ALL_TOOL_DEFS = [
       "description": "查询税务登记信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "纳税人名称，查询税务登记信息"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1294,8 +2247,20 @@ ALL_TOOL_DEFS = [
       "description": "查询商标注册进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "申请人（企业）全称"
+                },
+                "trademark_name": {
+                        "type": "string",
+                        "description": "可选，商标名称"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1305,8 +2270,16 @@ ALL_TOOL_DEFS = [
       "description": "查询交通违章记录",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "plate_number": {
+                        "type": "string",
+                        "description": "车牌号（如 赣B12345），查询违章记录"
+                }
+        },
+        "required": [
+                "plate_number"
+        ]
+}
     }
   },
   {
@@ -1316,8 +2289,20 @@ ALL_TOOL_DEFS = [
       "description": "查询水电气缴费记录",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "household_id": {
+                        "type": "string",
+                        "description": "户号，查询水电气缴费记录"
+                },
+                "utility_type": {
+                        "type": "string",
+                        "description": "可选，费用类型（水/电/气）"
+                }
+        },
+        "required": [
+                "household_id"
+        ]
+}
     }
   },
   {
@@ -1327,19 +2312,16 @@ ALL_TOOL_DEFS = [
       "description": "查询车辆信息",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_water_quality",
-      "description": "查询水质监测数据",
-      "parameters": {
-        "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "plate_number": {
+                        "type": "string",
+                        "description": "车牌号，查询车辆登记信息"
+                }
+        },
+        "required": [
+                "plate_number"
+        ]
+}
     }
   },
   {
@@ -1349,8 +2331,25 @@ ALL_TOOL_DEFS = [
       "description": "CCER项目登记",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "project_name": {
+                        "type": "string",
+                        "description": "CCER 项目名称"
+                },
+                "company_name": {
+                        "type": "string",
+                        "description": "项目业主企业全称"
+                },
+                "reduction_amount": {
+                        "type": "string",
+                        "description": "可选，预计减排量（吨CO2当量）"
+                }
+        },
+        "required": [
+                "project_name",
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1360,8 +2359,24 @@ ALL_TOOL_DEFS = [
       "description": "生育服务登记",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "applicant_name": {
+                        "type": "string",
+                        "description": "登记人姓名"
+                },
+                "spouse_name": {
+                        "type": "string",
+                        "description": "可选，配偶姓名"
+                },
+                "region": {
+                        "type": "string",
+                        "description": "可选，登记地区"
+                }
+        },
+        "required": [
+                "applicant_name"
+        ]
+}
     }
   },
   {
@@ -1371,8 +2386,25 @@ ALL_TOOL_DEFS = [
       "description": "设定减排目标",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "目标企业全称"
+                },
+                "target_year": {
+                        "type": "string",
+                        "description": "目标年度（YYYY）"
+                },
+                "reduction_percent": {
+                        "type": "string",
+                        "description": "可选，减排目标百分比"
+                }
+        },
+        "required": [
+                "company_name",
+                "target_year"
+        ]
+}
     }
   },
   {
@@ -1382,8 +2414,25 @@ ALL_TOOL_DEFS = [
       "description": "提交审批意见",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "approval_id": {
+                        "type": "string",
+                        "description": "审批事项编号"
+                },
+                "comment": {
+                        "type": "string",
+                        "description": "审批意见内容"
+                },
+                "reviewer": {
+                        "type": "string",
+                        "description": "可选，意见提交人姓名"
+                }
+        },
+        "required": [
+                "approval_id",
+                "comment"
+        ]
+}
     }
   },
   {
@@ -1393,8 +2442,20 @@ ALL_TOOL_DEFS = [
       "description": "智慧燃气监管",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "region": {
+                        "type": "string",
+                        "description": "监管区域名称"
+                },
+                "indicator": {
+                        "type": "string",
+                        "description": "可选，监管指标（管网压力/泄漏报警/用气量）"
+                }
+        },
+        "required": [
+                "region"
+        ]
+}
     }
   },
   {
@@ -1404,8 +2465,20 @@ ALL_TOOL_DEFS = [
       "description": "追踪碳中和进度",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "追踪对象企业全称"
+                },
+                "year": {
+                        "type": "string",
+                        "description": "可选，进度年度（YYYY）"
+                }
+        },
+        "required": [
+                "company_name"
+        ]
+}
     }
   },
   {
@@ -1415,8 +2488,25 @@ ALL_TOOL_DEFS = [
       "description": "碳排放权交易",
       "parameters": {
         "type": "object",
-        "properties": {}
-      }
+        "properties": {
+                "company_name": {
+                        "type": "string",
+                        "description": "交易主体企业全称"
+                },
+                "amount": {
+                        "type": "string",
+                        "description": "交易数量（吨配额）"
+                },
+                "direction": {
+                        "type": "string",
+                        "description": "可选，交易方向（买入/卖出）"
+                }
+        },
+        "required": [
+                "company_name",
+                "amount"
+        ]
+}
     }
   },
   {
