@@ -178,6 +178,7 @@ class ReActPlusPlus:
         if client:
             try:
                 tools_desc = ", ".join(self._tools.keys()) or "无"
+                reflect_tail = self._reflect_tail()
                 prompt = (
                     f"任务: {state.observation[:200]}\n"
                     f"当前步骤: {state.step}\n"
@@ -185,6 +186,7 @@ class ReActPlusPlus:
                     f"最近错误: {state.error[:200] or '无'}\n"
                     f"可用工具: {tools_desc}\n"
                     f"请用一两句话说明下一步应该怎么思考和行动。"
+                    f"{reflect_tail}"
                 )
                 thought = client.complete(prompt, system="你是 Eco Agent 的推理引擎，简洁输出下一步思考。",
                                           max_tokens=512)
@@ -229,7 +231,8 @@ class ReActPlusPlus:
     # ── PAUSE & REFLECT ──
 
     def _pause_reflect(self, state: ReActState, context: dict) -> dict:
-        """暂停并反思（优先 LLM 生成诊断+替代方案，不可用降级规则）"""
+        """暂停并结构化反思：输出 {问题诊断, 修正指令}，修正指令经 prompt_engine
+        校验后注入后续轮次提示尾部（违规修正指令被拒绝并记审计）"""
         client = self._llm()
         if client:
             try:
@@ -239,11 +242,18 @@ class ReActPlusPlus:
                     f"当前置信度过低（{state.confidence:.2f}），步骤: {state.step}，"
                     f"最近错误: {state.error[:200] or '无'}\n"
                     f"可用工具: {tools_desc}\n"
-                    f"请诊断问题根因并给出一个可行的替代方案（两三句话）。"
+                    f"请严格按以下两行格式输出：\n"
+                    f"问题诊断: <一两句话诊断问题根因>\n"
+                    f"修正指令: <一条给后续推理的具体修正要求，一两句话>"
                 )
-                diagnosis = client.complete(prompt, system="你是 Eco Agent 的反思模块。", max_tokens=512)
-                if diagnosis:
-                    return {"action": "continue", "new_confidence": 0.7, "llm_diagnosis": diagnosis}
+                raw = client.complete(prompt, system="你是 Eco Agent 的反思模块，输出结构化诊断。", max_tokens=512)
+                if raw:
+                    parsed = self._parse_reflect(raw)
+                    result = {"action": "continue", "new_confidence": 0.7,
+                              "diagnosis": parsed["diagnosis"], "correction": parsed["correction"],
+                              "llm_diagnosis": raw}
+                    self._inject_correction(parsed["correction"], state)
+                    return result
                 logger.warning("[ReAct++] LLM 反思返回空，降级规则模式")
             except Exception as e:
                 logger.warning(f"[ReAct++] LLM 反思失败，降级规则模式: {e}")
@@ -258,6 +268,55 @@ class ReActPlusPlus:
             return {"abort": True, "reason": "超过最大重试次数"}
 
         return {"action": "continue", "new_confidence": 0.6}
+
+    def _reflect_tail(self) -> str:
+        """取 prompt_engine 中已接受的反思修正指令，拼接到后续轮次提示尾部"""
+        try:
+            from agent_core.prompt_engine import get_prompt_engine
+        except Exception:
+            try:
+                from prompt_engine import get_prompt_engine
+            except Exception:
+                return ""
+        try:
+            injs = [i for i in get_prompt_engine().list_injections()
+                    if i["source"] == "reflect"]
+        except Exception:
+            return ""
+        if not injs:
+            return ""
+        tail = "\n".join(f"- {i['content']}" for i in injs[-3:])
+        return f"\n请务必遵守以下修正指令：\n{tail}"
+
+    @staticmethod
+    def _parse_reflect(raw: str) -> dict:
+        """解析结构化反思 {问题诊断, 修正指令}；解析失败降级整段为诊断"""
+        diagnosis, correction = "", ""
+        for line in raw.splitlines():
+            line = line.strip()
+            if line.startswith("问题诊断"):
+                diagnosis = line.split(":", 1)[-1].split("：", 1)[-1].strip()
+            elif line.startswith("修正指令"):
+                correction = line.split(":", 1)[-1].split("：", 1)[-1].strip()
+        if not diagnosis:
+            diagnosis = raw.strip()[:200]
+        if not correction:
+            correction = "降低结论置信度，引用不确定的法条前必须先核实"
+        return {"diagnosis": diagnosis, "correction": correction}
+
+    def _inject_correction(self, correction: str, state: ReActState) -> bool:
+        """修正指令经 prompt_engine 校验后注入后续轮次提示尾部；违规则拒绝并审计"""
+        try:
+            from agent_core.prompt_engine import get_prompt_engine
+        except Exception:
+            try:
+                from prompt_engine import get_prompt_engine
+            except Exception:
+                return False
+        engine = get_prompt_engine()
+        task_id = (state.rollback_point or {}).get("task", "")[:60]
+        return engine.inject(f"【L1反思修正指令】{correction}",
+                             source="reflect", task_id=task_id)
 
     # ── ACT 阶段 ──
 

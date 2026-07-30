@@ -56,6 +56,17 @@ def run(args):
         checks.append(("MCP Python SDK", OK))
     except ImportError:
         checks.append(("MCP Python SDK (optional)", IN))
+    # 提示词审计链完整性（SM3 链式 JSONL）
+    try:
+        from agent_core.prompt_engine import PromptAuditChain
+        res = PromptAuditChain().verify_chain()
+        if res["valid"]:
+            checks.append((f"Prompt audit chain ({res['entries']} entries, valid)", OK))
+        else:
+            checks.append((f"Prompt audit chain INVALID: {res.get('error','')}", NO))
+            all_pass = False
+    except Exception as e:
+        checks.append((f"Prompt audit chain (check failed: {e})", WA))
     ml = max(len(c[0]) for c in checks)
     for label, status in checks:
         print(f"  {status} {label}{' ' * (ml - len(label) + 2)}")
