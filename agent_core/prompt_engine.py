@@ -102,17 +102,42 @@ _FORBIDDEN_PATTERNS = [
     r"(bypass|disable|override|remove).{0,20}(safety|restriction|filter|guardrail|allrestriction)",
     r"\bDAN\b|jailbreak|越狱",
     r"扮演.{0,12}(无审查|无限制)",
+    # 中文同义改写：指令忽略掉 / 忘掉之前的设定 / 规则作废
+    r"(将|把)?.{0,8}指令.{0,8}(忽略掉|统统忽略|全部忽略|不再理会)",
+    r"忽略掉.{0,8}(指令|规则|准则|之前|以上|先前|设定)",
+    r"(忘掉|忘记|忘却).{0,12}(之前|以前|先前|原先).{0,8}(设定|指令|规则|身份|要求)",
+    r"(规则|准则|设定|限制).{0,8}(作废|失效|废除|不再适用)",
 ]
 
 
+# leetspeak 映射：对抗 ign0re / 1gnore / pr3v1ous / @ll 等形近替换绕过
+_LEET_MAP = str.maketrans({
+    "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t",
+    "@": "a", "$": "s",
+})
+# 中英混合 leet（忽0略/忘1记）：数字符号视为"填充噪声"直接剥离后归并
+_LEET_FILLER_RE = re.compile(r"[013457@$]")
+
+
 def _normalize_for_injection_check(text: str) -> str:
-    """注入校验前归一化：去全部空白（含零宽字符）、全角转半角、转小写。
-    对抗"忽 略 之 前 的 指 令"插空格/全角混淆/大小写混淆等绕过手法。"""
+    """注入校验前归一化：去全部空白（含零宽字符）、全角转半角、转小写、
+    leetspeak 形近字符映射（0→o 1→i 3→e 4→a 5→s 7→t @→a $→s）。
+    对抗"忽 略 之 前 的 指 令"插空格/全半角混淆/大小写混淆/leet 替换等绕过手法。"""
     import unicodedata
     t = unicodedata.normalize("NFKC", text)
     # 去除所有空白字符与零宽字符（ZWSP/ZWNJ/ZWJ/BOM/软连字符等）
     t = re.sub(r"[\s​‌‍⁠﻿­]+", "", t)
-    return t.lower()
+    return t.lower().translate(_LEET_MAP)
+
+
+def _normalized_variants(text: str) -> list[str]:
+    """返回归一化后的多个对抗变体：
+    1) 常规归一化（含 leet 映射）——抓 ign0re previous instructi0ns
+    2) 剥离 leet 填充字符——抓中英混合 忽0略/忘1记（剥离后归并为 忽略/忘记）"""
+    base = _normalize_for_injection_check(text)
+    # 在原始文本上先剥离填充符再归一化（忽0略 → 忽略）
+    stripped = _normalize_for_injection_check(_LEET_FILLER_RE.sub("", text))
+    return [base] if stripped == base else [base, stripped]
 
 
 # 归一化后的内容追加一套无空格形态英文 pattern（常规 pattern 在归一化文本上依然生效）
@@ -146,17 +171,17 @@ def validate_injection(content: str) -> tuple[bool, str]:
     for w in _FORBIDDEN_WORDS:
         if w in content:
             return False, f"命中禁止词: {w}"
-    # 归一化二次校验：对抗插空格/全半角/大小写/零宽字符混淆绕过
-    normalized = _normalize_for_injection_check(content)
-    for i, rex in enumerate(_FORBIDDEN_RE):
-        if rex.search(normalized):
-            return False, f"命中禁止 pattern#{i}（归一化后）: 混淆绕过尝试"
-    for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
-        if rex.search(normalized):
-            return False, f"命中归一化禁止 pattern#{i}: 英文改写绕过尝试"
-    for w in _FORBIDDEN_WORDS:
-        if _normalize_for_injection_check(w) in normalized:
-            return False, f"命中禁止词（归一化后）: {w}"
+    # 归一化二次校验：对抗插空格/全半角/大小写/零宽字符/leetspeak 混淆绕过
+    for normalized in _normalized_variants(content):
+        for i, rex in enumerate(_FORBIDDEN_RE):
+            if rex.search(normalized):
+                return False, f"命中禁止 pattern#{i}（归一化后）: 混淆绕过尝试"
+        for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
+            if rex.search(normalized):
+                return False, f"命中归一化禁止 pattern#{i}: 英文/leet 改写绕过尝试"
+        for w in _FORBIDDEN_WORDS:
+            if _normalize_for_injection_check(w) in normalized:
+                return False, f"命中禁止词（归一化后）: {w}"
     return True, ""
 
 
