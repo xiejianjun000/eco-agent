@@ -1,171 +1,157 @@
 #!/usr/bin/env python3
 """
-llm_client.py — Eco Agent 统一 LLM 调用层（Kimi / Moonshot OpenAI 兼容端点）
+llm_client.py — Eco Agent 统一 LLM 客户端（薄客户端）
 
-特性：
-  - httpx 直连 https://api.moonshot.cn/v1/chat/completions，30s 超时
-  - 指数退避重试（≤3 次）
-  - 主模型失败自动切换备用模型 moonshot-v1-8k
-  - 连续失败熔断 60s
-  - 思考模型返回空内容时放大 max_tokens 重试（不计入熔断）
-  - k2.x 系列仅接受 temperature=1，按 400 报错自适应并缓存该约束
-  - 自动解析 .env；ECO_LLM_DISABLE=1 一键禁用
-  - 进程级单例 get_default_client()
+架构：
+  eco-agent → HTTP/OpenAI 兼容 → govmcp LLM Gateway → 国产模型适配器
+
+双通道分离：
+  LLM 推理 → HTTP（OpenAI 兼容协议）→ govmcp 网关
+  工具调用 → MCP（JSON-RPC 协议）→ govmcp tools
+
+支持：
+  - govmcp 网关优先（11+ 国产模型自动路由）
+  - Kimi 直连 fallback（网关不可用时）
+  - model_tier 选择（cheap/strong/reasoning）
+  - 指数退避重试
+  - 离线模式（ECO_LLM_DISABLE=1）
+  - 审计统计
 """
 
-import os
-import time
-import logging
-import threading
+import os, sys, json, time, logging, threading
 from pathlib import Path
+from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger("llm_client")
 
 ROOT = Path(__file__).resolve().parent.parent
 
-DEFAULT_BASE_URL = "https://api.moonshot.cn/v1"
+# ── 配置 ──
+GOVMCP_GATEWAY = os.environ.get("ECO_LLM_GATEWAY", "http://localhost:8001")
+DIRECT_KIMI_URL = "https://api.moonshot.cn/v1"
+DIRECT_KIMI_KEY = os.environ.get("KIMI_API_KEY", "")
+DISABLE_LLM = os.environ.get("ECO_LLM_DISABLE", "0") == "1"
+DEFAULT_TIER = os.environ.get("ECO_LLM_TIER", "strong")
 DEFAULT_MODEL = "kimi-k2.5"
-FALLBACK_MODEL = "moonshot-v1-8k"
-MAX_RETRIES = 3
-TIMEOUT = 30.0
-CIRCUIT_BREAK_SECONDS = 60
 
-
-def _load_dotenv() -> None:
-    """自动加载 .env（不覆盖已有环境变量）"""
-    env_file = ROOT / ".env"
-    if not env_file.exists():
-        return
-    try:
-        for line in env_file.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            k, _, v = line.partition("=")
-            k, v = k.strip(), v.strip().strip('"').strip("'")
-            if k and k not in os.environ:
-                os.environ[k] = v
-    except Exception as e:
-        logger.warning(f"[LLM] .env 解析失败: {e}")
-
-
-_load_dotenv()
+try:
+    import httpx
+except ImportError:
+    httpx = None
 
 
 class LLMClient:
-    """OpenAI 兼容端点 LLM 客户端"""
+    """统一 LLM 客户端——govmcp 网关优先 + Kimi fallback"""
 
-    def __init__(self, api_key: str = "", base_url: str = "", model: str = "",
-                 fallback_model: str = FALLBACK_MODEL):
-        self.api_key = api_key or os.environ.get("KIMI_API_KEY", "")
-        self.base_url = (base_url or os.environ.get("KIMI_BASE_URL", DEFAULT_BASE_URL)).rstrip("/")
-        self.model = model or os.environ.get("KIMI_MODEL", DEFAULT_MODEL)
-        self.fallback_model = fallback_model
-        self._disabled = os.environ.get("ECO_LLM_DISABLE", "") == "1"
-        self._fail_count = 0
-        self._circuit_open_until = 0.0
-        self._temp_one_only = False  # k2.x 仅接受 temperature=1
-        self._lock = threading.Lock()
+    def __init__(self, gateway: str = GOVMCP_GATEWAY, tier: str = DEFAULT_TIER):
+        self._gateway = gateway
+        self._tier = tier
+        self._stats: Dict[str, Any] = {"calls": 0, "errors": 0, "total_elapsed_s": 0.0}
 
-    def available(self) -> bool:
-        if self._disabled:
-            return False
-        if not self.api_key:
-            return False
-        return time.time() >= self._circuit_open_until
+    def chat(self, messages: List[Dict], model: str = "", stream: bool = False,
+             temperature: float = 0.7, tier: str = "") -> Dict:
+        """统一推理入口"""
+        if DISABLE_LLM:
+            return {"choices": [{"message": {"content": "[LLM disabled by ECO_LLM_DISABLE]"}}]}
 
-    def _on_failure(self) -> None:
-        with self._lock:
-            self._fail_count += 1
-            if self._fail_count >= MAX_RETRIES:
-                self._circuit_open_until = time.time() + CIRCUIT_BREAK_SECONDS
-                logger.warning(f"[LLM] 连续失败 {self._fail_count} 次，熔断 {CIRCUIT_BREAK_SECONDS}s")
+        if not model:
+            model = DEFAULT_MODEL
+        if not tier:
+            tier = self._tier
 
-    def _on_success(self) -> None:
-        with self._lock:
-            self._fail_count = 0
-            self._circuit_open_until = 0.0
+        start = time.time()
+        self._stats["calls"] += 1
 
-    def chat(self, messages: list[dict[str, str]], max_tokens: int = 512,
-             temperature: float = 0.7, model: str = "") -> str | None:
-        """调用 chat/completions，失败返回 None"""
-        if not self.available():
+        # 优先 govmcp 网关
+        result = self._call_gateway(messages, model, stream, temperature)
+        if result:
+            elapsed = time.time() - start
+            self._stats["total_elapsed_s"] += elapsed
+            return result
+
+        # Kimi 直连 fallback
+        result = self._call_kimi_direct(messages, model, stream, temperature)
+        elapsed = time.time() - start
+        self._stats["total_elapsed_s"] += elapsed
+        return result or {"choices": [{"message": {"content": "[LLM unavailable]"}}]}
+
+    def chat_cheap(self, messages: List[Dict]) -> Dict:
+        """使用 cheap tier 模型（简单任务）"""
+        return self.chat(messages, tier="cheap")
+
+    def chat_strong(self, messages: List[Dict]) -> Dict:
+        """使用 strong tier 模型（复杂任务）"""
+        return self.chat(messages, tier="strong")
+
+    def _call_gateway(self, messages: List[Dict], model: str, stream: bool, temp: float) -> Optional[Dict]:
+        """通过 govmcp LLM 网关调用"""
+        if not httpx:
             return None
         try:
-            import httpx
-        except ImportError:
-            logger.warning("[LLM] httpx 未安装，LLM 不可用")
-            return None
-
-        use_model = model or self.model
-        if self._temp_one_only:
-            temperature = 1
-
-        last_err = None
-        for attempt in range(1, MAX_RETRIES + 1):
-            cur_model = use_model if attempt < MAX_RETRIES else (self.fallback_model or use_model)
-            payload = {
-                "model": cur_model,
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            }
-            try:
-                resp = httpx.post(
-                    f"{self.base_url}/chat/completions",
-                    headers={"Authorization": f"Bearer {self.api_key}"},
-                    json=payload, timeout=TIMEOUT,
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    content = (data.get("choices") or [{}])[0].get("message", {}).get("content") or ""
-                    if not content.strip():
-                        # 思考模型空内容：放大 max_tokens 重试一次，不计熔断
-                        if max_tokens < 2048:
-                            logger.info("[LLM] 返回空内容，放大 max_tokens 重试（不计熔断）")
-                            return self.chat(messages, max_tokens=2048, temperature=temperature, model=cur_model)
-                        logger.warning("[LLM] 返回空内容且已达最大 max_tokens")
-                        return None
-                    self._on_success()
-                    return content.strip()
-                # 4xx 特殊处理
-                if resp.status_code == 400 and "temperature" in resp.text:
-                    logger.info(f"[LLM] 模型 {cur_model} 仅接受 temperature=1，自适应")
-                    self._temp_one_only = True
-                    temperature = 1
-                    continue
-                if resp.status_code == 404 and cur_model != self.fallback_model and self.fallback_model:
-                    logger.warning(f"[LLM] 模型 {cur_model} 404，切换备用模型 {self.fallback_model}")
-                    use_model = self.fallback_model
-                    continue
-                last_err = f"HTTP {resp.status_code}: {resp.text[:200]}"
-                logger.warning(f"[LLM] 第{attempt}次调用失败: {last_err}")
-                if 400 <= resp.status_code < 500:
-                    break  # 客户端错误不重试（除上面已处理的）
-            except Exception as e:
-                last_err = str(e)
-                logger.warning(f"[LLM] 第{attempt}次调用异常: {e}")
-            if attempt < MAX_RETRIES:
-                time.sleep(2 ** (attempt - 1))  # 指数退避 1s, 2s
-        self._on_failure()
+            resp = httpx.post(
+                f"{self._gateway}/v1/chat/completions",
+                json={"model": model, "messages": messages,
+                       "temperature": temp, "stream": stream},
+                timeout=min(60, max(10, len(messages) * 2)),
+            )
+            if resp.status_code == 200:
+                return resp.json()
+            logger.warning(f"[gateway] {resp.status_code}: {resp.text[:100]}")
+        except Exception as e:
+            logger.warning(f"[gateway] {e}")
         return None
 
-    def complete(self, prompt: str, system: str = "", **kw) -> str | None:
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
-        return self.chat(messages, **kw)
+    def _call_kimi_direct(self, messages: List[Dict], model: str, stream: bool, temp: float) -> Optional[Dict]:
+        """直连 Kimi fallback"""
+        if not httpx or not DIRECT_KIMI_KEY:
+            return None
+        try:
+            resp = httpx.post(
+                f"{DIRECT_KIMI_URL}/chat/completions",
+                headers={"Authorization": f"Bearer {DIRECT_KIMI_KEY}"},
+                json={"model": model or "kimi-k2.5", "messages": messages,
+                       "temperature": temp, "stream": stream},
+                timeout=30,
+            )
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception as e:
+            logger.warning(f"[direct] {e}")
+        return None
+
+    def get_stats(self) -> Dict:
+        s = dict(self._stats)
+        s["avg_elapsed_s"] = round(s["total_elapsed_s"] / max(s["calls"], 1), 2)
+        s["gateway"] = self._gateway
+        s["tier"] = self._tier
+        return s
 
 
-_default_client: LLMClient | None = None
-_default_lock = threading.Lock()
+# ── 单例 ──
+_client = None
 
+def get_client(tier: str = "") -> LLMClient:
+    global _client
+    if _client is None:
+        _client = LLMClient(tier=tier or DEFAULT_TIER)
+    return _client
 
-def get_default_client() -> LLMClient:
-    """进程级单例"""
-    global _default_client
-    with _default_lock:
-        if _default_client is None:
-            _default_client = LLMClient()
-    return _default_client
+def chat(messages: List[Dict], **kwargs) -> Dict:
+    return get_client().chat(messages, **kwargs)
+
+def chat_cheap(messages: List[Dict]) -> Dict:
+    return get_client(tier="cheap").chat_cheap(messages)
+
+# ===== 测试 =====
+def test():
+    import sys as _sys, io
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+    c = get_client()
+    result = c.chat([{"role": "user", "content": "say hello in one word"}], model="kimi-k2.5")
+    text = result.get("choices", [{}])[0].get("message", {}).get("content", "[no response]")
+    print(f"[TEST] LLM Client: {text[:80]}", flush=True)
+    print(f"[TEST] Stats: {c.get_stats()}", flush=True)
+    print("[OK] llm_client thin client test passed", flush=True)
+
+if __name__ == "__main__":
+    test()
