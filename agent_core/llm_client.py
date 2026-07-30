@@ -50,31 +50,62 @@ class LLMClient:
     def available(self) -> bool:
         return self._httpx is not None and bool(self._api_key)
 
+    def complete(self, prompt: str, system: str = "", max_tokens: int = 512) -> str:
+        """Complete interface expected by ReAct++ (L1 micro-action loop)
+        
+        Args:
+            prompt: User message text
+            system: System prompt text
+            max_tokens: Max tokens for response
+        Returns:
+            Response text string, or empty string on failure
+        """
+        if not self.available():
+            logger.warning("[complete] LLM unavailable")
+            return ""
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        try:
+            resp = self._httpx.post(
+                f"{self._provider['base_url']}/chat/completions",
+                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+                json={"model": self._provider["default_model"], "messages": messages,
+                       "temperature": 0.7, "max_tokens": max_tokens, "stream": False},
+                timeout=30,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                return text.strip()
+            logger.warning(f"[complete] HTTP {resp.status_code}")
+            return ""
+        except Exception as e:
+            logger.warning(f"[complete] {e}")
+            return ""
+
     def chat(self, messages: list, model: str = "", stream: bool = False, temperature: float = 0.7) -> dict:
+        """OpenAI-compatible chat completions"""
         if not self.available():
             return {"choices": [{"message": {"content": "[LLM unavailable: Run: eco setup]"}}]}
         if not model:
             model = self._provider["default_model"]
         start = time.time()
         self._stats["calls"] += 1
-
-        # Direct OpenAI-compatible API call (primary path)
-        result = self._call_direct(messages, model, temperature)
+        result = self._call_api(messages, model, temperature)
         if result and not result.get("_error"):
             self._stats["total_elapsed_s"] += time.time() - start
             return result
-
-        # Fallback: Kimi direct
         result = self._call_kimi_fallback(messages, model, temperature)
         if result and not result.get("_error"):
             self._stats["total_elapsed_s"] += time.time() - start
             return result
-
         self._stats["errors"] += 1
         self._stats["total_elapsed_s"] += time.time() - start
-        return {"choices": [{"message": {"content": f"[LLM unavailable: all backends failed]"} }]}
+        return {"choices": [{"message": {"content": "[LLM unavailable: all backends failed]"} }]}
 
-    def _call_direct(self, messages, model, temp) -> Optional[dict]:
+    def _call_api(self, messages, model, temp) -> Optional[dict]:
         if not self._httpx or not self._api_key:
             return None
         try:
@@ -86,10 +117,8 @@ class LLMClient:
             )
             if resp.status_code == 200:
                 return resp.json()
-            logger.warning(f"[{self._provider_name}] HTTP {resp.status_code}")
             return {"_error": True}
         except Exception as e:
-            logger.warning(f"[{self._provider_name}] {e}")
             return {"_error": True}
 
     def _call_kimi_fallback(self, messages, model, temp) -> Optional[dict]:
@@ -132,10 +161,11 @@ if __name__ == "__main__":
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
     c = get_default_client()
     if c.available():
-        r = c.chat([{"role":"user","content":"Say hello in 5 words"}])
-        t = r.get("choices",[{}])[0].get("message",{}).get("content","[no response]")
-        print(f"[OK] {t[:80]}")
+        r = c.complete("Say hello in 3 words", system="You are helpful.")
+        print(f"[OK] complete(): {r}")
+        r2 = c.chat([{"role":"user","content":"Say hello in 5 words"}])
+        t = r2.get("choices",[{}])[0].get("message",{}).get("content","")
+        print(f"[OK] chat(): {t}")
+        print(f"[OK] Stats: {c.get_stats()}")
     else:
-        print(f"[?] Provider={c.get_provider_name() if hasattr(c,'get_provider_name') else c._provider_name} API_Key={c.available()}")
-        print("[!] Run: eco setup")
-    print(f"[OK] Stats: {c.get_stats()}")
+        print("[!] LLM not available, run: eco setup")
