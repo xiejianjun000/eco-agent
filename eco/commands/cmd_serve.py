@@ -107,9 +107,16 @@ async def _stream_response(query, model_id):
         loops.stop()
         output = ""
         if isinstance(result, dict):
-            output = result.get("output", result.get("result", str(result)))
+            obs = result.get("final_observation", "")
+            output = obs if obs and obs != "任务完成" else str(result)
         else:
             output = str(result)
+        if not output or output == "任务完成":
+            from agent_core.llm_client import get_default_client
+            c = get_default_client()
+            if c.available():
+                r = c.chat([{"role":"user","content":query}])
+                output = r.get("choices",[{}])[0].get("message",{}).get("content","")
         for i in range(0, len(output), 100):
             chunk = output[i:i+100]
             yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'content': chunk}, 'finish_reason': None}]})}\n\n"
@@ -129,7 +136,17 @@ async def _sync_response(query, model_id):
         loops.stop()
         output = ""
         if isinstance(result, dict):
-            output = result.get("output", result.get("result", str(result)))
+            obs = result.get("final_observation", "")
+            if obs and obs != "任务完成":
+                output = obs
+            else:
+                from agent_core.llm_client import get_default_client
+                c = get_default_client()
+                if c.available():
+                    r = c.chat([{"role":"user","content":query}])
+                    output = r.get("choices",[{}])[0].get("message",{}).get("content","")
+                else:
+                    output = str(result)
         else:
             output = str(result)
     except Exception as e:
