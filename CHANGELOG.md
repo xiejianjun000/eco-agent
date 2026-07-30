@@ -1,3 +1,15 @@
+## [2026-07-30] v5.0.0a2 — P3: LLM调用链打通 + API Key配置
+
+### Added (G3 渐进交付)
+- **llm_client.py 重构**: 直接读取 ~/.eco/.env 配置，直连 LLM API
+  - 支持6大提供商: DeepSeek / OpenAI / Anthropic / Kimi / Qwen / Doubao
+  - 三层fallback: 直连API → govmcp网关 → Kimi直连
+  - 与 eco setup / eco config 自动联动
+
+### Fixed
+- eco chat 真实调用链打通: CLI → EcoLoops → ReAct++ → LLMClient → LLM API
+- eco doctor 配置检查与 llm_client 状态数据对齐
+
 ## [2026-07-30] v5.0.0a1 — CLI + API Server (P0-P2)
 
 ### Added
