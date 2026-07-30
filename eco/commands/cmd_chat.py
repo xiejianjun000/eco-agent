@@ -1,66 +1,104 @@
 """
-eco chat — Conversational AI interface
-Design: CLAUDE/CODEX/HERMES pattern — direct LLM, identity-driven, clean output
+eco chat - Conversational AI (CLAUDE/CODEX/HERMES pattern)
+  - Streaming output (character by character via SSE)
+  - Thinking indicator
+  - Markdown-rendered responses (via rich)
+  - SOUL.md identity loaded into system prompt
+  - Multi-turn conversation with context management
 """
-import sys, logging, json, time
+import sys, logging
 from pathlib import Path
 
-log = logging.getLogger("eco.chat")
 logging.basicConfig(level=logging.WARNING)
-
+log = logging.getLogger("eco.chat")
 ROOT = Path(__file__).resolve().parent.parent.parent
 
-# ─── ECO Identity — loaded from SOUL.md like CLAUDE loads AGENTS.md ───
-_ECO_IDENTITY = """# ECO AGENT
+# --- Load ECO identity from SOUL.md (like CLAUDE loads AGENTS.md) ---
+def _load_identity() -> str:
+    soul_path = ROOT / "profiles" / "eco-agent" / "SOUL.md"
+    if soul_path.exists():
+        return soul_path.read_text(encoding="utf-8")
+    return "ECO AGENT - environmental regulation AI assistant"
 
-## 身份
-我是 ECO AGENT，生态环境法规领域的 AI 助手。
+# --- Rich terminal rendering ---
+_HAVE_RICH = False
+try:
+    from rich.console import Console
+    from rich.markdown import Markdown
+    from rich.live import Live
+    from rich.spinner import Spinner
+    from rich.panel import Panel
+    from rich import box
+    _console = Console()
+    _HAVE_RICH = True
+except ImportError:
+    _console = None
 
-## 核心原则
-1. 专业 — 引用法规时标注具体条款，不确定时说明
-2. 严谨 — 每个结论都要有依据，不编造信息
-3. 务实 — 给出的建议可操作、可执行
-4. 审慎 — 涉及执法、处罚等敏感内容，标注仅供参考
+def _build_messages(identity, history, question):
+    system = identity + """
 
-## 回答格式
-- 结构化输出：使用列表、要点、分层
-- 法规引用标准名称和条款号
-- 涉及处罚时注明法律依据和处罚幅度
-- 末尾标注「本回答仅供参考，不构成法律意见」
+## Output format
+- Cite specific clauses when referencing regulations
+- Mark enforcement/penalty info with "For reference only, not legal advice"
+- Structured, clear, practical answers
+- Mark uncertain items with [pending confirmation]
 """
+    messages = [{"role": "system", "content": system}]
+    for h in history[-10:]:
+        messages.append(h)
+    messages.append({"role": "user", "content": question})
+    return messages
 
-def _build_system_prompt() -> list:
-    """Build message list with ECO's identity injected as system prompt"""
-    return [{"role": "system", "content": _ECO_IDENTITY}]
-
-def _call_llm(messages: list) -> str:
-    """Single LLM call — returns text response"""
+def _stream_answer(messages):
+    """Stream answer with real-time output"""
     from agent_core.llm_client import get_default_client
     c = get_default_client()
     if not c.available():
-        return "[LLM not configured. Run: eco setup]"
-    try:
-        r = c.chat(messages)
-        return r.get("choices", [{}])[0].get("message", {}).get("content", "")
-    except Exception as e:
-        return f"[Error: {e}]"
+        msg = "[LLM not configured. Run: eco setup]"
+        if _HAVE_RICH:
+            _console.print(f"[red]{msg}[/red]")
+        else:
+            print(msg)
+        return msg
+
+    full_text = [""]
+
+    if _HAVE_RICH:
+        spinner = Spinner("dots", text=" Thinking...")
+        with Live(spinner, refresh_per_second=10, transient=True) as live:
+            def on_chunk(chunk):
+                full_text[0] += chunk
+                live.update(Markdown(full_text[0]))
+            c.chat_stream(messages, on_chunk=on_chunk)
+    else:
+        def on_chunk(chunk):
+            print(chunk, end="", flush=True)
+        c.chat_stream(messages, on_chunk=on_chunk)
+        print()
+
+    return full_text[0]
 
 def run(args):
-    query = args.query
-    if query:
-        messages = _build_system_prompt()
-        messages.append({"role": "user", "content": query})
-        answer = _call_llm(messages)
-        print(answer)
+    identity = _load_identity()
+    if args.query:
+        messages = _build_messages(identity, [], args.query)
+        _stream_answer(messages)
         return 0
-    return _repl()
+    return _repl(identity)
 
-def _repl():
-    """Interactive REPL — like CLAUDE/CODEX/HERMES"""
-    messages = _build_system_prompt()
-    print("  ECO AGENT — 生态环境法规 AI 助手")
-    print("  (/exit 退出)")
-    print()
+def _repl(identity):
+    history = []
+    if _HAVE_RICH:
+        _console.print()
+        _console.print(Panel("[bold]ECO AGENT[/bold] - Environmental Regulation AI Assistant", box=box.ROUNDED))
+        _console.print("  [dim]/exit  /new  /help[/dim]")
+        _console.print()
+    else:
+        print()
+        print("  ECO AGENT - Environmental Regulation AI Assistant")
+        print("  (/exit /new /help)")
+        print()
+
     while True:
         try:
             q = input("eco> ").strip()
@@ -69,16 +107,25 @@ def _repl():
         if not q: continue
         if q in ("/exit", "/quit"): break
         if q == "/help":
-            print("  /exit  退出"); continue
+            print("  /exit  /new"); continue
         if q == "/new":
-            messages = _build_system_prompt()
-            print("  [对话已重置]"); continue
-        if q == "/system":
-            print(_ECO_IDENTITY); continue
-        messages.append({"role": "user", "content": q})
-        answer = _call_llm(messages)
-        print()
-        print(answer)
-        print()
-        messages.append({"role": "assistant", "content": answer})
+            history = []
+            if _HAVE_RICH:
+                _console.print("[dim]Session reset[/dim]")
+            else:
+                print("[Session reset]")
+            continue
+
+        messages = _build_messages(identity, history, q)
+        answer = _stream_answer(messages)
+        if _HAVE_RICH:
+            _console.print()
+        else:
+            print()
+
+        history.append({"role": "user", "content": q})
+        history.append({"role": "assistant", "content": answer})
+        if len(history) > 100:
+            history = history[-50:]
+
     return 0
