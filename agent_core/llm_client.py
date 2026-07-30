@@ -61,19 +61,32 @@ class LLMClient:
 
         start = time.time()
         self._stats["calls"] += 1
+        last_error = ""
 
         # 优先 govmcp 网关
         result = self._call_gateway(messages, model, stream, temperature)
+        if result:
+            # 检查是否包含错误信息
+            if result.get("error"):
+                last_error = result.get("detail", "unknown gateway error")
+                self._stats["errors"] += 1
+            else:
+                elapsed = time.time() - start
+                self._stats["total_elapsed_s"] += elapsed
+                return result
+
+        # Kimi 直连 fallback
+        result = self._call_kimi_direct(messages, model, stream, temperature)
         if result:
             elapsed = time.time() - start
             self._stats["total_elapsed_s"] += elapsed
             return result
 
-        # Kimi 直连 fallback
-        result = self._call_kimi_direct(messages, model, stream, temperature)
         elapsed = time.time() - start
         self._stats["total_elapsed_s"] += elapsed
-        return result or {"choices": [{"message": {"content": "[LLM unavailable]"}}]}
+        self._stats["errors"] += 1
+        return {"choices": [{"message": {"content": f"[LLM unavailable: {last_error}]"}}],
+                "_error": last_error}
 
     def chat_cheap(self, messages: List[Dict]) -> Dict:
         """使用 cheap tier 模型（简单任务）"""
@@ -96,10 +109,14 @@ class LLMClient:
             )
             if resp.status_code == 200:
                 return resp.json()
-            logger.warning(f"[gateway] {resp.status_code}: {resp.text[:100]}")
+            # 如实透传 503 错误原因
+            detail = resp.text[:200] if resp.text else f"HTTP {resp.status_code}"
+            logger.warning(f"[gateway] {resp.status_code}: {detail}")
+            # 返回含错误详情的响应，防止被静默吞掉
+            return {"error": True, "status_code": resp.status_code, "detail": detail}
         except Exception as e:
             logger.warning(f"[gateway] {e}")
-        return None
+            return {"error": True, "detail": str(e)}
 
     def _call_kimi_direct(self, messages: List[Dict], model: str, stream: bool, temp: float) -> Optional[Dict]:
         """直连 Kimi fallback"""
