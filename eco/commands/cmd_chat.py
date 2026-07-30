@@ -2,8 +2,8 @@
 eco chat — CLAUDE Code 风格终端输出
 
 设计：
-  1. ○ 思考指示器（单行动画，自动消失）
-  2. 打字机流式输出（rich markup 实时渲染）
+  1. ○ 思考指示器（输出前显示，用户可见）
+  2. 打字机流式输出（rich.render.Style 逐段着色）
   3. 无重复、无闪烁、无二次渲染
 """
 import sys, logging, threading, time
@@ -13,11 +13,12 @@ logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("eco.chat")
 ROOT = Path(__file__).resolve().parent.parent.parent
 
-# Rich 用于最终渲染和欢迎面板
 try:
     from rich.console import Console
-    from rich.markdown import Markdown
     from rich.panel import Panel
+    from rich.markdown import Markdown
+    from rich.style import Style
+    from rich.text import Text
     from rich import box
     _console = Console()
     _HAVE_RICH = True
@@ -26,22 +27,19 @@ except ImportError:
     _HAVE_RICH = False
 
 SYSTEM_PROMPT = """## 你是谁
-你是 ECO AGENT，生态环境法规领域的 AI 助手。
+你是 ECO AGENT，生态环境法规领域的 AI 助手，专注中国环境法律体系。
 
 ## 你的能力
-- 精通中国生态环境法律法规：环境保护法、大气污染防治法、水污染防治法、土壤污染防治法、排污许可管理条例等
-- 可以调用 100+ 政务工具（环境监测、碳排放、企业服务、市民服务、智慧城市等）
-- 拥有 36 个生态环境专业技能（执法检查、裁量建议、法规检索、标准匹配等）
+- 精通中国生态环境法律法规
+- 可以调用 100+ 政务工具
+- 拥有 36 个生态环境专业技能
 - 能进行多法规交叉分析、场景推演、风险评估
 
-## 必须遵守的规则
-1. 你是 ECO AGENT — 不允许说"作为AI助手"、"我没有工具"、"基于我的训练数据"
-2. 引用法规时必须标注具体条款号
-3. 涉及处罚的内容必须包含法律依据和处罚幅度
-4. 回答结构化：使用列表、表格、分层标题
-5. 不确定的内容标注 [待确认]
-6. 执法相关内容末尾加注「本回答仅供参考，不构成法律意见」
-7. 用中文回答，专业、严谨、务实
+## 风格
+- 用中文回答。专业、精准、结构化。
+- 引用法规时标注具体条款号。
+- 涉及处罚的内容标注「本回答仅供参考，不构成法律意见」。
+- 回答中使用 **加粗** 突出关键词。
 """
 
 def _build_messages(history, question):
@@ -54,10 +52,10 @@ def _build_messages(history, question):
 
 def _stream_answer(messages):
     """
-    CLAUDE Code 风格三阶段输出：
-    1. ◉ 思考指示器（直到第一个 chunk）
-    2. 打字机输出（追加式）
-    3. rich Markdown 渲染最终版
+    CLAUDE Code 风格三阶段：
+    1. 显示 ○ 思考中（用户可见）
+    2. 流式输出（rich 实时渲染）
+    3. 空行结束
     """
     from agent_core.llm_client import get_default_client
     c = get_default_client()
@@ -68,45 +66,52 @@ def _stream_answer(messages):
 
     full_text = [""]
     first_chunk_received = [False]
+    animation_started = [False]
 
     def on_chunk(chunk):
         if not first_chunk_received[0]:
-            # 清除思考指示器行
-            sys.stdout.write("\r" + " " * 30 + "\r")
-            sys.stdout.flush()
             first_chunk_received[0] = True
+            sys.stdout.write("\r" + " " * 40 + "\r")
+            sys.stdout.flush()
         full_text[0] += chunk
-        # CLAUDE Code 风格：使用 console.out 实时渲染 markup
         if _HAVE_RICH:
             _console.out(chunk, end="")
         else:
             sys.stdout.write(chunk)
         sys.stdout.flush()
 
-    # 阶段一：显示思考指示器
-    sys.stdout.write("  ○  Thinking")
-    sys.stdout.flush()
-
-    # 后台运行动画（简单点的点）
+    # 阶段一：显示思考指示器（优先启动动画，再发起请求）
     stop_animation = [False]
+
     def animate():
         dots = 0
+        # 先显示一次，确保用户看到
+        sys.stdout.write("\r  ○ 思考中")
+        sys.stdout.flush()
+        animation_started[0] = True
         while not stop_animation[0] and not first_chunk_received[0]:
             dots = (dots + 1) % 4
-            sys.stdout.write("\r  ○  Thinking" + "." * dots + " " * (3 - dots))
+            sys.stdout.write("\r  ○ 思考中" + "·" * dots + " " * (3 - dots))
             sys.stdout.flush()
-            time.sleep(0.3)
+            time.sleep(0.25)
 
+    # 启动动画线程
     anim = threading.Thread(target=animate, daemon=True)
     anim.start()
+
+    # 等待动画线程至少显示一次再发起请求
+    time.sleep(0.05)
 
     # 阶段二：流式输出
     c.chat_stream(messages, on_chunk=on_chunk)
     stop_animation[0] = True
 
-    # 阶段三：完成
-    sys.stdout.write("\n")
+    # 清除残留指示器
+    if not first_chunk_received[0]:
+        sys.stdout.write("\r" + " " * 40 + "\r")
 
+    sys.stdout.write("\n")
+    sys.stdout.flush()
     return full_text[0]
 
 
@@ -120,15 +125,14 @@ def run(args):
 
 def _repl():
     history = []
-    # 欢迎面板
     if _HAVE_RICH:
         _console.print()
         _console.print(Panel("[bold]ECO AGENT[/bold]  —  生态环境法规 AI 助手", box=box.ROUNDED))
-        _console.print("  [dim]/exit  /new  /help[/dim]")
+        _console.print("  [dim]/exit[bold]/[/bold]/new[bold]/[/bold]/help[/dim]")
         _console.print()
     else:
-        print("\n  ECO AGENT  —  生态环境法规 AI 助手")
-        print("  (/exit  /new  /help)\n")
+        print("\n  ECO AGENT — 生态环境法规 AI 助手")
+        print("  (/exit /new /help)\n")
 
     while True:
         try:
