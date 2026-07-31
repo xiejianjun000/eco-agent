@@ -1,6 +1,7 @@
 """LLM 客户端测试——mock httpx 层，不联网；验证温度自适应/网关降级/错误链透传"""
 import sys
 import os
+import json
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 import pytest
 from agent_core.llm_client import LLMClient
@@ -183,3 +184,151 @@ class TestBasicBehavior:
         assert stats["errors"] == 1
         assert stats["provider"] == "kimi"
         assert stats["has_api_key"] is True
+
+
+# ═══════════════════════════════════════════════════════════════
+# 真流式（SSE）chat_with_tools 测试
+# ═══════════════════════════════════════════════════════════════
+
+class FakeStreamResp:
+    """模拟 httpx.stream 的上下文管理器响应，按行吐出 SSE 数据"""
+
+    def __init__(self, lines=(), status=200, err_text=""):
+        self.status_code = status
+        self._lines = list(lines)
+        self._err_text = err_text
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def iter_lines(self):
+        return iter(self._lines)
+
+    def read(self):
+        return self._err_text.encode("utf-8")
+
+
+def _sse(obj) -> str:
+    return "data: " + json.dumps(obj, ensure_ascii=False)
+
+
+@pytest.fixture
+def mock_stream(monkeypatch):
+    """拦截 httpx.stream，返回可控的 SSE 响应队列，记录所有请求体"""
+    calls = []
+    state = {"queue": []}
+
+    def fake_stream(method, url, headers=None, json=None, timeout=None):
+        calls.append({"method": method, "url": url, "json": json, "headers": headers})
+        item = state["queue"].pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    monkeypatch.setattr("httpx.stream", fake_stream)
+    return state, calls
+
+
+class TestRealStreaming:
+    def test_stream_content_chunks_arrive_incrementally(self, client, mock_stream):
+        """真流式：content delta 逐段即时回调，而非整块切片回放"""
+        state, calls = mock_stream
+        state["queue"] = [FakeStreamResp([
+            _sse({"choices": [{"delta": {"content": "你好"}}]}),
+            _sse({"choices": [{"delta": {"content": "，世界"}}]}),
+            _sse({"choices": [{"delta": {"content": "！"}}],
+                  "usage": {"prompt_tokens": 5, "completion_tokens": 3}}),
+            "data: [DONE]",
+        ])]
+        chunks = []
+        result = client.chat_with_tools(
+            [{"role": "user", "content": "hi"}], tools=[],
+            on_chunk=chunks.append, stream=True)
+        assert result == "你好，世界！"
+        assert chunks == ["你好", "，世界", "！"]  # 逐段到达，非 20 字切片回放
+        assert calls[0]["json"]["stream"] is True
+
+    def test_stream_payload_stream_true_and_kimi_temp_one(self, client, mock_stream):
+        """payload 必须 stream=True，且 kimi-k2.x temperature 强制为 1"""
+        state, calls = mock_stream
+        state["queue"] = [FakeStreamResp([
+            _sse({"choices": [{"delta": {"content": "ok"}}]}),
+            "data: [DONE]",
+        ])]
+        client.chat_with_tools([{"role": "user", "content": "hi"}], tools=[],
+                               on_chunk=lambda c: None, stream=True)
+        assert calls[0]["json"]["stream"] is True
+        assert calls[0]["json"]["model"] == "kimi-k2.5"
+        assert calls[0]["json"]["temperature"] == 1
+
+    def test_stream_tool_calls_assembled_by_index(self, client, mock_stream):
+        """tool_calls delta 按 index 拼装：id/name 一次到达，arguments 分片累积"""
+        state, calls = mock_stream
+        state["queue"] = [FakeStreamResp([
+            _sse({"choices": [{"delta": {"tool_calls": [
+                {"index": 0, "id": "call_1", "type": "function",
+                 "function": {"name": "search_regulation", "arguments": ""}}]}}]}),
+            _sse({"choices": [{"delta": {"tool_calls": [
+                {"index": 0, "function": {"arguments": "{\"key"}}]}}]}),
+            _sse({"choices": [{"delta": {"tool_calls": [
+                {"index": 1, "id": "call_2", "type": "function",
+                 "function": {"name": "query_air_quality", "arguments": "{\"city\":\"北京\"}"}}]}}]}),
+            _sse({"choices": [{"delta": {"tool_calls": [
+                {"index": 0, "function": {"arguments": "word\":\"大气\"}"}}]}}]}),
+            "data: [DONE]",
+        ])]
+        msg, err = client._call_chat_with_tools_stream("kimi-k2.5", [{"role": "user", "content": "hi"}], [])
+        assert err is None
+        tcs = msg["tool_calls"]
+        assert [tc["id"] for tc in tcs] == ["call_1", "call_2"]  # 按 index 排序
+        assert tcs[0]["function"]["name"] == "search_regulation"
+        assert tcs[0]["function"]["arguments"] == "{\"keyword\":\"大气\"}"
+        assert tcs[1]["function"]["name"] == "query_air_quality"
+        assert json.loads(tcs[1]["function"]["arguments"]) == {"city": "北京"}
+
+    def test_stream_429_failover_to_deepseek_streaming(self, monkeypatch, mock_stream):
+        """429 → DeepSeek 流式降级：第二次请求仍为 stream=True 且打到 deepseek"""
+        monkeypatch.setenv("ECO_LLM_DISABLE", "")
+        monkeypatch.setenv("ECO_PROVIDER", "kimi")
+        monkeypatch.setenv("KIMI_API_KEY", "sk-kimi")
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-ds")
+        monkeypatch.delenv("GOVMCP_GATEWAY", raising=False)
+        c = LLMClient()
+        state, calls = mock_stream
+        state["queue"] = [
+            FakeStreamResp(status=429, err_text='{"error":{"message":"rate limit"}}'),
+            FakeStreamResp([
+                _sse({"choices": [{"delta": {"content": "降级回答"}}]}),
+                "data: [DONE]",
+            ]),
+        ]
+        chunks = []
+        result = c.chat_with_tools([{"role": "user", "content": "hi"}], tools=[],
+                                   on_chunk=chunks.append, stream=True)
+        assert result == "降级回答"
+        assert "降级回答" in chunks
+        assert len(calls) == 2
+        assert "moonshot.cn" in calls[0]["url"]
+        assert "deepseek.com" in calls[1]["url"]
+        assert calls[1]["json"]["stream"] is True
+        assert calls[1]["json"]["model"] == "deepseek-chat"
+
+    def test_stream_usage_recorded(self, client, mock_stream, tmp_path, monkeypatch):
+        """流式路径同样记录 usage 统计"""
+        stats_file = tmp_path / "stats.jsonl"
+        monkeypatch.setattr("agent_core.llm_client.STATS_FILE", stats_file)
+        state, calls = mock_stream
+        state["queue"] = [FakeStreamResp([
+            _sse({"choices": [{"delta": {"content": "ok"}}]}),
+            _sse({"choices": [], "usage": {"prompt_tokens": 11, "completion_tokens": 7}}),
+            "data: [DONE]",
+        ])]
+        client.chat_with_tools([{"role": "user", "content": "hi"}], tools=[],
+                               on_chunk=lambda c: None, stream=True)
+        rec = json.loads(stats_file.read_text(encoding="utf-8").strip().splitlines()[-1])
+        assert rec["prompt_tokens"] == 11
+        assert rec["completion_tokens"] == 7
+        assert rec["ok"] is True

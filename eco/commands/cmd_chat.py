@@ -132,7 +132,8 @@ def _stream_answer(messages, tracer=None):
         sys.stdout.flush()
     tools = get_tools()
     try:
-        result = c.chat_with_tools(messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5, tracer=tracer)
+        result = c.chat_with_tools(messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5,
+                                   tracer=tracer, stream=True)
     except KeyboardInterrupt:
         # 生成中 Ctrl+C：取消当前生成、保留会话（不杀进程、不丢历史）
         print("\n[已取消当前生成，会话保留；可继续输入或 /exit 退出]")

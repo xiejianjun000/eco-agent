@@ -390,6 +390,95 @@ class LLMClient:
             self._record_usage(model, None, time.time() - t0, ok=False)
             return None, str(e)
 
+    def _call_chat_with_tools_stream(self, model: str, messages: list, tools: list,
+                                     on_chunk=None):
+        """真实 SSE 流式 chat_with_tools 调用（stream=True）。
+
+        - content delta 即时通过 on_chunk 回调给上层（真流式，非整块切片回放）
+        - tool_calls delta 按 index 增量拼装（id/name 一次性到达，arguments 分片）
+        - usage 在流末尾（或单独 usage chunk）记录
+        - 返回 (message_dict, None)；失败返回 (None, err) 并写 self._last_error，
+          429/配额类错误交由上层做 provider 流式降级重试。
+        """
+        self._last_error = None
+        body = {
+            "model": model,
+            "messages": messages,
+            "temperature": self._resolve_temperature(model, 0.7),
+            "stream": True,
+        }
+        if tools:
+            body["tools"] = tools
+            body["tool_choice"] = "auto"
+        t0 = time.time()
+        content_parts: list[str] = []
+        tool_calls_acc: dict[int, dict] = {}
+        usage = None
+        try:
+            with self._httpx.stream(
+                "POST",
+                f"{self._provider['base_url']}/chat/completions",
+                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+                json=body,
+                timeout=120,
+            ) as resp:
+                if resp.status_code != 200:
+                    try:
+                        raw = resp.read()
+                        detail = (raw.decode("utf-8", "replace") if isinstance(raw, bytes) else str(raw))[:300]
+                    except Exception:
+                        detail = ""
+                    kind = "quota" if self._is_quota_error(resp.status_code, detail) else (
+                        "auth" if resp.status_code in (401, 403) else "http")
+                    self._last_error = {"kind": kind, "status": resp.status_code, "detail": detail}
+                    self._record_usage(model, None, time.time() - t0, ok=False)
+                    return None, f"HTTP {resp.status_code}"
+                for line in resp.iter_lines():
+                    if not line:
+                        continue
+                    line = line.decode("utf-8") if isinstance(line, bytes) else line
+                    if not line.startswith("data: "):
+                        continue
+                    data_str = line[6:].strip()
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        data = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        continue
+                    if data.get("usage"):
+                        usage = data["usage"]
+                    choices = data.get("choices") or []
+                    if not choices:
+                        continue
+                    delta = choices[0].get("delta") or {}
+                    chunk = delta.get("content")
+                    if chunk:
+                        content_parts.append(chunk)
+                        if on_chunk:
+                            on_chunk(chunk)
+                    for tc in delta.get("tool_calls") or []:
+                        idx = tc.get("index", 0)
+                        acc = tool_calls_acc.setdefault(
+                            idx, {"id": "", "type": "function",
+                                  "function": {"name": "", "arguments": ""}})
+                        if tc.get("id"):
+                            acc["id"] = tc["id"]
+                        fn = tc.get("function") or {}
+                        if fn.get("name"):
+                            acc["function"]["name"] += fn["name"]
+                        if fn.get("arguments"):
+                            acc["function"]["arguments"] += fn["arguments"]
+            message = {"role": "assistant", "content": "".join(content_parts) or None}
+            if tool_calls_acc:
+                message["tool_calls"] = [tool_calls_acc[i] for i in sorted(tool_calls_acc)]
+            self._record_usage(model, usage, time.time() - t0, ok=True)
+            return message, None
+        except Exception as e:
+            self._last_error = {"kind": "network", "status": None, "detail": f"{type(e).__name__} {e}"}
+            self._record_usage(model, None, time.time() - t0, ok=False)
+            return None, str(e)
+
     @staticmethod
     def _is_recoverable_error(err: dict) -> bool:
         """401/402/403/429/5xx/网络错误均可尝试 provider 降级"""
@@ -435,7 +524,8 @@ class LLMClient:
         except Exception:
             pass
 
-    def chat_with_tools(self, messages: list, tools: list, on_chunk=None, max_tool_rounds: int = 5, tracer=None) -> str:
+    def chat_with_tools(self, messages: list, tools: list, on_chunk=None, max_tool_rounds: int = 5,
+                        tracer=None, stream: bool = False) -> str:
         """
         CLAUDE/CODEX/HERMES 风格 Agent 循环：
         1. 发送消息 + 工具定义给 LLM
@@ -447,6 +537,8 @@ class LLMClient:
             tools: 工具定义列表 (OpenAI function calling 格式)
             on_chunk: 流式回调函数
             max_tool_rounds: 最大工具调用轮数
+            stream: True 时走真实 SSE 流式请求（_call_chat_with_tools_stream），
+                    content delta 即时回调；429 等错误同样触发 provider 流式降级
         Returns:
             最终回答文本
         """
@@ -463,8 +555,14 @@ class LLMClient:
             if tracer is not None and getattr(tracer, "enabled", False):
                 tracer.round_start(_round_idx + 1)
             # 调用 LLM（温度统一走 _resolve_temperature 收口：kimi-k2.x 强制 temp=1）
-            # 失败时按 provider fallback 链降级重试（Kimi 401/429 → DeepSeek 等）
-            msg, err = self._call_chat_with_tools(model, current_messages, tools)
+            # stream=True 走真实 SSE 流式（content delta 即时回调，tool_calls 按 index 拼装）；
+            # 失败时按 provider fallback 链降级重试（Kimi 401/429 → DeepSeek 等，流式同样降级）
+            def _call(mdl, msgs):
+                if stream:
+                    return self._call_chat_with_tools_stream(mdl, msgs, tools, on_chunk=on_chunk)
+                return self._call_chat_with_tools(mdl, msgs, tools)
+
+            msg, err = _call(model, current_messages)
             if msg is None:
                 if self._is_recoverable_error(self._last_error or {}) and self._try_failover_provider():
                     model = self._provider["default_model"]
@@ -472,7 +570,7 @@ class LLMClient:
                     if on_chunk:
                         on_chunk(f"\n  [提示] 主模型不可用（{self._friendly_error(self._last_error)}），"
                                  f"已自动切换到备用模型 {model} 重试...\n")
-                    msg, err = self._call_chat_with_tools(model, current_messages, tools)
+                    msg, err = _call(model, current_messages)
             if msg is None:
                 friendly = (f"[API 错误] {self._friendly_error(self._last_error)}\n"
                             f"建议：检查 ~/.eco/.env 中的 API Key 是否有效（可运行 eco setup 重新配置），"
@@ -544,16 +642,16 @@ class LLMClient:
 
                 continue  # 继续循环
 
-            # 没有 tool_calls，有文本回答 → 流式输出
-            content = msg.get("content", "")
+            # 没有 tool_calls，有文本回答 → 输出
+            content = msg.get("content") or ""
             if not content:
                 content = str(msg)
 
             if tracer is not None and getattr(tracer, "enabled", False):
                 tracer.finish("结束（生成最终回答）")
 
-            if on_chunk:
-                # 模拟流式输出（逐段展示）
+            if on_chunk and not stream:
+                # 非流式路径：模拟流式输出（逐段展示）；真流式时内容已随 SSE delta 即时回调
                 chunk_size = 20
                 for i in range(0, len(content), chunk_size):
                     on_chunk(content[i:i+chunk_size])
