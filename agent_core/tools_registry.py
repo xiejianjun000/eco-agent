@@ -177,6 +177,42 @@ BUILTIN_TOOL_DEFS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "vision_analyze",
+            "description": "分析图像内容，支持自然场景、图表、文档、设备读数等",
+            "parameters": {
+                "type": "object", "properties": {
+                    "image_path": {"type": "string", "description": "图像文件路径"}
+                }, "required": ["image_path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ocr_extract",
+            "description": "从图像中提取文字（OCR），支持中文、英文、数字",
+            "parameters": {
+                "type": "object", "properties": {
+                    "image_path": {"type": "string", "description": "图像文件路径"}
+                }, "required": ["image_path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_document",
+            "description": "解析和分析文档文件（PDF/TXT/DOCX），提取结构化信息",
+            "parameters": {
+                "type": "object", "properties": {
+                    "file_path": {"type": "string", "description": "文档文件路径"}
+                }, "required": ["file_path"]
+            }
+        }
+    },
 ]
 
 
@@ -237,8 +273,93 @@ def _query_water_quality(water_body: str, section: str = ""):
 def _query_noise_monitoring(location: str, date: str = ""):
     return {"location": location, "day_leq": "55dB", "night_leq": "45dB", "source": "噪声监测系统"}
 
+@_tool("vision_analyze")
+def _vision_analyze(image_path: str, prompt: str = ""):
+    """分析图像内容（使用 DeepSeek V4 多模态能力）"""
+    try:
+        from agent_core.llm_client import get_default_client
+        c = get_default_client()
+        if not c.available():
+            return {"error": "LLM not available", "image": image_path}
+
+        b64 = _image_to_base64(image_path)
+        import httpx
+        resp = httpx.post(
+            f"{c._provider['base_url']}/chat/completions",
+            headers={"Authorization": f"Bearer {c._api_key}", "Content-Type": "application/json"},
+            json={
+                "model": c._provider["default_model"],
+                "messages": [{
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt or "请详细描述这张图片的内容"},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+                    ]
+                }],
+                "temperature": 0.7,
+                "max_tokens": 2048,
+            },
+            timeout=30,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return {"description": data["choices"][0]["message"]["content"], "image": image_path}
+        return {"error": f"API error: {resp.status_code}", "image": image_path}
+    except ImportError as e:
+        return {"error": f"Missing dependency: {e}"}
+    except Exception as e:
+        return {"error": str(e), "image": image_path}
+
+@_tool("ocr_extract")
+def _ocr_extract(image_path: str):
+    """从图像中提取文字（OCR）"""
+    try:
+        from PIL import Image
+        import pytesseract
+        img = Image.open(image_path)
+        text = pytesseract.image_to_string(img, lang='chi_sim+eng')
+        return {"text": text.strip(), "image": image_path, "chars": len(text.strip())}
+    except ImportError as e:
+        return {"error": f"Missing dependency: pip install Pillow pytesseract", "image": image_path}
+    except Exception as e:
+        return {"error": str(e), "image": image_path}
+
+@_tool("analyze_document")
+def _analyze_document(file_path: str):
+    """解析文档文件（PDF/TXT/DOCX）"""
+    try:
+        import os
+        ext = os.path.splitext(file_path)[1].lower()
+        text = ""
+        if ext == ".txt":
+            with open(file_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+        elif ext == ".pdf":
+            import pdfplumber
+            with pdfplumber.open(file_path) as pdf:
+                text = "
+".join(page.extract_text() or "" for page in pdf.pages)
+        elif ext in (".docx", ".doc"):
+            try:
+                import docx
+                doc = docx.Document(file_path)
+                text = "
+".join(p.text for p in doc.paragraphs)
+            except ImportError:
+                return {"error": "python-docx not installed", "file": file_path}
+        else:
+            return {"error": f"Unsupported format: {ext}", "file": file_path}
+        return {"text": text[:10000], "file": file_path, "chars": len(text), "truncated": len(text) > 10000}
+    except Exception as e:
+        return {"error": str(e), "file": file_path}
 
 # ─── 公开接口 ─────────────────────────────
+
+def _image_to_base64(image_path: str) -> str:
+    """Convert image file to base64 for LLM API"""
+    import base64 as b64
+    with open(image_path, 'rb') as f:
+        return b64.b64encode(f.read()).decode('utf-8')
 
 def get_tools() -> list:
     """返回所有可用工具定义（OpenAI function calling 格式）"""
