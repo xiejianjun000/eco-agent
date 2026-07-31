@@ -127,21 +127,38 @@ class RoleSwarm:
         logger.info(f"[RoleSwarm] {role} done in {time.time()-t0:.1f}s, {len(text)} chars")
         return text
 
-    def run(self, task: str, task_id: str = "", context: str = "") -> dict:
-        """执行三角色 DAG：patrol ∥ law -> doc -> synthesis"""
+    def run(self, task: str, task_id: str = "", context: str = "", on_stage=None) -> dict:
+        """执行三角色 DAG：patrol ∥ law -> doc -> synthesis
+
+        on_stage: 可选回调 on_stage(stage: str, detail: str, elapsed: float)，
+        用于 CLI 轨迹模式展示各阶段与耗时。"""
+        def _stage(stage, detail="", elapsed=0.0):
+            if on_stage is not None:
+                try:
+                    on_stage(stage, detail, elapsed)
+                except Exception:
+                    pass
+
         task_id = task_id or f"swarm-{uuid.uuid4().hex[:8]}"
         t0 = time.time()
+        _stage("任务分解", "巡查 Agent ∥ 法规 Agent 并行 → 文书 Agent → 总管合成")
         contributions: dict[str, str] = {}
         errors: dict[str, str] = {}
 
         # ── 第一层：patrol 与 law 并行 ──
+        _role_elapsed: dict[str, float] = {}
+
         def _work(role):
+            _t = time.time()
             try:
                 contributions[role] = self._call_role(role, task, context, task_id)
             except Exception as e:  # noqa: BLE001
                 errors[role] = str(e)
                 contributions[role] = ""
+            _role_elapsed[role] = time.time() - _t
+            _stage(f"{ROLES[role]['name']} 完成", contributions[role][:120], _role_elapsed[role])
 
+        _stage("巡查 Agent / 法规 Agent 并行执行中")
         threads = [threading.Thread(target=_work, args=(r,), daemon=True)
                    for r in ("patrol", "law")]
         for t in threads:
@@ -154,7 +171,10 @@ class RoleSwarm:
             f"[{ROLES[r]['name']}]\n{contributions.get(r, '')}" for r in ("patrol", "law")
             if contributions.get(r))
         try:
+            _stage("文书 Agent 起草中", "基于巡查 + 法规产出")
+            _t_doc = time.time()
             contributions["doc"] = self._call_role("doc", task, doc_ctx, task_id)
+            _stage("文书 Agent 完成", contributions["doc"][:120], time.time() - _t_doc)
         except Exception as e:  # noqa: BLE001
             errors["doc"] = str(e)
             contributions["doc"] = ""
@@ -176,6 +196,7 @@ class RoleSwarm:
         self.audit.append(source="swarm:synthesis", task_id=task_id,
                           content=f"总管合成: {synthesis[:700]}",
                           phase="synthesis", accepted=True)
+        _stage("总管合成完成", synthesis[:120], time.time() - t0)
 
         return {
             "task_id": task_id,

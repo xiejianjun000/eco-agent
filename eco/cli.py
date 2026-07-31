@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """eco CLI - Main dispatcher"""
-import argparse, sys
+import argparse
+import sys
 
 def _build_parser():
     parser = argparse.ArgumentParser(prog="eco", description="ECO AGENT")
@@ -11,6 +12,8 @@ def _build_parser():
     p.add_argument("query", nargs="?", default=None)
     p.add_argument("--model", default=None)
     p.add_argument("--provider", default=None)
+    p.add_argument("--verbose", "-v", action="store_true",
+                   help="轨迹模式：显示思考/工具调用/结果与 swarm 阶段耗时（写入 SM3 审计链 source=trace）")
 
     p = sub.add_parser("gateway", help="Manage gateway")
     p.add_argument("action", choices=["start","stop","restart","status"])

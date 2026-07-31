@@ -126,6 +126,43 @@ python agent_core/eco_loops_integration.py --self-test
 
 ---
 
+## CLI 可观测轨迹模式（`eco chat -v/--verbose`）
+
+默认关闭，保持简洁输出；开启后展示 Agent 循环内部轨迹，所有轨迹事件同步写入 prompt_engine SM3 审计链（`source=trace`，全链可校验）。
+
+```bash
+eco chat -v "娄底今天空气质量怎么样"   # 单轮轨迹
+# REPL 内切换
+eco> /verbose    # [trace] verbose 轨迹模式: 开启
+```
+
+示例输出：
+
+```
+[轮次 1]
+  💭 思考: 我来为您查询娄底市今天的空气质量情况。
+  🔧 调用工具: query_air_quality(city=娄底)
+  👁 结果: {"city": "娄底市", "aqi": 14, "level": "优", "pm25": 5.0, … (0.9s)
+
+[轮次 2]
+  ✅ 结束（生成最终回答）
+```
+
+复杂执法任务自动启用三角色协作时，-v 展示各阶段与耗时：
+
+```
+[swarm] 任务分解 — 巡查 Agent ∥ 法规 Agent 并行 → 文书 Agent → 总管合成
+[swarm] 巡查 Agent / 法规 Agent 并行执行中
+[swarm] 法规Agent 完成 — … (28.8s)
+[swarm] 巡查Agent 完成 — … (36.5s)
+[swarm] 文书 Agent 完成 — … (29.3s)
+[swarm] 总管合成完成 — … (109.3s)
+```
+
+关联工作区后还会显示混合检索注入命中的历史片段数：`[workspace] 检索注入: 命中 3 个历史片段（bm25 检索）`。Windows 旧终端（GBK cmd）自动降级为 ASCII 标记。
+
+---
+
 ## 阶段A：自生成提示词安全 · 纠错采集 · EcoBench-mini
 
 ### 1. 双层系统提示词安全机制（`agent_core/prompt_engine.py`）
@@ -410,6 +447,7 @@ python agent_core/eco_loops_integration.py --self-test
 | 三角色协作（DAG/贡献段/审计链 mock LLM） | tests/modules/test_role_swarm.py | 13 |
 | 混合检索（BM25/RRF/向量库/降级/工作区片段注入 mock） | tests/modules/test_hybrid_retrieval.py | 10 |
 | 执法程序类补强（程序定位/程序窗口/双段注入 mock） | tests/modules/test_ecobench_procedure.py | 4 |
+| 工具名规范化 + CLI 轨迹模式（slug 映射反查/轨迹事件/审计 mock） | tests/modules/test_trace_and_tool_names.py | 17 |
 
 并行执行：`python tests/run_all.py` · 历史记录：[TEST_LOG.md](TEST_LOG.md)
 

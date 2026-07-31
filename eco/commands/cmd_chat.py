@@ -2,8 +2,7 @@
 eco chat - CLAUDE/CODEX/HERMES pattern
   LLM <-> Tools -> Final answer
 """
-import sys, threading, time
-from pathlib import Path
+import sys
 
 _IS_WINDOWS = sys.platform.startswith("win")
 import logging
@@ -42,13 +41,20 @@ def _build_messages(history, question, system_extra=""):
     messages.append({"role": "user", "content": question})
     return messages
 
-def _workspace_system_extra(query: str = ""):
+def _workspace_system_extra(query: str = "", tracer=None):
     """当前工作区内容（有 query 时按相关性混合检索片段，否则摘要）经 prompt_engine
     注入校验后进入动态层，返回拼接进 system 的文本"""
     from agent_core.workspace import get_workspace_manager
     mgr = get_workspace_manager()
-    if mgr.current() is None:
+    ws = mgr.current()
+    if ws is None:
         return ""
+    if tracer is not None and getattr(tracer, "enabled", False) and query.strip():
+        try:
+            hits = ws.relevant_history(query)
+            tracer.retrieval(len(hits), hits[0].get("channel", "bm25") if hits else "")
+        except Exception:
+            pass
     if mgr.inject_current_summary(query=query):
         from agent_core.prompt_engine import get_prompt_engine
         return get_prompt_engine().build_system_prompt()
@@ -67,13 +73,14 @@ def _handle_resume_intent(q):
         return ws
     return None
 
-def _maybe_swarm(q, context=""):
+def _maybe_swarm(q, context="", tracer=None):
     """复杂执法任务启用三角色协作；简单问答返回 None"""
     from agent_core.role_swarm import get_role_swarm, is_complex_task
     if not is_complex_task(q):
         return None
     swarm = get_role_swarm()
-    result = swarm.run(q, context=context)
+    on_stage = tracer.swarm_stage if tracer is not None and getattr(tracer, "enabled", False) else None
+    result = swarm.run(q, context=context, on_stage=on_stage)
     print(swarm.format_result(result))
     return result["synthesis"] or "\n".join(
         f"[{r}] {t}" for r, t in result["contributions"].items())
@@ -87,7 +94,7 @@ def _safe(text):
             return ''.join(c for c in text if ord(c) < 65536)
     return text
 
-def _stream_answer(messages):
+def _stream_answer(messages, tracer=None):
     from agent_core.llm_client import get_default_client
     from agent_core.tools_registry import get_tools
     c = get_default_client()
@@ -104,15 +111,21 @@ def _stream_answer(messages):
         sys.stdout.write(display)
         sys.stdout.flush()
     tools = get_tools()
-    result = c.chat_with_tools(messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5)
+    result = c.chat_with_tools(messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5, tracer=tracer)
     return result
 
 def run(args):
+    from eco.trace import set_verbose, get_tracer
+    set_verbose(getattr(args, "verbose", False))
     if args.query:
+        tracer = get_tracer()
         _handle_resume_intent(args.query)
-        extra = _workspace_system_extra(args.query)
-        messages = _build_messages([], args.query, system_extra=extra)
-        _stream_answer(messages)
+        extra = _workspace_system_extra(args.query, tracer=tracer)
+        answer = _maybe_swarm(args.query, tracer=tracer)
+        if answer is None:
+            messages = _build_messages([], args.query, system_extra=extra)
+            _stream_answer(messages, tracer=tracer)
+        print()
         return 0
     return _repl()
 
@@ -123,7 +136,7 @@ def _repl():
         _console.print()
         _console.print(Text(LOGO, style="#3a8a6f"))
         _console.print(Text(LOGO_LINE, style="#5ae0a0 bold"))
-        _console.print(Text("  /exit  /new  /help  |  ECO AGENT v5.0.0a2", style="#2a5a3a"))
+        _console.print(Text("  /exit  /new  /help  /verbose  |  ECO AGENT v5.0.0a2", style="#2a5a3a"))
         _console.print()
     else:
         print(LOGO)
@@ -144,7 +157,12 @@ def _repl():
         if not q: continue
         if q in ("/exit", "/quit"): break
         if q == "/help":
-            print("  /exit  /new  /ws"); continue
+            print("  /exit  /new  /ws  /verbose"); continue
+        if q == "/verbose":
+            from eco.trace import set_verbose, get_tracer
+            on = set_verbose(not get_tracer().enabled)
+            print(f"[trace] verbose 轨迹模式: {'开启' if on else '关闭'}")
+            continue
         if q == "/new":
             history = []; print("[reset]"); continue
         if q == "/ws":
@@ -155,12 +173,14 @@ def _repl():
         _handle_resume_intent(q)
         ws = mgr.current()
         context = ws.summary() if ws else ""
-        extra = _workspace_system_extra(q)
+        from eco.trace import get_tracer
+        tracer = get_tracer()
+        extra = _workspace_system_extra(q, tracer=tracer)
 
-        answer = _maybe_swarm(q, context=context)
+        answer = _maybe_swarm(q, context=context, tracer=tracer)
         if answer is None:
             messages = _build_messages(history, q, system_extra=extra)
-            answer = _stream_answer(messages)
+            answer = _stream_answer(messages, tracer=tracer)
         print()
 
         history.append({"role": "user", "content": q})

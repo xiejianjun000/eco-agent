@@ -272,7 +272,7 @@ class LLMClient:
             return text
         return full_text
 
-    def chat_with_tools(self, messages: list, tools: list, on_chunk=None, max_tool_rounds: int = 5) -> str:
+    def chat_with_tools(self, messages: list, tools: list, on_chunk=None, max_tool_rounds: int = 5, tracer=None) -> str:
         """
         CLAUDE/CODEX/HERMES 风格 Agent 循环：
         1. 发送消息 + 工具定义给 LLM
@@ -297,6 +297,8 @@ class LLMClient:
         tool_results_displayed = [False]
 
         for _round_idx in range(max_tool_rounds + 1):
+            if tracer is not None and getattr(tracer, "enabled", False):
+                tracer.round_start(_round_idx + 1)
             # 调用 LLM
             body = {
                 "model": model,
@@ -331,6 +333,8 @@ class LLMClient:
             # 检查是否有 tool_calls
             tool_calls = msg.get("tool_calls")
             if tool_calls:
+                if tracer is not None and getattr(tracer, "enabled", False):
+                    tracer.thought(msg.get("content") or "")
                 # 显示工具调用信息（CLAUDE Code 风格）
                 for tc in tool_calls:
                     fn_name = tc["function"]["name"]
@@ -374,7 +378,13 @@ class LLMClient:
                     except Exception:
                         tool_args = {}
 
+                    _trace_it = tracer is not None and getattr(tracer, "enabled", False)
+                    if _trace_it:
+                        tracer.tool_call(tool_name, tool_args)
+                    _t0 = __import__("time").time()
                     tool_result = asyncio.run(execute_tool(tool_name, tool_args))
+                    if _trace_it:
+                        tracer.tool_result(tool_name, tool_result, __import__("time").time() - _t0)
 
                     current_messages.append({
                         "role": "tool",
@@ -388,6 +398,9 @@ class LLMClient:
             content = msg.get("content", "")
             if not content:
                 content = str(msg)
+
+            if tracer is not None and getattr(tracer, "enabled", False):
+                tracer.finish("结束（生成最终回答）")
 
             if on_chunk:
                 # 模拟流式输出（逐段展示）
