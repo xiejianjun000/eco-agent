@@ -42,13 +42,14 @@ def _build_messages(history, question, system_extra=""):
     messages.append({"role": "user", "content": question})
     return messages
 
-def _workspace_system_extra():
-    """当前工作区摘要经 prompt_engine 注入校验后进入动态层，返回拼接进 system 的文本"""
+def _workspace_system_extra(query: str = ""):
+    """当前工作区内容（有 query 时按相关性混合检索片段，否则摘要）经 prompt_engine
+    注入校验后进入动态层，返回拼接进 system 的文本"""
     from agent_core.workspace import get_workspace_manager
     mgr = get_workspace_manager()
     if mgr.current() is None:
         return ""
-    if mgr.inject_current_summary():
+    if mgr.inject_current_summary(query=query):
         from agent_core.prompt_engine import get_prompt_engine
         return get_prompt_engine().build_system_prompt()
     return ""
@@ -109,7 +110,7 @@ def _stream_answer(messages):
 def run(args):
     if args.query:
         _handle_resume_intent(args.query)
-        extra = _workspace_system_extra()
+        extra = _workspace_system_extra(args.query)
         messages = _build_messages([], args.query, system_extra=extra)
         _stream_answer(messages)
         return 0
@@ -154,7 +155,7 @@ def _repl():
         _handle_resume_intent(q)
         ws = mgr.current()
         context = ws.summary() if ws else ""
-        extra = _workspace_system_extra()
+        extra = _workspace_system_extra(q)
 
         answer = _maybe_swarm(q, context=context)
         if answer is None:

@@ -305,6 +305,72 @@ class MemoryTree:
 
             return results[:max_results]
 
+    def search_hybrid(self, query: str, type: str | None = None,
+                      max_results: int = 10) -> list[dict[str, Any]]:
+        """Phase B2 混合检索：关键词通道（FTS5 BM25/LIKE，复用 search）+ 向量通道
+        （hybrid_retrieval，OpenAI 兼容 embedding，sqlite 本地向量库）RRF(k=60) 融合。
+        无 embedding 配置/调用失败时优雅降级为纯关键词通道（结果 channel='bm25'）。
+        每个结果附 'channel' 与 'rrf_score' 来源标注。"""
+        kw_hits = self.search(query, type=type, max_results=max_results * 2)
+        kw_rank = [h["id"] for h in kw_hits]
+        by_id = {h["id"]: h for h in kw_hits}
+        vec_rank: list[str] = []
+        channel = "bm25"
+        try:
+            from agent_core.hybrid_retrieval import EmbeddingClient, VectorStore, rrf_fuse
+            ec = EmbeddingClient()
+            if ec.available():
+                with self._conn() as conn:
+                    rows = conn.execute(
+                        "SELECT id, title, content, type FROM nodes").fetchall()
+                store = VectorStore()
+                namespace = "memory_tree"
+                fids = [f"{namespace}:{r['id']}" for r in rows]
+                missing_idx = [i for i, f in enumerate(fids)
+                               if f not in store.existing_ids(fids)]
+                if missing_idx:
+                    vecs = ec.embed([f"{rows[i]['title']}\n{rows[i]['content']}"[:2000]
+                                     for i in missing_idx])
+                    if vecs:
+                        for i, vec in zip(missing_idx, vecs, strict=False):
+                            if vec:
+                                store.upsert(fids[i], vec,
+                                             source=f"memory_tree:{rows[i]['type']}",
+                                             text=rows[i]["content"])
+                qvec = ec.embed([query[:2000]])
+                if qvec and qvec[0]:
+                    if type:
+                        allow = {f"{namespace}:{r['id']}" for r in rows if r["type"] == type}
+                    else:
+                        allow = set(fids)
+                    vec_rank = [d.split(":", 1)[1]
+                                for d in store.cosine_rank(qvec[0], doc_ids=list(allow),
+                                                           top_k=max_results * 2)]
+                    if vec_rank:
+                        channel = "hybrid"
+                        # 向量命中的节点补充进候选集（关键词通道可能漏召回）
+                        for nid in vec_rank:
+                            if nid not in by_id:
+                                node = self.get_node(nid)
+                                if node:
+                                    by_id[nid] = node
+            fused = rrf_fuse([kw_rank] + ([vec_rank] if vec_rank else []))
+        except Exception:
+            # 混合检索不可用：按关键词通道名次手工计算 RRF 分，保证结果结构一致
+            fused = [(nid, 1.0 / (60 + i)) for i, nid in enumerate(kw_rank, start=1)]
+        out = []
+        for nid, score in fused:
+            node = by_id.get(nid)
+            if node is None:
+                continue
+            node = dict(node)
+            node["channel"] = channel
+            node["rrf_score"] = round(score, 6)
+            out.append(node)
+            if len(out) >= max_results:
+                break
+        return out
+
     def _generate_snippet(self, content: str, keywords: list[str],
                           max_len: int = 200) -> str:
         """生成关键词上下文摘要"""

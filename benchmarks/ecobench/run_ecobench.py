@@ -125,6 +125,74 @@ KEYWORD_LAW_MAP = [
 ]
 
 
+# ═══════════════════════════════════
+# B2 执法程序类补强：题干程序关键词 → 程序法概念文件（KB 真实路径，经 kb 定位确认；
+# KB 未收录《行政处罚法》《行政强制法》原文，程序条款窗口取生态环境部门程序规章）
+# ═══════════════════════════════════
+PROCEDURE_WINDOW_CHARS = 750   # 程序条款窗口上限
+PENALTY_WINDOW_CHARS = 750     # 罚则条款窗口上限（双段注入时各 750，总长仍 ≤1500）
+
+PROCEDURE_FILE_MAP = [
+    (("查封", "扣押"), ["flowwiki/wiki/concepts/108-环境保护主管部门实施查封、扣押办法.md",
+                      "flowwiki/wiki/concepts/查封扣押.md"]),
+    (("按日连续",), ["flowwiki/wiki/concepts/109-环境保护主管部门实施按日连续处罚办法.md",
+                    "flowwiki/wiki/concepts/按日连续处罚.md"]),
+    (("采样", "证据"), ["flowwiki/wiki/concepts/126-环境监测管理办法.md"]),
+    (("听证",), ["flowwiki/wiki/playbooks/enforcement/环境行政处罚听证程序规定_2010版.md"]),
+    (("移送", "犯罪", "刑事"), ["flowwiki/wiki/sources/环境保护行政执法与刑事司法衔接工作办法_2017.md",
+                            "flowwiki/wiki/sources/mee_policy/2007-05-17-环发-2007-78号-关于环境保护行政主管部门移送涉嫌环境犯罪案件的若干规定.md"]),
+    (("法制审核",), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"]),
+    (("办案期限", "期限"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"]),
+    (("决定书", "送达", "告知"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md",
+                              "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"]),
+    (("执行措施", "逾期", "履行"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"]),
+    (("程序", "现场检查", "环节", "立案"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md",
+                                      "flowwiki/wiki/playbooks/enforcement/程序违法排查.md"]),
+]
+
+PROC_SNIPPET_ANCHORS = ("程序", "应当", "第")  # 程序窗口截取锚点
+
+
+def locate_procedure_files(question: str, max_files: int = 2) -> list[str]:
+    """程序类题干关键词 → 程序法概念文件路径（去重保序，最多 max_files）"""
+    out: list[str] = []
+    for kws, paths in PROCEDURE_FILE_MAP:
+        if any(k in question for k in kws):
+            for pth in paths:
+                if pth not in out:
+                    out.append(pth)
+                    if len(out) >= max_files:
+                        return out
+    return out
+
+
+def extract_procedure_window(full_text: str, question: str,
+                             max_chars: int = PROCEDURE_WINDOW_CHARS) -> str:
+    """从程序法文件截取程序窗口：优先围绕题干关键词所在条款/段落 ±上下文。"""
+    text = full_text or ""
+    if not text:
+        return ""
+    keys = [k for k in ("程序", "听证", "送达", "期限", "法制审核", "查封", "扣押",
+                        "移送", "采样", "告知", "立案", "执行") if k in question]
+    pos = -1
+    for k in keys:
+        pos = text.find(k)
+        if pos >= 0:
+            break
+    if pos < 0:
+        return text[:max_chars]
+    start = max(0, pos - 120)
+    # 回退到最近的条款标题/行首，保证片段从自然边界开始
+    head = text.rfind("\n##", 0, pos)
+    if head >= 0 and pos - head < 400:
+        start = head + 1
+    else:
+        nl = text.rfind("\n", 0, pos)
+        if nl >= 0:
+            start = nl + 1
+    return text[start:start + max_chars]
+
+
 def cn_to_int(s: str) -> int | None:
     """中文数字串→整数（支持 零一二三四五六七八九 十/百/千 组合及阿拉伯数字）"""
     s = (s or "").strip()
@@ -383,8 +451,26 @@ class RagRetriever:
                 used.append(path)
             parts.append(f"【{path}】\n{snippet}")
             remaining -= len(parts[-1])
+        context = "\n\n".join(parts)[:RAG_MAX_CONTEXT_CHARS]
+        # B2 执法程序类补强：罚则条款窗口 + 程序条款窗口双段注入（各 ≤750 字符）
+        if item.get("category") == "执法程序":
+            proc_paths = locate_procedure_files(item.get("question", ""))
+            proc_parts: list[str] = []
+            for pp in proc_paths:
+                full = self.read(pp)
+                if not full:
+                    continue
+                win = extract_procedure_window(full, item.get("question", ""))
+                if win.strip():
+                    proc_parts.append(f"【{pp}】\n{win}")
+                    if pp not in used:
+                        used.append(pp)
+            if proc_parts:
+                proc_ctx = "\n\n".join(proc_parts)[:PROCEDURE_WINDOW_CHARS]
+                context = ("【罚则条款参考】\n" + context[:PENALTY_WINDOW_CHARS]
+                           + "\n\n【程序条款参考】\n" + proc_ctx)
         return {"files": used, "articles": hit_articles,
-                "context": "\n\n".join(parts)[:RAG_MAX_CONTEXT_CHARS]}
+                "context": context[:RAG_MAX_CONTEXT_CHARS]}
 
     def retrieve(self, question: str) -> dict:
         """
@@ -569,6 +655,7 @@ def main(argv=None) -> int:
     ap.add_argument("--out", default=str(REPORT))
     ap.add_argument("--rag", action="store_true",
                     help="RAG 模式：答题前经 MCP 检索 EHS 知识库并注入参考资料")
+    ap.add_argument("--category", default="", help="只跑指定类别题目（如 执法程序）")
     args = ap.parse_args(argv)
 
     mock = args.mock or os.environ.get("ECO_LLM_DISABLE", "").strip().lower() in ("1", "true", "yes")
@@ -590,6 +677,8 @@ def main(argv=None) -> int:
             retriever = None
 
     items = load_dataset(args.limit)
+    if args.category:
+        items = [it for it in items if it.get("category") == args.category]
     mode = "mock" if mock else ("rag" if retriever else "llm")
     print(f"[EcoBench-mini] n={len(items)} mode={mode}", flush=True)
 

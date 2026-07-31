@@ -363,6 +363,34 @@ python agent_core/eco_loops_integration.py --self-test
 
 ---
 
+## 阶段B2：混合检索升级 · 执法程序类补强
+
+### 1. 混合检索（`agent_core/hybrid_retrieval.py`）
+- 工作区历史 / Memory Tree 检索从"FTS5 关键词 + 全量截断"升级为 **BM25（纯 Python Okapi，中文 bigram 分词）+ 向量余弦 → RRF(k=60) 融合排序**，结果带来源标注（`channel` ∈ `hybrid`/`bm25`、`source`）。
+- 向量通道：OpenAI 兼容 `/embeddings` 端点，`PROVIDERS` 增加 `embedding_model` 配置（kimi: moonshot-v1-embedding / openai: text-embedding-3-small / qwen: text-embedding-v3；**DeepSeek 无 embedding → 自动禁用向量通道**），亦可用 `ECO_EMBED_PROVIDER` 单独指定；向量本地存 sqlite `~/.eco/hybrid_vectors.db`（`hybrid_vec` 表，numpy 计算余弦，按 doc_id 幂等 upsert）。
+- **优雅降级**：`ECO_LLM_DISABLE=1`、无 embedding key、provider 无 embedding 能力或 embedding 调用失败时自动 BM25-only，检索功能不受影响（mock 测试全覆盖）。
+- workspace 注入改造：`inject_current_summary(query=...)` 按当前问题混合检索 top 相关历史片段注入（带来源标注，替代 700 字符全量截断）；未命中（新问题/新工作区）自动回退摘要快照。`eco chat` 单轮与 REPL 均已透传 query。
+- Memory Tree 新增 `search_hybrid()`：关键词通道（FTS5 BM25/LIKE）+ 向量通道 RRF 融合，降级时结构一致（`channel='bm25'`）。
+
+### 2. 执法程序类 RAG 补强（`benchmarks/ecobench/run_ecobench.py`）
+- 阶段 A 弱项：执法程序类 RAG cite 0.50（过度锚定罚则忽略程序条款）。
+- 程序定位表：题干程序关键词 → 程序法概念文件（均为 KB 真实路径，经 kb_search/index 确认：查封扣押办法、按日连续处罚办法、环境监测管理办法、生态环境行政处罚办法、听证程序规定、行刑衔接办法、移送规定等）。
+- 双段注入：**罚则条款窗口 + 程序条款窗口**（各 ≤750 字符，总长仍 ≤1500），程序窗口锚定题干关键词所在条款截取。
+- 新增 `--category` 参数支持按类别跑题。
+- 复跑执法程序类 10 题（deepseek-chat，如实记录）：
+
+| 口径 | cite | keypoint F1 |
+|:-----|:----:|:-----------:|
+| 阶段A baseline | 0.60 | 0.70 |
+| 阶段A RAG | 0.50 | 0.76 |
+| B2 baseline 复跑 | 0.50 | 0.66 |
+| **B2 RAG（双段注入）** | **0.55** | **0.74** |
+
+  相比阶段 A RAG（0.50）提升 +0.05；未达 baseline 的根本原因是 **KB 未收录《行政处罚法》《行政强制法》原文**（EB32/33/34/39 的必引条款无原文可直取），程序规章只能补充部门程序细节，如实记录。
+- 回归抽测：法条引用类前 5 题 RAG 复跑，与阶段 A 逐题分数完全一致（cite 1.00 / F1 0.92），混合检索无回归。
+
+---
+
 ## 测试状态
 
 | 模块 | 文件 | 测试数 |
@@ -380,6 +408,8 @@ python agent_core/eco_loops_integration.py --self-test
 | EcoBench 三修容灾（时限/重试/provider切换 mock） | tests/modules/test_ecobench_resilience.py | 12 |
 | 项目工作区（CRUD/续接/注入/Memory Tree 固化） | tests/modules/test_workspace.py | 11 |
 | 三角色协作（DAG/贡献段/审计链 mock LLM） | tests/modules/test_role_swarm.py | 13 |
+| 混合检索（BM25/RRF/向量库/降级/工作区片段注入 mock） | tests/modules/test_hybrid_retrieval.py | 10 |
+| 执法程序类补强（程序定位/程序窗口/双段注入 mock） | tests/modules/test_ecobench_procedure.py | 4 |
 
 并行执行：`python tests/run_all.py` · 历史记录：[TEST_LOG.md](TEST_LOG.md)
 

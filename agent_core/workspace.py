@@ -130,6 +130,39 @@ class Workspace:
         text = "\n".join(parts)
         return text[:max_len]
 
+    # ── 混合检索（Phase B2）：按当前问题检索相关历史片段 ──
+    def relevant_history(self, query: str, top_k: int = 3,
+                         embed: bool = True) -> list[dict]:
+        """对工作区历史事件做 BM25+向量 RRF 混合检索（无 embedding 自动降级 BM25），
+        返回带来源标注的命中片段 [{"id","text","source","score","channel"}]"""
+        events = [e for e in self.history()
+                  if e.get("kind") in ("user", "assistant", "note", "law", "correction")]
+        if not events or not (query or "").strip():
+            return []
+        try:
+            from agent_core.hybrid_retrieval import hybrid_search
+        except ImportError:
+            return []
+        return hybrid_search(events, query, top_k=top_k,
+                             namespace=f"ws:{self.path.name}", embed=embed)
+
+    def relevant_context(self, query: str, top_k: int = 3,
+                         max_len: int = MAX_SUMMARY_LEN,
+                         embed: bool = True) -> str:
+        """按当前问题相关性检索 top 历史片段并拼注入文本（带来源标注）；
+        未命中返回空串（调用方回退 summary() 摘要快照）"""
+        hits = self.relevant_history(query, top_k=top_k, embed=embed)
+        if not hits:
+            return ""
+        m = self.meta
+        lines = [f"当前工作区：{m.get('name', self.path.name)} —— 与本次问题相关的历史片段"
+                 f"（{hits[0].get('channel', 'bm25')} 检索）："]
+        for h in hits:
+            tag = {"user": "问", "assistant": "答", "law": "法规",
+                   "note": "笔记", "correction": "纠错"}.get(h.get("source"), h.get("source", ""))
+            lines.append(f"  [{tag}|{h.get('source','')}] {h['text'][:200]}")
+        return "\n".join(lines)[:max_len]
+
 
 class WorkspaceManager:
     """工作区管理器"""
@@ -236,8 +269,11 @@ class WorkspaceManager:
         return Workspace(self._path(cands[0]["slug"]))
 
     # ── 提示词动态层注入 ──
-    def inject_current_summary(self, engine=None, task_id: str = "") -> bool:
-        """将当前工作区摘要经 prompt_engine 校验后注入动态层"""
+    def inject_current_summary(self, engine=None, task_id: str = "",
+                               query: str = "") -> bool:
+        """将当前工作区内容经 prompt_engine 校验后注入动态层。
+        Phase B2：给定 query 时按相关性混合检索 top 历史片段注入（替代全量截断摘要）；
+        未命中（新工作区/无相关内容）时回退 summary() 摘要快照。"""
         ws = self.current()
         if ws is None:
             return False
@@ -245,7 +281,15 @@ class WorkspaceManager:
             from agent_core.prompt_engine import get_prompt_engine
             engine = get_prompt_engine()
         engine.clear_injections(source_prefix=WS_SOURCE_PREFIX)
-        return engine.inject(ws.summary(), source=f"{WS_SOURCE_PREFIX}:{ws.meta.get('slug', '')}",
+        text = ""
+        if query.strip():
+            try:
+                text = ws.relevant_context(query)
+            except Exception as e:
+                logger.warning(f"[Workspace] 混合检索失败，回退摘要快照: {e}")
+        if not text:
+            text = ws.summary()
+        return engine.inject(text, source=f"{WS_SOURCE_PREFIX}:{ws.meta.get('slug', '')}",
                              task_id=task_id)
 
     def clear_injection(self, engine=None):
