@@ -1,0 +1,18 @@
+{
+  "name": "fagui-query",
+  "version": "1.0.0",
+  "author": "eco-official",
+  "description": "生态环境法规依据速查——按违法行为快速定位法律条款与处罚依据",
+  "category": "法规查询",
+  "tags": [
+    "法规",
+    "执法",
+    "处罚依据",
+    "法条检索"
+  ],
+  "trust_tier": "official",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "5.0.0"
+}
