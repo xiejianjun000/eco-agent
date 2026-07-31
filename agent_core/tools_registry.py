@@ -1499,6 +1499,17 @@ def get_tool_names() -> list[str]: return [t["function"]["name"] for t in _sanit
 def get_tools_summary() -> str: return f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools"
 
 async def execute_tool(name: str, args: dict) -> str:
+    # 权限闸门（L1-L4）：执行前检查，全部决策写 SM3 审计链（source=permission）
+    # 可用 ECO_PERMISSION_GATE=0 关闭（测试/受控环境）
+    import os
+    if os.environ.get("ECO_PERMISSION_GATE", "1").strip().lower() not in ("0", "false", "no"):
+        from agent_core.permissions import gate_tool_call
+        allowed, level, reason = gate_tool_call(name, args)
+        if not allowed:
+            return json.dumps(
+                {"error": f"permission denied [{level}]: {reason}",
+                 "permission": {"level": level, "decision": "deny", "reason": reason}},
+                ensure_ascii=False)
     # slug 与原始名均可调用，反查原始实现
     h = _HANDLERS.get(name) or _HANDLERS.get(resolve_tool_name(name))
     if h:

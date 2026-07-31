@@ -22,9 +22,9 @@
 
 ```yaml
 allow:
-  - path: "~/.hermes/profiles/eco-agent/**"
+  - path: "~/.eco/profiles/eco-agent/**"
     reason: "Profile 目录内的配置读取"
-  - path: "~/Desktop/ECO AGENT/**"
+  - path: "~/.eco/workspace/**"
     reason: "项目文件读取"
   - path: "~/Documents/Obsidian Vault/raw/**"
     reason: "知识原文只读检索"
@@ -43,15 +43,15 @@ allow:
 
 ```yaml
 allow:
-  - path: "~/.hermes/profiles/eco-agent/memory-tree/**"
+  - path: "~/.eco/memory-tree/**"
     reason: "Memory Tree 节点写入"
-  - path: "~/.hermes/profiles/eco-agent/.memory/**"
+  - path: "~/.eco/.memory/**"
     reason: "审计日志写入"
-  - path: "~/Desktop/ECO AGENT/skills/**"
+  - path: "~/.eco/skills/**"
     reason: "技能文件写入（技能孵化）"
-  - path: "~/Desktop/ECO AGENT/CHANGELOG.md"
+  - path: "~/.eco/CHANGELOG.md"
     reason: "版本历史更新"
-  - path: "~/Desktop/ECO AGENT/_scripts/**"
+  - path: "~/.eco/scripts/**"
     reason: "自动化脚本写入"
 
 deny:
@@ -124,3 +124,18 @@ require_approval:
 | 删除文件 | L3 | 审批 |
 | 调用外部 API | L4 | 审批 |
 | 联网下载文件 | L4 | 审批 |
+
+---
+
+## 工具风险覆盖（运行时生效）
+
+`agent_core/permissions.py` 按工具名前缀判定默认风险级；以下 `tool_risk_overrides`
+块可逐工具覆盖（增删条目后重启会话生效，全部决策写 SM3 审计链 source=permission）：
+
+```yaml
+tool_risk_overrides:
+  - tool: execute_code
+    level: L3
+  - tool: generate_approval_document
+    level: L4
+```
