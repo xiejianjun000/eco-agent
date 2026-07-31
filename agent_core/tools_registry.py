@@ -24,10 +24,10 @@ TOOL_NAME_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 _SLUG_TO_ORIGINAL: dict[str, str] = {}
 _RENAMED_TOOLS: dict[str, str] = {}  # 原始名 -> slug
 
-# 已知非法名的固定 slug（语义化，避免哈希不可读）
-_KNOWN_SLUGS: dict[str, str] = {
-    "query_snow亮的视频": "query_snow_xueliang_video",
-}
+# 已知非法名的固定 slug（语义化，避免哈希不可读）。
+# 注：历史中文名 query_snow亮的视频 已在源头修复为 query_snow_xueliang_video，
+# 本表留空备用；非法名统一走通用 slug 化。
+_KNOWN_SLUGS: dict[str, str] = {}
 
 
 def _slugify(name: str) -> str:
@@ -1235,7 +1235,7 @@ ALL_TOOL_DEFS = [
   {
     "type": "function",
     "function": {
-      "name": "query_snow亮的视频",
+      "name": "query_snow_xueliang_video",
       "description": "雪亮工程视频监控查询",
       "parameters": {
         "type": "object",
@@ -1418,6 +1418,34 @@ ALL_TOOL_DEFS = [
         "properties": {}
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "save_document",
+      "description": "将生成的文书/清单/报告等产物真实写入工作区 deliverables 目录并落盘，返回真实文件绝对路径；只有拿到本工具返回的 path 后才允许向用户声称“已保存”",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "目标文件名（可含中文，如 现场检查清单.md）；不允许包含路径分隔符"
+          },
+          "content": {
+            "type": "string",
+            "description": "要写入文件的完整文本内容（UTF-8 编码落盘）"
+          },
+          "workspace": {
+            "type": "string",
+            "description": "可选，目标工作区名称或 slug；缺省使用当前激活工作区，无激活工作区时写入 default 工作区"
+          }
+        },
+        "required": [
+          "filename",
+          "content"
+        ]
+      }
+    }
   }
 ]
 
@@ -1466,6 +1494,120 @@ def _h_query_water_quality(water_body: str, section: str = ""):
     return {"water_body": water_body, "section": section}
 
 
+
+@tool("save_document")
+def _h_save_document(filename: str, content: str, workspace: str = ""):
+    """真实落盘：写入 <workspace>/deliverables/<filename>，返回真实路径。
+    权限级别 L2（save_ 前缀，本地安全区写入）。文件名做路径穿越防护。"""
+    import re as _re
+    from pathlib import Path as _P
+    from agent_core.workspace import get_workspace_manager, slugify
+    fname = _P(str(filename or "")).name  # 剥离任何目录成分，防路径穿越
+    if not fname or fname in (".", ".."):
+        return {"error": "invalid filename", "saved": False}
+    mgr = get_workspace_manager()
+    ws = None
+    if workspace:
+        ws = mgr.get(workspace) or mgr.get(slugify(workspace))
+    if ws is None:
+        ws = mgr.current()
+    if ws is None:
+        # 无激活工作区：落到 default 工作区，保证产物一定真实落盘
+        ws = mgr.get("default") or mgr.create("default", category="通用")
+    deliv = ws.path / "deliverables"
+    deliv.mkdir(parents=True, exist_ok=True)
+    target = deliv / fname
+    # 同名不覆盖，自动追加序号
+    n = 1
+    while target.exists():
+        stem, suf = fname.rsplit(".", 1) if "." in fname else (fname, "")
+        target = deliv / (f"{stem}_{n}.{suf}" if suf else f"{stem}_{n}")
+        n += 1
+    target.write_text(str(content), encoding="utf-8")
+    try:
+        ws.add_event("deliverable", f"save_document -> {target.name} ({target.stat().st_size}B)")
+    except Exception:
+        pass
+    return {"saved": True, "path": str(target.resolve()),
+            "workspace": ws.meta.get("slug", ws.path.name),
+            "bytes": target.stat().st_size}
+
+
+
+# ── Schema 质量增强：批量补齐描述（≥20字符）与参数说明 ─────────────
+_CATEGORY_BY_PREFIX = [
+    ("query_", "数据检索查询"), ("apply_", "在线申办受理"), ("book_", "预约办理"),
+    ("handle_", "审批流程办理"), ("manage_", "配置管理"), ("monitor_", "运行监控"),
+    ("control_", "设备控制"), ("calculate_", "指标核算"), ("generate_", "文书报告生成"),
+    ("register_", "登记备案"), ("predict_", "预测分析"), ("track_", "进度追踪"),
+    ("trade_", "交易办理"), ("detect_", "检测识别"), ("dispatch_", "指挥调度"),
+    ("configure_", "参数配置"), ("input_", "数据录入"), ("submit_", "意见提交"),
+    ("supervise_", "监督管理"), ("set_", "目标设定"), ("analyze_", "分析解析"),
+    ("search_", "检索查询"), ("get_", "数据获取"), ("vision_", "图像识别"),
+    ("ocr_", "文字识别"), ("execute_", "沙箱执行"), ("save_", "本地产物落盘"),
+    ("initiate_", "流程发起"),
+]
+
+# 核心工具参数说明（按参数名通用映射 + 工具级覆盖）
+_PARAM_DESC = {
+    "city": "城市名称（如 北京、赣州），用于定位监测站点数据",
+    "station": "可选，监测站点名称，缺省取城市全部国控站点",
+    "keyword": "检索关键词（法规名、污染物、行业等），支持中文",
+    "law_name": "可选，限定法规名称以缩小检索范围",
+    "standard_code": "排放标准编号（如 GB 29620-2013）",
+    "pollutant": "可选，污染物名称（如 颗粒物、SO2），缺省返回标准全部限值",
+    "company": "企业全称，用于匹配处罚/监管记录",
+    "company_name": "企业全称，用于匹配排污许可证信息",
+    "industry": "行业类别（如 钢铁、化工、电力、水泥）",
+    "energy_consumption": "能耗量数值（吨标煤），可传字符串数字",
+    "project_name": "建设项目名称，用于匹配环评信息",
+    "water_body": "水体名称（河流/湖泊/断面，如 长江、太湖）",
+    "section": "可选，监测断面名称",
+    "location": "监测点位或区域名称",
+    "image_path": "图片文件本地路径（jpg/png 等）",
+    "file_path": "文档文件本地路径（PDF/TXT/DOCX）",
+    "code": "要执行的源代码文本",
+    "language": "编程语言标识（python/javascript 等沙箱白名单语言）",
+    "camera_id": "监控点位编号",
+    "query_type": "查询类型（实时/回放/截图）",
+    "start_time": "开始时间（YYYY-MM-DD HH:mm）",
+    "end_time": "结束时间（YYYY-MM-DD HH:mm）",
+}
+
+
+def _schema_category(name: str) -> str:
+    for prefix, cat in _CATEGORY_BY_PREFIX:
+        if name.startswith(prefix):
+            return cat
+    return "业务办理"
+
+
+def _enrich_function_schema(fn: dict) -> dict:
+    """返回增强后的 function schema（拷贝）：description≥20字符且说明用途，
+    所有参数补齐 description。零参数工具保持 properties={}。"""
+    fn = dict(fn)
+    name = fn.get("name", "")
+    desc = (fn.get("description") or "").strip()
+    if len(desc) < 20:
+        cat = _schema_category(name)
+        desc = (f"{desc}——面向生态环境执法/政务服务的{cat}工具，"
+                f"入参为 JSON 对象，返回结构化 JSON 结果供业务使用。")
+    fn["description"] = desc
+    params = fn.get("parameters")
+    if isinstance(params, dict):
+        props = params.get("properties")
+        if props:
+            new_props = {}
+            for pname, pschema in props.items():
+                pschema = dict(pschema or {})
+                if not pschema.get("description"):
+                    pschema["description"] = _PARAM_DESC.get(pname, f"{pname} 参数值（详见工具用途说明）")
+                new_props[pname] = pschema
+            params = dict(params)
+            params["properties"] = new_props
+            fn["parameters"] = params
+    return fn
+
 # ── 对外接口（名称统一规范化导出）──────────────────────────
 _DUPLICATE_TOOLS: list[str] = []  # 重复注册被去重的名字
 
@@ -1483,10 +1625,12 @@ def _sanitized_defs() -> list:
                 log.warning("[tools_registry] 重复工具名已去重: %r", slug)
             continue
         seen.add(slug)
+        fn2 = _enrich_function_schema(fn)
         if slug == fn.get("name"):
-            out.append(t)
+            out.append({**t, "function": fn2})
         else:
-            out.append({**t, "function": {**fn, "name": slug}})
+            fn2["name"] = slug
+            out.append({**t, "function": fn2})
     return out
 
 def get_duplicate_tools() -> list[str]:
@@ -1498,11 +1642,26 @@ def get_tools() -> list: return _sanitized_defs()
 def get_tool_names() -> list[str]: return [t["function"]["name"] for t in _sanitized_defs()]
 def get_tools_summary() -> str: return f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools"
 
+_GATE_DISABLED_WARNED = False
+
 async def execute_tool(name: str, args: dict) -> str:
     # 权限闸门（L1-L4）：执行前检查，全部决策写 SM3 审计链（source=permission）
-    # 可用 ECO_PERMISSION_GATE=0 关闭（测试/受控环境）
+    # 可用 ECO_PERMISSION_GATE=0 关闭（测试/受控环境）；关闭时写审计链并告警
     import os
-    if os.environ.get("ECO_PERMISSION_GATE", "1").strip().lower() not in ("0", "false", "no"):
+    if os.environ.get("ECO_PERMISSION_GATE", "1").strip().lower() in ("0", "false", "no"):
+        global _GATE_DISABLED_WARNED
+        if not _GATE_DISABLED_WARNED:
+            _GATE_DISABLED_WARNED = True
+            log.warning("[tools_registry] ⚠️ 权限闸门已被 ECO_PERMISSION_GATE=0 整体关闭（仅测试/受控环境允许）")
+            try:
+                from agent_core.prompt_engine import PromptAuditChain
+                PromptAuditChain().append(
+                    source="permission",
+                    content="ECO_PERMISSION_GATE=0: permission gate globally disabled",
+                    accepted=True, reason="gate_disabled_by_env")
+            except Exception:
+                pass
+    else:
         from agent_core.permissions import gate_tool_call
         allowed, level, reason = gate_tool_call(name, args)
         if not allowed:

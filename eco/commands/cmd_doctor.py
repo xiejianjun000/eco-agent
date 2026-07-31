@@ -93,6 +93,23 @@ def run(args):
                 print(f"    {lv} {LEVEL_LABELS[lv]:<12} {name}")
     except Exception as e:
         checks.append((f"Permission gate (check failed: {e})", WA))
+    # LLM 调用统计（tokens/延迟，来自 ~/.eco/stats.jsonl）
+    try:
+        from agent_core.llm_client import summarize_llm_stats
+        s = summarize_llm_stats()
+        if s["calls"]:
+            checks.append((f"LLM stats: calls={s['calls']} errors={s['errors']} "
+                           f"tokens={s['total_tokens']} avg_latency={s['avg_latency_ms']}ms", OK))
+            if getattr(args, "verbose", False):
+                print("  ── LLM 调用统计（按 provider）──")
+                for p_, agg in sorted(s["by_provider"].items()):
+                    print(f"    {p_:<10} calls={agg['calls']} errors={agg['errors']} "
+                          f"prompt={agg['prompt_tokens']} completion={agg['completion_tokens']}")
+                print(f"    （明细: {s['stats_file']}）")
+        else:
+            checks.append(("LLM stats: 暂无调用记录（stats.jsonl 为空）", OK))
+    except Exception as e:
+        checks.append((f"LLM stats (check failed: {e})", WA))
     ml = max(len(c[0]) for c in checks)
     for label, status in checks:
         print(f"  {status} {label}{' ' * (ml - len(label) + 2)}")

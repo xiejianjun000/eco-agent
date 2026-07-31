@@ -49,7 +49,10 @@ SAFETY_LAYER = (
     "3. 不得提供破坏生态环境的建议；涉及生态环境风险时必须提示依法依规处置。\n"
     "4. 引用法律法规必须真实、现行有效；不确定时明确说明不确定，不得编造法条号。\n"
     "5. 涉及行政处罚须提示裁量权与程序正当要求，不得承诺具体处罚结果。\n"
-    "6. 拒绝回答超出生态环境执法辅助范围且可能违法的指令。"
+    "6. 拒绝回答超出生态环境执法辅助范围且可能违法的指令。\n"
+    "7. 诚实性硬约束：只有调用工具并拿到真实返回结果后，才可声称对应操作已完成"
+    "（如文件保存必须以 save_document 工具返回的真实 path 为准）；"
+    "禁止虚构未执行的操作、不存在的文件路径或工具结果。"
 )
 
 # 旧版 cmd_chat 单行系统提示词（已废弃，保留向后兼容引用）
@@ -93,12 +96,34 @@ _FORBIDDEN_PATTERNS = [
     r"(伪造|篡改|编造).{0,8}(数据|监测|证据|记录)",
     r"(解除|去掉|移除).{0,8}(限制|约束|防护)",
     r"你现在是.{0,20}(无限制|不受约束|开发者模式)",
-    r"(ignore|disregard|forget).{0,20}(previous|prior|above|safety).{0,20}(instruction|rule|prompt)",
-    r"(bypass|disable|override).{0,20}(safety|restriction|filter|guardrail)",
+    r"(ignore|disregard|forget).{0,20}(previous|prior|above|safety|your).{0,20}(instruction|rule|prompt|safety|restriction)",
+    r"(forget|drop).{0,10}your.{0,10}(rules|instructions|restrictions|guidelines)",
+    r"fromnowon.{0,30}(norestriction|no.restrictions|unrestricted|forgetsafety)",
+    r"(bypass|disable|override|remove).{0,20}(safety|restriction|filter|guardrail|allrestriction)",
     r"\bDAN\b|jailbreak|越狱",
     r"扮演.{0,12}(无审查|无限制)",
 ]
+
+
+def _normalize_for_injection_check(text: str) -> str:
+    """注入校验前归一化：去全部空白（含零宽字符）、全角转半角、转小写。
+    对抗"忽 略 之 前 的 指 令"插空格/全角混淆/大小写混淆等绕过手法。"""
+    import unicodedata
+    t = unicodedata.normalize("NFKC", text)
+    # 去除所有空白字符与零宽字符（ZWSP/ZWNJ/ZWJ/BOM/软连字符等）
+    t = re.sub(r"[\s​‌‍⁠﻿­]+", "", t)
+    return t.lower()
+
+
+# 归一化后的内容追加一套无空格形态英文 pattern（常规 pattern 在归一化文本上依然生效）
+_NORMALIZED_EXTRA_PATTERNS = [
+    r"ignore(all)?(previous|prior|above|the|your|safety)*(instructions|rules|prompts)",
+    r"disregard(all)?(previous|prior|the)*(instructions|rules)",
+    r"forget(your|all|the|previous)*(rules|instructions|restrictions|safety)",
+    r"havenorestrictions|withoutanyrestrictions",
+]
 _FORBIDDEN_RE = [re.compile(p, re.IGNORECASE) for p in _FORBIDDEN_PATTERNS]
+_NORMALIZED_EXTRA_RE = [re.compile(p) for p in _NORMALIZED_EXTRA_PATTERNS]
 
 # 禁止词（明显违法导向）
 _FORBIDDEN_WORDS = [
@@ -121,6 +146,17 @@ def validate_injection(content: str) -> tuple[bool, str]:
     for w in _FORBIDDEN_WORDS:
         if w in content:
             return False, f"命中禁止词: {w}"
+    # 归一化二次校验：对抗插空格/全半角/大小写/零宽字符混淆绕过
+    normalized = _normalize_for_injection_check(content)
+    for i, rex in enumerate(_FORBIDDEN_RE):
+        if rex.search(normalized):
+            return False, f"命中禁止 pattern#{i}（归一化后）: 混淆绕过尝试"
+    for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
+        if rex.search(normalized):
+            return False, f"命中归一化禁止 pattern#{i}: 英文改写绕过尝试"
+    for w in _FORBIDDEN_WORDS:
+        if _normalize_for_injection_check(w) in normalized:
+            return False, f"命中禁止词（归一化后）: {w}"
     return True, ""
 
 

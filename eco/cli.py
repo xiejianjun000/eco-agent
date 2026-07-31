@@ -34,7 +34,7 @@ def _build_parser():
     p = sub.add_parser("setup", help="Setup wizard")
     p.add_argument("--quick", action="store_true")
     p = sub.add_parser("skills", help="Manage skills")
-    p.add_argument("action", choices=["list","install","remove","info"])
+    p.add_argument("action", choices=["list","install","remove","info","versions","rollback"])
     p.add_argument("name", nargs="?", default=None)
     p = sub.add_parser("config", help="Config")
     p.add_argument("action", choices=["show","get","set","init","path"])

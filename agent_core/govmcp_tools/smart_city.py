@@ -538,10 +538,10 @@ def query_grid_management(
 
 
 @govmcp_tool(
-    name="query_snow亮的视频",
+    name="query_snow_xueliang_video",
     description="雪亮工程视频监控查询",
 )
-def query_snow亮的视频(
+def query_snow_xueliang_video(
     camera_id: str,
     query_type: str,
     start_time: str,

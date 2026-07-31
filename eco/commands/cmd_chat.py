@@ -92,6 +92,16 @@ def _maybe_swarm(q, context="", tracer=None):
     on_stage = tracer.swarm_stage if tracer is not None and getattr(tracer, "enabled", False) else None
     result = swarm.run(q, context=context, on_stage=on_stage)
     print(swarm.format_result(result))
+    # 任务分解可见性：swarm 计划步骤写入工作区 todos（REPL 可用 /todo 查看/干预）
+    try:
+        from agent_core.workspace import get_workspace_manager
+        ws = get_workspace_manager().current()
+        if ws is not None:
+            for role in result.get("contributions", {}):
+                ws.append_todo(f"[swarm:{role}] 完成 {role} 阶段产出")
+            ws.append_todo("[swarm] 仲裁合成最终答复")
+    except Exception:
+        pass
     return result["synthesis"] or "\n".join(
         f"[{r}] {t}" for r, t in result["contributions"].items())
 
@@ -121,7 +131,12 @@ def _stream_answer(messages, tracer=None):
         sys.stdout.write(display)
         sys.stdout.flush()
     tools = get_tools()
-    result = c.chat_with_tools(messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5, tracer=tracer)
+    try:
+        result = c.chat_with_tools(messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5, tracer=tracer)
+    except KeyboardInterrupt:
+        # 生成中 Ctrl+C：取消当前生成、保留会话（不杀进程、不丢历史）
+        print("\n[已取消当前生成，会话保留；可继续输入或 /exit 退出]")
+        return "[生成被用户取消]"
     return result
 
 def run(args):
@@ -167,7 +182,15 @@ def _repl():
         if not q: continue
         if q in ("/exit", "/quit"): break
         if q == "/help":
-            print("  /exit  /new  /ws  /verbose"); continue
+            print("  /exit  /new  /ws  /todo  /verbose"); continue
+        if q == "/todo":
+            cur = mgr.current()
+            if cur is None:
+                print("[todo] 当前无打开的工作区（用 eco workspace create/open 或先提问自动续接）")
+            else:
+                t = cur.todos().strip()
+                print(t if t else "[todo] 当前工作区暂无待办（任务计划中产生的待办会显示在这里）")
+            continue
         if q == "/verbose":
             from eco.trace import set_verbose, get_tracer
             on = set_verbose(not get_tracer().enabled)

@@ -31,6 +31,64 @@ PROVIDERS = {
     "doubao": {"base_url": "https://ark.cn-beijing.volces.com/api/v3", "api_key_env": "DOUBAO_API_KEY", "default_model": "doubao-pro-32k", "embedding_model": None},
 }
 
+STATS_FILE = Path.home() / ".eco" / "stats.jsonl"
+
+
+def record_llm_stat(provider: str, model: str, latency_ms: float,
+                    prompt_tokens=None, completion_tokens=None,
+                    path: str = "", ok: bool = True):
+    """每次 LLM 调用追加一条结构化统计到 ~/.eco/stats.jsonl（供 eco doctor 查看）"""
+    import datetime as _dt
+    rec = {
+        "ts": _dt.datetime.now().isoformat(timespec="seconds"),
+        "provider": provider, "model": model, "path": path,
+        "latency_ms": latency_ms,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "ok": ok,
+    }
+    STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with STATS_FILE.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
+def summarize_llm_stats(limit: int = 0, stats_file=None) -> dict:
+    """汇总 stats.jsonl：调用数/错误数/总 tokens/平均延迟/按 provider 分组"""
+    path = Path(stats_file) if stats_file else STATS_FILE
+    recs = []
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line:
+                try:
+                    recs.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+    if limit:
+        recs = recs[-limit:]
+    total = len(recs)
+    errors = sum(1 for r in recs if not r.get("ok", True))
+    ptoks = sum(r.get("prompt_tokens") or 0 for r in recs)
+    ctoks = sum(r.get("completion_tokens") or 0 for r in recs)
+    lats = [r.get("latency_ms") or 0 for r in recs]
+    by_provider: dict = {}
+    for r in recs:
+        p = r.get("provider", "?")
+        agg = by_provider.setdefault(p, {"calls": 0, "errors": 0, "prompt_tokens": 0, "completion_tokens": 0})
+        agg["calls"] += 1
+        agg["errors"] += 0 if r.get("ok", True) else 1
+        agg["prompt_tokens"] += r.get("prompt_tokens") or 0
+        agg["completion_tokens"] += r.get("completion_tokens") or 0
+    return {
+        "calls": total, "errors": errors,
+        "prompt_tokens": ptoks, "completion_tokens": ctoks,
+        "total_tokens": ptoks + ctoks,
+        "avg_latency_ms": round(sum(lats) / max(total, 1), 1),
+        "by_provider": by_provider,
+        "stats_file": str(path),
+    }
+
+
 class LLMClient:
     def __init__(self):
         env = {}
@@ -81,6 +139,7 @@ class LLMClient:
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
+        _t0 = time.time()
         try:
             resp = self._httpx.post(
                 f"{self._provider['base_url']}/chat/completions",
@@ -93,11 +152,24 @@ class LLMClient:
             if resp.status_code == 200:
                 data = resp.json()
                 text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                try:
+                    record_llm_stat(self._provider_name, self._provider["default_model"],
+                                    round((time.time() - _t0) * 1000, 1),
+                                    (data.get("usage") or {}).get("prompt_tokens"),
+                                    (data.get("usage") or {}).get("completion_tokens"),
+                                    path="complete", ok=True)
+                except Exception:
+                    pass
                 return text.strip()
             body = resp.text[:300]
             logger.warning(f"[complete] HTTP {resp.status_code}: {body}")
             kind = "quota" if self._is_quota_error(resp.status_code, body) else "http"
             self._last_error = {"kind": kind, "status": resp.status_code, "detail": body}
+            try:
+                record_llm_stat(self._provider_name, self._provider["default_model"],
+                                round((time.time() - _t0) * 1000, 1), path="complete", ok=False)
+            except Exception:
+                pass
             return ""
         except Exception as e:
             logger.warning(f"[complete] {e}")
@@ -163,6 +235,14 @@ class LLMClient:
             result, err = fn(messages, model, temperature)
             if result is not None and not result.get("_error"):
                 self._stats["total_elapsed_s"] += time.time() - start
+                try:
+                    usage = result.get("usage") or {}
+                    record_llm_stat(self._provider_name, model,
+                                    round((time.time() - start) * 1000, 1),
+                                    usage.get("prompt_tokens"), usage.get("completion_tokens"),
+                                    path=f"chat:{_kind}", ok=True)
+                except Exception:
+                    pass
                 return result
             if err:
                 errors.append(err)
@@ -239,7 +319,8 @@ class LLMClient:
                 "POST",
                 f"{self._provider['base_url']}/chat/completions",
                 headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json={"model": model, "messages": messages, "temperature": 0.7, "stream": True},
+                json={"model": model, "messages": messages,
+                      "temperature": self._resolve_temperature(model, 0.7), "stream": True},
                 timeout=120,
             ) as resp:
                 _last_chunk = ""
@@ -272,6 +353,88 @@ class LLMClient:
             return text
         return full_text
 
+    def _call_chat_with_tools(self, model: str, messages: list, tools: list):
+        """单次 chat_with_tools HTTP 调用。成功返回 (message_dict, None)，
+        失败返回 (None, err) 并把细节写入 self._last_error。
+        温度统一经 _resolve_temperature 收口（kimi-k2.x 强制 1）。"""
+        self._last_error = None
+        body = {
+            "model": model,
+            "messages": messages,
+            "temperature": self._resolve_temperature(model, 0.7),
+            "stream": False,
+        }
+        if tools:
+            body["tools"] = tools
+            body["tool_choice"] = "auto"
+        t0 = time.time()
+        try:
+            resp = self._httpx.post(
+                f"{self._provider['base_url']}/chat/completions",
+                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+                json=body,
+                timeout=60,
+            )
+            if resp.status_code != 200:
+                detail = resp.text[:300] if getattr(resp, "text", None) else ""
+                kind = "quota" if self._is_quota_error(resp.status_code, detail) else (
+                    "auth" if resp.status_code in (401, 403) else "http")
+                self._last_error = {"kind": kind, "status": resp.status_code, "detail": detail}
+                self._record_usage(model, None, time.time() - t0, ok=False)
+                return None, f"HTTP {resp.status_code}"
+            data = resp.json()
+            self._record_usage(model, data.get("usage"), time.time() - t0, ok=True)
+            return data.get("choices", [{}])[0].get("message", {}), None
+        except Exception as e:
+            self._last_error = {"kind": "network", "status": None, "detail": f"{type(e).__name__} {e}"}
+            self._record_usage(model, None, time.time() - t0, ok=False)
+            return None, str(e)
+
+    @staticmethod
+    def _is_recoverable_error(err: dict) -> bool:
+        """401/402/403/429/5xx/网络错误均可尝试 provider 降级"""
+        return err.get("kind") in ("quota", "auth", "http", "network")
+
+    def _try_failover_provider(self) -> bool:
+        """切换到备用 provider（deepseek <-> kimi，取有可用 Key 的一方）"""
+        peer = "deepseek" if self._provider_name == "kimi" else "kimi"
+        if self.switch_provider(peer):
+            return True
+        # 兜底：尝试任意有 key 的其他 provider
+        for name in PROVIDERS:
+            if name != self._provider_name and self.switch_provider(name):
+                return True
+        return False
+
+    @staticmethod
+    def _friendly_error(err: dict | None) -> str:
+        if not err:
+            return "未知错误"
+        kind, status, detail = err.get("kind"), err.get("status"), (err.get("detail") or "")[:120]
+        if kind == "auth":
+            return f"API Key 无效或已过期（HTTP {status}）"
+        if kind == "quota":
+            return f"模型配额不足或被限流（HTTP {status}）"
+        if kind == "http":
+            return f"模型服务返回 HTTP {status}: {detail}"
+        if kind == "network":
+            return f"网络连接失败: {detail}"
+        if kind == "unavailable":
+            return "未配置 API Key（请运行 eco setup）"
+        return f"{kind}: {detail}"
+
+    def _record_usage(self, model: str, usage: dict | None, elapsed_s: float, ok: bool):
+        """结构化统计：每次 LLM 调用记录 tokens+latency 到 ~/.eco/stats.jsonl"""
+        try:
+            record_llm_stat(
+                provider=self._provider_name, model=model,
+                latency_ms=round(elapsed_s * 1000, 1),
+                prompt_tokens=(usage or {}).get("prompt_tokens"),
+                completion_tokens=(usage or {}).get("completion_tokens"),
+                path="chat_with_tools", ok=ok)
+        except Exception:
+            pass
+
     def chat_with_tools(self, messages: list, tools: list, on_chunk=None, max_tool_rounds: int = 5, tracer=None) -> str:
         """
         CLAUDE/CODEX/HERMES 风格 Agent 循环：
@@ -299,36 +462,23 @@ class LLMClient:
         for _round_idx in range(max_tool_rounds + 1):
             if tracer is not None and getattr(tracer, "enabled", False):
                 tracer.round_start(_round_idx + 1)
-            # 调用 LLM
-            body = {
-                "model": model,
-                "messages": current_messages,
-                "temperature": 0.7,
-                "stream": False,
-            }
-            if tools:
-                body["tools"] = tools
-                body["tool_choice"] = "auto"
-
-            try:
-                resp = self._httpx.post(
-                    f"{self._provider['base_url']}/chat/completions",
-                    headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                    json=body,
-                    timeout=60,
-                )
-                if resp.status_code != 200:
-                    err = f"[API Error: {resp.status_code}]"
-                    if on_chunk: on_chunk(err)
-                    return err
-
-                data = resp.json()
-                msg = data.get("choices", [{}])[0].get("message", {})
-
-            except Exception as e:
-                err = f"[Error: {e}]"
-                if on_chunk: on_chunk(err)
-                return err
+            # 调用 LLM（温度统一走 _resolve_temperature 收口：kimi-k2.x 强制 temp=1）
+            # 失败时按 provider fallback 链降级重试（Kimi 401/429 → DeepSeek 等）
+            msg, err = self._call_chat_with_tools(model, current_messages, tools)
+            if msg is None:
+                if self._is_recoverable_error(self._last_error or {}) and self._try_failover_provider():
+                    model = self._provider["default_model"]
+                    logger.warning(f"[chat_with_tools] 主 provider 失败，已降级到 {self._provider_name} 重试")
+                    if on_chunk:
+                        on_chunk(f"\n  [提示] 主模型不可用（{self._friendly_error(self._last_error)}），"
+                                 f"已自动切换到备用模型 {model} 重试...\n")
+                    msg, err = self._call_chat_with_tools(model, current_messages, tools)
+            if msg is None:
+                friendly = (f"[API 错误] {self._friendly_error(self._last_error)}\n"
+                            f"建议：检查 ~/.eco/.env 中的 API Key 是否有效（可运行 eco setup 重新配置），"
+                            f"或切换 ECO_PROVIDER 到其他已配置 Key 的模型。")
+                if on_chunk: on_chunk(friendly)
+                return friendly
 
             # 检查是否有 tool_calls
             tool_calls = msg.get("tool_calls")

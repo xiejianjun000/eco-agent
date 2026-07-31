@@ -21,20 +21,29 @@ class TestToolNameNormalization:
         names = tr.get_tool_names()
         assert len(names) == len(set(names))
 
-    def test_chinese_name_slugified(self):
-        """含中文的非法名映射为固定 slug"""
-        assert tr.normalize_tool_name("query_snow亮的视频") == "query_snow_xueliang_video"
+    def test_chinese_name_fixed_at_source(self):
+        """历史中文工具名已在源头修复：注册表直接导出合法 slug 名，无中文名残留"""
         assert "query_snow_xueliang_video" in tr.get_tool_names()
-        assert "query_snow亮的视频" not in tr.get_tool_names()
+        for n in tr.get_tool_names():
+            assert tr.TOOL_NAME_RE.match(n), f"非法工具名导出: {n!r}"
+
+    def test_chinese_name_slugified(self):
+        """若再出现含中文的非法名，仍自动 slug 化为合法名（防御机制保留）"""
+        slug = tr.normalize_tool_name("query_snow测试视频")
+        assert tr.TOOL_NAME_RE.match(slug)
+        assert "测试" not in slug
+        assert slug not in tr.get_tool_names()  # 不在注册表源数据中
 
     def test_slug_reverse_lookup(self):
         """slug ↔ 原始名映射反查"""
-        assert tr.resolve_tool_name("query_snow_xueliang_video") == "query_snow亮的视频"
+        slug = tr.normalize_tool_name("查.询/天气（北京）v2")
+        assert tr.resolve_tool_name(slug) == "查.询/天气（北京）v2"
         assert tr.resolve_tool_name("query_air_quality") == "query_air_quality"
 
     def test_renamed_report(self):
+        slug = tr.normalize_tool_name("查.询/天气（北京）v2")
         renamed = tr.get_renamed_tools()
-        assert renamed.get("query_snow亮的视频") == "query_snow_xueliang_video"
+        assert renamed.get("查.询/天气（北京）v2") == slug
 
     def test_duplicate_dedup_report(self):
         dups = tr.get_duplicate_tools()

@@ -114,7 +114,7 @@ from govmcp.tools.government.smart_city import (
     query_smart_community,
     query_smart_education,
     query_smart_elderly_care,
-    query_snow亮的视频,
+    query_snow_xueliang_video,
     supervise_smart_gas,
 )
 

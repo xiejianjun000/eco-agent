@@ -42,3 +42,9 @@ logs/
 # Temp
 tmp/
 temp/
+
+# 运行时敏感数据/密钥（铁律：绝不提交 API key）
+.eco/
+stats.jsonl
+prompt_audit.jsonl
+workspaces/

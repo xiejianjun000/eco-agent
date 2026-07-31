@@ -53,6 +53,22 @@ class MetaEvolution:
             except Exception: pass
         vfile.write_text(str(self._version))
 
+    def analyze(self, task_history: list[dict] = None, dry_run: bool = False) -> dict:
+        """只读分析（eco evolution --dry-run 调用）：经验回放 + 差距分析 + 反思预演，
+        不做技能生成/记忆固化/版本迭代等写操作。返回分析结论 dict。"""
+        logger.info(f"[Evolve] v{self._version} 只读分析（dry_run={dry_run}）")
+        replay = self._experience_replay(task_history or [])
+        gaps = self._gap_analysis(replay)
+        reflection = self._reflector_review({"generated": 0, "optimized": 0, "candidates": gaps.get("gaps", [])})
+        return {
+            "version": self._version,
+            "dry_run": dry_run,
+            "experience_replay": replay,
+            "gap_analysis": gaps,
+            "reflection_preview": reflection,
+            "note": "只读分析，未执行技能生成/版本迭代；完整进化请运行 eco evolution（不带 --dry-run）",
+        }
+
     def run_full_cycle(self, task_history: list[dict] = None) -> dict:
         """执行完整五阶段进化"""
         logger.info(f"[Evolve] v{self._version} 进化循环开始")
@@ -67,6 +83,9 @@ class MetaEvolution:
 
         # Phase 3: 技能生成/优化
         phases["skill_gen"] = self._skill_generation(phases["gap_analysis"])
+
+        # Phase 3.5: 反思循环三关——Generator → Reflector（对抗评审）→ Curator（策展门禁）
+        phases["reflection"] = self._reflection_gates(phases["skill_gen"])
 
         # Phase 4: 记忆固化
         phases["memory_consolidation"] = self._memory_consolidation()
@@ -109,6 +128,60 @@ class MetaEvolution:
             optimized += 1
         return {"generated": generated, "optimized": optimized}
 
+    # ── 反思循环：Generator → Reflector → Curator 三关 ──
+    def _reflector_review(self, skill_gen: dict) -> dict:
+        """Reflector（第二关）：对 Generator 产出做对抗评审。
+        规则评审（可运行最小实现）：候选变更必须对应已识别差距、不得为空洞变更、
+        不得触碰安全层；LLM 可用时追加对抗质询。"""
+        candidates = list(skill_gen.get("candidates") or [])
+        if not candidates and skill_gen.get("optimized", 0) > 0:
+            candidates = ["优化常用技能（对应成功率差距）"]
+        issues: list[str] = []
+        reviewed: list[dict] = []
+        gaps_context = skill_gen.get("gaps") or []
+        for c in candidates:
+            text = str(c)
+            verdict, reason = "accept", "对应已识别差距，变更目的明确"
+            if not text.strip():
+                verdict, reason = "reject", "空洞变更（无内容）"
+            elif any(k in text for k in ("安全准则", "SAFETY_LAYER", "安全层")):
+                verdict, reason = "reject", "试图修改安全层，违反宪法约束"
+            reviewed.append({"candidate": text[:80], "verdict": verdict, "reason": reason})
+            if verdict == "reject":
+                issues.append(reason)
+        llm_critique = None
+        try:
+            client = get_default_client()
+            if client and client.available() and reviewed:
+                prompt = ("以下技能进化候选已通过规则评审：\n"
+                          + "\n".join(f"- {r['candidate']}" for r in reviewed)
+                          + "\n请作为对抗评审者指出最多 2 条潜在风险，若无风险回答'无'。")
+                t = client.complete(prompt, system="你是 Eco Agent 进化反思模块的对抗评审者。", max_tokens=256)
+                if t:
+                    llm_critique = t
+        except Exception as e:
+            logger.warning(f"[Evolve] Reflector LLM 对抗评审跳过: {e}")
+        return {"reviewed": reviewed, "issues": issues,
+                "accept_count": sum(1 for r in reviewed if r["verdict"] == "accept"),
+                "reject_count": sum(1 for r in reviewed if r["verdict"] == "reject"),
+                "llm_critique": llm_critique}
+
+    def _curator_gate(self, reflection: dict) -> dict:
+        """Curator（第三关）：策展门禁——只有通过 Reflector 的候选才允许入库。"""
+        admitted = [r["candidate"] for r in reflection.get("reviewed", []) if r["verdict"] == "accept"]
+        blocked = [r["candidate"] for r in reflection.get("reviewed", []) if r["verdict"] == "reject"]
+        return {"admitted": admitted, "blocked": blocked,
+                "gate": "pass" if not reflection.get("issues") else "partial",
+                "note": "只有通过对抗评审的变更才允许入库，被拒变更记录留痕"}
+
+    def _reflection_gates(self, skill_gen: dict) -> dict:
+        """三关编排：Generator（阶段3产出）→ Reflector → Curator"""
+        reflection = self._reflector_review(skill_gen)
+        curation = self._curator_gate(reflection)
+        return {"generator": {"generated": skill_gen.get("generated", 0),
+                              "optimized": skill_gen.get("optimized", 0)},
+                "reflector": reflection, "curator": curation}
+
     def _memory_consolidation(self) -> dict:
         """阶段4：记忆固化"""
         return {"working_to_episodic": "consolidated", "semantic_updated": True}
@@ -119,6 +192,13 @@ class MetaEvolution:
         snapshot_dir = VERSIONS_DIR / f"v{current_version}"
         snapshot_dir.mkdir(parents=True, exist_ok=True)
         (snapshot_dir / "version.txt").write_text(f"v{current_version}.{datetime.now().isoformat()[:10]}")
+        # 快照技能与 SOUL 提示词（回滚通道的物料）
+        skills_src = ROOT / "skills"
+        if skills_src.exists():
+            shutil.copytree(skills_src, snapshot_dir / "skills", dirs_exist_ok=True)
+        soul_src = ROOT / "profiles" / "eco-agent" / "SOUL.md"
+        if soul_src.exists():
+            shutil.copy2(soul_src, snapshot_dir / "SOUL.md")
 
         # 清理旧版本，保留最近3个
         versions = sorted([d for d in VERSIONS_DIR.iterdir() if d.is_dir()])
@@ -176,6 +256,11 @@ class MetaEvolution:
             "",
             f"- 新增技能：{phases['skill_gen']['generated']} 个",
             f"- 优化技能：{phases['skill_gen']['optimized']} 个",
+            "",
+            "## 阶段3.5：反思循环（Generator→Reflector→Curator）",
+            "",
+            f"- 对抗评审：通过 {phases['reflection']['reflector']['accept_count']} 项 / 拒绝 {phases['reflection']['reflector']['reject_count']} 项" if "reflection" in phases else "- 未执行",
+            f"- 策展门禁：{phases['reflection']['curator']['gate']}，入库 {len(phases['reflection']['curator']['admitted'])} 项" if "reflection" in phases else "",
             "",
             "## 阶段4：记忆固化",
             "",

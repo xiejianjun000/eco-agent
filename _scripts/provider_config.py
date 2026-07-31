@@ -195,10 +195,12 @@ class ProviderRouter:
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
 
+            # 温度统一经 llm_client._resolve_temperature 收口（kimi-k2.x 强制 temp=1）
+            from agent_core.llm_client import LLMClient
             response = client.chat.completions.create(
                 model=f"{provider.name}:{provider.model_id}",
                 messages=messages,
-                temperature=provider.temperature,
+                temperature=LLMClient._resolve_temperature(provider.model_id, provider.temperature),
                 max_tokens=provider.max_tokens,
             )
             result = response.choices[0].message.content
