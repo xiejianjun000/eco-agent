@@ -13,6 +13,11 @@ import pytest
 
 from agent_core.workspace import WorkspaceManager
 
+# 修复：conftest 为单测强制 ECO_LLM_DISABLE=1，真实 e2e 必须解除该开关，
+# 否则 LLMClient.available() 恒为 False，e2e 永远 skip。
+if os.environ.get("ECO_E2E") == "1":
+    os.environ.pop("ECO_LLM_DISABLE", None)
+
 pytestmark = pytest.mark.skipif(
     os.environ.get("ECO_E2E") != "1",
     reason="真实 e2e 默认跳过；设置 ECO_E2E=1 且配置有效 API Key 后启用",

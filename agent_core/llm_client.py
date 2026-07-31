@@ -99,7 +99,8 @@ class LLMClient:
                     k, v = l.split("=", 1)
                     env[k.strip()] = v.strip()
         self._env = env
-        self._provider_name = os.environ.get("ECO_PROVIDER") or env.get("ECO_PROVIDER", "deepseek")
+        self._provider_name = (os.environ.get("ECO_PROVIDER") or os.environ.get("ECO_LLM_PROVIDER")
+                               or env.get("ECO_PROVIDER") or env.get("ECO_LLM_PROVIDER") or "deepseek")
         prov = PROVIDERS.get(self._provider_name, PROVIDERS["deepseek"])
         self._provider = prov
         self._api_key = os.environ.get(prov["api_key_env"]) or env.get(prov["api_key_env"], "")
