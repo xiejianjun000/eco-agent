@@ -4,8 +4,8 @@
 
 import React, { useState } from 'react'
 import { bus, EVENTS } from '../events'
-
-type ActivityTab = 'doc' | 'browser' | 'artifact' | 'map'
+import CollaborativeEditor, { AnnotationSidebar, CollaborativeEditorHandle } from './CollaborativeEditor'
+import { Annotation } from '../types/annotation'
 
 interface Props {
   collapsed: boolean
@@ -59,9 +59,44 @@ export default function ActivityPanel({ collapsed, onToggle, width = 380 }: Prop
   )
 }
 
-// ─── 文档编辑器 ───────────────────────────
+// ─── 文档编辑器（人机协同）────────────────
 function DocEditorPanel() {
-  const [doc, setDoc] = useState<string>('案卷文档')
+  const [doc, setDoc] = useState<string>('案卷.docx')
+  const [annotations, setAnnotations] = useState<Annotation[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const editorRef = React.useRef<CollaborativeEditorHandle>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+
+  function handleSelect(id: string) {
+    setSelectedId(id)
+  }
+
+  // 批注侧栏操作 → 调用编辑器命令式方法
+  function handleAccept(id: string) {
+    editorRef.current?.accept(id)
+  }
+  function handleReject(id: string) {
+    editorRef.current?.reject(id)
+  }
+  function handleEdit(id: string) {
+    setEditingId(id)
+    const ann = annotations.find(a => a.id === id)
+    if (ann) setEditText(ann.suggestion || ann.originalText)
+  }
+  function handleAddHuman() {
+    editorRef.current?.addHumanAnnotation()
+  }
+
+  // 编辑保存
+  function saveEdit() {
+    // 通过编辑器的 edit + accept 流程处理（简化：直接用编辑器内部逻辑）
+    if (editingId && editorRef.current) {
+      // 这里简化处理，真实场景需要编辑器暴露 setSuggestionAndAccept
+      setEditingId(null)
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ display: 'flex', borderBottom: '1px solid #1a2f1a', overflowX: 'auto' }}>
@@ -72,20 +107,25 @@ function DocEditorPanel() {
           }}>{d}</button>
         ))}
       </div>
-      <div style={{ flex: 1, padding: '12px 16px', background: '#111811', overflow: 'auto', color: '#c8d0c8' }}>
-        <div style={{ color: '#5a7a6a', fontSize: 10, marginBottom: 8 }}>正在编辑: {doc} · ONLYOFFICE 将在此嵌入</div>
-        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>一、案件基本情况</div>
-        <div style={{ fontSize: 12, lineHeight: 1.8 }}>
-          当事人：XX化工有限公司<br/>
-          统一社会信用代码：91431300XXXXXXXXXX<br/>
-          地址：娄底市XX区XX路XX号<br/><br/>
-          二、违法事实<br/>
-          2026年6月12日，执法人员现场检查发现其废气排放口二氧化硫浓度为<span style={{ color: '#f0a040', fontWeight: 700 }}>450mg/m³</span>，超过《钢铁烧结、球团工业大气污染物排放标准》表1限值（200mg/m³），超标125%。<br/><br/>
-          三、证据材料<br/>
-          1. 现场检查（勘察）笔录 1份<br/>
-          2. 调查询问笔录 2份<br/>
-          3. 监测报告 1份<br/>
+      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        {/* 协同编辑器 */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <CollaborativeEditor
+            ref={editorRef}
+            docTitle={doc}
+            onAnnotationsChange={setAnnotations}
+          />
         </div>
+        {/* 批注侧栏 */}
+        <AnnotationSidebar
+          annotations={annotations}
+          selectedAnnId={selectedId}
+          onSelect={handleSelect}
+          onAccept={handleAccept}
+          onReject={handleReject}
+          onEdit={handleEdit}
+          onAddHuman={handleAddHuman}
+        />
       </div>
     </div>
   )
