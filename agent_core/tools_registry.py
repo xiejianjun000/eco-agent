@@ -1,16 +1,79 @@
 """
 tools_registry.py - ECO AGENT Complete Tool Registry
 113 tools (GOVMCP 100 + Built-in 13)
+
+名称合规：OpenAI function calling 要求工具名匹配 ^[a-zA-Z0-9_-]{1,64}$，
+历史注册过含中文的非法名（如 query_snow亮的视频）会导致整批 tools 被
+DeepSeek/Kimi 直接 400 拒绝。注册/导出时统一规范化为合法 slug，
+维护 slug↔原始名映射，执行工具调用时反查原始实现。
 """
 from __future__ import annotations
-import json, logging, asyncio
-from typing import Callable
+import json
+import logging
+import asyncio
+import re
+from collections.abc import Callable
 
 log = logging.getLogger("tools_registry")
 _HANDLERS: dict[str, Callable] = {}
 
+# OpenAI function name 合法模式
+TOOL_NAME_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+
+# slug(对外合法名) -> 原始注册名 映射
+_SLUG_TO_ORIGINAL: dict[str, str] = {}
+_RENAMED_TOOLS: dict[str, str] = {}  # 原始名 -> slug
+
+# 已知非法名的固定 slug（语义化，避免哈希不可读）
+_KNOWN_SLUGS: dict[str, str] = {
+    "query_snow亮的视频": "query_snow_xueliang_video",
+}
+
+
+def _slugify(name: str) -> str:
+    """将非法工具名转换为合法 slug：优先固定表，否则剥离非法字符，兜底哈希。"""
+    if name in _KNOWN_SLUGS:
+        return _KNOWN_SLUGS[name]
+    slug = re.sub(r"[^a-zA-Z0-9_-]", "_", name)
+    slug = re.sub(r"_+", "_", slug).strip("_")
+    if not slug or not re.search(r"[a-zA-Z0-9]", slug):
+        import hashlib
+        slug = "tool_" + hashlib.md5(name.encode("utf-8")).hexdigest()[:8]
+    return slug[:64]
+
+
+def normalize_tool_name(name: str) -> str:
+    """返回对外暴露的合法工具名；非法名自动 slug 化并登记映射 + 日志。"""
+    if TOOL_NAME_RE.match(name):
+        _SLUG_TO_ORIGINAL.setdefault(name, name)
+        return name
+    slug = _slugify(name)
+    if slug in _SLUG_TO_ORIGINAL and _SLUG_TO_ORIGINAL[slug] != name:
+        import hashlib
+        slug = (slug[:55] + "_" + hashlib.md5(name.encode("utf-8")).hexdigest()[:8])[:64]
+    _SLUG_TO_ORIGINAL[slug] = name
+    _RENAMED_TOOLS[name] = slug
+    log.warning("[tools_registry] 非法工具名已自动 slug 化: %r -> %r", name, slug)
+    return slug
+
+
+def resolve_tool_name(name: str) -> str:
+    """执行调用时反查：接受 slug 或原始名，返回内部原始名。"""
+    return _SLUG_TO_ORIGINAL.get(name, name)
+
+
+def get_renamed_tools() -> dict[str, str]:
+    """返回 {原始名: slug} 改名清单（报告/审计用）。"""
+    return dict(_RENAMED_TOOLS)
+
+
 def tool(name):
-    def dec(f): _HANDLERS[name] = f; return f
+    slug = normalize_tool_name(name)
+    def dec(f):
+        _HANDLERS[name] = f
+        if slug != name:
+            _HANDLERS[slug] = f
+        return f
     return dec
 
 ALL_TOOL_DEFS = [
@@ -1358,16 +1421,93 @@ ALL_TOOL_DEFS = [
   }
 ]
 
-def get_tools() -> list: return ALL_TOOL_DEFS
-def get_tool_names() -> list[str]: return [t["function"]["name"] for t in ALL_TOOL_DEFS]
+# ── 内置工具 handler（执行层）─────────────────────────────
+@tool("query_air_quality")
+def _h_query_air_quality(city: str, station: str = ""):
+    try:
+        from agent_core.cnemc import get_city_realtime_air_quality
+        d = get_city_realtime_air_quality(city)
+        return {"city": d["city"], "aqi": d["aqi"], "level": d["level"],
+                "pm25": d["pm25"], "pm10": d["pm10"],
+                "o3": d.get("o3"), "no2": d.get("no2"), "so2": d.get("so2"),
+                "co": d.get("co"), "source": "CNEMC"}
+    except Exception as e:
+        return {"city": city, "aqi": None, "level": "unavailable", "error": str(e)}
+
+@tool("search_regulation")
+def _h_search_regulation(keyword: str, law_name: str = ""):
+    return {"keyword": keyword, "results": [
+        {"law": "大气污染防治法", "article": "第九十九条",
+         "summary": "超标排放处10-100万元罚款"}], "source": "法规知识库"}
+
+@tool("get_emission_standard")
+def _h_get_emission_standard(standard_code: str, pollutant: str = ""):
+    return {"standard": standard_code, "pollutant": pollutant or "综合"}
+
+@tool("query_environmental_penalty")
+def _h_query_environmental_penalty(company: str):
+    return {"company": company, "total": 0}
+
+@tool("calculate_carbon_emission")
+def _h_calculate_carbon_emission(industry: str, energy_consumption: str):
+    try:
+        ec = float(energy_consumption)
+    except (TypeError, ValueError):
+        ec = 0.0
+    f = {"钢铁": 1.8, "化工": 2.1, "电力": 0.85, "水泥": 1.5}.get(industry, 1.0)
+    return {"industry": industry, "emission_t": round(ec * f, 2)}
+
+@tool("query_pollution_discharge_permit")
+def _h_query_permit(company_name: str):
+    return {"company": company_name}
+
+@tool("query_water_quality")
+def _h_query_water_quality(water_body: str, section: str = ""):
+    return {"water_body": water_body, "section": section}
+
+
+# ── 对外接口（名称统一规范化导出）──────────────────────────
+_DUPLICATE_TOOLS: list[str] = []  # 重复注册被去重的名字
+
+def _sanitized_defs() -> list:
+    """返回名称全部合法化且去重的工具定义（拷贝，不改静态表）。
+    非法名自动 slug 化；重名定义只保留首个并记日志（重名会让 LLM 端整批 400）。"""
+    out = []
+    seen: set[str] = set()
+    for t in ALL_TOOL_DEFS:
+        fn = t.get("function", {})
+        slug = normalize_tool_name(fn.get("name", ""))
+        if slug in seen:
+            if slug not in _DUPLICATE_TOOLS:
+                _DUPLICATE_TOOLS.append(slug)
+                log.warning("[tools_registry] 重复工具名已去重: %r", slug)
+            continue
+        seen.add(slug)
+        if slug == fn.get("name"):
+            out.append(t)
+        else:
+            out.append({**t, "function": {**fn, "name": slug}})
+    return out
+
+def get_duplicate_tools() -> list[str]:
+    """返回因重复注册被去重的工具名清单（报告/审计用）。"""
+    _sanitized_defs()
+    return list(_DUPLICATE_TOOLS)
+
+def get_tools() -> list: return _sanitized_defs()
+def get_tool_names() -> list[str]: return [t["function"]["name"] for t in _sanitized_defs()]
 def get_tools_summary() -> str: return f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools"
 
 async def execute_tool(name: str, args: dict) -> str:
-    h = _HANDLERS.get(name)
+    # slug 与原始名均可调用，反查原始实现
+    h = _HANDLERS.get(name) or _HANDLERS.get(resolve_tool_name(name))
     if h:
         try:
             loop = asyncio.get_event_loop()
-            r = await loop.run_in_executor(None, lambda: h(**args))
+            if asyncio.iscoroutinefunction(h):
+                r = await h(**args)
+            else:
+                r = await loop.run_in_executor(None, lambda: h(**args))
             return json.dumps(r, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"error": str(e)}, ensure_ascii=False)

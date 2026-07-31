@@ -127,6 +127,8 @@ class PromptAuditChain:
     def __init__(self, path: Path = None):
         self.path = Path(path) if path else AUDIT_FILE
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        import threading
+        self._lock = threading.Lock()
 
     def _last_hash(self) -> str:
         if not self.path.exists():
@@ -149,7 +151,12 @@ class PromptAuditChain:
 
     def append(self, source: str, content: str, task_id: str = "",
                phase: str = "", accepted: bool = True, reason: str = "") -> dict:
-        """追加一条审计记录"""
+        """追加一条审计记录（线程安全：swarm 并行角色会并发写入）"""
+        with self._lock:
+            return self._append_locked(source, content, task_id, phase, accepted, reason)
+
+    def _append_locked(self, source: str, content: str, task_id: str = "",
+                       phase: str = "", accepted: bool = True, reason: str = "") -> dict:
         prev = self._last_hash()
         entry = {
             "ts": datetime.now().isoformat(timespec="seconds"),
