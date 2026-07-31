@@ -59,7 +59,7 @@ class FakeClient:
     def available(self):
         return True
 
-    def complete(self, prompt, system=None, max_tokens=1024):
+    def complete(self, prompt, system=None, max_tokens=1024, timeout=90.0):
         self.prompts.append(prompt)
         return "依据《大气污染防治法》第九十九条处理。"
 
@@ -153,14 +153,14 @@ def test_retrieve_v2_locate_then_read():
     assert hit["files"] == ["flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"]
     assert hit["articles"] == [99]
     assert "超过大气污染物排放标准排放大气污染物" in hit["context"]  # 目标条款正文
-    assert len(hit["context"]) <= 3000
+    assert len(hit["context"]) <= 1500
     # 直取 concepts 文件，无需 kb_search
     assert [c[0] for c in fake.calls].count("kb_search") == 0
 
 
 def test_retrieve_v2_context_length_cap():
     fake = make_fake_call_tool_v2()
-    r = RagRetriever(call_tool=fake)
+    RagRetriever(call_tool=fake)
     big = LAW_FULL_TEXT + "### 第一百零一条\n\n" + "长文。" * 5000
     def ct(server, tool, arguments):
         if tool == "kb_read" and "index" not in arguments.get("relative_path", ""):
@@ -168,7 +168,7 @@ def test_retrieve_v2_context_length_cap():
         return fake(server, tool, arguments)
     r2 = RagRetriever(call_tool=ct)
     hit = r2.retrieve_v2(EB01_ITEM)
-    assert len(hit["context"]) <= 3000
+    assert len(hit["context"]) <= 1500
 
 
 def test_retrieve_v2_search_fallback_filters_skills():

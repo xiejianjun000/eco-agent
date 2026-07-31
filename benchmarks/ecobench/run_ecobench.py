@@ -40,9 +40,15 @@ MOCK_ANSWER = "[mock] 本题需依据相关法律法规处理，具体条款略�
 # ═══════════════════════════════════
 
 EHS_KB_SSE_URL = os.environ.get("EHS_KB_SSE_URL", "http://111.230.89.107:8000/sse")
-RAG_MAX_CONTEXT_CHARS = 3000      # 注入提示词的参考资料总长度上限（控制 token）
+RAG_MAX_CONTEXT_CHARS = 1500      # 注入提示词的参考资料总长度上限（条款窗口优先，控制 token）
 RAG_MAX_READ_CHARS = 50000        # kb_read 取全文截断上限（需覆盖全文，条款定位后再截取）
 RAG_SEARCH_TIMEOUT = 20.0         # kb_search 单次超时（秒）
+
+# 单题时限与重试/容灾（三修）
+PER_QUESTION_TIMEOUT = 90.0       # 单题墙钟时限（秒，30s→90s）
+LLM_CALL_TIMEOUT = 90.0           # LLM HTTP 调用超时（与单题时限同步调大）
+MAX_ATTEMPTS = 2                  # 每题最多尝试次数（失败重试 1 次后仍失败才计 0/error）
+BACKUP_PROVIDERS = {"deepseek": "kimi", "kimi": "deepseek"}  # 429/余额类错误自动切换
 
 # 题目核心法律主题词表（按执法问答高频主题排序，命中即作为检索词；
 # kb_search 多词查询服务端易超时，故每次只用单个主题词）
@@ -320,7 +326,7 @@ class RagRetriever:
         return hits[:4]
 
     def retrieve_v2(self, item: dict) -> dict:
-        """定位→直取：法名定位 concepts 文件 → kb_read 取正文 → 按条款截取（≤3000 字符）。
+        """定位→直取：法名定位 concepts 文件 → kb_read 取正文 → 按条款截取（≤1500 字符，条款窗口优先）。
         返回 {"files": [...], "articles": [...], "context": str}"""
         law_names = extract_law_names(item)
         article_nums = extract_article_nums(item)
@@ -454,11 +460,55 @@ def load_dataset(limit: int = 0) -> list[dict]:
     return items[:limit] if limit else items
 
 
+def new_bench_state() -> dict:
+    """单轮跑分的过程状态：provider 切换记录、超时/重试计数、中止标记"""
+    return {"switches": [], "providers_tried": [], "timeouts": 0,
+            "retries": 0, "errors": 0, "aborted": False, "abort_reason": None}
+
+
+def _call_with_timeout(client, question: str, timeout: float = PER_QUESTION_TIMEOUT) -> str | None:
+    """带墙钟时限的 LLM 调用：超时返回 None，空串表示调用失败（查 client.last_error）"""
+    import concurrent.futures
+    ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    fut = ex.submit(client.complete, question, SYSTEM, 1024, timeout)
+    try:
+        return fut.result(timeout=timeout)
+    except concurrent.futures.TimeoutError:
+        return None
+    except Exception as e:
+        return f"[error] {type(e).__name__}: {e}"
+    finally:
+        ex.shutdown(wait=False)  # 超时后不阻塞等待后台线程
+
+
+def try_failover(client, item_id: str, state: dict) -> bool:
+    """429/余额类错误时切换备用 provider 并记录；无可切换对象返回 False"""
+    cur = getattr(client, "_provider_name", "")
+    alt = BACKUP_PROVIDERS.get(cur)
+    if not alt or alt in state["providers_tried"]:
+        return False
+    if not hasattr(client, "switch_provider") or not client.switch_provider(alt):
+        return False
+    state["providers_tried"].append(alt)
+    state["switches"].append({"question": item_id, "from": cur, "to": alt,
+                              "reason": (client.last_error or {}) and "quota/429/balance"})
+    print(f"    [failover] {item_id}: {cur} 余额/限流不可用，已切换备用 provider → {alt}",
+          flush=True)
+    return True
+
+
 def answer_question(client, item: dict, mock: bool,
-                    retriever: RagRetriever | None = None) -> tuple[str, list[str], list[int]]:
-    """答题，返回 (答案, 检索文件清单, 命中条款号)。retriever 非空时为 RAG 模式"""
+                    retriever: RagRetriever | None = None,
+                    state: dict | None = None) -> tuple[str, list[str], list[int]]:
+    """答题（单题 90s 时限 + 失败重试 1 次 + 429/余额自动切换备用 provider）。
+    返回 (答案, 检索文件清单, 命中条款号)。retriever 非空时为 RAG 模式。
+    state 非空时记录切换/超时/中止事件；两家 provider 均不可用时置 aborted。"""
     if mock or client is None or not client.available():
         return MOCK_ANSWER, [], []
+    if state is None:
+        state = new_bench_state()
+    if getattr(client, "_provider_name", None) and client._provider_name not in state["providers_tried"]:
+        state["providers_tried"].append(client._provider_name)
     question = item["question"]
     files: list[str] = []
     articles: list[int] = []
@@ -471,10 +521,45 @@ def answer_question(client, item: dict, mock: bool,
                 question = question + RAG2_PROMPT_SUFFIX.format(context=hit["context"])
         except Exception as e:
             print(f"    [RAG] {item['id']} 检索失败（降级为无检索作答）: {e}", flush=True)
-    try:
-        return client.complete(question, system=SYSTEM, max_tokens=1024) or MOCK_ANSWER, files, articles
-    except Exception as e:
-        return f"[error] {type(e).__name__}: {e}", files, articles
+
+    attempts = 0
+    while True:
+        attempts += 1
+        ans = _call_with_timeout(client, question, timeout=PER_QUESTION_TIMEOUT)
+        if ans is None:  # 墙钟超时
+            state["timeouts"] += 1
+            if attempts < MAX_ATTEMPTS:
+                state["retries"] += 1
+                print(f"    [timeout] {item['id']} 第 {attempts} 次超时（>{PER_QUESTION_TIMEOUT:.0f}s），重试", flush=True)
+                continue
+            state["errors"] += 1
+            return "[error] timeout: 单题超过时限仍未返回", files, articles
+        if isinstance(ans, str) and ans.startswith("[error]"):  # 客户端抛出的异常
+            if attempts < MAX_ATTEMPTS:
+                state["retries"] += 1
+                continue
+            state["errors"] += 1
+            return ans, files, articles
+        if ans:  # 正常答案
+            return ans, files, articles
+        # 空串：调用失败，看错误类别
+        err = getattr(client, "last_error", None) or {}
+        if err.get("kind") == "quota":  # 429/余额类 → 切换备用 provider
+            if try_failover(client, item["id"], state):
+                continue  # 切换后重答本题，不消耗重试次数
+            state["aborted"] = True
+            state["abort_reason"] = (
+                f"两家 provider 均不可用（{err.get('status')} quota/balance），中止于 {item['id']}")
+            print(f"    [abort] {state['abort_reason']}（已得题目分数保留）", flush=True)
+            state["errors"] += 1
+            return "[error] aborted: 所有 LLM provider 均不可用", files, articles
+        # 其他失败：重试 1 次后仍失败才计 error
+        if attempts < MAX_ATTEMPTS:
+            state["retries"] += 1
+            print(f"    [retry] {item['id']} 调用失败（{err.get('kind')} {err.get('status')}），重试", flush=True)
+            continue
+        state["errors"] += 1
+        return f"[error] {err.get('kind', 'unknown')}: {err.get('detail', '')[:120]}", files, articles
 
 
 def main(argv=None) -> int:
@@ -508,20 +593,28 @@ def main(argv=None) -> int:
     mode = "mock" if mock else ("rag" if retriever else "llm")
     print(f"[EcoBench-mini] n={len(items)} mode={mode}", flush=True)
 
+    state = new_bench_state()
     results = []
     t0 = time.time()
     for i, item in enumerate(items, 1):
-        ans, files, articles = answer_question(client, item, mock, retriever=retriever)
+        ans, files, articles = answer_question(client, item, mock, retriever=retriever,
+                                               state=state)
         sc = score_item(ans, item)
         sc["answer"] = ans
         sc["retrieved_files"] = files
         sc["retrieved_articles"] = articles
         sc["golden_answer"] = item["golden_answer"]
+        sc["answered"] = not ans.startswith(("[error]", "[mock]"))
         results.append(sc)
         print(f"  [{i:02d}/{len(items)}] {item['id']} {item['category']} "
               f"cite={sc['citation_hit']:.2f} f1={sc['keypoint_f1']:.2f}", flush=True)
+        if state["aborted"]:
+            print(f"[EcoBench] 中止：{state['abort_reason']}（已得 {len(results)} 题分数保留）",
+                  flush=True)
+            break
 
     n = len(results) or 1
+    provider = getattr(client, "_provider_name", None) if client is not None else None
     summary = {
         "n_questions": len(results),
         "mode": mode,
@@ -530,6 +623,20 @@ def main(argv=None) -> int:
         "keypoint_f1": round(sum(r["keypoint_f1"] for r in results) / n, 4),
         "keypoint_f1_raw": round(sum(r["keypoint_f1_raw"] for r in results) / n, 4),
         "elapsed_s": round(time.time() - t0, 1),
+        # 三修过程指标（如实记录）
+        "provider_final": provider,
+        "provider_switches": state["switches"],
+        "switch_count": len(state["switches"]),
+        "timeouts": state["timeouts"],
+        "timeout_rate": round(state["timeouts"] / n, 4),
+        "retries": state["retries"],
+        "errors": state["errors"],
+        "answered": sum(1 for r in results if r.get("answered")),
+        "aborted": state["aborted"],
+        "abort_reason": state["abort_reason"],
+        "per_question_timeout_s": PER_QUESTION_TIMEOUT,
+        "llm_call_timeout_s": LLM_CALL_TIMEOUT,
+        "rag_max_context_chars": RAG_MAX_CONTEXT_CHARS,
         "by_category": {},
     }
     cats = sorted({r["category"] for r in results})
@@ -553,6 +660,10 @@ def main(argv=None) -> int:
           f"(归一化前 {summary['keypoint_f1_raw']:.4f})")
     for c, s in summary["by_category"].items():
         print(f"    - {c}: cite={s['citation_accuracy']:.2f} f1={s['keypoint_f1']:.2f} (n={s['n']})")
+    print(f"  作答率: {summary['answered']}/{summary['n_questions']}  "
+          f"超时: {summary['timeouts']} ({summary['timeout_rate']:.1%})  "
+          f"重试: {summary['retries']}  错误: {summary['errors']}")
+    print(f"  provider 切换: {summary['switch_count']} 次  中止: {summary['aborted']}")
     print(f"  报告: {args.out}")
     if retriever is not None:
         retriever.close()

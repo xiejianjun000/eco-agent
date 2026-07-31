@@ -1,3 +1,17 @@
+## [2026-07-31] v5.0.0a4 — EcoBench 三修 + 70 题全量复跑（deepseek-chat 正式成绩）
+
+### Fixed
+- **EcoBench 三修**：RAG 注入长度 3000→1500 字符（条款窗口优先，目标条款±1 条）；单题时限 30s→90s（LLM HTTP 超时同步 90s），失败重试 1 次后仍失败才计 0/error；429/余额类错误自动切换备用 provider（deepseek↔kimi），切换记录进报告，两家均不可用则中止并保留已得分数
+- **llm_client 能力恢复**（此前被误同步回滚）：ECO_LLM_DISABLE 开关、kimi-k2.x 温度自适应（_resolve_temperature）、GOVMCP 网关降级链 + _error_detail 错误链透传、chat() 的 _call_kimi_fallback 死代码复活为真实方法；test_llm_client.py 由红转绿
+
+### Added
+- tests/modules/test_ecobench_resilience.py 12 例 mock 测试（注入上限/条款窗口/超时重试/429切换/双不可用中止/温度与配额判定）
+
+### 跑分（deepseek-chat，70 题 × 2 组，70/70 全有效作答，如实报告）
+- baseline：引用准确率 0.538 / F1 0.646（231s，超时 0，切换 0）
+- RAG：引用准确率 0.843 / F1 0.792（332s，超时 0，切换 0），Δ +0.305/+0.146
+- 法典专题 20 题：baseline 0.11 → RAG 0.95；与上轮 kimi 中断版对比见 README 第 6 节与 ecobench_report.json
+
 ## [2026-07-30] v5.0.0a3 — EcoBench 阶段A收官：题库扩充70题 + 全量对照跑分
 
 ### Added

@@ -3,6 +3,17 @@
 > 累计记录所有测试运行历史。每次 `python tests/run_all.py` 自动写入。
 
 ---
+## [2026-07-31 08:29] EcoBench 三修回归（pytest 全套）
+
+| 指标 | 数值 |
+|:-----|:----:|
+| 范围 | tests/ 全套（含新增 test_ecobench_resilience.py 12 例） |
+| 结果 | 全部通过（含此前因 llm_client 回滚而红的 test_llm_client.py 网关/温度/错误链用例） |
+| ruff | 触及文件（run_ecobench.py / llm_client.py / 两个测试文件）All checks passed |
+| 说明 | react_loop 单测在 ~/.eco/.env 存在真实 Key 时会走真实 LLM（环境敏感，CI 无 Key 全绿） |
+
+
+---
 ## [2026-07-29 22:23] 测试运行 #8
 
 | 指标 | 数值 |

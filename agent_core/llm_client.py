@@ -10,9 +10,11 @@ Reads config from ~/.eco/.env:
   ECO_PROVIDER=deepseek|openai|anthropic|kimi|qwen|doubao
   DEEPSEEK_API_KEY=sk-...
 """
-import os, time, logging, json
+import os
+import time
+import logging
+import json
 from pathlib import Path
-from typing import Optional
 
 # 抑制 httpx 的 HTTP Request 日志输出
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -44,6 +46,10 @@ class LLMClient:
         self._provider = prov
         self._api_key = os.environ.get(prov["api_key_env"]) or env.get(prov["api_key_env"], "")
         self._stats = {"calls": 0, "errors": 0, "total_elapsed_s": 0.0}
+        self._last_error: dict | None = None  # {"kind": "quota|http|network", "status": int|None, "detail": str}
+        self._disabled = os.environ.get("ECO_LLM_DISABLE", "").strip().lower() in ("1", "true", "yes")
+        self._gateway = os.environ.get("GOVMCP_GATEWAY", "").rstrip("/")
+        self._gateway_key = os.environ.get("GOVMCP_GATEWAY_KEY", "")
         self._httpx = None
         try:
             import httpx; self._httpx = httpx
@@ -51,20 +57,25 @@ class LLMClient:
             logger.warning("httpx not installed")
 
     def available(self) -> bool:
-        return self._httpx is not None and bool(self._api_key)
+        return not self._disabled and self._httpx is not None and bool(self._api_key)
 
-    def complete(self, prompt: str, system: str = "", max_tokens: int = 512) -> str:
+    def complete(self, prompt: str, system: str = "", max_tokens: int = 512,
+                 timeout: float = 90.0) -> str:
         """Complete interface expected by ReAct++ (L1 micro-action loop)
-        
+
         Args:
             prompt: User message text
             system: System prompt text
             max_tokens: Max tokens for response
+            timeout: HTTP timeout seconds (default 90s, ecobench 单题时限同步口径)
         Returns:
-            Response text string, or empty string on failure
+            Response text string, or empty string on failure.
+            Failure details are recorded in self.last_error for quota/rate-limit detection.
         """
+        self._last_error = None
         if not self.available():
             logger.warning("[complete] LLM unavailable")
+            self._last_error = {"kind": "unavailable", "status": None, "detail": "no api key or httpx"}
             return ""
         messages = []
         if system:
@@ -75,54 +86,144 @@ class LLMClient:
                 f"{self._provider['base_url']}/chat/completions",
                 headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
                 json={"model": self._provider["default_model"], "messages": messages,
-                       "temperature": 0.7, "max_tokens": max_tokens, "stream": False},
-                timeout=30,
+                       "temperature": self._resolve_temperature(self._provider["default_model"], 0.7),
+                       "max_tokens": max_tokens, "stream": False},
+                timeout=timeout,
             )
             if resp.status_code == 200:
                 data = resp.json()
                 text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                 return text.strip()
-            logger.warning(f"[complete] HTTP {resp.status_code}")
+            body = resp.text[:300]
+            logger.warning(f"[complete] HTTP {resp.status_code}: {body}")
+            kind = "quota" if self._is_quota_error(resp.status_code, body) else "http"
+            self._last_error = {"kind": kind, "status": resp.status_code, "detail": body}
             return ""
         except Exception as e:
             logger.warning(f"[complete] {e}")
+            self._last_error = {"kind": "network", "status": None, "detail": str(e)[:300]}
             return ""
 
+    @staticmethod
+    def _is_quota_error(status: int, body: str = "") -> bool:
+        """429 限流 / 402 欠费 / 余额不足类错误判定（触发备用 provider 切换）"""
+        if status in (402, 429):
+            return True
+        b = (body or "").lower()
+        return any(k in b for k in ("insufficient", "balance", "quota", "rate_limit",
+                                    "rate limit", "欠费", "余额"))
+
+    @property
+    def last_error(self) -> dict | None:
+        return self._last_error
+
+    def switch_provider(self, name: str) -> bool:
+        """切换备用 provider（deepseek <-> kimi），重建 provider 配置与密钥。
+        返回是否切换成功（目标 provider 有可用密钥）。"""
+        prov = PROVIDERS.get(name)
+        if prov is None:
+            return False
+        key = os.environ.get(prov["api_key_env"]) or self._env.get(prov["api_key_env"], "")
+        if not key:
+            return False
+        self._provider_name = name
+        self._provider = prov
+        self._api_key = key
+        self._last_error = None
+        logger.warning(f"[llm_client] switched to provider: {name}")
+        return True
+
+    @staticmethod
+    def _resolve_temperature(model: str, temp: float) -> float:
+        """kimi-k2.x 系列只接受 temperature=1，其余模型透传（前缀匹配，大小写不敏感）"""
+        return 1 if (model or "").lower().startswith("kimi-k2") else temp
+
     def chat(self, messages: list, model: str = "", stream: bool = False, temperature: float = 0.7) -> dict:
-        """OpenAI-compatible chat completions"""
+        """OpenAI-compatible chat completions。
+        后端链：GOVMCP 网关（若配置）→ provider 直连 → Kimi 直连兜底（非 kimi provider 时）。
+        全部失败返回 {"_error": True, "_error_detail": 完整错误链}。"""
+        if self._disabled:
+            return {"_error": True, "_error_detail": "disabled(ECO_LLM_DISABLE)",
+                    "choices": [{"message": {"content": "[LLM unavailable: disabled by ECO_LLM_DISABLE]"}}]}
         if not self.available():
-            return {"choices": [{"message": {"content": "[LLM unavailable: Run: eco setup]"}}]}
+            return {"_error": True, "_error_detail": "unavailable(no api key or httpx)",
+                    "choices": [{"message": {"content": "[LLM unavailable: Run: eco setup]"}}]}
         if not model:
             model = self._provider["default_model"]
         start = time.time()
         self._stats["calls"] += 1
-        result = self._call_api(messages, model, temperature)
-        if result and not result.get("_error"):
-            self._stats["total_elapsed_s"] += time.time() - start
-            return result
-        result = self._call_kimi_fallback(messages, model, temperature)
-        if result and not result.get("_error"):
-            self._stats["total_elapsed_s"] += time.time() - start
-            return result
+        errors: list[str] = []
+        attempts = []
+        if self._gateway:
+            attempts.append(("gateway", self._call_gateway))
+        attempts.append(("direct", self._call_api))
+        if self._provider_name != "kimi":
+            attempts.append(("kimi-fallback", self._call_kimi_fallback))
+        for _kind, fn in attempts:
+            result, err = fn(messages, model, temperature)
+            if result is not None and not result.get("_error"):
+                self._stats["total_elapsed_s"] += time.time() - start
+                return result
+            if err:
+                errors.append(err)
         self._stats["errors"] += 1
         self._stats["total_elapsed_s"] += time.time() - start
-        return {"choices": [{"message": {"content": "[LLM unavailable: all backends failed]"} }]}
+        return {"_error": True, "_error_detail": "; ".join(errors),
+                "choices": [{"message": {"content": "[LLM unavailable: all backends failed]"}}]}
 
-    def _call_api(self, messages, model, temp) -> Optional[dict]:
+    def _call_gateway(self, messages, model, temp) -> tuple:
+        """GOVMCP LLM 网关；返回 (result, err)。err 形如 'gateway(url): HTTP 502'"""
+        url = f"{self._gateway}/chat/completions"
+        try:
+            resp = self._httpx.post(
+                url,
+                headers={"Authorization": f"Bearer {self._gateway_key}", "Content-Type": "application/json"},
+                json={"model": model, "messages": messages,
+                      "temperature": self._resolve_temperature(model, temp), "stream": False},
+                timeout=60,
+            )
+            if resp.status_code == 200:
+                return resp.json(), None
+            return None, f"gateway({self._gateway}): HTTP {resp.status_code}"
+        except Exception as e:
+            return None, f"gateway({self._gateway}): {type(e).__name__} {e}"
+
+    def _call_api(self, messages, model, temp) -> tuple:
+        """provider 直连；err 形如 'direct(deepseek): HTTP 500'"""
         if not self._httpx or not self._api_key:
-            return None
+            return None, f"direct({self._provider_name}): no api key"
         try:
             resp = self._httpx.post(
                 f"{self._provider['base_url']}/chat/completions",
                 headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json={"model": model, "messages": messages, "temperature": temp, "stream": False},
+                json={"model": model, "messages": messages,
+                      "temperature": self._resolve_temperature(model, temp), "stream": False},
                 timeout=60,
             )
             if resp.status_code == 200:
-                return resp.json()
-            return {"_error": True}
+                return resp.json(), None
+            return None, f"direct({self._provider_name}): HTTP {resp.status_code}"
         except Exception as e:
-            return {"_error": True}
+            return None, f"direct({self._provider_name}): {type(e).__name__} {e}"
+
+    def _call_kimi_fallback(self, messages, model, temp) -> tuple:
+        """Kimi 直连兜底（仅非 kimi provider）；err 形如 'kimi-fallback(kimi): HTTP 500'"""
+        kimi_key = os.environ.get("KIMI_API_KEY") or self._env.get("KIMI_API_KEY", "")
+        if not self._httpx or not kimi_key:
+            return None, "kimi-fallback(kimi): no api key"
+        try:
+            resp = self._httpx.post(
+                "https://api.moonshot.cn/v1/chat/completions",
+                headers={"Authorization": f"Bearer {kimi_key}"},
+                json={"model": "kimi-k2.5", "messages": messages,
+                      "temperature": self._resolve_temperature("kimi-k2.5", temp), "stream": False},
+                timeout=60,
+            )
+            if resp.status_code == 200:
+                return resp.json(), None
+            return None, f"kimi-fallback(kimi): HTTP {resp.status_code}"
+        except Exception as e:
+            return None, f"kimi-fallback(kimi): {type(e).__name__} {e}"
 
     def chat_stream(self, messages: list, on_chunk=None) -> str:
         """Streaming chat — yields chunks via callback, returns full text
@@ -195,7 +296,7 @@ class LLMClient:
         current_messages = list(messages)
         tool_results_displayed = [False]
 
-        for round_idx in range(max_tool_rounds + 1):
+        for _round_idx in range(max_tool_rounds + 1):
             # 调用 LLM
             body = {
                 "model": model,
@@ -235,7 +336,7 @@ class LLMClient:
                     fn_name = tc["function"]["name"]
                     try:
                         fn_args = json.loads(tc["function"]["arguments"])
-                    except:
+                    except Exception:
                         fn_args = {}
                     args_str = "; ".join(f"{k}={v}" for k, v in fn_args.items())
 
@@ -270,7 +371,7 @@ class LLMClient:
                     tool_name = tc["function"]["name"]
                     try:
                         tool_args = json.loads(tc["function"]["arguments"])
-                    except:
+                    except Exception:
                         tool_args = {}
 
                     tool_result = asyncio.run(execute_tool(tool_name, tool_args))
@@ -302,21 +403,6 @@ class LLMClient:
         fallback = "[工具调用次数过多，请简化问题]"
         if on_chunk: on_chunk(fallback)
         return fallback
-        kimi_key = os.environ.get("KIMI_API_KEY") or self._env.get("KIMI_API_KEY", "")
-        if not self._httpx or not kimi_key:
-            return None
-        try:
-            resp = self._httpx.post(
-                "https://api.moonshot.cn/v1/chat/completions",
-                headers={"Authorization": f"Bearer {kimi_key}"},
-                json={"model": "kimi-k2.5", "messages": messages, "temperature": temp, "stream": False},
-                timeout=30,
-            )
-            if resp.status_code == 200:
-                return resp.json()
-        except Exception:
-            pass
-        return None
 
     def get_stats(self) -> dict:
         s = dict(self._stats)
@@ -337,7 +423,8 @@ def chat(messages: list, **kwargs) -> dict:
     return get_default_client().chat(messages, **kwargs)
 
 if __name__ == "__main__":
-    import sys as _sys, io
+    import sys as _sys
+    import io
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
     c = get_default_client()
     if c.available():
