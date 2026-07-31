@@ -152,8 +152,8 @@ function SideNav({ collapsed, setNavCollapsed, mode, setMode, activeModule, navi
 
 // ─── 对话面板 ─────────────────────────────
 function ChatPane({ module }: { module: ModuleId }) {
-  const [messages, setMessages] = useState([
-    { role: 'assistant' as const, content: '已打开案卷，正在评查。发现的问题会标注出来。您可以通过底部命令中心提问。' }
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
+    { role: 'assistant', content: '已打开案卷，正在评查。发现的问题会标注出来。您可以通过底部命令中心提问。' }
   ])
   const [loading, setLoading] = useState(false)
   const endRef = React.useRef<HTMLDivElement>(null)
