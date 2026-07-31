@@ -13,6 +13,8 @@ interface Props {
   width?: number
 }
 
+type ActivityTab = 'doc' | 'browser' | 'artifact' | 'map'
+
 export default function ActivityPanel({ collapsed, onToggle, width = 380 }: Props) {
   const [tab, setTab] = useState<ActivityTab>('doc')
 
