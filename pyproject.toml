@@ -54,3 +54,5 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011"]
 "_scripts/**" = ["F841", "B007"]
+"eco/**" = ["E501", "E701", "E702", "E741", "F841"]
+"agent_core/**" = ["E501", "E701", "E702", "E741", "F841", "F401"]
