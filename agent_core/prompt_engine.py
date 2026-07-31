@@ -160,11 +160,35 @@ _FORBIDDEN_PATTERNS = [
     # 4) 多语言高危动词（日/韩/越/泰）
     r"(以前|前).{0,2}の(指示|命令|指令).{0,4}(無視|無効|破棄|忘れ)",
     r"無視して|指示を無視|命令を無視",
+    r"(ルール|規則|指示|命令).{0,4}(を)?.{0,4}(忘れ|無視|破棄|削除|無効)",
     r"무시|지시를잊|이전지시",
     r"bỏqua.{0,12}(hướngdẫn|chỉthị|lệnh)",
     r"ละเว้น|มองข้าม",
     # 5) 英文进行时/宣告式
     r"(ignoring|disregarding|forgetting).{0,12}(your|the|all).{0,8}(rule|rules|instruction|instructions|guideline|guidelines)",
+    # ══ 第五轮对抗收口 ══
+    # 1) 粤语/口语簇（繁简归一后"唔→不 嘅→的 嗰→那 啲→些"再命中）
+    r"(唔好理|不好理|唔使理|不用理).{0,12}(之前|以前|嗰啲|那些|所有|全部)?.{0,6}(指令|规则|设定|要求)",
+    # 2) 更多语言高危动词（俄/阿/德/法/西/葡/印尼，动词+指令名词邻近）
+    r"(игнорируй|проигнорируй|забудь|отмени).{0,20}(инструк|правил|указани)?",
+    r"(تجاهل|انسَ|انس)",
+    r"(ignoriere|vergiss|verwerfe).{0,20}(anweisung|regel|instruktion|vorherig)?",
+    r"(ignorez|oubliez|annulez).{0,20}(instruction|règle|consigne|précédent)?",
+    r"(ignora|olvida|anula).{0,20}(instrucci|regla|anterior)?",
+    r"(esqueça|desconsidere).{0,20}(instru|regra|anterior)?",
+    r"ignore.{0,20}(instru|regra|anterior)",
+    r"(abaikan|lupakan).{0,20}(instruksi|aturan|sebelumnya)?",
+    # 3) 英文残余形态
+    r"(turnoff|switchoff|shutoff|disable).{0,12}(all|the|your)?.{0,6}(restriction|restrictions|constraint|constraints|rule|rules|safety|filter|guard|guards)",
+    r"(pretend|imagine|assume).{0,15}(youhave|having|with)?.{0,4}no.{0,6}(rule|rules|restriction|restrictions|limit|limits|constraint)",
+    r"(forget|erase|delete).{0,10}(what|everything|all).{0,8}(i|we).{0,4}(said|told|discussed|mentioned)",
+    r"请勿.{0,4}(遵守|遵循|遵照|执行).{0,8}(先前|之前|以上|原先)?.{0,4}(指令|规则|设定|要求)?",
+    # 4) 倒装与裸指令作废（XML 包裹语境）
+    r"(作废|废除|取消|删除).{0,4}(之前|以上|先前|所有|全部|一切).{0,4}(规则|指令|设定|要求|提示)",
+    r"</?(system|developer|admin|root)>",
+    # 5) 文言新簇
+    r"勿(守|遵循|遵守|听|信).{0,4}(前|旧|先|原)?.{0,2}(规|令|指令|规则|诫)",
+    r"(指令|规则|令)[，,]?(尽|悉|皆|咸)(弃|废|除|黜)(?!.{0,8}(不可取|不对|错误|荒谬|荒唐|不可行|的做法))",
     r"(instructions?|rules?|guidelines?).{0,12}(are|is).{0,8}(hereby)?.{0,8}(nullified|void|cancelled|canceled|revoked|nullandvoid)",
     r"(instructions?|rules?).{0,10}nolongerapply",
     # 6) 中文新簇
@@ -182,6 +206,19 @@ _LEET_MAP = str.maketrans({
 })
 # 中英混合 leet（忽0略/忘1记）：数字符号视为"填充噪声"直接剥离后归并
 _LEET_FILLER_RE = re.compile(r"[013457@$]")
+
+# 繁体→简体高危字映射（注入校验专用；覆盖攻击高频字，非全量 OpenCC）
+_TRAD2SIMP = str.maketrans({
+    "視": "视", "廢": "废", "舊": "旧", "規": "规", "設": "设", "記": "记",
+    "棄": "弃", "則": "则", "無": "无", "聽": "听", "務": "务", "義": "义",
+    "對": "对", "開": "开", "關": "关", "閉": "闭", "發": "发", "現": "现",
+    "實": "实", "審": "审", "査": "查", "檢": "检", "監": "监", "測": "测",
+    "數": "数", "據": "据", "證": "证", "錄": "录", "語": "语", "請": "请",
+    "讓": "让", "頭": "头", "後": "后", "統": "统", "約": "约", "東": "东",
+    "員": "员", "處": "处", "罰": "罚", "許": "许", "證": "证", "靈": "灵",
+    "係": "系", "嗰": "那", "啲": "些", "咗": "了", "喺": "在", "諗": "想",
+    "佢": "他", "哋": "们", "嚟": "来", "睇": "看", "揾": "找", "攞": "拿",
+})
 
 
 # 西里尔/希腊等同形字映射（对抗 іgnore 用 U+0456 冒充 i 等手法）
@@ -209,7 +246,11 @@ def _normalize_for_injection_check(text: str) -> str:
     # 去除所有空白字符与零宽字符（ZWSP/ZWNJ/ZWJ/BOM/软连字符等）
     t = re.sub(r"[\s​‌‍⁠﻿­]+", "", t)
     t = _strip_symbols(t)
-    t = t.lower().translate(_LEET_MAP)
+    t = t.lower().translate(_LEET_MAP).translate(_TRAD2SIMP)
+    # 粤语高频字归并
+    t = t.replace("唔", "不").replace("嘅", "的")
+    # 近义动词归并（忽视→忽略，让已有 忽略 族 pattern 生效）
+    t = t.replace("忽视", "忽略").replace("疏视", "忽略")
     # 高危谐音拆字归并（对抗 乎略/呼略→忽略 等；仅限注入高危词根，控制误杀面）
     for homo, canon in (("乎略", "忽略"), ("呼略", "忽略"), ("忽洛", "忽略"),
                         ("望记", "忘记"), ("旺记", "忘记"), ("妄记", "忘记")):
@@ -233,9 +274,29 @@ _NORMALIZED_EXTRA_PATTERNS = [
     r"disregard(all)?(previous|prior|the)*(instructions|rules)",
     r"forget(your|all|the|previous)*(rules|instructions|restrictions|safety)",
     r"havenorestrictions|withoutanyrestrictions",
+    # 分段拼接载荷：片段重组后仍含完整英文指令短语（先记住ign再说ore...）
+    r"previousinstructions|previousrules|priorinstructions|systemprompt",
+    r"(ignore|disregard|forget)(all)?(previous|prior|above)",
 ]
 _FORBIDDEN_RE = [re.compile(p, re.IGNORECASE) for p in _FORBIDDEN_PATTERNS]
 _NORMALIZED_EXTRA_RE = [re.compile(p) for p in _NORMALIZED_EXTRA_PATTERNS]
+
+# 执法业务语境豁免：伪造/篡改/编造 类 pattern 命中时，若文本含查处/防范/教学语境则放行
+# （"依法查处篡改监测数据案件""如何防范企业伪造数据"是执法主业高频合法表述）
+_EXEMPT_CONTEXTS = (
+    "查处", "防范", "防止", "打击", "严惩", "处罚", "依法", "案例", "警示",
+    "宣讲", "讲解", "教学", "识别", "调查", "举报", "控告", "审判", "起诉",
+    "犯罪", "违法", "罪名", "刑事责任", "量刑", "如何认定", "构成",
+)
+
+
+def _exempted(pattern_src: str, text: str) -> bool:
+    """特定 pattern 在执法业务语境下豁免（仅限伪造/篡改/编造数据类）。"""
+    if ("伪造" in pattern_src or "篡改" in pattern_src or "编造" in pattern_src) \
+            and "数据" in pattern_src:
+        return any(ctx in text for ctx in _EXEMPT_CONTEXTS)
+    return False
+
 
 # 禁止词（明显违法导向）
 _FORBIDDEN_WORDS = [
@@ -253,7 +314,7 @@ def validate_injection(content: str) -> tuple[bool, str]:
     if len(content) > MAX_INJECTION_LEN:
         return False, f"注入内容超长（>{MAX_INJECTION_LEN}字符）"
     for i, rex in enumerate(_FORBIDDEN_RE):
-        if rex.search(content):
+        if rex.search(content) and not _exempted(rex.pattern, content):
             return False, f"命中禁止 pattern#{i}: 试图覆盖安全层/解除限制"
     for w in _FORBIDDEN_WORDS:
         if w in content:
@@ -261,7 +322,7 @@ def validate_injection(content: str) -> tuple[bool, str]:
     # 归一化二次校验：对抗插空格/全半角/大小写/零宽字符/leetspeak 混淆绕过
     for normalized in _normalized_variants(content):
         for i, rex in enumerate(_FORBIDDEN_RE):
-            if rex.search(normalized):
+            if rex.search(normalized) and not _exempted(rex.pattern, normalized):
                 return False, f"命中禁止 pattern#{i}（归一化后）: 混淆绕过尝试"
         for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
             if rex.search(normalized):
@@ -269,39 +330,65 @@ def validate_injection(content: str) -> tuple[bool, str]:
         for w in _FORBIDDEN_WORDS:
             if _normalize_for_injection_check(w) in normalized:
                 return False, f"命中禁止词（归一化后）: {w}"
-    # base64/编码载荷二次校验：对疑似编码 token 解码后递归校验（防 aWdub3Jl... 绕过）
+    # base64/hex/URL 编码载荷二次校验：对疑似编码 token 解码后递归校验
     for decoded in _decode_suspect_tokens(content):
         for i, rex in enumerate(_FORBIDDEN_RE):
             if rex.search(decoded):
-                return False, f"命中禁止 pattern#{i}（base64 解码后）: 编码载荷绕过尝试"
+                return False, f"命中禁止 pattern#{i}（编码解码后）: 编码载荷绕过尝试"
         for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
             if rex.search(decoded):
-                return False, f"命中归一化禁止 pattern#{i}（base64 解码后）: 编码载荷绕过尝试"
+                return False, f"命中归一化禁止 pattern#{i}（编码解码后）: 编码载荷绕过尝试"
+    # 反向书写变体（snoitcurtsni suoiverp erongi）：对归一化文本反转后校验英文 pattern
+    reversed_norm = _normalize_for_injection_check(content)[::-1]
+    for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
+        if rex.search(reversed_norm):
+            return False, f"命中归一化禁止 pattern#{i}（反向书写）: 反写绕过尝试"
+    for i, rex in enumerate(_FORBIDDEN_RE):
+        if "ignore" in rex.pattern or "disregard" in rex.pattern or "forget" in rex.pattern:
+            if rex.search(reversed_norm):
+                return False, f"命中禁止 pattern#{i}（反向书写）: 反写绕过尝试"
     return True, ""
 
 
 _B64_TOKEN_RE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
+_HEX_TOKEN_RE = re.compile(r"(?:\\x[0-9a-fA-F]{2}){6,}|(?:\b[0-9a-fA-F]{2}){8,}\b|\b(?:[0-9a-fA-F]{2}){10,}\b")
+_URL_ENC_RE = re.compile(r"(?:%[0-9a-fA-F]{2}){3,}")
 
 
 def _decode_suspect_tokens(text: str) -> list[str]:
-    """提取疑似 base64 token（≥16 字符），解码成功且为可读文本时返回归一化结果。"""
+    """提取疑似编码载荷（base64 / hex / URL 编码），解码成功且为可读文本时返回归一化结果。"""
     import base64 as _b64
     out = []
+
+    def _try_append(raw: bytes):
+        try:
+            s = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return
+        if "\x00" in s:
+            return
+        out.append(_normalize_for_injection_check(s))
+
     for tok in _B64_TOKEN_RE.findall(text):
         for pad in ("", "=", "=="):
             try:
                 raw = _b64.b64decode(tok + pad, validate=True)
             except Exception:
                 continue
-            try:
-                s = raw.decode("utf-8")
-            except UnicodeDecodeError:
-                continue
-            # 可读性粗筛：解码结果含空字符或控制字符则不是文本载荷
-            if "\x00" in s:
-                continue
-            out.append(_normalize_for_injection_check(s))
+            _try_append(raw)
             break
+    for tok in _HEX_TOKEN_RE.findall(text):
+        try:
+            hexs = tok.replace("\\x", "")
+            _try_append(bytes.fromhex(hexs))
+        except Exception:
+            continue
+    for tok in _URL_ENC_RE.findall(text):
+        try:
+            from urllib.parse import unquote_to_bytes
+            _try_append(unquote_to_bytes(tok))
+        except Exception:
+            continue
     return out
 
 
