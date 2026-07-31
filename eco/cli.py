@@ -56,6 +56,17 @@ def _build_parser():
     p = sub.add_parser("evolution", help="Evolution")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--report", action="store_true")
+    p = sub.add_parser("trace", help="Span tree traces (observability)")
+    p.add_argument("session", nargs="?", default=None, help="会话 ID（缺省列出全部）")
+    p.add_argument("--tree", action="store_true", help="树形展示 span 树")
+    p.add_argument("--otel", nargs="?", const="", default=None, metavar="OUT.json",
+                   help="导出 OTLP JSON（缺省写到 ./<session>.otlp.json）")
+    p = sub.add_parser("auth", help="Non-interactive L4 auth grants")
+    p.add_argument("auth_action", choices=["grant", "revoke", "list"], nargs="?", default="list")
+    p.add_argument("grant_id", nargs="?", default=None)
+    p.add_argument("--level", default="L4", choices=["L3", "L4"])
+    p.add_argument("--ttl", type=int, default=3600, help="授权有效期（秒）")
+    p.add_argument("--scope", default="*", help="授权范围：工具名或 *")
     sub.add_parser("version", help="Show version")
     return parser
 

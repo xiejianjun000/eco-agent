@@ -190,7 +190,18 @@ def gate_tool_call(tool_name: str, args: dict | None = None) -> tuple[bool, str,
         _audit_decision(tool_name, level, "deny", "非交互模式拒绝（白名单外 L3）")
         return False, level, "非交互模式拒绝（白名单外 L3）"
 
-    # L4 — 必须人工确认
+    # L4 — 必须人工确认；先查有效授权令牌（非交互 L4 授权通道）
+    try:
+        from agent_core.grants import audit_grant_use, find_valid_grant
+        g, _reason = find_valid_grant("L4", tool_name)
+        if g is not None:
+            _audit_decision(tool_name, level, "allow",
+                            f"授权令牌放行 grant:{g.get('id')} (scope={g.get('scope')})")
+            audit_grant_use(g, tool_name, level)
+            return True, level, f"授权令牌放行 grant:{g.get('id')}"
+    except Exception as e:  # noqa: BLE001 — 授权查询失败不越权，回落人工确认
+        logger.warning(f"[permissions] 授权查询失败: {e}")
+
     if _is_interactive():
         kv = "; ".join(f"{k}={str(v)[:40]}" for k, v in list((args or {}).items())[:4])
         ok = _confirm(f"🛑 [权限闸门 L4/EXTERNAL] 工具 {tool_name}({kv}) 将调用外部服务/执行写操作，"

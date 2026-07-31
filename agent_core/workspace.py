@@ -102,6 +102,24 @@ class Workspace:
         with self.todos_path.open("a", encoding="utf-8") as f:
             f.write(f"- [ ] {text}\n")
 
+    def complete_todo(self, marker: str) -> bool:
+        """将 todos.md 中首个包含 marker 的未完成项勾选为已完成（- [ ] -> - [x]）"""
+        if not self.todos_path.exists() or not marker:
+            return False
+        lines = self.todos_path.read_text(encoding="utf-8").splitlines()
+        for i, line in enumerate(lines):
+            if line.lstrip().startswith("- [ ]") and marker in line:
+                lines[i] = line.replace("- [ ]", "- [x]", 1)
+                self.todos_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                return True
+        return False
+
+    def replace_todos_section(self, title: str, items: list[str]):
+        """重写 todos.md（DAG 计划生成用）：标题 + 未勾选项列表"""
+        body = [f"# {title}", ""]
+        body += [f"- [ ] {it}" for it in items]
+        self.todos_path.write_text("\n".join(body) + "\n", encoding="utf-8")
+
     def notes(self) -> str:
         return self.notes_path.read_text(encoding="utf-8") if self.notes_path.exists() else ""
 

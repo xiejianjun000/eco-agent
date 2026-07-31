@@ -110,6 +110,24 @@ def run(args):
             checks.append(("LLM stats: 暂无调用记录（stats.jsonl 为空）", OK))
     except Exception as e:
         checks.append((f"LLM stats (check failed: {e})", WA))
+    # LLM 决策留痕统计（~/.eco/decisions.jsonl，SM3 链）
+    try:
+        from agent_core.decisions import summarize_decisions, get_decision_chain
+        d = summarize_decisions()
+        chain_res = get_decision_chain().verify_chain()
+        if d["decisions"]:
+            checks.append((f"LLM decisions: {d['decisions']} 条，工具选择率 "
+                           f"{d['tool_select_rate']*100:.0f}%（链校验 {'OK' if chain_res['valid'] else 'INVALID'}）", OK if chain_res["valid"] else NO))
+            if getattr(args, "verbose", False):
+                print("  ── LLM 决策留痕统计 ──")
+                print(f"    finish_reason 分布: {d['by_finish_reason']}")
+                for t, n in d["top_tools"]:
+                    print(f"    tool: {t} ×{n}")
+                print(f"    （明细: {d['decisions_file']}）")
+        else:
+            checks.append(("LLM decisions: 暂无决策留痕（decisions.jsonl 为空）", OK))
+    except Exception as e:
+        checks.append((f"LLM decisions (check failed: {e})", WA))
     ml = max(len(c[0]) for c in checks)
     for label, status in checks:
         print(f"  {status} {label}{' ' * (ml - len(label) + 2)}")

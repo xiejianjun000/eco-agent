@@ -106,6 +106,7 @@ class LLMClient:
         self._api_key = os.environ.get(prov["api_key_env"]) or env.get(prov["api_key_env"], "")
         self._stats = {"calls": 0, "errors": 0, "total_elapsed_s": 0.0}
         self._last_error: dict | None = None  # {"kind": "quota|http|network", "status": int|None, "detail": str}
+        self._last_usage: dict = {}  # 最近一次调用的 usage（span 树 tokens 采集用）
         self._disabled = os.environ.get("ECO_LLM_DISABLE", "").strip().lower() in ("1", "true", "yes")
         self._gateway = os.environ.get("GOVMCP_GATEWAY", "").rstrip("/")
         self._gateway_key = os.environ.get("GOVMCP_GATEWAY_KEY", "")
@@ -515,6 +516,7 @@ class LLMClient:
 
     def _record_usage(self, model: str, usage: dict | None, elapsed_s: float, ok: bool):
         """结构化统计：每次 LLM 调用记录 tokens+latency 到 ~/.eco/stats.jsonl"""
+        self._last_usage = dict(usage or {})
         try:
             record_llm_stat(
                 provider=self._provider_name, model=model,
@@ -526,7 +528,7 @@ class LLMClient:
             pass
 
     def chat_with_tools(self, messages: list, tools: list, on_chunk=None, max_tool_rounds: int = 5,
-                        tracer=None, stream: bool = False) -> str:
+                        tracer=None, stream: bool = False, spans=None) -> str:
         """
         CLAUDE/CODEX/HERMES 风格 Agent 循环：
         1. 发送消息 + 工具定义给 LLM
@@ -540,6 +542,8 @@ class LLMClient:
             max_tool_rounds: 最大工具调用轮数
             stream: True 时走真实 SSE 流式请求（_call_chat_with_tools_stream），
                     content delta 即时回调；429 等错误同样触发 provider 流式降级
+            spans: 可选 agent_core.observability.SpanTree，记录 llm_call/tool_call
+                   嵌套 span（耗时/tokens/parent_id），供 eco trace --tree 展示
         Returns:
             最终回答文本
         """
@@ -563,6 +567,8 @@ class LLMClient:
                     return self._call_chat_with_tools_stream(mdl, msgs, tools, on_chunk=on_chunk)
                 return self._call_chat_with_tools(mdl, msgs, tools)
 
+            llm_span = spans.start(f"round{_round_idx + 1}", "llm_call", model=model,
+                                   provider=self._provider_name) if spans is not None else None
             msg, err = _call(model, current_messages)
             if msg is None:
                 if self._is_recoverable_error(self._last_error or {}) and self._try_failover_provider():
@@ -573,6 +579,9 @@ class LLMClient:
                                  f"已自动切换到备用模型 {model} 重试...\n")
                     msg, err = _call(model, current_messages)
             if msg is None:
+                if spans is not None and llm_span:
+                    spans.end(llm_span, finish_reason="error",
+                              error=self._friendly_error(self._last_error))
                 friendly = (f"[API 错误] {self._friendly_error(self._last_error)}\n"
                             f"建议：检查 ~/.eco/.env 中的 API Key 是否有效（可运行 eco setup 重新配置），"
                             f"或切换 ECO_PROVIDER 到其他已配置 Key 的模型。")
@@ -581,6 +590,27 @@ class LLMClient:
 
             # 检查是否有 tool_calls
             tool_calls = msg.get("tool_calls")
+            # ── LLM 决策留痕：候选工具数/选中工具/原始 tool_calls 或 stop 原因/prompt 阶段 ──
+            try:
+                from agent_core.decisions import record_decision
+                record_decision(
+                    candidate_tools=len(tools or []),
+                    selected_tools=[tc["function"]["name"] for tc in tool_calls] if tool_calls else [],
+                    finish_reason="tool_calls" if tool_calls else "stop",
+                    raw_tool_calls=tool_calls or [],
+                    model=model, provider=self._provider_name, round_idx=_round_idx + 1)
+            except Exception:
+                pass  # 留痕失败不影响主流程
+            if spans is not None and llm_span:
+                u = self._last_usage or {}
+                # 暂不结束 llm span：tool_call span 需嵌套在其下；
+                # 在工具执行完 / 生成最终回答两个分支分别 end
+                for k, v in (("finish_reason", "tool_calls" if tool_calls else "stop"),
+                             ("prompt_tokens", u.get("prompt_tokens")),
+                             ("completion_tokens", u.get("completion_tokens"))):
+                    span_obj = next((s for s in spans.spans if s["span_id"] == llm_span), None)
+                    if span_obj is not None:
+                        span_obj["attrs"][k] = v
             if tool_calls:
                 if tracer is not None and getattr(tracer, "enabled", False):
                     tracer.thought(msg.get("content") or "")
@@ -630,10 +660,15 @@ class LLMClient:
                     _trace_it = tracer is not None and getattr(tracer, "enabled", False)
                     if _trace_it:
                         tracer.tool_call(tool_name, tool_args)
+                    tool_span = spans.start(tool_name, "tool_call",
+                                            args=tool_args) if spans is not None else None
                     _t0 = __import__("time").time()
                     tool_result = asyncio.run(execute_tool(tool_name, tool_args))
+                    _tel = __import__("time").time() - _t0
+                    if tool_span is not None:
+                        spans.end(tool_span, result=str(tool_result)[:200])
                     if _trace_it:
-                        tracer.tool_result(tool_name, tool_result, __import__("time").time() - _t0)
+                        tracer.tool_result(tool_name, tool_result, _tel)
 
                     current_messages.append({
                         "role": "tool",
@@ -641,6 +676,8 @@ class LLMClient:
                         "content": tool_result
                     })
 
+                if spans is not None and llm_span:
+                    spans.end(llm_span)
                 continue  # 继续循环
 
             # 没有 tool_calls，有文本回答 → 输出
@@ -650,6 +687,9 @@ class LLMClient:
 
             if tracer is not None and getattr(tracer, "enabled", False):
                 tracer.finish("结束（生成最终回答）")
+
+            if spans is not None and llm_span:
+                spans.end(llm_span)
 
             if on_chunk and not stream:
                 # 非流式路径：模拟流式输出（逐段展示）；真流式时内容已随 SSE delta 即时回调

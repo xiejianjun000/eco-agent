@@ -118,25 +118,77 @@ def _restore_session(args):
           f"会话历史 {len(history)} 条消息")
     return history
 
+# 复杂任务 DAG 计划（与 RoleSwarm 执行图一致）：patrol ∥ law -> doc -> synthesis
+_DAG_PLAN = [
+    ("patrol", "巡查Agent 现场核查产出", []),
+    ("law", "法规Agent 法条核验", []),
+    ("doc", "文书Agent 起草检查记录/清单", ["patrol", "law"]),
+    ("synthesis", "总管仲裁合成最终答复", ["doc"]),
+]
+# swarm on_stage 阶段标签 -> DAG 步骤 id（命中即勾选对应 todo）
+_STAGE_DONE = {"巡查Agent 完成": "patrol", "法规Agent 完成": "law",
+               "文书Agent 完成": "doc", "总管合成完成": "synthesis"}
+
+
+def _dag_edges_text() -> list[str]:
+    edges = []
+    for sid, desc, deps in _DAG_PLAN:
+        edges += [f"{d} -> {sid}" for d in deps]
+    return edges
+
+
 def _maybe_swarm(q, context="", tracer=None):
-    """复杂执法任务启用三角色协作；简单问答返回 None"""
+    """复杂执法任务启用三角色协作；简单问答返回 None。
+    主路径 DAG 接线：is_complex_task 判定后先生成任务分解写入工作区 todos
+    （用户可见，/todo 查看），每个 DAG 步骤完成即勾选 todos.md；
+    -v 模式展示 DAG 边（patrol∥law→doc→synthesis）。"""
     from agent_core.role_swarm import get_role_swarm, is_complex_task
     if not is_complex_task(q):
         return None
     swarm = get_role_swarm()
-    on_stage = tracer.swarm_stage if tracer is not None and getattr(tracer, "enabled", False) else None
-    result = swarm.run(q, context=context, on_stage=on_stage)
-    print(swarm.format_result(result))
-    # 任务分解可见性：swarm 计划步骤写入工作区 todos（REPL 可用 /todo 查看/干预）
+    verbose = tracer is not None and getattr(tracer, "enabled", False)
+    on_stage = tracer.swarm_stage if verbose else None
+
+    # ── 任务分解（DAG → workspace todos）──
+    ws = None
     try:
         from agent_core.workspace import get_workspace_manager
         ws = get_workspace_manager().current()
         if ws is not None:
-            for role in result.get("contributions", {}):
-                ws.append_todo(f"[swarm:{role}] 完成 {role} 阶段产出")
-            ws.append_todo("[swarm] 仲裁合成最终答复")
+            ws.append_todo(f"[plan] 复杂任务分解：{q[:60]}")
+            for sid, desc, _deps in _DAG_PLAN:
+                ws.append_todo(f"[dag:{sid}] {desc}")
     except Exception:
         pass
+    if verbose:
+        tracer._emit("  [dag] 任务分解: " + "；".join(_dag_edges_text()), style="#7ab8a0")
+        tracer._audit("[dag] " + "；".join(_dag_edges_text()), phase="dag")
+
+    # ── 步骤完成即勾选 todos.md（逐步执行打勾可见）──
+    def _on_stage(stage, detail="", elapsed=0.0):
+        if on_stage is not None:
+            on_stage(stage, detail, elapsed)
+        sid = _STAGE_DONE.get(stage)
+        if sid and ws is not None:
+            try:
+                ws.complete_todo(f"[dag:{sid}]")
+                if verbose:
+                    tracer._emit(f"  [dag] ✓ {sid} 已勾选 todos.md", style="#5ae0a0")
+            except Exception:
+                pass
+
+    result = swarm.run(q, context=context, on_stage=_on_stage)
+    print(swarm.format_result(result))
+    # 兜底：swarm 异常时未触发的步骤不勾选；正常走完全部勾选（含 synthesis）
+    if ws is not None:
+        try:
+            for sid in ("patrol", "law", "doc", "synthesis"):
+                if result.get("contributions", {}).get(sid) or sid == "synthesis" and result.get("synthesis"):
+                    ws.complete_todo(f"[dag:{sid}]")
+            if result.get("synthesis"):
+                ws.complete_todo("[plan]")
+        except Exception:
+            pass
     return result["synthesis"] or "\n".join(
         f"[{r}] {t}" for r, t in result["contributions"].items())
 
@@ -156,6 +208,11 @@ def _stream_answer(messages, tracer=None):
     if not c.available():
         print("[LLM not configured. Run: eco setup]")
         return ""
+    # ── 结构化 span 树：会话根 span → llm_call → tool_call 嵌套，落 ~/.eco/traces/ ──
+    from agent_core.observability import SpanTree
+    tree = SpanTree(meta={"provider": getattr(c, "_provider_name", ""),
+                          "model": (getattr(c, "_provider", None) or {}).get("default_model", "")})
+    root_span = tree.start("chat", "session")
     full_text = [""]
     first_chunk_received = [False]
     def on_chunk(chunk):
@@ -168,11 +225,20 @@ def _stream_answer(messages, tracer=None):
     tools = get_tools()
     try:
         result = c.chat_with_tools(messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5,
-                                   tracer=tracer, stream=True)
+                                   tracer=tracer, stream=True, spans=tree)
     except KeyboardInterrupt:
         # 生成中 Ctrl+C：取消当前生成、保留会话（不杀进程、不丢历史）
         print("\n[已取消当前生成，会话保留；可继续输入或 /exit 退出]")
-        return "[生成被用户取消]"
+        result = "[生成被用户取消]"
+    tree.end(root_span)
+    tree.close_all()
+    try:
+        path = tree.save()
+        if tracer is not None and getattr(tracer, "enabled", False):
+            tracer._emit(f"  [trace] span 树已落盘: {path}（eco trace --tree {tree.session_id}）",
+                         style="#8a8a8a")
+    except Exception:
+        pass
     return result
 
 def run(args):
@@ -191,6 +257,38 @@ def run(args):
         return 0
     return _repl(history=restored)
 
+_HELP_TEXT = """  REPL 命令：
+    /help      显示本帮助
+    /exit      退出会话（/quit 同义）
+    /new       清空当前会话历史，重新开始
+    /ws        查看当前工作区摘要（无则提示）
+    /todo      查看当前工作区待办（复杂任务 DAG 步骤在此勾选进度）
+    /verbose   切换轨迹模式（思考/工具调用/耗时/DAG 边，写入 SM3 审计链）
+  生成中 Ctrl+C 只取消当前回答，会话保留。
+  相关 CLI：eco trace --tree <session> 查看 span 树；eco auth grant 生成 L4 授权；eco doctor 体检。
+"""
+
+
+def _banner_summary() -> str:
+    """启动横幅一行摘要：provider/model/workspace/权限闸门状态"""
+    try:
+        from agent_core.llm_client import get_default_client
+        c = get_default_client()
+        s = c.get_stats()
+        llm = f"{s['provider']}/{s['model']}" if s.get("has_api_key") else "未配置(eco setup)"
+    except Exception:
+        llm = "未知"
+    try:
+        from agent_core.workspace import get_workspace_manager
+        ws = get_workspace_manager().current_name() or "无"
+    except Exception:
+        ws = "无"
+    import os as _os
+    gate_env = _os.environ.get("ECO_PERMISSION_GATE", "").strip().lower()
+    gate = "关闭(ECO_PERMISSION_GATE=0)" if gate_env == "0" else "开启"
+    return f"  provider/model: {llm}  |  workspace: {ws}  |  权限闸门: {gate}"
+
+
 def _repl(history=None):
     history = list(history or [])
     if history:
@@ -200,11 +298,13 @@ def _repl(history=None):
         _console.print()
         _console.print(Text(LOGO, style="#3a8a6f"))
         _console.print(Text(LOGO_LINE, style="#5ae0a0 bold"))
+        _console.print(Text(_banner_summary(), style="#4a7a5a"))
         _console.print(Text("  /exit  /new  /help  /verbose  |  ECO AGENT v5.0.0a2", style="#2a5a3a"))
         _console.print()
     else:
         print(LOGO)
         print(LOGO_LINE)
+        print(_banner_summary())
         print("  (/exit /new /help)")
         print()
 
@@ -221,7 +321,7 @@ def _repl(history=None):
         if not q: continue
         if q in ("/exit", "/quit"): break
         if q == "/help":
-            print("  /exit  /new  /ws  /todo  /verbose"); continue
+            print(_HELP_TEXT); continue
         if q == "/todo":
             cur = mgr.current()
             if cur is None:
