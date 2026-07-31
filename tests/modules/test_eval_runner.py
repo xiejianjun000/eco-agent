@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """test_eval_runner.py - evals/runner.py 打分/门控/baseline 对比单测（全 mock，不调真实 LLM）"""
 import json
 import sys

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """r14 验证轮缺陷 D1-D4 回归测试（全 mock，零外呼）。"""
 import json
 import logging

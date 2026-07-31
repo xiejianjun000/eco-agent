@@ -66,7 +66,7 @@ class FeishuChannel(Channel):
         expected = self._verification_token()
         return bool(expected) and token == expected
 
-    def parse(self, request: dict) -> Optional[InboundMessage]:
+    def parse(self, request: dict) -> InboundMessage | None:
         data = self._decrypt_body(request)
         if not data:
             return None

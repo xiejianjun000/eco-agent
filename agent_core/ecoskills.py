@@ -81,12 +81,12 @@ class SkillManifest:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> "SkillManifest":
+    def from_dict(cls, data: dict) -> SkillManifest:
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in data.items() if k in known})
 
     @classmethod
-    def load(cls, skill_dir: str | Path) -> "SkillManifest":
+    def load(cls, skill_dir: str | Path) -> SkillManifest:
         mp = Path(skill_dir) / "manifest.json"
         return cls.from_dict(json.loads(mp.read_text(encoding="utf-8")))
 
@@ -149,7 +149,7 @@ def verify_manifest(manifest: SkillManifest, secret: str | None = None) -> tuple
 _COMMON_DOMAINS = {
     "github.com", "raw.githubusercontent.com", "pypi.org", "files.pythonhosted.org",
     "npmjs.com", "registry.npmjs.org", "mee.gov.cn", "gov.cn", "epa.gov",
-    "mee.gov.cn", "ecoskills.eco-agent.com",
+    "ecoskills.eco-agent.com",
 }
 
 _DANGER_PATTERNS: list[tuple[str, str]] = [

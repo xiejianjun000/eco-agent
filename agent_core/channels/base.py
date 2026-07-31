@@ -40,7 +40,7 @@ class Channel(ABC):
     #: 子类声明所需配置的环境变量名（仅文档/展示用途）
     env_keys: ClassVar[tuple[str, ...]] = ()
 
-    def __init__(self, config: Optional[dict] = None):
+    def __init__(self, config: dict | None = None):
         # 配置一律来自环境变量占位符或显式 dict（测试注入），仓库内禁止真实 secret
         self.config = dict(config or {})
 
@@ -51,7 +51,7 @@ class Channel(ABC):
         """
 
     @abstractmethod
-    def parse(self, request: dict) -> Optional[InboundMessage]:
+    def parse(self, request: dict) -> InboundMessage | None:
         """解析平台回调为统一消息；无法解析返回 None。"""
 
     def reply(self, user_id: str, text: str, **kw) -> bool:
@@ -64,7 +64,7 @@ class Channel(ABC):
         ok, _reason = validate_injection(msg.text)
         return ok
 
-    def safe_parse(self, request: dict) -> tuple[Optional[InboundMessage], Optional[str]]:
+    def safe_parse(self, request: dict) -> tuple[InboundMessage | None, str | None]:
         """parse + 注入检查。返回 (msg, None) / (msg, BLOCK_TEXT) / (None, None)。"""
         msg = self.parse(request)
         if msg is None:
@@ -74,7 +74,7 @@ class Channel(ABC):
         return msg, None
 
 
-def http_post_json(url: str, payload: dict, headers: Optional[dict] = None,
+def http_post_json(url: str, payload: dict, headers: dict | None = None,
                    timeout: int = 10) -> dict:
     """POST JSON（urllib 实现；测试中 mock 此函数，禁止真实外呼）。"""
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")

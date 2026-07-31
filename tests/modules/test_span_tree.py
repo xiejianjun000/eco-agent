@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
 """span 树可观测性测试：父子嵌套/耗时字段/落盘/树形渲染/OTLP 导出 + chat_with_tools 集成"""
 import json
 
-import pytest
 
 from agent_core.observability import SpanTree
 

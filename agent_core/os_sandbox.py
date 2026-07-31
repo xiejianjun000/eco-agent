@@ -44,7 +44,7 @@ class SandboxPolicy:
     max_output_bytes: int = 1024 * 1024
 
 
-def scrub_env(env: Optional[dict] = None) -> dict:
+def scrub_env(env: dict | None = None) -> dict:
     """剔除敏感环境变量（*_KEY / *_TOKEN / *_SECRET），返回副本。"""
     src = dict(os.environ if env is None else env)
     return {k: v for k, v in src.items() if not _SENSITIVE_ENV_RE.search(k)}
@@ -173,17 +173,17 @@ def _is_bwrap_launch_failure(result: subprocess.CompletedProcess,
 
 
 def run_in_sandbox(cmd: list[str],
-                   policy: Optional[SandboxPolicy] = None) -> subprocess.CompletedProcess:
+                   policy: SandboxPolicy | None = None) -> subprocess.CompletedProcess:
     """在 OS 级沙箱中执行命令，返回 CompletedProcess。
 
     Linux + bwrap → 内核级隔离；否则降级（rlimit/timeout/env 清洗 + warning）。
 
     bwrap 二进制存在但启动级失败（如内核拒绝 --unshare-pid+--proc 组合）时：
-    先按档位退化 bwrap 参数重试（最多 %d 档），仍失败则自动降级到 rlimit
+    先按档位退化 bwrap 参数重试（档位数见模块常量 _BWRAP_TIERS），仍失败则自动降级到 rlimit
     路径执行并 logging.warning 记录。返回结果带 ``sandbox_mode`` 属性
     （"bwrap" / "bwrap:tierN" / "degraded" / "non-linux"），调用方可区分
     「命令在沙箱内失败」与「沙箱未能启动后降级执行」。
-    """ % len(_BWRAP_TIERS)
+    """
     policy = policy or SandboxPolicy()
 
     if not is_linux():

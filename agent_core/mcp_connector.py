@@ -30,7 +30,8 @@ import os
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 logger = logging.getLogger("mcp_connector")
 
@@ -60,7 +61,7 @@ class MCPServerConfig:
     timeout: float = DEFAULT_TIMEOUT
 
     @classmethod
-    def from_dict(cls, d: dict) -> "MCPServerConfig":
+    def from_dict(cls, d: dict) -> MCPServerConfig:
         return cls(
             name=d["name"],
             transport=d.get("transport", "sse"),

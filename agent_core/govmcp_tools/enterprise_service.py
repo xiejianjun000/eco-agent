@@ -5,7 +5,7 @@ govmcp.tools.government.enterprise_service — 企业服务工具模块
 提供工商登记、税务、许可证、知识产权、政府采购等企业常用政务服务的工具函数。
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from govmcp.tools.government._demo import demo_govmcp_tool as govmcp_tool
 

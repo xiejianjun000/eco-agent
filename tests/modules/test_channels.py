@@ -7,7 +7,6 @@ import base64
 import hashlib
 import hmac as hmac_mod
 import json
-import struct
 import time
 import urllib.parse
 from argparse import Namespace
@@ -309,7 +308,7 @@ def test_qqbot_reply_mocked():
     with mock.patch("agent_core.channels.qqbot.http_post_json",
                     return_value={"id": "msg-2"}) as p:
         assert ch.reply("qq-user-1", "hi", channel_id="ch-9") is True
-        assert "Bot app1.qt" == p.call_args[1]["headers"]["Authorization"]
+        assert p.call_args[1]["headers"]["Authorization"] == "Bot app1.qt"
 
 
 def test_wechat_oa_url_verify_get():

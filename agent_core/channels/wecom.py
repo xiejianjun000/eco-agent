@@ -99,7 +99,7 @@ class WeComChannel(Channel):
             return False
         return _sha1_sig(self._token(), timestamp, nonce, encrypt_msg) == signature
 
-    def parse(self, request: dict) -> Optional[InboundMessage]:
+    def parse(self, request: dict) -> InboundMessage | None:
         if request.get("method", "POST").upper() == "GET":
             # 回调 URL 验证：解密 echostr
             try:

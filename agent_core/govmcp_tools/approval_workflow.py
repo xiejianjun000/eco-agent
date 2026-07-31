@@ -5,7 +5,7 @@ govmcp.tools.government.approval_workflow — 审批工作流工具模块
 提供审批流程发起、进度查询、意见提交、加签改签、会签委托等审批工作流服务的工具函数。
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from govmcp.tools.government._demo import demo_govmcp_tool as govmcp_tool
 

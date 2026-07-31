@@ -5,7 +5,7 @@ govmcp.tools.government.citizen_service — 市民服务工具模块
 提供身份证、户籍、社保、医保、公积金、交通、不动产等市民常用政务服务的工具函数。
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from govmcp.tools.government._demo import demo_govmcp_tool as govmcp_tool
 

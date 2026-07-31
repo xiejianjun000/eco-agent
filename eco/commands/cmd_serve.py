@@ -5,7 +5,12 @@ Endpoints:
   GET  /v1/models
   POST /v1/chat/completions (SSE streaming support)
 """
-import sys, logging, json, os, asyncio, time
+import sys
+import logging
+import json
+import os
+import asyncio
+import time
 from pathlib import Path
 log = logging.getLogger("eco.serve")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -14,12 +19,15 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 def run(args):
     host, port, api_key = args.host, args.port, args.api_key
     try:
-        import fastapi, uvicorn
+        import importlib.util
+        if importlib.util.find_spec("fastapi") is None:
+            raise ImportError("fastapi")
+        import uvicorn
     except ImportError:
         log.error("Missing dependencies. Run: pip install eco-agent[serve]")
         return 1
     app = _build_app(api_key)
-    log.info(f"\n  ECO AGENT API Server")
+    log.info("\n  ECO AGENT API Server")
     log.info(f"  POST http://{host}:{port}/v1/chat/completions")
     log.info(f"  GET  http://{host}:{port}/v1/models")
     log.info(f"  {'API Key auth enabled' if api_key else 'No auth (local only)'}\n")

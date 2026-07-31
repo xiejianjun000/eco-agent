@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 """CLI 体验测试：/help 命令清单、启动横幅摘要、eco trace 命令"""
-import pytest
 
 from agent_core.observability import SpanTree
 from eco.commands import cmd_chat, cmd_trace

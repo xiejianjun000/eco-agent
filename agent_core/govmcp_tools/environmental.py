@@ -5,7 +5,7 @@ govmcp.tools.government.environmental — 环保监测工具模块
 提供空气质量、水质、土壤、噪声、固废等环境监测和环保监管服务的工具函数。
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from govmcp.tools.government._demo import demo_govmcp_tool as govmcp_tool
 from govmcp.tools.government.cnemc import (

@@ -34,15 +34,15 @@ def trace_id_for_session(session_id: str) -> str:
 
 
 # ── 当前活跃 SpanTree 注册（供 decisions 留痕关联 trace_id） ──
-_CURRENT_TREE: "SpanTree | None" = None
+_CURRENT_TREE: SpanTree | None = None
 
 
-def set_current_tree(tree: "SpanTree | None") -> None:
+def set_current_tree(tree: SpanTree | None) -> None:
     global _CURRENT_TREE
     _CURRENT_TREE = tree
 
 
-def current_tree() -> "SpanTree | None":
+def current_tree() -> SpanTree | None:
     return _CURRENT_TREE
 
 
@@ -123,7 +123,7 @@ class SpanTree:
         return path
 
     @staticmethod
-    def load(session: str, directory: Path | None = None) -> "SpanTree":
+    def load(session: str, directory: Path | None = None) -> SpanTree:
         """按 session_id 或文件名加载（支持不带 .json 后缀）"""
         d = Path(directory) if directory else TRACES_DIR
         path = Path(session)

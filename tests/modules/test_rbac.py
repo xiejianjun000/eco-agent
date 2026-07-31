@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """RBAC 角色矩阵测试：矩阵判定 / 默认关闭兼容 / grant 角色流 / 篡改容错"""
 import json
 

@@ -6,3 +6,4 @@ uvicorn>=0.29
 python-dotenv>=1.0
 pytest>=8.0
 pyyaml>=6.0
+numpy>=1.26

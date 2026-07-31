@@ -132,7 +132,7 @@ _STAGE_DONE = {"巡查Agent 完成": "patrol", "法规Agent 完成": "law",
 
 def _dag_edges_text() -> list[str]:
     edges = []
-    for sid, desc, deps in _DAG_PLAN:
+    for sid, _desc, deps in _DAG_PLAN:
         edges += [f"{d} -> {sid}" for d in deps]
     return edges
 

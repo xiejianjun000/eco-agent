@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """SSO/OIDC + CAS 统一认证测试：全 mock、零外呼。
 
 覆盖：OIDCConfig/env 门控、discovery、授权 URL + state 防 CSRF、code 换

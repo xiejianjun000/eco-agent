@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """r15 内网试点演练缺陷 D1-D5 回归测试（全 mock / 本地回环，零外呼，无真实 key）。
 
 - D4 gateway HTTP 入站路由：POST/GET /channels/<name>、握手、404、/healthz
@@ -13,7 +12,6 @@ import threading
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from unittest import mock
 
 import pytest
 

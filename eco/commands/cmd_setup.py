@@ -3,7 +3,8 @@ eco setup — 交互式配置向导
 """
 
 from __future__ import annotations
-import sys, logging, os
+import logging
+import os
 from pathlib import Path
 
 log = logging.getLogger("eco.setup")

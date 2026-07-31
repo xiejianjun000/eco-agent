@@ -17,7 +17,8 @@ import functools
 import inspect
 import json
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, get_type_hints
+from typing import Any, Optional, get_type_hints
+from collections.abc import Callable
 
 # ---------------------------------------------------------------------------
 # JSON Schema 类型推断

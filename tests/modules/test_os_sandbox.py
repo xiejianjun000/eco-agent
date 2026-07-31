@@ -1,10 +1,8 @@
 """Task A — os_sandbox 测试：策略构造、bwrap 拼装、降级、env 清洗、网络白名单。"""
 import os
 import subprocess
-import sys
 from unittest import mock
 
-import pytest
 
 from agent_core import os_sandbox
 from agent_core.os_sandbox import SandboxPolicy, run_in_sandbox, build_bwrap_cmd, scrub_env
@@ -122,9 +120,8 @@ class TestRunInSandbox:
         import logging
         with mock.patch.object(os_sandbox, "is_linux", return_value=True), \
              mock.patch.object(os_sandbox, "bwrap_available", return_value=False), \
-             mock.patch("subprocess.run", return_value=_cp()) as run:
-            with caplog.at_level(logging.WARNING, logger="os_sandbox"):
-                run_in_sandbox(["ls"], SandboxPolicy())
+             mock.patch("subprocess.run", return_value=_cp()) as run, caplog.at_level(logging.WARNING, logger="os_sandbox"):
+            run_in_sandbox(["ls"], SandboxPolicy())
         assert "bwrap" in caplog.text
         assert run.call_args[0][0] == ["ls"]
 
@@ -177,9 +174,8 @@ class TestRunInSandbox:
              mock.patch.object(os_sandbox, "bwrap_available", return_value=True), \
              mock.patch.object(os_sandbox.shutil, "which",
                                side_effect=lambda x: "/usr/bin/bwrap" if x == "bwrap" else None), \
-             mock.patch("subprocess.run", return_value=_cp()):
-            with caplog.at_level(logging.WARNING, logger="os_sandbox"):
-                run_in_sandbox(["ls"], SandboxPolicy(network_allowlist=["a.com"]))
+             mock.patch("subprocess.run", return_value=_cp()), caplog.at_level(logging.WARNING, logger="os_sandbox"):
+            run_in_sandbox(["ls"], SandboxPolicy(network_allowlist=["a.com"]))
         assert "slirp4netns" in caplog.text
 
 

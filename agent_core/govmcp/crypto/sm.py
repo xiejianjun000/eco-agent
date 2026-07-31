@@ -13,7 +13,6 @@ SM4: 中国国家密码管理局发布的对称加密算法 (GB/T 32907-2016)
 
 import hashlib
 import os
-from typing import Tuple
 
 # ====== SM3 哈希 ======
 # SM3 初始值 IV

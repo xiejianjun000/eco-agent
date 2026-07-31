@@ -16,7 +16,6 @@ SM2: 中国国家密码管理局发布的椭圆曲线公钥密码算法 (GB/T 32
 
 import hashlib
 import os
-from typing import Tuple
 
 # ====== SM2 国密椭圆曲线参数 (GB/T 32918-2016) ======
 # SM2 曲线方程: y^2 = x^3 + ax + b (mod p)
@@ -306,7 +305,7 @@ def sm2_encrypt(plaintext: bytes, public_key: bytes) -> bytes:
         if m_len > 0 and b"\x00" * m_len == t:
             continue
 
-        c2 = bytes(m ^ k for m, k in zip(plaintext, t))
+        c2 = bytes(m ^ k for m, k in zip(plaintext, t, strict=True))
 
         c3_input = _int_to_bytes(x2, 32) + plaintext + _int_to_bytes(y2, 32)
         c3 = bytes.fromhex(sm3_hash(c3_input))
@@ -373,7 +372,7 @@ def sm2_decrypt(ciphertext: bytes, private_key: bytes) -> bytes:
     if m_len > 0 and b"\x00" * m_len == t:
         raise ValueError("密钥派生失败")
 
-    m = bytes(c ^ k for c, k in zip(c2, t))
+    m = bytes(c ^ k for c, k in zip(c2, t, strict=True))
 
     check_input = _int_to_bytes(x2, 32) + m + _int_to_bytes(y2, 32)
     check_c3 = bytes.fromhex(sm3_hash(check_input))

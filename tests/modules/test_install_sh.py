@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """install.sh 端到端测试：装到临时 HOME，校验 eco 原生 profile 文件落位
 
 实跑记录（2026，临时 HOME）：脚本退出码 0，~/.eco/profiles/eco-agent 下

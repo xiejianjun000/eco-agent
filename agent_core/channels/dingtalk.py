@@ -50,7 +50,7 @@ class DingTalkChannel(Channel):
         expected = urllib.parse.unquote_plus(sign(self._secret(), str(timestamp)))
         return hmac.compare_digest(expected, urllib.parse.unquote_plus(str(sign_val)))
 
-    def parse(self, request: dict) -> Optional[InboundMessage]:
+    def parse(self, request: dict) -> InboundMessage | None:
         data = body_json(request)
         if data.get("msgtype") != "text":
             return None

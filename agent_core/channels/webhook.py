@@ -35,7 +35,7 @@ class WebhookChannel(Channel):
         expected = sign_body(secret, body_bytes(request))
         return hmac.compare_digest(expected, sig)
 
-    def parse(self, request: dict) -> Optional[InboundMessage]:
+    def parse(self, request: dict) -> InboundMessage | None:
         data = body_json(request)
         user_id = data.get("user_id", "")
         text = (data.get("text") or "").strip()

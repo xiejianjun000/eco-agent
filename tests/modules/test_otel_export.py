@@ -134,9 +134,8 @@ class TestOTLPExporter:
     def test_export_non_2xx_fallback(self, tmp_path, caplog):
         t = _tree("http500")
         ex = OTLPExporter(endpoint="http://x:4318", fallback_dir=tmp_path)
-        with _patch_open(return_value=_Resp(500)):
-            with caplog.at_level("WARNING"):
-                assert ex.export(t) is False
+        with _patch_open(return_value=_Resp(500)), caplog.at_level("WARNING"):
+            assert ex.export(t) is False
         assert "降级" in caplog.text
         assert (tmp_path / "http500.otlp.json").exists()
 

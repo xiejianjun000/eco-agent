@@ -1,7 +1,8 @@
 """
 eco evolution - L4 Evolution loop trigger
 """
-import sys, logging
+import sys
+import logging
 from pathlib import Path
 log = logging.getLogger("eco.evolution")
 logging.basicConfig(level=logging.INFO, format="%(message)s")

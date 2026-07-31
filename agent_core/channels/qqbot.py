@@ -53,7 +53,7 @@ class QQBotChannel(Channel):
         except (InvalidSignature, ValueError):
             return False
 
-    def parse(self, request: dict) -> Optional[InboundMessage]:
+    def parse(self, request: dict) -> InboundMessage | None:
         data = body_json(request)
         # op=11 心跳回调等控制帧忽略；只处理 op=0 消息事件
         if data.get("op") != 0:

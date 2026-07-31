@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """注入防线残余：leetspeak / 中文同义改写 / 中英混合 leet 对抗变体全拦截。"""
 import pytest
 

@@ -29,7 +29,7 @@ CHANNELS: dict[str, type[Channel]] = {
 _instances: dict[str, Channel] = {}
 
 
-def get_channel(name: str, config: Optional[dict] = None) -> Channel:
+def get_channel(name: str, config: dict | None = None) -> Channel:
     """按名取渠道实例；找不到抛 KeyError 并列出可用名。"""
     cls = CHANNELS.get(name)
     if cls is None:
@@ -43,7 +43,7 @@ def get_channel(name: str, config: Optional[dict] = None) -> Channel:
 
 
 def handle_inbound(name: str, request: dict,
-                   config: Optional[dict] = None) -> str:
+                   config: dict | None = None) -> str:
     """全流程入口：verify → parse → 注入检查 → 返回待回复文本。"""
     ch = get_channel(name, config)
     if not ch.verify(request):

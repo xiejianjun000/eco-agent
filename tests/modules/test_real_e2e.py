@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """真实 e2e 全链路测试（ECO_E2E=1 门控，默认 skip）。
 
 链路：真实 LLM chat_with_tools(stream=True) → 模型返回 tool_calls(save_document)

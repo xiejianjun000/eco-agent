@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """模块 A：provider 注册表 + llm_client 集成 + CLI model 子命令测试（全部 mock，禁止真实外呼）"""
 import pytest
 

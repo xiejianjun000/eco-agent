@@ -5,7 +5,7 @@ govmcp.tools.government.smart_city — 智慧城市工具模块
 提供智慧交通、智慧水务、智慧社区、智慧养老、应急指挥等智慧城市服务的工具函数。
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from govmcp.tools.government._demo import demo_govmcp_tool as govmcp_tool
 

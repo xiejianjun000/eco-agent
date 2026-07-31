@@ -5,7 +5,7 @@ govmcp.tools.government.carbon_emission — 碳排放管理工具模块
 提供企业碳排放数据录入、碳交易、碳足迹计算、碳中和追踪等碳排放管理服务的工具函数。
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from govmcp.tools.government._demo import demo_govmcp_tool as govmcp_tool
 

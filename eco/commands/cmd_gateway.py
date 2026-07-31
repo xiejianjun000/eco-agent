@@ -1,7 +1,11 @@
 """
 eco gateway - Message gateway lifecycle management
 """
-import sys, logging, os, signal, subprocess
+import sys
+import logging
+import os
+import signal
+import subprocess
 from pathlib import Path
 log = logging.getLogger("eco.gateway")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -41,10 +45,11 @@ def _start(port, daemon):
     log.info(f"Starting gateway (port {port})...")
     if daemon:
         lf = ROOT / "gateway.log"
-        p = subprocess.Popen(
-            [sys.executable, str(sv), "--port", str(port)],
-            stdout=open(lf, "w"), stderr=subprocess.STDOUT, cwd=ROOT,
-        )
+        with open(lf, "w") as out:
+            p = subprocess.Popen(
+                [sys.executable, str(sv), "--port", str(port)],
+                stdout=out, stderr=subprocess.STDOUT, cwd=ROOT,
+            )
         log.info(f"Gateway started PID={p.pid} log={lf}")
         return 0
     os.chdir(str(ROOT))

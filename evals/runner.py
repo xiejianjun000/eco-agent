@@ -41,7 +41,7 @@ def load_dataset(path) -> list:
     """加载 jsonl 基准集并做结构校验。返回样本列表。"""
     path = Path(path)
     if not path.exists():
-        raise FileNotFoundError("dataset not found: %s" % path)
+        raise FileNotFoundError(f"dataset not found: {path}")
     samples = []
     for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         line = line.strip()
@@ -50,11 +50,11 @@ def load_dataset(path) -> list:
         rec = json.loads(line)
         for field in ("id", "category", "question", "expected_points"):
             if field not in rec:
-                raise ValueError("line %d: missing field '%s'" % (lineno, field))
+                raise ValueError(f"line {lineno}: missing field '{field}'")
         if rec["category"] not in VALID_CATEGORIES:
-            raise ValueError("line %d: unknown category '%s'" % (lineno, rec["category"]))
+            raise ValueError(f"line {lineno}: unknown category '{rec['category']}'")
         if not isinstance(rec["expected_points"], list) or not rec["expected_points"]:
-            raise ValueError("line %d: expected_points must be non-empty list" % lineno)
+            raise ValueError(f"line {lineno}: expected_points must be non-empty list")
         samples.append(rec)
     if not samples:
         raise ValueError("dataset is empty")
@@ -91,7 +91,7 @@ def run_eval(samples: list, client) -> dict:
             answer = client.complete(rec["question"], system=SYSTEM_PROMPT,
                                      max_tokens=1024) or ""
         except Exception as exc:  # 单条失败不中断整轮
-            error = "%s: %s" % (type(exc).__name__, exc)
+            error = f"{type(exc).__name__}: {exc}"
         sc = score_answer(answer, rec["expected_points"])
         results.append({
             "id": rec["id"],
@@ -175,23 +175,23 @@ def main(argv=None) -> int:
 
     report = run_eval(samples, client)
     out = args.report or str(DEFAULT_REPORT_DIR
-                             / ("report-%s.json" % datetime.now().strftime("%Y%m%d-%H%M%S")))
+                             / f"report-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json")
 
     if args.baseline:
         base_path = Path(args.baseline)
         if not base_path.exists():
-            print("[eval runner] baseline 不存在: %s" % base_path, file=sys.stderr)
+            print(f"[eval runner] baseline 不存在: {base_path}", file=sys.stderr)
             return 2
         baseline = json.loads(base_path.read_text(encoding="utf-8"))
         report["baseline_compare"] = compare_baseline(report, baseline, args.threshold)
 
     write_report(report, out)
-    print("[eval runner] total=%d overall=%s cat_avg=%s -> %s"
-          % (report["total"], report["overall_score"], report["category_avg"], out))
+    print(f"[eval runner] total={report['total']} overall={report['overall_score']} "
+          f"cat_avg={report['category_avg']} -> {out}")
     if report.get("baseline_compare"):
         bc = report["baseline_compare"]
-        print("[eval runner] baseline compare: overall_delta=%s regressions=%s"
-              % (bc["overall_delta"], bc["regressions"] or "无"))
+        print(f"[eval runner] baseline compare: overall_delta={bc['overall_delta']} "
+              f"regressions={bc['regressions'] or '无'}")
         return 1 if bc["regressed"] else 0
     return 0
 

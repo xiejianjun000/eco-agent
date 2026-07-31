@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
 """非交互 L4 授权令牌测试：无 grant 阻断 / grant 放行+审计 / 过期拒绝 / 篡改拒绝"""
 import json
-import os
 
 import pytest
 

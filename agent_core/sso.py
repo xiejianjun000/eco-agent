@@ -88,7 +88,7 @@ class OIDCConfig:
         return self._client_secret
 
     @classmethod
-    def from_env(cls, keystore=None) -> "OIDCConfig":
+    def from_env(cls, keystore=None) -> OIDCConfig:
         ks = keystore if keystore is not None else keystore_mod.get_keystore()
         try:
             secret = ks.get(SECRET_KEY_NAME) or ""
@@ -221,13 +221,13 @@ class OIDCProvider:
         """验签并提取 claims（sub/name/role_claim）。失败抛 SSOError。"""
         try:
             h, p, s = id_token.split(".")
-        except ValueError:
-            raise SSOError("id_token 格式非法（非三段 JWT）")
+        except ValueError as e:
+            raise SSOError("id_token 格式非法（非三段 JWT）") from e
         try:
             header = json.loads(_b64url_decode(h))
             claims = json.loads(_b64url_decode(p))
-        except (ValueError, UnicodeDecodeError):
-            raise SSOError("id_token header/payload 解码失败")
+        except (ValueError, UnicodeDecodeError) as e:
+            raise SSOError("id_token header/payload 解码失败") from e
         alg = header.get("alg", "")
         if alg.lower() == "none" or alg != "RS256":
             raise SSOError(f"不允许的签名算法: {alg or '(缺失)'}（仅 RS256）")
@@ -243,8 +243,8 @@ class OIDCProvider:
         try:
             pub.verify(_b64url_decode(s), f"{h}.{p}".encode("ascii"),
                        padding.PKCS1v15(), SHA256())
-        except InvalidSignature:
-            raise SSOError("id_token 签名无效")
+        except InvalidSignature as e:
+            raise SSOError("id_token 签名无效") from e
 
         exp = claims.get("exp")
         if exp is not None and time.time() > float(exp):
@@ -362,8 +362,8 @@ def parse_cas_validate_xml(data: bytes | str) -> dict:
     text = data.decode("utf-8") if isinstance(data, bytes) else data
     try:
         root = ET.fromstring(text)
-    except ET.ParseError:
-        raise SSOError("CAS 响应不是合法 XML")
+    except ET.ParseError as e:
+        raise SSOError("CAS 响应不是合法 XML") from e
     failure = root.find(f"{_CAS_NS}authenticationFailure")
     if failure is None:
         failure = root.find("authenticationFailure")

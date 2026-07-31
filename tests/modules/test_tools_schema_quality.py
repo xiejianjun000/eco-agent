@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """工具 schema 质量扫描：零参数工具清零、无通稿描述、参数描述完整、源表无重名。"""
 from collections import Counter
 

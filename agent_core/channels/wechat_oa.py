@@ -49,7 +49,7 @@ class WeChatOAChannel(Channel):
         return check_signature(self._token(), args.get("timestamp", ""),
                                args.get("nonce", ""), args.get("signature", ""))
 
-    def parse(self, request: dict) -> Optional[InboundMessage]:
+    def parse(self, request: dict) -> InboundMessage | None:
         if request.get("method", "POST").upper() == "GET":
             # 服务器配置 URL 验证：回显 echostr
             echostr = request.get("args", {}).get("echostr", "")

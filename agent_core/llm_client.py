@@ -564,10 +564,7 @@ class LLMClient:
         if self.switch_provider(peer):
             return True
         # 兜底：尝试任意有 key 的其他 provider
-        for name in PROVIDERS:
-            if name != self._provider_name and self.switch_provider(name):
-                return True
-        return False
+        return any(name != self._provider_name and self.switch_provider(name) for name in PROVIDERS)
 
     @staticmethod
     def _friendly_error(err: dict | None) -> str:

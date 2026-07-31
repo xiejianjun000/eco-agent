@@ -1,7 +1,8 @@
 """
 eco mcp - MCP protocol server (GovMCP integration)
 """
-import sys, logging
+import sys
+import logging
 log = logging.getLogger("eco.mcp")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -21,9 +22,8 @@ def run(args):
     return 1
 
 def _ensure_govmcp():
-    try:
-        import govmcp
-    except ImportError:
+    import importlib.util
+    if importlib.util.find_spec("govmcp") is None:
         log.error("GovMCP not installed. Run: pip install govmcp")
         sys.exit(1)
 

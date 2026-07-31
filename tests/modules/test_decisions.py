@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """LLM 决策留痕测试：mock 一轮 tool_calls 响应 + 一轮纯文本响应，断言两条留痕结构完整"""
 import json
 

@@ -128,7 +128,7 @@ class TestCallTool(unittest.TestCase):
         conn.connected = True
         conn._session = object()
         with mock.patch.object(MCPServerConnection, "_run",
-                               side_effect=_close_return(FakeResult('{"aqi": 18}'))) as m:
+                               side_effect=_close_return(FakeResult('{"aqi": 18}'))):
             r = conn.call_tool("query_air_quality", {"region": "娄底"})
         self.assertTrue(r["success"])
         self.assertEqual(r["text"], '{"aqi": 18}')

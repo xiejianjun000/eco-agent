@@ -80,7 +80,8 @@ class TestSaveDocument:
         assert data["saved"] is True
         path = data["path"]
         assert os.path.exists(path), "产物必须真实落盘"
-        assert open(path, encoding="utf-8").read() == "# 清单\n- 事项A"
+        with open(path, encoding="utf-8") as f:
+            assert f.read() == "# 清单\n- 事项A"
         assert "deliverables" in path
 
     def test_no_overwrite_and_traversal_blocked(self, tmp_path, monkeypatch):
@@ -104,10 +105,9 @@ class TestSaveDocument:
         """诚实性硬约束：未真实落盘禁止声称已保存"""
         assert "save_document" in SAFETY_LAYER
         assert "诚实" in SAFETY_LAYER
-        from agent_core.prompt_engine import PromptEngine, _reset_engine_for_test
+        from agent_core.prompt_engine import _reset_engine_for_test
         _reset_engine_for_test()
-        eng = PromptEngine.__new__(PromptEngine)  # 不触发文件 IO 的轻量断言见下
-        # 直接断言 SAFETY_LAYER 会被 build_system_prompt 置于首位（由现有测试覆盖 startswith）
+        # SAFETY_LAYER 会被 build_system_prompt 置于首位（由现有测试覆盖 startswith）
 
 
 # ═══ P0-2 温度收口 + 降级链 + 友好错误 ═══════════════════
@@ -148,7 +148,8 @@ class TestTemperatureEnforcement:
 
     def test_role_swarm_path_uses_chat_resolver(self):
         """role_swarm 走 client.chat → 已收口；静态断言 swarm 内无旁路温度"""
-        src = open("agent_core/role_swarm.py", encoding="utf-8").read()
+        with open("agent_core/role_swarm.py", encoding="utf-8") as f:
+            src = f.read()
         assert not re.search(r'"temperature"\s*:\s*[\d.]', src), "role_swarm 存在硬编码温度"
 
     def test_no_hardcoded_temperature_payloads_repo_wide(self):
@@ -161,9 +162,11 @@ class TestTemperatureEnforcement:
                 if not f.endswith(".py"):
                     continue
                 fp = os.path.join(root, f)
-                for i, line in enumerate(open(fp, encoding="utf-8", errors="ignore"), 1):
-                    if re.search(r'"temperature"\s*:\s*\d', line) and "_resolve_temperature" not in line:
-                        offenders.append(f"{fp}:{i}: {line.strip()}")
+                with open(fp, encoding="utf-8", errors="ignore") as fh:
+                    lines = enumerate(fh, 1)
+                    for i, line in lines:
+                        if re.search(r'"temperature"\s*:\s*\d', line) and "_resolve_temperature" not in line:
+                            offenders.append(f"{fp}:{i}: {line.strip()}")
         assert not offenders, "存在旁路硬编码温度:\n" + "\n".join(offenders)
 
     def test_fallback_kimi_429_to_deepseek(self, kimi_client, mock_post, monkeypatch):
@@ -279,13 +282,15 @@ class TestToolSchemaQuality:
         import glob
         bad = []
         for fp in glob.glob("agent_core/govmcp_tools/*.py") + ["agent_core/tools_registry.py"]:
-            src = open(fp, encoding="utf-8").read()
+            with open(fp, encoding="utf-8") as f:
+                src = f.read()
             for m in re.finditer(r'def ([^\s(]*[一-鿿][^\s(]*)|name="([^"]*[一-鿿][^"]*)"', src):
                 bad.append(f"{fp}: {m.group(0)}")
         assert not bad, "中文标识符残留:\n" + "\n".join(bad)
 
     def test_install_sh_no_hard_hermes_dependency(self):
-        src = open("profiles/eco-agent/install.sh", encoding="utf-8").read()
+        with open("profiles/eco-agent/install.sh", encoding="utf-8") as f:
+            src = f.read()
         assert ".eco/profiles" in src, "必须安装到 eco 原生 profile 路径"
         assert "pip install hermes-agent" not in src, "不得依赖不存在的 hermes-agent 包"
         assert "exit 1" not in src.split("command -v hermes")[1][:200], "无 hermes 不得失败退出"
@@ -311,7 +316,6 @@ class TestStatsAndOps:
 
     def test_skills_versions_and_rollback(self, tmp_path, monkeypatch, capsys):
         from eco.commands import cmd_skills
-        from argparse import Namespace
         vdir = cmd_skills._versions_dir()
         snap = vdir / "v999_test"
         (snap / "skills").mkdir(parents=True, exist_ok=True)

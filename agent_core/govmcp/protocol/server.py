@@ -18,7 +18,8 @@ import asyncio
 import base64
 import json
 import sys
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
+from collections.abc import Callable
 
 from govmcp.crypto.sm import generate_sm4_key, sm3_hash, sm4_decrypt, sm4_encrypt
 

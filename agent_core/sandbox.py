@@ -2,7 +2,14 @@
 ECO AGENT sandbox — 安全代码执行环境（对标 HERMES Docker Sandbox）
 支持: Python/Shell/Node 代码在隔离容器中执行
 """
-import os, sys, json, tempfile, subprocess, asyncio, logging, shutil
+import os
+import sys
+import json
+import tempfile
+import subprocess
+import asyncio
+import logging
+import shutil
 from pathlib import Path
 from typing import Optional
 
@@ -82,7 +89,7 @@ class DockerSandbox:
         finally:
             shutil.rmtree(work_dir, ignore_errors=True)
 
-    async def _os_sandbox_execute(self, code: str, language: str = "python") -> Optional[dict]:
+    async def _os_sandbox_execute(self, code: str, language: str = "python") -> dict | None:
         """通过 os_sandbox（bubblewrap / 降级 rlimit）执行；失败返回 None 走旧本地路径"""
         if os_sandbox is None:
             return None

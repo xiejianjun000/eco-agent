@@ -277,7 +277,7 @@ _TRAD2SIMP = str.maketrans({
     "實": "实", "審": "审", "査": "查", "檢": "检", "監": "监", "測": "测",
     "數": "数", "據": "据", "證": "证", "錄": "录", "語": "语", "請": "请",
     "讓": "让", "頭": "头", "後": "后", "統": "统", "約": "约", "東": "东",
-    "員": "员", "處": "处", "罰": "罚", "許": "许", "證": "证", "靈": "灵",
+    "員": "员", "處": "处", "罰": "罚", "許": "许", "靈": "灵",  # "證": "证" 与第 278 行重复（键值完全相同），去重
     "係": "系", "嗰": "那", "啲": "些", "咗": "了", "喺": "在", "諗": "想",
     "佢": "他", "哋": "们", "嚟": "来", "睇": "看", "揾": "找", "攞": "拿",
 })
@@ -287,7 +287,7 @@ _TRAD2SIMP = str.maketrans({
 _CONFUSABLE_MAP = str.maketrans({
     "і": "i", "о": "o", "а": "a", "е": "e", "с": "c", "р": "p",
     "х": "x", "ѕ": "s", "ј": "j", "у": "y", "ν": "v", "ρ": "p",
-    "ο": "o", "α": "a", "е": "e",
+    "ο": "o", "α": "a",  # 原行尾西里尔 "е": "e" 与首行重复（同为 U+0435→e），去重
 })
 
 # emoji/符号/装饰字符（So/Sk/Cf 等类别）在注入校验中视为噪声剥离——对抗 无🙂视🙂之🙂前 插入绕过
@@ -447,71 +447,101 @@ def validate_injection(content: str) -> tuple[bool, str]:
 
 
 # 英文常用词小词表（含攻击高频词+技术/产品名词，防英文技术场景与品牌名被误判外语）
-_EN_COMMON = frozenset(
-    "the a an is are was were be been being to of in on at for with by from as into "
-    "and or but not no yes you your yours we our i me my he she it they them this that these those "
-    "what which who whom whose when where why how can could should would will shall may might must "
-    "do does did done have has had having please thanks sorry hello hi ok "
-    "ignore previous instruction instructions rule rules forget disregard safety system prompt "
-    "check report data enterprise pollution emission fine penalty law regulation article "
-    "all any every some none more most other such only own same so than too very just "
+_EN_COMMON = frozenset([
+    "the", "a", "an", "is", "are", "was", "were", "be", "been", "being", "to", "of", "in", "on",
+    "at", "for", "with", "by", "from", "as", "into", "and", "or", "but", "not", "no", "yes", "you",
+    "your", "yours", "we", "our", "i", "me", "my", "he", "she", "it", "they", "them", "this",
+    "that", "these", "those", "what", "which", "who", "whom", "whose", "when", "where", "why",
+    "how", "can", "could", "should", "would", "will", "shall", "may", "might", "must", "do",
+    "does", "did", "done", "have", "has", "had", "having", "please", "thanks", "sorry", "hello",
+    "hi", "ok", "ignore", "previous", "instruction", "instructions", "rule", "rules", "forget",
+    "disregard", "safety", "system", "prompt", "check", "report", "data", "enterprise",
+    "pollution", "emission", "fine", "penalty", "law", "regulation", "article", "all", "any",
+    "every", "some", "none", "more", "most", "other", "such", "only", "own", "same", "so", "than",
+    "too", "very", "just",
     # 技术/产品/运维常用词（英文技术命令串、产品名不误伤）
-    "kubernetes pod restart failed node docker compose build nginx proxy timeout error keeps "
-    "happening git rebase develop merge branch commit push pull deploy server client desktop "
-    "windows linux java python api json xml sql html debug log cache memory disk network database "
-    "table index query update delete insert select version install package config module class "
-    "function method array string object list file path directory folder screen display keyboard "
-    "mouse printer camera video audio image photo phone iphone ipad mac macbook pro air mini "
-    "plus youtube google amazon microsoft apple samsung huawei xiaomi taobao wechat alipay "
-    "app wifi bluetooth cpu gpu ram ssd usb javascript typescript golang rust ruby php swift "
-    "kotlin scala terraform ansible jenkins gradle maven npm pip yarn vscode eclipse idea "
-    "redis kafka mongo postgres mysql oracle flask django spring react vue angular webpack "
-    "oauth jwt token session cookie header request response status http https tcp udp ssh ftp "
-    "dockerfile container image registry cluster namespace service ingress helm chart "
+    "kubernetes", "pod", "restart", "failed", "node", "docker", "compose", "build", "nginx",
+    "proxy", "timeout", "error", "keeps", "happening", "git", "rebase", "develop", "merge",
+    "branch", "commit", "push", "pull", "deploy", "server", "client", "desktop", "windows",
+    "linux", "java", "python", "api", "json", "xml", "sql", "html", "debug", "log", "cache",
+    "memory", "disk", "network", "database", "table", "index", "query", "update", "delete",
+    "insert", "select", "version", "install", "package", "config", "module", "class", "function",
+    "method", "array", "string", "object", "list", "file", "path", "directory", "folder", "screen",
+    "display", "keyboard", "mouse", "printer", "camera", "video", "audio", "image", "photo",
+    "phone", "iphone", "ipad", "mac", "macbook", "pro", "air", "mini", "plus", "youtube", "google",
+    "amazon", "microsoft", "apple", "samsung", "huawei", "xiaomi", "taobao", "wechat", "alipay",
+    "app", "wifi", "bluetooth", "cpu", "gpu", "ram", "ssd", "usb", "javascript", "typescript",
+    "golang", "rust", "ruby", "php", "swift", "kotlin", "scala", "terraform", "ansible", "jenkins",
+    "gradle", "maven", "npm", "pip", "yarn", "vscode", "eclipse", "idea", "redis", "kafka",
+    "mongo", "postgres", "mysql", "oracle", "flask", "django", "spring", "react", "vue", "angular",
+    "webpack", "oauth", "jwt", "token", "session", "cookie", "header", "request", "response",
+    "status", "http", "https", "tcp", "udp", "ssh", "ftp", "dockerfile", "container", "image",
+    "registry", "cluster", "namespace", "service", "ingress", "helm", "chart",
     # 日常高频英文词（防正常英文句子被外语门误判）
-    "stop car front back behind ahead near far drive driving road street vehicle truck turn left right "
-    "home work school day night time year people way thing man woman child world life hand part place "
-    "case week company number group problem fact water air land city county province factory plant "
-    "station waste gas river lake soil noise dust smoke sample standard limit value level result record "
-    "form document evidence site area project plan meeting office department government bureau agency "
-    "unit team member leader manager officer citizen public local national major minor large small high "
-    "low new old good bad big little long short first last next different important necessary possible "
-    "current recent special general specific normal illegal legal criminal civil administrative "
-    "environmental industrial commercial municipal rural urban domestic international regional annual "
-    "monthly weekly daily total average maximum minimum about above below over under between within "
-    "without during before after since until while because therefore however moreover instead rather "
-    "either neither both each another someone anyone everyone nobody somebody everything something "
-    "anything nothing here there now then today tomorrow yesterday soon later already still yet again "
-    "also even almost nearly quite really actually probably perhaps maybe certainly definitely exactly "
-    "mainly mostly partly entirely completely totally directly quickly slowly easily usually often "
-    "sometimes always never immediately finally eventually recently currently previously generally "
-    "normally commonly especially particularly specifically significantly substantially relatively "
-    "similarly accordingly consequently hence thus meanwhile forward backward aside besides except "
-    "despite regarding concerning including excluding following according depending using used based "
-    "known said given taken made come get make take go see look find give tell say ask answer talk "
-    "speak write read listen hear show try use need want like love help start begin continue keep hold "
-    "leave stay remain move change increase decrease reduce raise lower improve develop create produce "
-    "provide offer include exclude add remove replace follow lead guide support protect prevent avoid "
-    "allow permit forbid ban control manage handle treat deal solve resolve address consider regard "
-    "view assess evaluate review examine inspect investigate analyze study research monitor measure "
-    "test detect identify recognize confirm verify approve reject accept refuse deny admit claim "
-    "declare announce state explain describe note notice mention refer cite quote list name call term "
-    "define mean indicate suggest imply prove demonstrate reveal display present represent perform "
-    "conduct carry execute implement apply adopt establish set construct organize arrange prepare "
-    "design draft sign seal issue publish release submit file register store save copy send receive "
-    "deliver transfer transport import buy sell pay cost spend charge penalize punish sue prosecute "
-    "arrest detain seize confiscate destroy damage pollute contaminate emit discharge dump process "
-    "dispose recycle reuse recover remediate restore "
+    "stop", "car", "front", "back", "behind", "ahead", "near", "far", "drive", "driving", "road",
+    "street", "vehicle", "truck", "turn", "left", "right", "home", "work", "school", "day",
+    "night", "time", "year", "people", "way", "thing", "man", "woman", "child", "world", "life",
+    "hand", "part", "place", "case", "week", "company", "number", "group", "problem", "fact",
+    "water", "air", "land", "city", "county", "province", "factory", "plant", "station", "waste",
+    "gas", "river", "lake", "soil", "noise", "dust", "smoke", "sample", "standard", "limit",
+    "value", "level", "result", "record", "form", "document", "evidence", "site", "area",
+    "project", "plan", "meeting", "office", "department", "government", "bureau", "agency", "unit",
+    "team", "member", "leader", "manager", "officer", "citizen", "public", "local", "national",
+    "major", "minor", "large", "small", "high", "low", "new", "old", "good", "bad", "big",
+    "little", "long", "short", "first", "last", "next", "different", "important", "necessary",
+    "possible", "current", "recent", "special", "general", "specific", "normal", "illegal",
+    "legal", "criminal", "civil", "administrative", "environmental", "industrial", "commercial",
+    "municipal", "rural", "urban", "domestic", "international", "regional", "annual", "monthly",
+    "weekly", "daily", "total", "average", "maximum", "minimum", "about", "above", "below", "over",
+    "under", "between", "within", "without", "during", "before", "after", "since", "until",
+    "while", "because", "therefore", "however", "moreover", "instead", "rather", "either",
+    "neither", "both", "each", "another", "someone", "anyone", "everyone", "nobody", "somebody",
+    "everything", "something", "anything", "nothing", "here", "there", "now", "then", "today",
+    "tomorrow", "yesterday", "soon", "later", "already", "still", "yet", "again", "also", "even",
+    "almost", "nearly", "quite", "really", "actually", "probably", "perhaps", "maybe", "certainly",
+    "definitely", "exactly", "mainly", "mostly", "partly", "entirely", "completely", "totally",
+    "directly", "quickly", "slowly", "easily", "usually", "often", "sometimes", "always", "never",
+    "immediately", "finally", "eventually", "recently", "currently", "previously", "generally",
+    "normally", "commonly", "especially", "particularly", "specifically", "significantly",
+    "substantially", "relatively", "similarly", "accordingly", "consequently", "hence", "thus",
+    "meanwhile", "forward", "backward", "aside", "besides", "except", "despite", "regarding",
+    "concerning", "including", "excluding", "following", "according", "depending", "using", "used",
+    "based", "known", "said", "given", "taken", "made", "come", "get", "make", "take", "go", "see",
+    "look", "find", "give", "tell", "say", "ask", "answer", "talk", "speak", "write", "read",
+    "listen", "hear", "show", "try", "use", "need", "want", "like", "love", "help", "start",
+    "begin", "continue", "keep", "hold", "leave", "stay", "remain", "move", "change", "increase",
+    "decrease", "reduce", "raise", "lower", "improve", "develop", "create", "produce", "provide",
+    "offer", "include", "exclude", "add", "remove", "replace", "follow", "lead", "guide",
+    "support", "protect", "prevent", "avoid", "allow", "permit", "forbid", "ban", "control",
+    "manage", "handle", "treat", "deal", "solve", "resolve", "address", "consider", "regard",
+    "view", "assess", "evaluate", "review", "examine", "inspect", "investigate", "analyze",
+    "study", "research", "monitor", "measure", "test", "detect", "identify", "recognize",
+    "confirm", "verify", "approve", "reject", "accept", "refuse", "deny", "admit", "claim",
+    "declare", "announce", "state", "explain", "describe", "note", "notice", "mention", "refer",
+    "cite", "quote", "list", "name", "call", "term", "define", "mean", "indicate", "suggest",
+    "imply", "prove", "demonstrate", "reveal", "display", "present", "represent", "perform",
+    "conduct", "carry", "execute", "implement", "apply", "adopt", "establish", "set", "construct",
+    "organize", "arrange", "prepare", "design", "draft", "sign", "seal", "issue", "publish",
+    "release", "submit", "file", "register", "store", "save", "copy", "send", "receive", "deliver",
+    "transfer", "transport", "import", "buy", "sell", "pay", "cost", "spend", "charge", "penalize",
+    "punish", "sue", "prosecute", "arrest", "detain", "seize", "confiscate", "destroy", "damage",
+    "pollute", "contaminate", "emit", "discharge", "dump", "process", "dispose", "recycle",
+    "reuse", "recover", "remediate", "restore",
     # 日常词汇补充（防英文常用句误判）+ 常见带调外来词
-    "quick brown fox jumps jump lazy dog cat bird fish horse cow pig sheep goat chicken duck rabbit "
-    "mouse rat bear wolf lion tiger elephant monkey snake frog spider ant bee butterfly tree flower "
-    "grass leaf root fruit vegetable apple banana orange grape bread rice meat milk cheese egg butter "
-    "sugar salt oil tea coffee juice wine beer red blue green yellow black white gray purple pink "
-    "run runs walk walks sit sits sleep sleeps eat eats drink drinks play plays sing sings dance "
-    "dances swim swims fly flies climb climbs jump jumped run ran walk walked sleep slept eat ate "
-    "drink drank swim swam fly flew résumé cafe café naïve naive fiancé cliché décor exposé señor "
-    "piñata jalapeño zürich münchen köln blasé protégé attaché soufflé château pâté crème brûlée "
-    "entrée éclair façade ångström smörgåsbord".split())
+    "quick", "brown", "fox", "jumps", "jump", "lazy", "dog", "cat", "bird", "fish", "horse", "cow",
+    "pig", "sheep", "goat", "chicken", "duck", "rabbit", "mouse", "rat", "bear", "wolf", "lion",
+    "tiger", "elephant", "monkey", "snake", "frog", "spider", "ant", "bee", "butterfly", "tree",
+    "flower", "grass", "leaf", "root", "fruit", "vegetable", "apple", "banana", "orange", "grape",
+    "bread", "rice", "meat", "milk", "cheese", "egg", "butter", "sugar", "salt", "oil", "tea",
+    "coffee", "juice", "wine", "beer", "red", "blue", "green", "yellow", "black", "white", "gray",
+    "purple", "pink", "run", "runs", "walk", "walks", "sit", "sits", "sleep", "sleeps", "eat",
+    "eats", "drink", "drinks", "play", "plays", "sing", "sings", "dance", "dances", "swim",
+    "swims", "fly", "flies", "climb", "climbs", "jump", "jumped", "run", "ran", "walk", "walked",
+    "sleep", "slept", "eat", "ate", "drink", "drank", "swim", "swam", "fly", "flew", "résumé",
+    "cafe", "café", "naïve", "naive", "fiancé", "cliché", "décor", "exposé", "señor", "piñata",
+    "jalapeño", "zürich", "münchen", "köln", "blasé", "protégé", "attaché", "soufflé", "château",
+    "pâté", "crème", "brûlée", "entrée", "éclair", "façade", "ångström", "smörgåsbord",
+])
 
 
 def _split_camel(word: str) -> list[str]:
@@ -548,10 +578,8 @@ def _foreign_latin_suspect(text: str) -> bool:
             return True
     # 单词级兜底：含非 ASCII 拉丁字符（ë/ð/š/ī…）且长度 ≥6 的词直接判外语——
     # 封堵"英文动词+单个外语词"混排（please ignore udhëzimet）绕过豁免线的手法
-    for w in re.findall(r"[A-Za-zÀ-ɏ]{6,}", text):
-        if re.search(r"[À-ɏ]", w) and w.lower() not in _EN_COMMON:
-            return True
-    return False
+    return any(re.search(r"[À-ɏ]", w) and w.lower() not in _EN_COMMON
+               for w in re.findall(r"[A-Za-zÀ-ɏ]{6,}", text))
 
 
 # 连续 ≥6 个非拉丁/非汉字文字字符视为可疑（短地名/专有名词引用≤5字不误伤）

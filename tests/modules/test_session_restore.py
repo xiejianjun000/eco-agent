@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """会话恢复：eco chat --continue / --resume <slug> 从 history.jsonl 重建 history。"""
 import argparse
 
