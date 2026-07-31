@@ -22,13 +22,28 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger("llm_client")
 
+# SPEC 模块 A：全量 provider 注册表在 agent_core.llm_providers（15 个内置 provider）。
+# 下方 PROVIDERS 为 llm_client 历史公开结构（含 embedding_model 字段），保持向后兼容；
+# 重叠条目（deepseek/kimi/qwen/doubao）取值与注册表一致，由注册表单一事实源生成。
+from agent_core.llm_providers import PROVIDERS as REGISTRY_PROVIDERS  # noqa: E402
+
+
+def _legacy_entry(reg_name: str, api_key_env: str = "", embedding_model=None) -> dict:
+    """从注册表 ProviderSpec 生成 llm_client 历史 provider 条目"""
+    spec = REGISTRY_PROVIDERS[reg_name]
+    return {"base_url": spec.base_url,
+            "api_key_env": api_key_env or spec.env_key,
+            "default_model": spec.default_model,
+            "embedding_model": embedding_model}
+
+
 PROVIDERS = {
-    "deepseek": {"base_url": "https://api.deepseek.com/v1", "api_key_env": "DEEPSEEK_API_KEY", "default_model": "deepseek-chat", "embedding_model": None},  # DeepSeek 无 embedding → 向量通道自动禁用
+    "deepseek": _legacy_entry("deepseek"),  # DeepSeek 无 embedding → 向量通道自动禁用
     "openai": {"base_url": "https://api.openai.com/v1", "api_key_env": "OPENAI_API_KEY", "default_model": "gpt-4o", "embedding_model": "text-embedding-3-small"},
     "anthropic": {"base_url": "https://api.anthropic.com/v1", "api_key_env": "ANTHROPIC_API_KEY", "default_model": "claude-sonnet-4-20250514", "embedding_model": None},
-    "kimi": {"base_url": "https://api.moonshot.cn/v1", "api_key_env": "KIMI_API_KEY", "default_model": "kimi-k2.5", "embedding_model": "moonshot-v1-embedding"},
-    "qwen": {"base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1", "api_key_env": "DASHSCOPE_API_KEY", "default_model": "qwen-max", "embedding_model": "text-embedding-v3"},
-    "doubao": {"base_url": "https://ark.cn-beijing.volces.com/api/v3", "api_key_env": "DOUBAO_API_KEY", "default_model": "doubao-pro-32k", "embedding_model": None},
+    "kimi": _legacy_entry("moonshot", api_key_env="KIMI_API_KEY", embedding_model="moonshot-v1-embedding"),
+    "qwen": _legacy_entry("qwen", embedding_model="text-embedding-v3"),
+    "doubao": _legacy_entry("doubao", api_key_env="DOUBAO_API_KEY"),  # 历史 env 名保持兼容；注册表用 ARK_API_KEY
 }
 
 STATS_FILE = Path.home() / ".eco" / "stats.jsonl"
@@ -193,19 +208,76 @@ class LLMClient:
 
     def switch_provider(self, name: str) -> bool:
         """切换备用 provider（deepseek <-> kimi），重建 provider 配置与密钥。
-        返回是否切换成功（目标 provider 有可用密钥）。"""
+        返回是否切换成功（目标 provider 有可用密钥）。
+        除历史 PROVIDERS 外，也接受注册表（agent_core.llm_providers）中的新 provider 名。"""
         prov = PROVIDERS.get(name)
-        if prov is None:
+        if prov is not None:
+            key = os.environ.get(prov["api_key_env"]) or self._env.get(prov["api_key_env"], "")
+            if not key:
+                return False
+            self._provider_name = name
+            self._provider = prov
+            self._api_key = key
+            self._last_error = None
+            logger.warning(f"[llm_client] switched to provider: {name}")
+            return True
+        spec = REGISTRY_PROVIDERS.get((name or "").strip().lower())
+        if spec is None:
             return False
-        key = os.environ.get(prov["api_key_env"]) or self._env.get(prov["api_key_env"], "")
-        if not key:
+        if not self._apply_provider_spec(spec):
             return False
-        self._provider_name = name
-        self._provider = prov
+        logger.warning(f"[llm_client] switched to provider: {spec.name}")
+        return True
+
+    # ------------------------------------------------------------------
+    # SPEC 模块 A：注册表集成
+    # ------------------------------------------------------------------
+    def _apply_provider_spec(self, spec) -> bool:
+        """按注册表 ProviderSpec 重建 provider 配置与密钥；无 key 返回 False。"""
+        base_url = spec.base_url
+        model = spec.default_model
+        if spec.name == "custom":
+            base_url = (os.environ.get("ECO_CUSTOM_BASE_URL")
+                        or self._env.get("ECO_CUSTOM_BASE_URL", "")).rstrip("/")
+            model = (os.environ.get("ECO_CUSTOM_MODEL")
+                     or self._env.get("ECO_CUSTOM_MODEL", "") or spec.default_model)
+        key = os.environ.get(spec.env_key) or self._env.get(spec.env_key, "")
+        if spec.name == "moonshot" and not key:
+            # 历史兼容：KIMI_API_KEY 也可用于 moonshot provider
+            key = os.environ.get("KIMI_API_KEY") or self._env.get("KIMI_API_KEY", "")
+        if spec.name == "ollama" and not key:
+            key = "ollama"  # 本地 Ollama 不校验 key，占位即可
+        if not key or not base_url:
+            return False
+        self._provider_name = spec.name
+        self._provider = {"base_url": base_url, "api_key_env": spec.env_key,
+                          "default_model": model, "embedding_model": None}
         self._api_key = key
         self._last_error = None
-        logger.warning(f"[llm_client] switched to provider: {name}")
         return True
+
+    @classmethod
+    def from_provider(cls, name: str) -> "LLMClient":
+        """按注册表名构造 client（SPEC 模块 A）。
+        找不到名字抛 KeyError（列出可用名）；有名字但没配 key 时返回的 client
+        available() 为 False，由调用方决定降级或报错。"""
+        from agent_core.llm_providers import get_provider
+        spec = get_provider(name)
+        client = cls()
+        if not client._apply_provider_spec(spec):
+            # 允许构造（如无 key 的 ollama 本地场景由上层兜底），但标记为无 key
+            base_url = spec.base_url
+            model = spec.default_model
+            if spec.name == "custom":
+                base_url = (os.environ.get("ECO_CUSTOM_BASE_URL")
+                            or client._env.get("ECO_CUSTOM_BASE_URL", "")).rstrip("/")
+                model = (os.environ.get("ECO_CUSTOM_MODEL")
+                         or client._env.get("ECO_CUSTOM_MODEL", ""))
+            client._provider_name = spec.name
+            client._provider = {"base_url": base_url, "api_key_env": spec.env_key,
+                                "default_model": model, "embedding_model": None}
+            client._api_key = ""
+        return client
 
     @staticmethod
     def _resolve_temperature(model: str, temp: float) -> float:

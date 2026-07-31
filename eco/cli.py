@@ -20,7 +20,9 @@ def _build_parser():
                    help="按工作区名/slug 恢复指定会话历史")
 
     p = sub.add_parser("gateway", help="Manage gateway")
-    p.add_argument("action", choices=["start","stop","restart","status"])
+    p.add_argument("action", choices=["start","stop","restart","status","channels"])
+    p.add_argument("channel_args", nargs="*", default=[],
+                   help="channels 子命令参数，如: eco gateway channels list")
     p.add_argument("--port", type=int, default=7070)
     p.add_argument("--daemon", action="store_true")
 
@@ -41,7 +43,7 @@ def _build_parser():
     p.add_argument("action", choices=["list","install","remove","info","versions","rollback"])
     p.add_argument("name", nargs="?", default=None)
     p = sub.add_parser("config", help="Config")
-    p.add_argument("action", choices=["show","get","set","init","path"])
+    p.add_argument("action", choices=["show","get","set","init","path","model"])
     p.add_argument("key", nargs="?", default=None)
     p.add_argument("value", nargs="?", default=None)
     p = sub.add_parser("corrections", help="Manage user corrections")

@@ -14,6 +14,24 @@ def run(args):
         case "stop": return _stop()
         case "restart": _stop(); return _start(args.port, args.daemon)
         case "status": return _status()
+        case "channels": return _channels(getattr(args, "channel_args", None) or ["list"])
+
+def _channels(channel_args):
+    """eco gateway channels list — 列出渠道注册表与所需环境变量配置状态。"""
+    sub = channel_args[0] if channel_args else "list"
+    if sub != "list":
+        log.error(f"Unknown channels subcommand: {sub} (可用: list)")
+        return 1
+    from agent_core.channels.registry import CHANNELS
+    print(f"{'渠道':<12}{'显示名':<14}{'配置环境变量（✅=已配置）'}")
+    print("-" * 64)
+    for name in sorted(CHANNELS):
+        cls = CHANNELS[name]
+        marks = []
+        for k in cls.env_keys:
+            marks.append(f"{k}✅" if os.environ.get(k) else k)
+        print(f"{name:<12}{cls.__name__:<14}{' '.join(marks)}")
+    return 0
 
 def _start(port, daemon):
     sv = GW / "eco-gateway-server.py"
