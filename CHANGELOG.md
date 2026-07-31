@@ -1,3 +1,41 @@
+## [2026-07-31] v5.0.0a3 — IDE工作台 + 人机协同编辑（G方法论）
+
+### Added (G1 宪法治理)
+- **DESIGN.md 人机协同编辑宪法**
+  - 三种协同模式：AI主动标注 / 人类手动标注 / 双向对话
+  - 批注类型：error/warning/suggestion/question
+  - 批注状态机：pending→accepted/rejected/edited
+  - 操作契约：traceId可追溯
+
+- **批注数据模型 (G2 工具化)**
+  - `src/types/annotation.ts` — 类型/状态/来源/位置/建议
+  - 纯函数：createAiAnnotation / createHumanAnnotation / applyAnnotationToText
+
+- **协同编辑器引擎 (G2)**
+  - `src/components/CollaborativeEditor.tsx`
+  - AI 自动评查 → 高亮问题 + 批注气泡
+  - 人类接受/拒绝/修改 → 应用到文档
+  - 文本变更后批注位置自动校正
+  - forwardRef 暴露命令式方法
+
+- **批注侧栏 (G6 职责分离)**
+  - 右侧列出待处理/已接受/已拒绝批注
+  - AI批注(🤖) 与人类批注(👤) 可区分
+
+- **IDE 式工作台**
+  - `SplitPane.tsx` — 可拖拽分栏
+  - `ActivityPanel.tsx` — 右侧活动栏（文档/浏览器/产出/地图）
+  - `CanvasPanel.tsx` — 中央画布（生成分析图表）
+  - 各栏可收缩
+
+### Verified (G3/G4)
+- TypeScript 编译零错误
+- 协同编辑 21 项测试全部通过
+- AI评查→人类确认→应用到文档→位置校正 全链路
+
+### Changed
+- App.tsx 重构为 IDE 式工作台布局
+
 ## [2026-07-31] v5.0.0a4 — EcoBench 三修 + 70 题全量复跑（deepseek-chat 正式成绩）
 
 ### Fixed
