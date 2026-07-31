@@ -13,12 +13,43 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
 import time
+import urllib.request
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 TRACES_DIR = Path.home() / ".eco" / "traces"
+
+DEFAULT_OTLP_ENDPOINT = "http://localhost:4318"
+
+
+def trace_id_for_session(session_id: str) -> str:
+    """session_id → 确定性 OTLP traceId（32 位十六进制，uuid5 派生）。
+
+    与 decisions.jsonl 的留痕共享同一 id，实现 trace ↔ decision 互查。"""
+    return uuid.uuid5(uuid.NAMESPACE_URL, f"eco:{session_id}").hex
+
+
+# ── 当前活跃 SpanTree 注册（供 decisions 留痕关联 trace_id） ──
+_CURRENT_TREE: "SpanTree | None" = None
+
+
+def set_current_tree(tree: "SpanTree | None") -> None:
+    global _CURRENT_TREE
+    _CURRENT_TREE = tree
+
+
+def current_tree() -> "SpanTree | None":
+    return _CURRENT_TREE
+
+
+def current_trace_id() -> str:
+    """当前活跃会话的 OTLP trace_id；无活跃会话返回空串。"""
+    t = _CURRENT_TREE
+    return t.trace_id if t is not None else ""
 
 
 class SpanTree:
@@ -29,6 +60,13 @@ class SpanTree:
         self.meta = dict(meta or {})
         self.spans: list[dict] = []
         self._stack: list[str] = []
+        # 注册为当前活跃树，供 decisions.jsonl 留痕关联 trace_id
+        set_current_tree(self)
+
+    @property
+    def trace_id(self) -> str:
+        """本次会话的 OTLP traceId（确定性派生，可复算）"""
+        return trace_id_for_session(self.session_id)
 
     # ── 记录 ────────────────────────────────────────────
     def start(self, name: str, kind: str, **attrs) -> str:
@@ -140,7 +178,7 @@ class SpanTree:
     # ── OTLP 导出 ───────────────────────────────────────
     def to_otlp(self) -> dict:
         """导出 OTLP trace v1 JSON（resourceSpans 结构，十六进制 trace/span id）"""
-        trace_id = uuid.uuid5(uuid.NAMESPACE_URL, f"eco:{self.session_id}").hex
+        trace_id = self.trace_id
 
         def _attr(k: str, v) -> dict:
             if isinstance(v, bool):
@@ -191,3 +229,45 @@ class SpanTree:
         p.write_text(json.dumps(self.to_otlp(), ensure_ascii=False, indent=1),
                      encoding="utf-8")
         return p
+
+
+class OTLPExporter:
+    """真实 OTLP/HTTP 导出器（urllib，零新增依赖）。
+
+    POST {endpoint}/v1/traces（OTLP trace v1 JSON）。endpoint 可注入，
+    默认读取环境变量 ECO_OTLP_ENDPOINT，缺省 http://localhost:4318。
+    任何失败（连接拒绝/超时/非 2xx）降级写本地 span 文件并 warning，
+    绝不抛出、不阻塞主流程。
+    """
+
+    def __init__(self, endpoint: str | None = None, timeout: float = 5.0,
+                 fallback_dir: Path | str | None = None):
+        ep = endpoint or os.environ.get("ECO_OTLP_ENDPOINT") or DEFAULT_OTLP_ENDPOINT
+        self.endpoint = ep.rstrip("/")
+        self.timeout = timeout
+        self.fallback_dir = Path(fallback_dir) if fallback_dir else TRACES_DIR
+
+    @property
+    def traces_url(self) -> str:
+        return f"{self.endpoint}/v1/traces"
+
+    def export(self, tree: SpanTree) -> bool:
+        """导出 span 树到 collector。成功返回 True；失败降级落盘返回 False。"""
+        payload = json.dumps(tree.to_otlp(), ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(
+            self.traces_url, data=payload,
+            headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                status = getattr(resp, "status", 200)
+                if 200 <= status < 300:
+                    return True
+                raise RuntimeError(f"collector 返回 HTTP {status}")
+        except Exception as e:
+            logging.warning("[otel] 导出 collector 失败（%s），降级写本地 span 文件", e)
+            self._write_fallback(tree)
+            return False
+
+    def _write_fallback(self, tree: SpanTree) -> Path:
+        path = self.fallback_dir / f"{tree.session_id}.otlp.json"
+        return tree.export_otlp(path)

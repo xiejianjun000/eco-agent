@@ -8,6 +8,11 @@ from typing import Optional
 
 log = logging.getLogger("sandbox")
 
+try:
+    from agent_core import os_sandbox
+except Exception:  # pragma: no cover - os_sandbox 缺失时不影响旧路径
+    os_sandbox = None
+
 # ─── Docker Sandbox ───────────────────────────
 
 class DockerSandbox:
@@ -31,8 +36,11 @@ class DockerSandbox:
         return self._available
 
     async def execute(self, code: str, language: str = "python") -> dict:
-        """在 Docker 沙箱中执行代码"""
+        """在 Docker 沙箱中执行代码（无 Docker 时优先 OS 级沙箱）"""
         if not self._available:
+            os_result = await self._os_sandbox_execute(code, language)
+            if os_result is not None:
+                return os_result
             return await self._local_fallback(code, language)
 
         ext = {"python": ".py", "shell": ".sh", "node": ".js"}.get(language, ".py")
@@ -71,6 +79,45 @@ class DockerSandbox:
             return {"success": False, "stdout": "", "stderr": f"Timeout ({self._timeout}s)", "sandbox": "docker"}
         except Exception as e:
             return {"success": False, "stdout": "", "stderr": str(e), "sandbox": "docker"}
+        finally:
+            shutil.rmtree(work_dir, ignore_errors=True)
+
+    async def _os_sandbox_execute(self, code: str, language: str = "python") -> Optional[dict]:
+        """通过 os_sandbox（bubblewrap / 降级 rlimit）执行；失败返回 None 走旧本地路径"""
+        if os_sandbox is None:
+            return None
+        interpreter = {"python": [sys.executable], "shell": ["bash"], "node": ["node"]}.get(language)
+        if interpreter is None:
+            return None
+        if language != "python" and shutil.which(interpreter[0]) is None:
+            return None
+
+        ext = {"python": ".py", "shell": ".sh", "node": ".js"}.get(language, ".py")
+        work_dir = Path(tempfile.mkdtemp(prefix="eco_os_sandbox_"))
+        script_path = work_dir / f"script{ext}"
+        script_path.write_text(code)
+
+        policy = os_sandbox.SandboxPolicy(
+            allowed_paths=[str(work_dir)],
+            readonly_paths=[],
+            network_allowlist=[],          # 默认断网
+            max_seconds=self._timeout,
+            max_output_bytes=64 * 1024,
+        )
+        try:
+            result = os_sandbox.run_in_sandbox(interpreter + [str(script_path)], policy)
+            return {
+                "success": result.returncode == 0,
+                "stdout": (result.stdout or "")[:5000],
+                "stderr": (result.stderr or "")[:2000],
+                "exit_code": result.returncode,
+                "sandbox": "os_sandbox",
+            }
+        except subprocess.TimeoutExpired:
+            return {"success": False, "stdout": "", "stderr": f"Timeout ({self._timeout}s)", "sandbox": "os_sandbox"}
+        except Exception as e:
+            log.warning("os_sandbox execution failed, falling back to local: %s", e)
+            return None
         finally:
             shutil.rmtree(work_dir, ignore_errors=True)
 

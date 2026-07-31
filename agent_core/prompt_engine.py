@@ -436,6 +436,13 @@ def validate_injection(content: str) -> tuple[bool, str]:
     # 中文执法产品合法输入为中文/英文，外语指令一律无权进入指令通道。
     if _foreign_latin_suspect(content):
         return False, "命中语言白名单: 非英文外语文本（本产品仅受理中英文输入）"
+    # ---- 尾部钩子：语义注入分类器（双层防御第二层，默认关闭）----
+    # env ECO_SEMANTIC_GUARD=1 时启用语义层（agent_core.semantic_guard）；
+    # 未开启时行为与原有确定性层完全一致。
+    import os as _os
+    if _os.environ.get("ECO_SEMANTIC_GUARD") == "1":
+        from agent_core.semantic_guard import get_semantic_guard
+        return get_semantic_guard().semantic_check(content)
     return True, ""
 
 

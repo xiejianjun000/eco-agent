@@ -17,6 +17,24 @@ from dataclasses import dataclass, field
 CAPS_ALL = {"tools", "stream", "json", "vision"}
 
 
+def _key_value(name: str, env: dict | None = None) -> str | None:
+    """取 provider API key：keystore 优先，os.environ 直读回退（向后兼容）。
+
+    env 显式传入 dict 时保持纯 env 语义（测试/快照路径不变）；
+    keystore 后端故障一律静默回退 os.environ，不影响现有行为。
+    """
+    if env is not None:
+        return env.get(name)
+    try:
+        from agent_core import keystore as _ks
+        v = _ks.get_keystore().get(name)
+        if v:
+            return v
+    except Exception:  # 后端不可用/未配置：回退 env 直读
+        pass
+    return os.environ.get(name)
+
+
 @dataclass
 class ProviderSpec:
     name: str            # 唯一标识，如 "moonshot"
@@ -29,9 +47,8 @@ class ProviderSpec:
     doc: str = ""        # 申请 key 的入口 URL
 
     def has_key(self, env: dict | None = None) -> bool:
-        """环境里（os.environ 或 ~/.eco/.env 快照）是否有该 provider 的 key"""
-        e = os.environ if env is None else env
-        return bool(e.get(self.env_key))
+        """环境里（keystore/os.environ 或 ~/.eco/.env 快照）是否有该 provider 的 key"""
+        return bool(_key_value(self.env_key, env))
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +237,7 @@ def available_providers(env: dict | None = None) -> list[ProviderSpec]:
             if e.get("ECO_CUSTOM_BASE_URL"):
                 out.append(spec)
             continue
-        if e.get(spec.env_key):
+        if _key_value(spec.env_key, env):
             out.append(spec)
     return out
 
@@ -242,11 +259,11 @@ def resolve_provider(name_or_env: str | None, env: dict | None = None) -> Provid
         except KeyError:
             pass  # 非法名字继续回退而不是直接炸（CLI 有独立报错路径）
     # KIMI_API_KEY 与 MOONSHOT_API_KEY 都映射到 moonshot（历史兼容：kimi 单独 env）
-    if e.get("KIMI_API_KEY") or e.get("MOONSHOT_API_KEY"):
+    if _key_value("KIMI_API_KEY", env) or _key_value("MOONSHOT_API_KEY", env):
         return PROVIDERS["moonshot"]
-    if e.get("DEEPSEEK_API_KEY"):
+    if _key_value("DEEPSEEK_API_KEY", env):
         return PROVIDERS["deepseek"]
-    avail = available_providers(e)
+    avail = available_providers(env)  # 传原始 env：None 时才走 keystore 优先
     if avail:
         return avail[0]
     return PROVIDERS["deepseek"]  # 无 key 时的兜底默认

@@ -63,6 +63,10 @@ def _build_parser():
     p.add_argument("--tree", action="store_true", help="树形展示 span 树")
     p.add_argument("--otel", nargs="?", const="", default=None, metavar="OUT.json",
                    help="导出 OTLP JSON（缺省写到 ./<session>.otlp.json）")
+    p.add_argument("--export", choices=["otlp"], default=None,
+                   help="直接 POST 到 OTel collector（失败降级写本地文件）")
+    p.add_argument("--endpoint", default=None, metavar="URL",
+                   help="OTel collector endpoint（默认 http://localhost:4318）")
     p = sub.add_parser("auth", help="Non-interactive L4 auth grants")
     p.add_argument("auth_action", choices=["grant", "revoke", "list"], nargs="?", default="list")
     p.add_argument("grant_id", nargs="?", default=None)
