@@ -198,6 +198,25 @@ _FORBIDDEN_PATTERNS = [
     r"(puuza|sahau|futa).{0,20}(maelekezo|kanuni|awali)?",
     r"(omitir|omite|descartar).{0,20}(instrucci|regla|anterior)?",
     r"(scarta|ignora).{0,20}(istruzion|regol|precedent)?",
+    # ══ 第七轮对抗收口 ══
+    # 1) 拉丁文字长尾语种（芬/匈/克/塞拉丁/巴斯克）
+    r"(unohda|unohdat).{0,20}(ohje|ohjeet|säännöt|aiemm|kaikki)?",
+    r"(hagyd|figyelmen|kívül).{0,20}(utasítás|szabály|előző)?",
+    r"(zanemari|zanemariti).{0,20}(uput|pravil|prethodn)?",
+    r"(ignoriši|ignorisi|zaboravi).{0,20}(uputstv|pravil|prethodn)?",
+    r"(jarraibide|guztiak).{0,20}(aldebatera|utzi|bazter)?",
+    r"aldebatera.{0,10}(utzi|jarraibide)",
+    # 2) 英语口语化宣告（don't apply anymore / don't count / starting fresh）
+    r"(rules?|instructions?|guidelines?|restrictions?).{0,20}(don't|donot|doesn't|doesnot|won't|willnot|nolonger).{0,12}(apply|count|matter|hold|work)",
+    r"(scratch|drop|trash|discard).{0,15}(everything|all|what|whatever).{0,12}(i|you|we).{0,6}(told|said|gave|mentioned)",
+    r"(none|neither|nothing).{0,12}(of)?.{0,6}(the)?.{0,4}(earlier|previous|prior|above).{0,12}(instruction|instructions|rule|rules|guideline).{0,12}(count|apply|matter|stand|hold)",
+    r"(tohell|screw|forget).{0,8}with.{0,8}(your|the).{0,6}(guideline|guidelines|rule|rules|restriction|restrictions)",
+    # 3) 中文剩余语义簇（规矩/规定/卸掉/没有任何限制）
+    r"(之前|以前|以上|先前|所有|全部)的?(规矩|规定|条条框框).{0,6}(全部|一律|统统|都)?.{0,4}(作废|无效|不算|失效)",
+    r"(别听|不听|莫听|甭听|不用听).{0,6}(之前|以前|那些|以上)?.{0,4}(规定|规矩|指令|规则|要求)",
+    r"(卸掉|卸下|拆除|解除|剥离).{0,6}(你的|所有|全部)?.{0,4}(人设|限制|约束|规则|设定|枷锁|束缚)",
+    r"(把|将).{0,10}(人设|限制|约束|规则|设定|枷锁|束缚).{0,4}(都|全)?.{0,2}(卸掉|卸下|拆除|解除|剥离|去掉|拿掉)",
+    r"(从现在|从此刻|自现在|自此)起?你.{0,6}(没有|无|不存在).{0,2}(任何)?.{0,2}(限制|约束|规则|规矩|束缚)",
     r"(instructions?|rules?|guidelines?).{0,12}(are|is).{0,8}(hereby)?.{0,8}(nullified|void|cancelled|canceled|revoked|nullandvoid)",
     r"(instructions?|rules?).{0,10}nolongerapply",
     # 6) 中文新簇
@@ -368,8 +387,12 @@ def validate_injection(content: str) -> tuple[bool, str]:
     # 语言白名单：本产品面向中文执法场景，注入内容/用户输入预期为中文或英文。
     # 出现 ≥6 连续非拉丁非汉字文字（西里尔/希腊/阿拉伯/希伯来/天城/孟加拉/泰/谚文/假名/注音等）
     # 即判定为高危——攻击者用翻译器即可构造的"低门槛语种扩展"面由本层系统性封堵。
-    if _EXOTIC_SCRIPT_RE.search(content) or _EXOTIC_SCRIPT_RE.search(
-            _normalize_for_injection_check(content)):
+    # 语言白名单：对原文与 NFKC 归一化（仅兼容分解、不拆谚文音节）双重校验。
+    # 注意不能用 _normalize_for_injection_check（含 NFKD，会把谚文音节拆成 jamo 造成误杀）。
+    import unicodedata as _ud
+    nfkc_nospace = _ud.normalize("NFKC", content)
+    nfkc_nospace = re.sub(r"[\s​‌‍⁠﻿­]+", "", nfkc_nospace)
+    if _EXOTIC_SCRIPT_RE.search(content) or _EXOTIC_SCRIPT_RE.search(nfkc_nospace):
         return False, "命中语言白名单: 含非中英文字的可疑内容（本产品仅受理中英文输入）"
     return True, ""
 
