@@ -68,8 +68,9 @@ def _build_parser():
     p.add_argument("--endpoint", default=None, metavar="URL",
                    help="OTel collector endpoint（默认 http://localhost:4318）")
     p = sub.add_parser("auth", help="Non-interactive L4 auth grants")
-    p.add_argument("auth_action", choices=["grant", "revoke", "list"], nargs="?", default="list")
-    p.add_argument("grant_id", nargs="?", default=None)
+    p.add_argument("auth_action", choices=["grant", "revoke", "list", "sso"], nargs="?", default="list")
+    p.add_argument("grant_id", nargs="?", default=None,
+                   help="revoke 的授权 id；或 sso 子操作（如: eco auth sso status）")
     p.add_argument("--level", default="L4", choices=["L3", "L4"])
     p.add_argument("--ttl", type=int, default=3600, help="授权有效期（秒）")
     p.add_argument("--scope", default="*", help="授权范围：工具名或 *")
