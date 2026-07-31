@@ -34,6 +34,33 @@ Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环
 - **资源协商**：两个 Agent 争用同一资源时，30 秒内自动达成避让协议，不会死锁
 - **自动流程发现**：从 20 次同类执行记录中自动提炼高频协作序列，生成可复用的工作流模板（`.ecoflow`）
 
+### SOUL 人格体系与权限闸门
+
+SOUL（人格/硬边界）不再是摆设文档，而是运行时的真实输入：
+
+```
+profiles/eco-agent/SOUL.md ─┐
+                            ├─> agent_core/soul.py（解析段落）
+profiles/agents/*_soul.md ─┘            │
+                                        ▼
+              agent_core/prompt_engine.py（SOUL 驱动双层提示词）
+                  ├─ 安全层：硬编码安全准则（兜底）+ SOUL「硬边界」段
+                  ├─ 人格层：SOUL「身份/核心人格/沟通风格」-> 基础系统提示词
+                  ├─ 阶段预设：巡查/文书/评查 状态机
+                  └─ 动态注入：注入校验 + SM3 链式审计
+                                        │
+              ┌─────────────────────────┼──────────────────────┐
+              ▼                         ▼                      ▼
+        eco chat 系统提示词      role_swarm 三角色          workspace 注入
+        （统一由此产出，        brief 合并 searcher/       （沿用同一引擎）
+         旧单行常量已废弃）      reviewer/writer_soul
+```
+
+- **SOUL 缺失不崩**：SOUL.md 或角色 soul 文件缺失时自动回退硬编码安全准则/人格/brief
+- **SOUL 热更新**：改 `profiles/eco-agent/SOUL.md` 的「硬边界」，下次会话即生效（`PromptEngine.reload_soul()` 可进程内重载）
+- **权限闸门（L1-L4）**：`agent_core/permissions.py` 将 `PERMISSION.md` 真实化——每个工具按前缀映射风险级（query_*/search_*=L1，本地写入=L2，execute_code=L3，apply_*/trade_* 等外部写=L4），`tool_risk_overrides` 块可逐工具覆盖；L1/L2 自动放行，L3 白名单放行否则确认，L4 必须人工 y/n 确认（非交互模式拒绝），全部决策写 SM3 审计链（`source=permission`）
+- **查看分级**：`eco doctor` 输出 SOUL 加载状态与工具风险分级统计（`-v` 打全表）；`eco chat -v` 可见系统提示词来源（SOUL / 硬编码回退）
+
 ### 技能系统
 
 - **自动生成**：检测到同一任务模式出现 3 次以上，60 秒内自动生成可复用的 Skill 文件，含参数模板、前置条件、调用示例
