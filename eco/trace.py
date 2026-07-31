@@ -114,6 +114,13 @@ class Tracer:
         self._emit(line, style="#c08ae0")
         self._audit(line, phase="swarm")
 
+    # ── 系统提示词事件（SOUL 接线可见性）─────────────────
+    def system_prompt(self, text: str, soul_loaded: bool = True):
+        src = "SOUL" if soul_loaded else "硬编码回退"
+        t = _truncate(text.replace("\n", " ⏎ "), 240)
+        self._emit(f"  🧬 系统提示词[{src}]: {t}", style="#8a6ac0")
+        self._audit(f"🧬 系统提示词[{src}]: {t}", phase="system_prompt")
+
     # ── 工作区检索注入事件 ───────────────────────────────
     def retrieval(self, hits: int, channel: str = ""):
         if hits > 0:

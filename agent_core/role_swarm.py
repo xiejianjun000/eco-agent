@@ -36,6 +36,7 @@ ROLES = {
     "patrol": {
         "name": "巡查Agent",
         "phase": "inspection",
+        "soul": "searcher",  # profiles/agents/searcher_soul.md（缺失回退硬编码 brief）
         "brief": ("你是现场巡查专家。针对任务给出现场检查要点：检查对象/部位、"
                   "取证规范（照片、笔录、监测数据、台账）、违法线索初步判断。证据意识优先。"),
         "max_tokens": 700,
@@ -43,6 +44,7 @@ ROLES = {
     "law": {
         "name": "法规Agent",
         "phase": "review",
+        "soul": "reviewer",  # profiles/agents/reviewer_soul.md
         "brief": ("你是法规核验专家。针对任务核验适用法律法规：给出真实现行有效的法规名称与具体条款号，"
                   "说明违法构成与裁量要点；不确定的法条明确标注不确定，禁止编造。"),
         "max_tokens": 700,
@@ -50,6 +52,7 @@ ROLES = {
     "doc": {
         "name": "文书Agent",
         "phase": "documentation",
+        "soul": "writer",  # profiles/agents/writer_soul.md
         "brief": ("你是执法文书专家。根据巡查要点与法规核验结果，生成检查记录框架与巡查清单："
                   "要素完整（当事人/事实/证据/法律依据/裁量说明），用语规范。"),
         "max_tokens": 900,
@@ -100,10 +103,16 @@ class RoleSwarm:
         self.synth_model = synth_model or os.environ.get("ECO_SWARM_SYNTH_MODEL", "")
 
     def _role_system_prompt(self, role: str) -> str:
-        """复用 prompt_engine 双层提示词 + 对应阶段预设 + 角色 brief"""
-        from agent_core.prompt_engine import SAFETY_LAYER, PHASE_PRESETS
+        """prompt_engine 安全层（SOUL 驱动）+ 阶段预设 + 角色 soul（profiles/agents）+ 硬编码 brief 兜底"""
+        from agent_core.prompt_engine import PHASE_PRESETS, get_prompt_engine
+        from agent_core.soul import load_agent_soul
         cfg = ROLES[role]
-        parts = [SAFETY_LAYER, *PHASE_PRESETS[cfg["phase"]], cfg["brief"]]
+        eng = get_prompt_engine()
+        parts = [eng.safety_layer(), *PHASE_PRESETS[cfg["phase"]]]
+        soul_text = load_agent_soul(cfg.get("soul", "")) if cfg.get("soul") else ""
+        if soul_text:
+            parts.append(f"【角色人格 {cfg['soul']}_soul】\n{soul_text}")
+        parts.append(cfg["brief"])  # 硬编码 brief 始终保留为职责兜底
         return "\n\n".join(parts)
 
     def _call_role(self, role: str, task: str, context: str, task_id: str) -> str:

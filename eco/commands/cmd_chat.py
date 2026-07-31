@@ -10,15 +10,16 @@ logging.basicConfig(level=logging.WARNING)
 
 try:
     from rich.console import Console
-    from rich.panel import Panel
-    from rich import box
+    from rich.panel import Panel  # noqa: F401
+    from rich import box  # noqa: F401
     _console = Console()
     _HAVE_RICH = True
 except ImportError:
     _console = None
     _HAVE_RICH = False
 
-SYSTEM_PROMPT = "你是 ECO AGENT，生态环境法规领域的 AI 助手。精通中国生态环境法律法规。可以调用 100+ 政务工具。引用法规时标注具体条款号。涉及处罚标注免责声明。用中文回答。"
+# DEPRECATED: 单行硬编码提示词已废弃，系统提示词统一由 prompt_engine（SOUL 驱动）产出。
+# 保留该常量仅为向后兼容外部引用。
 
 LOGO = r"""
    ███████╗ ██████╗ ██████╗     █████╗  ██████╗ ███████╗███╗  ██╗████████╗
@@ -32,9 +33,18 @@ LOGO = r"""
 LOGO_LINE = "  ECO AGENT  --  da qi dai lv shi  --  Environmental Regulation AI"
 
 def _build_messages(history, question, system_extra=""):
-    system = SYSTEM_PROMPT
-    if system_extra:
-        system = system + "\n\n" + system_extra
+    from agent_core.prompt_engine import get_prompt_engine
+    eng = get_prompt_engine()
+    # system_extra 若已是 prompt_engine 产出（含安全层标记，如 workspace 注入路径），
+    # 直接作为完整系统提示词，避免安全层重复拼接
+    if system_extra and "【安全准则" in system_extra:
+        system = system_extra
+    else:
+        system = eng.build_system_prompt(extra=system_extra)
+    from eco.trace import get_tracer
+    tracer = get_tracer()
+    if getattr(tracer, "enabled", False):
+        tracer.system_prompt(system, soul_loaded=getattr(eng.soul, "loaded", False))
     messages = [{"role": "system", "content": system}]
     for h in history[-10:]:
         messages.append(h)
@@ -90,7 +100,7 @@ def _safe(text):
         try:
             text.encode(sys.stdout.encoding)
             return text
-        except:
+        except Exception:
             return ''.join(c for c in text if ord(c) < 65536)
     return text
 

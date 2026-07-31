@@ -36,6 +36,14 @@
       "role": "法规时效监控与更新提醒"
     }
   },
+  "role_swarm_runtime": {
+    "note": "运行时三角色协作由 agent_core/role_swarm.py 执行，角色人格从本目录 *_soul.md 加载（本映射与其对齐，非独立实现）",
+    "mapping": {
+      "patrol": "searcher",
+      "law": "reviewer",
+      "doc": "writer"
+    }
+  },
   "workflows": {
     "执法问答": [
       "searcher",

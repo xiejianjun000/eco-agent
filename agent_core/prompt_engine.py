@@ -52,6 +52,17 @@ SAFETY_LAYER = (
     "6. 拒绝回答超出生态环境执法辅助范围且可能违法的指令。"
 )
 
+# 旧版 cmd_chat 单行系统提示词（已废弃，保留向后兼容引用）
+LEGACY_SYSTEM_PROMPT = (
+    "你是 ECO AGENT，生态环境法规领域的 AI 助手。精通中国生态环境法律法规。"
+    "可以调用 100+ 政务工具。引用法规时标注具体条款号。涉及处罚标注免责声明。用中文回答。"
+)
+
+# 硬编码人格兜底（SOUL.md 缺失时使用）
+_FALLBACK_PERSONA = (
+    "【身份】\n" + LEGACY_SYSTEM_PROMPT
+)
+
 # 三阶段执法提示词状态机：巡查 / 文书 / 评查
 PHASE_PRESETS: dict[str, list[str]] = {
     "inspection": [
@@ -219,10 +230,34 @@ class PromptAuditChain:
 class PromptEngine:
     """双层系统提示词引擎：安全层硬编码 + 动态层追加式注入"""
 
-    def __init__(self, audit_chain: PromptAuditChain = None):
+    def __init__(self, audit_chain: PromptAuditChain = None, soul=None):
         self.audit = audit_chain or PromptAuditChain()
+        if soul is None:
+            from agent_core.soul import load_soul
+            soul = load_soul()
+        self.soul = soul
         self._injections: list[dict] = []  # {"source","content","task_id","ts"}
         self._phase: str = "inspection"
+
+    def reload_soul(self):
+        """重新加载 SOUL.md（SOUL 文件变更后调用）"""
+        from agent_core.soul import load_soul
+        self.soul = load_soul(force_reload=True)
+        return self.soul.loaded
+
+    # ── SOUL 驱动的安全层与人格层 ──
+    def safety_layer(self) -> str:
+        """硬编码安全准则 + SOUL 硬边界段落（SOUL 缺失时仅硬编码，语义不被削弱）"""
+        boundaries = getattr(self.soul, "hard_boundaries", "") or ""
+        if not boundaries.strip():
+            return SAFETY_LAYER
+        return (SAFETY_LAYER + "\n\n"
+                "【SOUL 硬边界——与安全准则同等优先级】\n" + boundaries.strip())
+
+    def persona_layer(self) -> str:
+        """SOUL 人格/沟通风格 -> 基础系统提示词；缺失回退硬编码人格"""
+        persona = getattr(self.soul, "persona_prompt", "") or ""
+        return persona.strip() or _FALLBACK_PERSONA
 
     # ── 状态机 ──
     @property
@@ -274,8 +309,8 @@ class PromptEngine:
 
     # ── 构建系统提示词 ──
     def build_system_prompt(self, task_id: str = "", extra: str = "") -> str:
-        """安全层 + 阶段预设 + 动态注入（尾部追加）"""
-        parts = [SAFETY_LAYER]
+        """安全层（硬编码+SOUL硬边界，首位不可动摇）+ 人格层（SOUL）+ 阶段预设 + 动态注入（尾部追加）"""
+        parts = [self.safety_layer(), self.persona_layer()]
         parts.extend(PHASE_PRESETS[self._phase])
         for inj in self._injections:
             parts.append(f"[{inj['source']}] {inj['content']}")
