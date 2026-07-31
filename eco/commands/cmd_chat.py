@@ -241,11 +241,23 @@ def _stream_answer(messages, tracer=None):
         pass
     return result
 
+def _user_input_blocked(text: str):
+    """用户原始输入同样过注入防线（此前只校验动态注入内容，用户输入裸奔）。
+    命中返回拒绝原因字符串，未命中返回 None。"""
+    from agent_core.prompt_engine import validate_injection
+    ok, reason = validate_injection(text)
+    return None if ok else reason
+
+
 def run(args):
     from eco.trace import set_verbose, get_tracer
     set_verbose(getattr(args, "verbose", False))
     restored = _restore_session(args)
     if args.query:
+        blocked = _user_input_blocked(args.query)
+        if blocked:
+            print(f"[安全拦截] 输入命中注入防线：{blocked}")
+            return 2
         tracer = get_tracer()
         _handle_resume_intent(args.query)
         extra = _workspace_system_extra(args.query, tracer=tracer)
@@ -337,6 +349,10 @@ def _repl(history=None):
             continue
         if q == "/new":
             history = []; print("[reset]"); continue
+        blocked = _user_input_blocked(q)
+        if blocked:
+            print(f"[安全拦截] 输入命中注入防线：{blocked}")
+            continue
         if q == "/ws":
             cur = mgr.current()
             print(mgr.current().summary() if cur else "[workspace] 当前无打开的工作区")
