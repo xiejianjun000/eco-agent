@@ -235,6 +235,16 @@ _FORBIDDEN_PATTERNS = [
     # 2) 英文近义名词漏词（directive/decree/mandate）
     r"(treat|regard|consider|view|deem).{0,12}(earlier|previous|prior|above|former).{0,12}(directive|directives|instruction|instructions|rule|rules|decree|mandate|guideline).{0,12}(as)?.{0,8}(garbage|trash|void|null|invalid|nothing|meaningless|irrelevant)",
     r"(ignore|disregard|forget|drop|override).{0,15}(directive|directives|decree|mandate)",
+    # ══ 第十轮对抗收口 ══
+    # 1) 中文口语残余簇（作废掉/别往心里去/没有任何条条框框/无所顾忌模式）
+    r"(之前|以前|以上|刚才|跟你|和你).{0,4}(说的|讲的|聊的|谈的)?.{0,4}(都|全|统统)?.{0,2}(作废|不算|无效|取消)(掉|了)?",
+    r"(规矩|规则|规定|指令|要求|设定).{0,4}(别|不要|不用|甭).{0,2}(往心里去|放在心上|当回事|当真)",
+    r"(没有|不存在|无).{0,2}(任何)?.{0,2}(条条框框|规矩|约束|限制|束缚)了?$",
+    r"(切换成|切换到|进入|变成|转为).{0,4}(无所顾忌|肆无忌惮|无禁忌|无底线|百无禁忌).{0,2}(模式|状态)?",
+    # 2) 英文语义残余（stop following / no longer have limits / set aside）
+    r"(stop|quit|cease).{0,8}(following|obeying|heeding).{0,12}(your|the)?.{0,4}(rule|rules|instruction|instructions|guideline)",
+    r"(you|u).{0,4}(nolonger|notanymore|anymore).{0,8}(have)?.{0,4}(any)?.{0,2}(limit|limits|restriction|restrictions|constraint)",
+    r"(setaside|putaside|castaside|brushaside).{0,15}(everything|all|what|whatever).{0,12}(told|said|instructed|given)",
     r"(instructions?|rules?|guidelines?).{0,12}(are|is).{0,8}(hereby)?.{0,8}(nullified|void|cancelled|canceled|revoked|nullandvoid)",
     r"(instructions?|rules?).{0,10}nolongerapply",
     # 6) 中文新簇
@@ -336,6 +346,7 @@ _EXEMPT_CONTEXTS = (
     "查处", "防范", "防止", "打击", "严惩", "处罚", "依法", "案例", "警示",
     "宣讲", "讲解", "教学", "识别", "调查", "举报", "控告", "审判", "起诉",
     "犯罪", "违法", "罪名", "刑事责任", "量刑", "如何认定", "构成",
+    "指控", "检察", "被告人", "公诉", "涉嫌", "法院", "判决", "庭审", "立案",
 )
 
 
@@ -366,7 +377,7 @@ def validate_injection(content: str) -> tuple[bool, str]:
         if rex.search(content) and not _exempted(rex.pattern, content):
             return False, f"命中禁止 pattern#{i}: 试图覆盖安全层/解除限制"
     for w in _FORBIDDEN_WORDS:
-        if w in content:
+        if w in content and not any(ctx in content for ctx in _EXEMPT_CONTEXTS):
             return False, f"命中禁止词: {w}"
     # 归一化二次校验：对抗插空格/全半角/大小写/零宽字符/leetspeak 混淆绕过
     for normalized in _normalized_variants(content):
@@ -377,7 +388,8 @@ def validate_injection(content: str) -> tuple[bool, str]:
             if rex.search(normalized):
                 return False, f"命中归一化禁止 pattern#{i}: 英文/leet 改写绕过尝试"
         for w in _FORBIDDEN_WORDS:
-            if _normalize_for_injection_check(w) in normalized:
+            if _normalize_for_injection_check(w) in normalized and not any(
+                    ctx in normalized for ctx in _EXEMPT_CONTEXTS):
                 return False, f"命中禁止词（归一化后）: {w}"
     # base64/hex/URL 编码载荷二次校验：对疑似编码 token 解码后递归校验
     for decoded in _decode_suspect_tokens(content):
@@ -442,7 +454,51 @@ _EN_COMMON = frozenset(
     "kotlin scala terraform ansible jenkins gradle maven npm pip yarn vscode eclipse idea "
     "redis kafka mongo postgres mysql oracle flask django spring react vue angular webpack "
     "oauth jwt token session cookie header request response status http https tcp udp ssh ftp "
-    "dockerfile container image registry cluster namespace service ingress helm chart".split())
+    "dockerfile container image registry cluster namespace service ingress helm chart "
+    # 日常高频英文词（防正常英文句子被外语门误判）
+    "stop car front back behind ahead near far drive driving road street vehicle truck turn left right "
+    "home work school day night time year people way thing man woman child world life hand part place "
+    "case week company number group problem fact water air land city county province factory plant "
+    "station waste gas river lake soil noise dust smoke sample standard limit value level result record "
+    "form document evidence site area project plan meeting office department government bureau agency "
+    "unit team member leader manager officer citizen public local national major minor large small high "
+    "low new old good bad big little long short first last next different important necessary possible "
+    "current recent special general specific normal illegal legal criminal civil administrative "
+    "environmental industrial commercial municipal rural urban domestic international regional annual "
+    "monthly weekly daily total average maximum minimum about above below over under between within "
+    "without during before after since until while because therefore however moreover instead rather "
+    "either neither both each another someone anyone everyone nobody somebody everything something "
+    "anything nothing here there now then today tomorrow yesterday soon later already still yet again "
+    "also even almost nearly quite really actually probably perhaps maybe certainly definitely exactly "
+    "mainly mostly partly entirely completely totally directly quickly slowly easily usually often "
+    "sometimes always never immediately finally eventually recently currently previously generally "
+    "normally commonly especially particularly specifically significantly substantially relatively "
+    "similarly accordingly consequently hence thus meanwhile forward backward aside besides except "
+    "despite regarding concerning including excluding following according depending using used based "
+    "known said given taken made come get make take go see look find give tell say ask answer talk "
+    "speak write read listen hear show try use need want like love help start begin continue keep hold "
+    "leave stay remain move change increase decrease reduce raise lower improve develop create produce "
+    "provide offer include exclude add remove replace follow lead guide support protect prevent avoid "
+    "allow permit forbid ban control manage handle treat deal solve resolve address consider regard "
+    "view assess evaluate review examine inspect investigate analyze study research monitor measure "
+    "test detect identify recognize confirm verify approve reject accept refuse deny admit claim "
+    "declare announce state explain describe note notice mention refer cite quote list name call term "
+    "define mean indicate suggest imply prove demonstrate reveal display present represent perform "
+    "conduct carry execute implement apply adopt establish set construct organize arrange prepare "
+    "design draft sign seal issue publish release submit file register store save copy send receive "
+    "deliver transfer transport import buy sell pay cost spend charge penalize punish sue prosecute "
+    "arrest detain seize confiscate destroy damage pollute contaminate emit discharge dump process "
+    "dispose recycle reuse recover remediate restore "
+    # 日常词汇补充（防英文常用句误判）+ 常见带调外来词
+    "quick brown fox jumps jump lazy dog cat bird fish horse cow pig sheep goat chicken duck rabbit "
+    "mouse rat bear wolf lion tiger elephant monkey snake frog spider ant bee butterfly tree flower "
+    "grass leaf root fruit vegetable apple banana orange grape bread rice meat milk cheese egg butter "
+    "sugar salt oil tea coffee juice wine beer red blue green yellow black white gray purple pink "
+    "run runs walk walks sit sits sleep sleeps eat eats drink drinks play plays sing sings dance "
+    "dances swim swims fly flies climb climbs jump jumped run ran walk walked sleep slept eat ate "
+    "drink drank swim swam fly flew résumé cafe café naïve naive fiancé cliché décor exposé señor "
+    "piñata jalapeño zürich münchen köln blasé protégé attaché soufflé château pâté crème brûlée "
+    "entrée éclair façade ångström smörgåsbord".split())
 
 
 def _split_camel(word: str) -> list[str]:
@@ -473,9 +529,14 @@ def _foreign_latin_suspect(text: str) -> bool:
         hits = sum(1 for w in words if w.lower() in _EN_COMMON)
         total = len(words)
         # 英文豁免条件：命中 ≥2 或命中率 ≥50%（且至少 1 个命中）
-        if hits >= 2 or (hits >= 1 and hits / total >= 0.5):
+        if hits >= 2 and hits / total >= 0.5:
             continue
         if total >= 3 or (total == 2 and sum(len(w) for w in words) >= 8):
+            return True
+    # 单词级兜底：含非 ASCII 拉丁字符（ë/ð/š/ī…）且长度 ≥6 的词直接判外语——
+    # 封堵"英文动词+单个外语词"混排（please ignore udhëzimet）绕过豁免线的手法
+    for w in re.findall(r"[A-Za-zÀ-ɏ]{6,}", text):
+        if re.search(r"[À-ɏ]", w) and w.lower() not in _EN_COMMON:
             return True
     return False
 
