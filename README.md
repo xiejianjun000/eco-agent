@@ -345,6 +345,24 @@ python agent_core/eco_loops_integration.py --self-test
 
 **诚实分析**：① 上轮"RAG 总分低于 baseline"被证实纯粹是工程事故（30s 超时 + 余额中止）而非检索质量回落——三修后同一评分器下 RAG 引用准确率 0.843，显著高于 baseline 0.538，也接近上轮"仅有效作答"口径的 0.875。② baseline 两轮分数接近（0.519→0.538），说明模型通道切换（kimi-k2.5→deepseek-chat）对裸模型成绩影响很小，对照公平性成立。③ 法典专题仍是 RAG 优势最大的分区（0.95 vs 0.11）：2026 年法典在模型内部知识中不存在，无检索只能引用已废止旧法或如实回答"尚未出台"。④ 残留弱点：执法程序类 RAG cite 反而低于 baseline（0.50 vs 0.60），注入 1500 字符条款窗口后模型过度锚定检索到的单行法条款、忽略程序性规定；法典新旧衔接（旧 10 题）RAG 0.60 亦低于 baseline 0.80，过渡适用（从旧兼从轻）的多法条并引仍是难点。⑤ 本轮未发生 provider 切换与中止，容灾路径仅以 mock 测试覆盖（test_ecobench_resilience.py 12 例）。
 
+## 阶段B1：项目工作区 · 三角色执法协作
+
+### 1. 项目工作区（`agent_core/workspace.py` + `eco workspace`）
+- 以企业/项目为单位的持久化工作区：`~/.eco/workspaces/<slug>/`（`meta.json` 元数据 / `notes.md` 检查历史摘要与中间结论 / `history.jsonl` 逐轮事件 / `todos.md` 待办），含关联法规与关联纠错引用。
+- CLI：`eco workspace create|list|open|close|show|freeze`；`create` 自动打开，`freeze` 将工作区摘要固化进 Memory Tree（复用 `_scripts/memory_tree` 接口）。
+- `eco chat` 关联当前工作区后：提示符变为 `eco[<slug>]>`，工作区摘要经 **prompt_engine 注入校验**后自动进入提示词动态层（来源 `workspace:<slug>`，全链审计），对话逐轮落盘到工作区历史。
+- 跨会话续接：新会话说"继续上次合力砖厂的检查"类意图时，`detect_resume_intent()` 自动按名称（或最近活跃）匹配并加载工作区，历史摘要注入后续接对话。
+- `/ws` 查看当前工作区摘要。
+
+### 2. 三角色执法协作（`agent_core/role_swarm.py`，基于 L2 DAG 思路，不引入外部框架）
+- 三角色：**巡查Agent**（现场检查要点/证据意识，复用 inspection 阶段）、**法规Agent**（法条核验/裁量，复用 review 阶段）、**文书Agent**（检查记录/巡查清单，复用 documentation 阶段），均复用 prompt_engine 双层提示词。
+- 总管 DAG：巡查 ∥ 法规（并行）→ 文书（依赖两者产出）→ 仲裁合成；角色走 cheap tier（`ECO_SWARM_ROLE_MODEL`），合成走 strong tier（`ECO_SWARM_SYNTH_MODEL`）。
+- 复杂度判断：简单问答不启用协作（避免浪费）；含"全套/专项/检查清单/排查"等复杂执法任务自动进入三角色流程。
+- 输出标注各角色贡献段 + 总管合成最终检查清单；每个角色产出与合成写入 SM3 提示词审计链（`source=swarm:<role>`，同一 task_id）。
+- EcoBench 抽测对比（前 5 题，deepseek-chat，如实记录）：单 Agent 引用准确率 0.80 / 要点 F1 0.83；三角色协作 1.00 / 0.96（`benchmarks/ecobench/compare_swarm.py`，结果见 `ecobench_swarm_compare.json`）。
+
+---
+
 ## 测试状态
 
 | 模块 | 文件 | 测试数 |
@@ -360,6 +378,8 @@ python agent_core/eco_loops_integration.py --self-test
 | EcoBench 条款号归一化（离线） | tests/modules/test_ecobench_norm.py | 7 |
 | EcoBench RAG（检索注入/定位→直取流程 mock） | tests/modules/test_ecobench_rag.py | 11 |
 | EcoBench 三修容灾（时限/重试/provider切换 mock） | tests/modules/test_ecobench_resilience.py | 12 |
+| 项目工作区（CRUD/续接/注入/Memory Tree 固化） | tests/modules/test_workspace.py | 11 |
+| 三角色协作（DAG/贡献段/审计链 mock LLM） | tests/modules/test_role_swarm.py | 13 |
 
 并行执行：`python tests/run_all.py` · 历史记录：[TEST_LOG.md](TEST_LOG.md)
 
