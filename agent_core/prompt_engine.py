@@ -162,6 +162,7 @@ _FORBIDDEN_PATTERNS = [
     r"無視して|指示を無視|命令を無視",
     r"(ルール|規則|指示|命令).{0,4}(を)?.{0,4}(忘れ|無視|破棄|削除|無効)",
     r"무시|지시를잊|이전지시",
+    r"boqua.{0,12}(huongdan|chithi|lenh|hướngdẫn|chỉthị|lệnh)",
     r"bỏqua.{0,12}(hướngdẫn|chỉthị|lệnh)",
     r"ละเว้น|มองข้าม",
     # 5) 英文进行时/宣告式
@@ -183,12 +184,20 @@ _FORBIDDEN_PATTERNS = [
     r"(pretend|imagine|assume).{0,15}(youhave|having|with)?.{0,4}no.{0,6}(rule|rules|restriction|restrictions|limit|limits|constraint)",
     r"(forget|erase|delete).{0,10}(what|everything|all).{0,8}(i|we).{0,4}(said|told|discussed|mentioned)",
     r"请勿.{0,4}(遵守|遵循|遵照|执行).{0,8}(先前|之前|以上|原先)?.{0,4}(指令|规则|设定|要求)?",
+    r"(你的|所有)?.{0,2}(规则|设定|指令|限制|约束).{0,6}(从现在|从此刻|从现在开始|自此|自现在).{0,4}(起)?.{0,4}(不适用|不再适用|失效|无效|作废)",
     # 4) 倒装与裸指令作废（XML 包裹语境）
     r"(作废|废除|取消|删除).{0,4}(之前|以上|先前|所有|全部|一切).{0,4}(规则|指令|设定|要求|提示)",
     r"</?(system|developer|admin|root)>",
     # 5) 文言新簇
     r"勿(守|遵循|遵守|听|信).{0,4}(前|旧|先|原)?.{0,2}(规|令|指令|规则|诫)",
     r"(指令|规则|令)[，,]?(尽|悉|皆|咸)(弃|废|除|黜)(?!.{0,8}(不可取|不对|错误|荒谬|荒唐|不可行|的做法))",
+    # ══ 第六轮对抗收口：拉丁语系更多语种高危动词（非拉丁文字由语言白名单统一拦截）══
+    r"(negeer|negeren|vergeet).{0,20}(instructie|instructies|regel|regels|vorige)?",
+    r"(yoksay|görmezden|umursama|unut).{0,20}(talimat|kural|önceki)?",
+    r"(zignoruj|ignoruj|zapomnij).{0,20}(instrukcj|zasad|reguł|poprzedni)?",
+    r"(puuza|sahau|futa).{0,20}(maelekezo|kanuni|awali)?",
+    r"(omitir|omite|descartar).{0,20}(instrucci|regla|anterior)?",
+    r"(scarta|ignora).{0,20}(istruzion|regol|precedent)?",
     r"(instructions?|rules?|guidelines?).{0,12}(are|is).{0,8}(hereby)?.{0,8}(nullified|void|cancelled|canceled|revoked|nullandvoid)",
     r"(instructions?|rules?).{0,10}nolongerapply",
     # 6) 中文新簇
@@ -242,6 +251,9 @@ def _normalize_for_injection_check(text: str) -> str:
     对抗"忽 略 之 前 的 指 令"插空格/全半角混淆/大小写混淆/leet/emoji/同形字等绕过手法。"""
     import unicodedata
     t = unicodedata.normalize("NFKC", text)
+    # 声调/变音符号剥离（hū lüè→hu lue；instrucción→instruccion）：NFKD 分解后去组合符
+    t = unicodedata.normalize("NFKD", t)
+    t = "".join(ch for ch in t if unicodedata.category(ch) != "Mn")
     t = t.translate(_CONFUSABLE_MAP)
     # 去除所有空白字符与零宽字符（ZWSP/ZWNJ/ZWJ/BOM/软连字符等）
     t = re.sub(r"[\s​‌‍⁠﻿­]+", "", t)
@@ -338,16 +350,37 @@ def validate_injection(content: str) -> tuple[bool, str]:
         for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
             if rex.search(decoded):
                 return False, f"命中归一化禁止 pattern#{i}（编码解码后）: 编码载荷绕过尝试"
-    # 反向书写变体（snoitcurtsni suoiverp erongi）：对归一化文本反转后校验英文 pattern
+    # 反向书写变体（snoitcurtsni suoiverp erongi / 令指的前之略忽）：反转后全量校验
     reversed_norm = _normalize_for_injection_check(content)[::-1]
     for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
         if rex.search(reversed_norm):
             return False, f"命中归一化禁止 pattern#{i}（反向书写）: 反写绕过尝试"
     for i, rex in enumerate(_FORBIDDEN_RE):
-        if "ignore" in rex.pattern or "disregard" in rex.pattern or "forget" in rex.pattern:
-            if rex.search(reversed_norm):
-                return False, f"命中禁止 pattern#{i}（反向书写）: 反写绕过尝试"
+        if rex.search(reversed_norm) and not _exempted(rex.pattern, reversed_norm):
+            return False, f"命中禁止 pattern#{i}（反向书写）: 反写绕过尝试"
+    # ROT13 变体（vtaber cerivbhf vafgehpgvbaf）：ROT13 解码后校验英文 pattern
+    import codecs as _codecs
+    rot13_norm = _normalize_for_injection_check(_codecs.decode(content, "rot_13"))
+    if rot13_norm != _normalize_for_injection_check(content):
+        for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
+            if rex.search(rot13_norm):
+                return False, f"命中归一化禁止 pattern#{i}（ROT13）: 凯撒位移绕过尝试"
+    # 语言白名单：本产品面向中文执法场景，注入内容/用户输入预期为中文或英文。
+    # 出现 ≥6 连续非拉丁非汉字文字（西里尔/希腊/阿拉伯/希伯来/天城/孟加拉/泰/谚文/假名/注音等）
+    # 即判定为高危——攻击者用翻译器即可构造的"低门槛语种扩展"面由本层系统性封堵。
+    if _EXOTIC_SCRIPT_RE.search(content) or _EXOTIC_SCRIPT_RE.search(
+            _normalize_for_injection_check(content)):
+        return False, "命中语言白名单: 含非中英文字的可疑内容（本产品仅受理中英文输入）"
     return True, ""
+
+
+# 连续 ≥6 个非拉丁/非汉字文字字符视为可疑（短地名/专有名词引用≤5字不误伤）
+# 覆盖：希腊 0370-03FF、西里尔 0400-04FF、亚美尼亚 0530-058F、希伯来 0590-05FF、
+# 阿拉伯 0600-06FF、天城 0900-097F、孟加拉 0980-09FF、泰 0E00-0E7F、
+# 埃塞俄比亚 1200-137F、谚文 1100-11FF+AC00-D7AF、假名 3040-30FF、注音 3100-312F
+_EXOTIC_SCRIPT_RE = re.compile(
+    r"[Ͱ-ϿЀ-ӿ԰-֏֐-׿؀-ۿऀ-ॿঀ-৿ก-๛ሀ-፟ᄀ-ᇿ가-힯ぁ-ゟ゠-ヿㄅ-ㄭʰ-˿]{6,}"
+)
 
 
 _B64_TOKEN_RE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
