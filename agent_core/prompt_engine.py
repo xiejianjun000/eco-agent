@@ -225,6 +225,16 @@ _FORBIDDEN_PATTERNS = [
     r"(wipe|erase|clear|reset).{0,12}(your|the)?.{0,4}(memory|memories|context|mind)",
     r"(overrule|overturn|veto).{0,12}(your|the)?.{0,4}(safety|rule|rules|instruction|instructions|guideline)",
     r"(dowhatever|doanything).{0,8}(youwant|youlike|youwish)",
+    # ══ 第九轮对抗收口 ══
+    # 1) 中文口语残余簇（一笔勾销/以前的话当我没说/已经不受约束/破规矩/老规矩不作数）
+    r"(把|将)?.{0,8}(安全|规则|指令|设定|限制|约束|准则).{0,4}(一笔勾销|勾销|一笔抹去|一笔抹掉)",
+    r"(之前|以前|原先|以上|刚才|早先).{0,4}(的话|说的|讲的|那些)?.{0,4}(当我没说|不作数|不算数|一笔勾销)",
+    r"你.{0,2}(现在|如今)?.{0,2}(已经|早已|早就).{0,2}(不受|没有|脱离|摆脱).{0,2}(任何)?.{0,2}(约束|限制|规则|规矩|束缚)",
+    r"(别管|甭管|不理|不听|不用理).{0,6}(你)?(那些|这些)?.{0,2}(破|臭|烂)?.{0,2}(规矩|规则|规定)",
+    r"(老规矩|旧规矩|那些规矩|这些规矩).{0,4}(统统|全部|都)?.{0,2}(不作数|不算数|作废|无效|失效)",
+    # 2) 英文近义名词漏词（directive/decree/mandate）
+    r"(treat|regard|consider|view|deem).{0,12}(earlier|previous|prior|above|former).{0,12}(directive|directives|instruction|instructions|rule|rules|decree|mandate|guideline).{0,12}(as)?.{0,8}(garbage|trash|void|null|invalid|nothing|meaningless|irrelevant)",
+    r"(ignore|disregard|forget|drop|override).{0,15}(directive|directives|decree|mandate)",
     r"(instructions?|rules?|guidelines?).{0,12}(are|is).{0,8}(hereby)?.{0,8}(nullified|void|cancelled|canceled|revoked|nullandvoid)",
     r"(instructions?|rules?).{0,10}nolongerapply",
     # 6) 中文新簇
@@ -411,7 +421,7 @@ def validate_injection(content: str) -> tuple[bool, str]:
     return True, ""
 
 
-# 英文常用词小词表（含攻击高频词，防"ignore previous instructions"被误判为外语——它由专项 pattern 拦截）
+# 英文常用词小词表（含攻击高频词+技术/产品名词，防英文技术场景与品牌名被误判外语）
 _EN_COMMON = frozenset(
     "the a an is are was were be been being to of in on at for with by from as into "
     "and or but not no yes you your yours we our i me my he she it they them this that these those "
@@ -419,24 +429,53 @@ _EN_COMMON = frozenset(
     "do does did done have has had having please thanks sorry hello hi ok "
     "ignore previous instruction instructions rule rules forget disregard safety system prompt "
     "check report data enterprise pollution emission fine penalty law regulation article "
-    "all any every some none more most other such only own same so than too very just".split())
+    "all any every some none more most other such only own same so than too very just "
+    # 技术/产品/运维常用词（英文技术命令串、产品名不误伤）
+    "kubernetes pod restart failed node docker compose build nginx proxy timeout error keeps "
+    "happening git rebase develop merge branch commit push pull deploy server client desktop "
+    "windows linux java python api json xml sql html debug log cache memory disk network database "
+    "table index query update delete insert select version install package config module class "
+    "function method array string object list file path directory folder screen display keyboard "
+    "mouse printer camera video audio image photo phone iphone ipad mac macbook pro air mini "
+    "plus youtube google amazon microsoft apple samsung huawei xiaomi taobao wechat alipay "
+    "app wifi bluetooth cpu gpu ram ssd usb javascript typescript golang rust ruby php swift "
+    "kotlin scala terraform ansible jenkins gradle maven npm pip yarn vscode eclipse idea "
+    "redis kafka mongo postgres mysql oracle flask django spring react vue angular webpack "
+    "oauth jwt token session cookie header request response status http https tcp udp ssh ftp "
+    "dockerfile container image registry cluster namespace service ingress helm chart".split())
+
+
+def _split_camel(word: str) -> list[str]:
+    """驼峰词拆分为组成词（anwybydduHollGyfarwyddiadau → 3 段），用于外语门词计数。
+    全小写或全大写单词保持原样。"""
+    if word.islower() or word.isupper():
+        return [word]
+    parts = re.findall(r"[A-Z]?[a-zà-ɏ]+|[A-Z]+(?![a-z])", word)
+    return [p for p in parts if len(p) >= 2] or [word]
 
 
 def _foreign_latin_suspect(text: str) -> bool:
-    """连续 ≥3 个拉丁单词且不含任何英文常用词 → 非英文外语（系统性封堵拉丁长尾语种）。
-    混排输入只取拉丁连续段判断；中文语境中夹带的外文长句同样拦截（指令通道不受理外文）。"""
+    """拉丁文字非英文整体拦截（系统性封堵拉丁长尾语种）。
+    判定规则（对抗第九轮戳穿的三处缝隙后）：
+    - 驼峰词先拆分（anwybydduHoll... 不能借驼峰豁免逃逸；MacBook→Mac/Book 在词表内不受累）
+    - 英文常用词命中数需 ≥2 或命中率 ≥50% 才豁免（掺一个 please 不再能躲门）
+    - 2 词阈值降至总字母 ≥8（"ignorē visu"10 字母亦拦）；单词 ≥3 字母才计数
+    混排输入只取拉丁连续段判断；中文语境夹带外文长句同样拦截（指令通道不受理外文）。"""
     runs = re.findall(r"[A-Za-zÀ-ɏ]+(?:[\s'-]+[A-Za-zÀ-ɏ]+)*", text)
     for run in runs:
-        # 驼峰/混排大小写视为专有名词（iPhone/YouTube/JavaScript），不参与语种判定
-        words = [w for w in re.split(r"[\s'-]+", run)
-                 if len(w) >= 3 and not re.search(r"[A-Z]", w[1:])]
+        raw_words = [w for w in re.split(r"[\s'-]+", run) if len(w) >= 3]
+        words = []
+        for w in raw_words:
+            words.extend(_split_camel(w))
+        words = [w for w in words if len(w) >= 3]
         if not words:
             continue
         hits = sum(1 for w in words if w.lower() in _EN_COMMON)
-        if hits > 0:
+        total = len(words)
+        # 英文豁免条件：命中 ≥2 或命中率 ≥50%（且至少 1 个命中）
+        if hits >= 2 or (hits >= 1 and hits / total >= 0.5):
             continue
-        # ≥3 词必拦；2 词需总字母数 ≥12（防"iPhone SE"类短引用误伤）
-        if len(words) >= 3 or (len(words) == 2 and sum(len(w) for w in words) >= 12):
+        if total >= 3 or (total == 2 and sum(len(w) for w in words) >= 8):
             return True
     return False
 
