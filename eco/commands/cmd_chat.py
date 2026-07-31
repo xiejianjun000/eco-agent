@@ -32,12 +32,50 @@ LOGO = r"""
 
 LOGO_LINE = "  ECO AGENT  --  da qi dai lv shi  --  Environmental Regulation AI"
 
-def _build_messages(history, question):
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+def _build_messages(history, question, system_extra=""):
+    system = SYSTEM_PROMPT
+    if system_extra:
+        system = system + "\n\n" + system_extra
+    messages = [{"role": "system", "content": system}]
     for h in history[-10:]:
         messages.append(h)
     messages.append({"role": "user", "content": question})
     return messages
+
+def _workspace_system_extra():
+    """当前工作区摘要经 prompt_engine 注入校验后进入动态层，返回拼接进 system 的文本"""
+    from agent_core.workspace import get_workspace_manager
+    mgr = get_workspace_manager()
+    if mgr.current() is None:
+        return ""
+    if mgr.inject_current_summary():
+        from agent_core.prompt_engine import get_prompt_engine
+        return get_prompt_engine().build_system_prompt()
+    return ""
+
+def _handle_resume_intent(q):
+    """跨会话续接：识别"继续上次XX的检查"类意图，自动匹配并加载工作区"""
+    from agent_core.workspace import get_workspace_manager
+    mgr = get_workspace_manager()
+    if mgr.current() is not None:
+        return None
+    ws = mgr.detect_resume_intent(q)
+    if ws is not None:
+        mgr.open(ws.meta.get("slug", ws.path.name))
+        print(f"[workspace] 已自动加载工作区: {ws.meta.get('name')}（历史事件 {len(ws.history())} 条）")
+        return ws
+    return None
+
+def _maybe_swarm(q, context=""):
+    """复杂执法任务启用三角色协作；简单问答返回 None"""
+    from agent_core.role_swarm import get_role_swarm, is_complex_task
+    if not is_complex_task(q):
+        return None
+    swarm = get_role_swarm()
+    result = swarm.run(q, context=context)
+    print(swarm.format_result(result))
+    return result["synthesis"] or "\n".join(
+        f"[{r}] {t}" for r, t in result["contributions"].items())
 
 def _safe(text):
     if _IS_WINDOWS:
@@ -70,7 +108,9 @@ def _stream_answer(messages):
 
 def run(args):
     if args.query:
-        messages = _build_messages([], args.query)
+        _handle_resume_intent(args.query)
+        extra = _workspace_system_extra()
+        messages = _build_messages([], args.query, system_extra=extra)
         _stream_answer(messages)
         return 0
     return _repl()
@@ -90,25 +130,43 @@ def _repl():
         print("  (/exit /new /help)")
         print()
 
+    from agent_core.workspace import get_workspace_manager
+    mgr = get_workspace_manager()
     while True:
         try:
-            q = input("eco> ").strip()
+            cur = mgr.current_name()
+            prompt_str = f"eco[{cur}]> " if cur else "eco> "
+            q = input(prompt_str).strip()
         except (EOFError, KeyboardInterrupt):
             print()
             break
         if not q: continue
         if q in ("/exit", "/quit"): break
         if q == "/help":
-            print("  /exit  /new"); continue
+            print("  /exit  /new  /ws"); continue
         if q == "/new":
             history = []; print("[reset]"); continue
+        if q == "/ws":
+            cur = mgr.current()
+            print(mgr.current().summary() if cur else "[workspace] 当前无打开的工作区")
+            continue
 
-        messages = _build_messages(history, q)
-        answer = _stream_answer(messages)
+        _handle_resume_intent(q)
+        ws = mgr.current()
+        context = ws.summary() if ws else ""
+        extra = _workspace_system_extra()
+
+        answer = _maybe_swarm(q, context=context)
+        if answer is None:
+            messages = _build_messages(history, q, system_extra=extra)
+            answer = _stream_answer(messages)
         print()
 
         history.append({"role": "user", "content": q})
         history.append({"role": "assistant", "content": answer})
         if len(history) > 100:
             history = history[-50:]
+        if ws:
+            ws.add_event("user", q)
+            ws.add_event("assistant", answer[:800])
     return 0
