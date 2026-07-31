@@ -34,7 +34,7 @@ from datetime import datetime
 # ===== 条件导入 FastAPI =====
 try:
     from fastapi import FastAPI, Request, HTTPException
-    from fastapi.responses import JSONResponse
+    from fastapi.responses import JSONResponse, Response
     import uvicorn
 except ImportError:
     print("[ERROR] 缺少依赖：pip install fastapi uvicorn")
@@ -345,6 +345,33 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
+
+
+@app.get("/healthz")
+async def healthz():
+    """轻量健康检查（D4：供内网负载均衡/探活使用）。"""
+    return {"status": "ok"}
+
+
+# ===== 通用渠道入站（agent_core.channels 注册表：webhook/qqbot/wechat_oa 等） =====
+
+@app.api_route("/channels/{name}", methods=["GET", "POST"])
+async def channel_inbound(name: str, request: Request):
+    """统一渠道回调入口（D4）。
+
+    POST /channels/<name> → handle_inbound → {"reply": ...}
+    GET  /channels/<name> → wecom/wechat_oa echostr / feishu challenge 握手
+    分发逻辑与 stdlib 服务（agent_core.channels.http_server）共用，
+    验签失败/注入拦截按 registry 语义回 200 固定话术。
+    """
+    from agent_core.channels.http_server import dispatch_request
+    body = await request.body()
+    status, content_type, payload = dispatch_request(
+        request.method, name,
+        headers=dict(request.headers.items()),
+        args=dict(request.query_params), body=body)
+    media_type = content_type.split(";")[0]
+    return Response(content=payload, status_code=status, media_type=media_type)
 
 
 # ===== 飞书 Webhook =====

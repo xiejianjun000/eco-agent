@@ -80,6 +80,28 @@ class _Resp:
         return False
 
 
+class _OpenPatch:
+    """D5 后导出经 build_opener(...).open；保持旧 urlopen mock 语义的兼容封装。"""
+
+    def __init__(self, **kw):
+        self.open_mock = mock.Mock(**kw)
+        opener = mock.Mock()
+        opener.open = self.open_mock
+        self._p = mock.patch.object(obs.urllib.request, "build_opener",
+                                    return_value=opener)
+
+    def __enter__(self):
+        self._p.__enter__()
+        return self.open_mock
+
+    def __exit__(self, *a):
+        return self._p.__exit__(*a)
+
+
+def _patch_open(**kw):
+    return _OpenPatch(**kw)
+
+
 class TestOTLPExporter:
     def test_default_endpoint(self):
         assert OTLPExporter().traces_url == "http://localhost:4318/v1/traces"
@@ -92,8 +114,7 @@ class TestOTLPExporter:
     def test_export_success(self, tmp_path):
         t = _tree()
         ex = OTLPExporter(endpoint="http://mock:4318", fallback_dir=tmp_path)
-        with mock.patch.object(obs.urllib.request, "urlopen",
-                               return_value=_Resp(200)) as m:
+        with _patch_open(return_value=_Resp(200)) as m:
             assert ex.export(t) is True
         req = m.call_args[0][0]
         assert req.full_url == "http://mock:4318/v1/traces"
@@ -104,8 +125,7 @@ class TestOTLPExporter:
     def test_export_failure_fallback(self, tmp_path):
         t = _tree("fb-sess")
         ex = OTLPExporter(endpoint="http://down:4318", fallback_dir=tmp_path)
-        with mock.patch.object(obs.urllib.request, "urlopen",
-                               side_effect=OSError("conn refused")):
+        with _patch_open(side_effect=OSError("conn refused")):
             assert ex.export(t) is False
         f = tmp_path / "fb-sess.otlp.json"
         assert f.exists()
@@ -114,8 +134,7 @@ class TestOTLPExporter:
     def test_export_non_2xx_fallback(self, tmp_path, caplog):
         t = _tree("http500")
         ex = OTLPExporter(endpoint="http://x:4318", fallback_dir=tmp_path)
-        with mock.patch.object(obs.urllib.request, "urlopen",
-                               return_value=_Resp(500)):
+        with _patch_open(return_value=_Resp(500)):
             with caplog.at_level("WARNING"):
                 assert ex.export(t) is False
         assert "降级" in caplog.text
@@ -123,8 +142,7 @@ class TestOTLPExporter:
 
     def test_export_never_raises(self, tmp_path):
         ex = OTLPExporter(endpoint="http://x:4318", fallback_dir=tmp_path)
-        with mock.patch.object(obs.urllib.request, "urlopen",
-                               side_effect=ValueError("boom")):
+        with _patch_open(side_effect=ValueError("boom")):
             assert ex.export(_tree()) is False
 
 
@@ -138,8 +156,7 @@ class TestCmdTrace:
                                export="otlp", endpoint="http://mock:4318")
         with mock.patch.object(cmd_trace, "TRACES_DIR", tmp_path), \
              mock.patch.object(obs, "TRACES_DIR", tmp_path), \
-             mock.patch.object(obs.urllib.request, "urlopen",
-                               return_value=_Resp(200)):
+             _patch_open(return_value=_Resp(200)):
             assert cmd_trace.run(args) == 0
         out = capsys.readouterr().out
         assert "OTel collector" in out and t.trace_id in out
@@ -151,8 +168,7 @@ class TestCmdTrace:
                                export="otlp", endpoint="http://down:4318")
         with mock.patch.object(cmd_trace, "TRACES_DIR", tmp_path), \
              mock.patch.object(obs, "TRACES_DIR", tmp_path), \
-             mock.patch.object(obs.urllib.request, "urlopen",
-                               side_effect=OSError("down")), \
+             _patch_open(side_effect=OSError("down")), \
              mock.patch.object(OTLPExporter, "_write_fallback",
                                side_effect=lambda tree: None):
             assert cmd_trace.run(args) == 0

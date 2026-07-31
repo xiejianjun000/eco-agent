@@ -257,8 +257,15 @@ class OTLPExporter:
         req = urllib.request.Request(
             self.traces_url, data=payload,
             headers={"Content-Type": "application/json"}, method="POST")
+        # 内网部署默认不走 http_proxy/https_proxy：collector 多为内网直连
+        # （如 http://127.0.0.1:4318），走全局代理反而会连接失败被降级。
+        # 显式设 ECO_OTLP_PROXY=1 时才遵循 *_proxy 环境变量经代理导出。
+        if os.environ.get("ECO_OTLP_PROXY") == "1":
+            opener = urllib.request.build_opener()  # 默认含 ProxyHandler(getproxies())
+        else:
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with opener.open(req, timeout=self.timeout) as resp:
                 status = getattr(resp, "status", 200)
                 if 200 <= status < 300:
                     return True
