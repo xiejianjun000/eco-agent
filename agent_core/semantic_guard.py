@@ -5,8 +5,12 @@
 （生产环境接 LLMClient，测试 mock），并附带：
 
 - LRU 缓存（key = SM3(text)），默认 1024 条
-- judge 超时保护（默认 800ms）
-- fail-open / fail-closed 策略：judge 异常或超时时，
+- judge 超时保护（默认 5000ms；真实 LLM API 单次延迟通常为秒级，
+  800ms 级别默认会把正常流量大面积误判超时。生产接真实 LLM 时
+  建议按上游 p95 延迟显式装配，如 10s~60s，或异步化）
+- 超时独立策略：超时视为「judge 不可用」，默认放行 + WARN（on_timeout="allow"），
+  与 judge 明确判定注入的拦截区分；可显式 on_timeout="fail-closed"/"fail-open"
+- fail-open / fail-closed 策略：judge 异常时，
   默认 fail-closed（判可疑→拦截但打 WARN 日志）；
   fail_open=True 时放行。
 
@@ -53,12 +57,23 @@ class SemanticGuard:
     judge_fn 为 None 时守卫不生效（直接放行并记 debug 日志）。
     """
 
-    def __init__(self, judge_fn=None, timeout_ms: int = 800,
-                 cache_size: int = 1024, fail_open: bool = False):
+    def __init__(self, judge_fn=None, timeout_ms: int = 5000,
+                 cache_size: int = 1024, fail_open: bool = False,
+                 on_timeout: str = "allow"):
+        """
+        timeout_ms: judge 超时阈值。默认 5000ms（对齐真实 LLM 秒级延迟）；
+            生产建议按上游 p95 显式装配（10s~60s）或异步化。
+        on_timeout: 超时独立策略——"allow"（默认，judge 不可用→放行+WARN，
+            与明确判定注入区分）、"fail-closed"、"fail-open"。
+        fail_open: judge 异常（非超时）时的策略。
+        """
+        if on_timeout not in ("allow", "fail-closed", "fail-open"):
+            raise ValueError(f"on_timeout 非法: {on_timeout!r}")
         self.judge_fn = judge_fn
         self.timeout_ms = timeout_ms
         self.cache_size = max(1, int(cache_size))
         self.fail_open = fail_open
+        self.on_timeout = on_timeout
         self._cache: OrderedDict[str, tuple[bool, str]] = OrderedDict()
         self._lock = threading.Lock()
 
@@ -102,11 +117,17 @@ class SemanticGuard:
             raw = self._call_judge(prompt)
             is_injection, confidence = self._parse_verdict(raw)
         except (FuturesTimeout, TimeoutError):
-            logger.warning("semantic_guard judge 超时（>%dms），按 %s 策略处理",
-                           self.timeout_ms,
-                           "fail-open" if self.fail_open else "fail-closed")
-            if self.fail_open:
+            # 超时视为「judge 不可用」，走独立策略（与 judge 明确判定注入区分）
+            if self.on_timeout == "allow":
+                logger.warning("semantic_guard judge 超时（>%dms），judge 不可用，"
+                               "按超时策略放行（WARN）", self.timeout_ms)
+                return True, "语义层 judge 不可用（超时），按超时策略放行"
+            if self.on_timeout == "fail-open" or self.fail_open:
+                logger.warning("semantic_guard judge 超时（>%dms），按 fail-open 策略放行",
+                               self.timeout_ms)
                 return True, ""
+            logger.warning("semantic_guard judge 超时（>%dms），按 fail-closed 策略拦截",
+                           self.timeout_ms)
             return False, "语义层判定超时: 按 fail-closed 策略拦截（可疑）"
         except Exception as exc:  # noqa: BLE001 — judge 任何异常都按策略降级
             logger.warning("semantic_guard judge 异常（%s），按 %s 策略处理",

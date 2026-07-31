@@ -18,6 +18,7 @@ import platform
 import re
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -58,28 +59,45 @@ def is_linux() -> bool:
 
 
 def build_bwrap_cmd(cmd: list[str], policy: SandboxPolicy,
-                    slirp: bool = False) -> list[str]:
+                    slirp: bool = False,
+                    unshare_pid: bool = True,
+                    mount_proc: bool = True) -> list[str]:
     """拼装 bubblewrap 命令行（纯函数，便于测试）。
 
     - unshare pid/ipc/uts；网络命名空间默认隔离（--unshare-net）
     - 有 network_allowlist 且 slirp 可用时保留网络（由外层 slirp4netns 限速/白名单），
       否则强制 --unshare-net
     - allowed_paths 可写 bind，readonly_paths + 系统目录只读 bind
+    - ``unshare_pid`` / ``mount_proc`` 可独立关闭：部分内核/容器环境拒绝
+      ``--unshare-pid`` 与 ``--proc`` 组合（实测 "Can't mount proc on
+      /newroot/proc: Operation not permitted"），run_in_sandbox 会探测并逐档退化
+    - 不存在的 allowed/readonly 路径在绑定前过滤并 warning（D3：
+      bwrap 对缺失路径硬失败 "Can't find source path"）
     """
     args = ["bwrap", "--die-with-parent", "--new-session",
-            "--unshare-pid", "--unshare-ipc", "--unshare-uts"]
+            "--unshare-ipc", "--unshare-uts"]
+    if unshare_pid:
+        args.append("--unshare-pid")
     if not (policy.network_allowlist and slirp):
         args.append("--unshare-net")
 
-    args += ["--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp"]
+    if mount_proc:
+        args += ["--proc", "/proc"]
+    args += ["--dev", "/dev", "--tmpfs", "/tmp"]
 
     for d in _SYSTEM_RO_DIRS:
         if os.path.exists(d):
             args += ["--ro-bind", d, d]
     for p in policy.readonly_paths:
-        args += ["--ro-bind", p, p]
+        if os.path.exists(p):
+            args += ["--ro-bind", p, p]
+        else:
+            log.warning("os_sandbox: readonly_path 不存在，已跳过: %s", p)
     for p in policy.allowed_paths:
-        args += ["--bind", p, p]
+        if os.path.exists(p):
+            args += ["--bind", p, p]
+        else:
+            log.warning("os_sandbox: allowed_path 不存在，已跳过: %s", p)
 
     # 域名白名单通过环境变量传给命名空间内的代理/ wrapper 使用
     if policy.network_allowlist:
@@ -129,33 +147,92 @@ def _run_degraded(cmd: list[str], policy: SandboxPolicy,
     return result
 
 
+# bwrap 启动级失败判定阈值：进程在该时间内退出且无业务输出，视为 bwrap 自身失败
+_BWRAP_LAUNCH_FAIL_SECONDS = 2.0
+
+# bwrap 参数退化档位：(unshare_pid, mount_proc)
+# 档0 完整隔离 → 档1 去 proc 挂载 → 档2 去 pid 命名空间与 proc 挂载
+_BWRAP_TIERS: list[tuple[bool, bool]] = [(True, True), (True, False), (False, False)]
+
+
+def _is_bwrap_launch_failure(result: subprocess.CompletedProcess,
+                             elapsed: float) -> bool:
+    """区分「bwrap 启动级失败」（命令从未执行）与「沙箱内命令正常返回非零」。
+
+    判定特征（满足其一）：
+    - stderr 带 bwrap 自身错误前缀 "bwrap:"（如 "bwrap: Can't mount proc ..."）
+    - rc==1 且 stdout/stderr 均无业务输出且耗时低于阈值
+    """
+    stderr = (result.stderr or "").strip()
+    if stderr.startswith("bwrap:"):
+        return True
+    return (result.returncode == 1
+            and not (result.stdout or "").strip()
+            and not stderr
+            and elapsed < _BWRAP_LAUNCH_FAIL_SECONDS)
+
+
 def run_in_sandbox(cmd: list[str],
                    policy: Optional[SandboxPolicy] = None) -> subprocess.CompletedProcess:
     """在 OS 级沙箱中执行命令，返回 CompletedProcess。
 
     Linux + bwrap → 内核级隔离；否则降级（rlimit/timeout/env 清洗 + warning）。
-    """
+
+    bwrap 二进制存在但启动级失败（如内核拒绝 --unshare-pid+--proc 组合）时：
+    先按档位退化 bwrap 参数重试（最多 %d 档），仍失败则自动降级到 rlimit
+    路径执行并 logging.warning 记录。返回结果带 ``sandbox_mode`` 属性
+    （"bwrap" / "bwrap:tierN" / "degraded" / "non-linux"），调用方可区分
+    「命令在沙箱内失败」与「沙箱未能启动后降级执行」。
+    """ % len(_BWRAP_TIERS)
     policy = policy or SandboxPolicy()
 
     if not is_linux():
-        return _run_degraded(cmd, policy, reason=f"non-Linux platform {platform.system()}")
+        r = _run_degraded(cmd, policy, reason=f"non-Linux platform {platform.system()}")
+        r.sandbox_mode = "non-linux"
+        return r
 
     if not bwrap_available():
-        return _run_degraded(cmd, policy, reason="bubblewrap (bwrap) not found")
+        r = _run_degraded(cmd, policy, reason="bubblewrap (bwrap) not found")
+        r.sandbox_mode = "degraded"
+        return r
 
     slirp = shutil.which("slirp4netns") is not None
     if policy.network_allowlist and not slirp:
         log.warning("network_allowlist=%s requested but slirp4netns missing; "
                     "falling back to --unshare-net", policy.network_allowlist)
 
-    wrapped = build_bwrap_cmd(cmd, policy, slirp=slirp)
-    result = subprocess.run(
-        wrapped,
-        capture_output=True,
-        text=True,
-        timeout=policy.max_seconds,
-        env=scrub_env(),
-    )
-    result.stdout = _truncate(result.stdout, policy.max_output_bytes)
-    result.stderr = _truncate(result.stderr, policy.max_output_bytes)
-    return result
+    last_err = ""
+    for tier, (unshare_pid, mount_proc) in enumerate(_BWRAP_TIERS):
+        wrapped = build_bwrap_cmd(cmd, policy, slirp=slirp,
+                                  unshare_pid=unshare_pid, mount_proc=mount_proc)
+        start = time.monotonic()
+        try:
+            result = subprocess.run(
+                wrapped,
+                capture_output=True,
+                text=True,
+                timeout=policy.max_seconds,
+                env=scrub_env(),
+            )
+        except OSError as exc:  # bwrap 启动即失败（如 exec 拒绝）
+            last_err = str(exc)
+            log.warning("os_sandbox bwrap launch error (tier %d): %s", tier, exc)
+            continue
+        elapsed = time.monotonic() - start
+        if not _is_bwrap_launch_failure(result, elapsed):
+            result.stdout = _truncate(result.stdout, policy.max_output_bytes)
+            result.stderr = _truncate(result.stderr, policy.max_output_bytes)
+            result.sandbox_mode = "bwrap" if tier == 0 else f"bwrap:tier{tier}"
+            if tier > 0:
+                log.warning("os_sandbox bwrap 完整参数启动失败，已退化到 tier %d "
+                            "(unshare_pid=%s, mount_proc=%s) 执行成功",
+                            tier, unshare_pid, mount_proc)
+            return result
+        last_err = (result.stderr or "").strip() or f"rc=1 in {elapsed:.3f}s"
+        log.warning("os_sandbox bwrap 启动级失败 (tier %d, unshare_pid=%s, "
+                    "mount_proc=%s): %s", tier, unshare_pid, mount_proc, last_err)
+
+    r = _run_degraded(cmd, policy,
+                      reason=f"bwrap launch failed at all tiers ({last_err})")
+    r.sandbox_mode = "degraded"
+    return r

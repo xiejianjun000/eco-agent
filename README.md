@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/version-5.0.0--alpha-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-orange)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-801%20passed-brightgreen)](TEST_LOG.md)
+[![Tests](https://img.shields.io/badge/tests-813%20passed-brightgreen)](TEST_LOG.md)
 [![CI](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml)
 
 Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环，从毫秒级到天级，让 AI 在无人唤醒时也能思考，在无人纠正时也能进化。

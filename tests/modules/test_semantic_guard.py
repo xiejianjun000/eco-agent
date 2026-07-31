@@ -65,7 +65,8 @@ def test_judge_timeout_fail_closed(monkeypatch):
     def slow(prompt):
         time.sleep(2)
         return json.dumps({"is_injection": False, "confidence": 0.0})
-    g = SemanticGuard(judge_fn=slow, timeout_ms=50, fail_open=False)
+    g = SemanticGuard(judge_fn=slow, timeout_ms=50, fail_open=False,
+                      on_timeout="fail-closed")
     ok, reason = g.semantic_check("任意输入")
     assert ok is False
     assert "超时" in reason
@@ -76,7 +77,8 @@ def test_judge_timeout_fail_open():
     def slow(prompt):
         time.sleep(2)
         return json.dumps({"is_injection": True, "confidence": 1.0})
-    g = SemanticGuard(judge_fn=slow, timeout_ms=50, fail_open=True)
+    g = SemanticGuard(judge_fn=slow, timeout_ms=50, fail_open=True,
+                      on_timeout="fail-open")
     ok, reason = g.semantic_check("任意输入")
     assert ok is True
     assert reason == ""

@@ -87,7 +87,8 @@ class TestBwrapCmd:
 
     def test_bind_modes(self):
         p = SandboxPolicy(allowed_paths=["/rw"], readonly_paths=["/ro"])
-        cmd = build_bwrap_cmd(["x"], p)
+        with mock.patch("os.path.exists", return_value=True):
+            cmd = build_bwrap_cmd(["x"], p)
         i = cmd.index("--bind")
         assert cmd[i + 1:i + 3] == ["/rw", "/rw"]
         pairs = [(cmd[i], cmd[i + 1], cmd[i + 2])
