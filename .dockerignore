@@ -1,0 +1,29 @@
+# version control
+.git
+.gitignore
+
+# tests & docs (not needed in the runtime image)
+tests
+docs
+
+# local output / backup dirs
+output
+backup
+
+# python noise
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.venv
+venv
+
+# secrets must never enter an image
+.env
+*.pem
+*.key
+
+# misc
+r.tgz
+Dockerfile
+.dockerignore

@@ -276,6 +276,8 @@ _HELP_TEXT = """  REPL 命令：
     /ws        查看当前工作区摘要（无则提示）
     /todo      查看当前工作区待办（复杂任务 DAG 步骤在此勾选进度）
     /verbose   切换轨迹模式（思考/工具调用/耗时/DAG 边，写入 SM3 审计链）
+    /checkpoints  列出会话检查点（每轮输入前自动快照）
+    /rewind [n]   回滚到第 n 个检查点（默认最近一个）：截断会话历史并还原工作区文件
   生成中 Ctrl+C 只取消当前回答，会话保留。
   相关 CLI：eco trace --tree <session> 查看 span 树；eco auth grant 生成 L4 授权；eco doctor 体检。
 """
@@ -299,6 +301,22 @@ def _banner_summary() -> str:
     gate_env = _os.environ.get("ECO_PERMISSION_GATE", "").strip().lower()
     gate = "关闭(ECO_PERMISSION_GATE=0)" if gate_env == "0" else "开启"
     return f"  provider/model: {llm}  |  workspace: {ws}  |  权限闸门: {gate}"
+
+
+def _checkpoint_store(mgr):
+    """当前会话检查点存储：会话 id 取当前工作区 slug，无工作区用 default"""
+    from agent_core.checkpoint import CheckpointStore
+    session = mgr.current_name() or "default"
+    return CheckpointStore(session=session)
+
+
+def _auto_checkpoint(mgr, history):
+    """每轮用户输入前自动快照（静默失败不影响会话）"""
+    try:
+        store = _checkpoint_store(mgr)
+        store.create(history=history, ws=mgr.current())
+    except Exception as e:
+        logging.getLogger("checkpoint").warning(f"[checkpoint] 快照失败: {e}")
 
 
 def _repl(history=None):
@@ -349,6 +367,42 @@ def _repl(history=None):
             continue
         if q == "/new":
             history = []; print("[reset]"); continue
+        if q == "/checkpoints":
+            store = _checkpoint_store(mgr)
+            cps = store.list()
+            if not cps:
+                print("[checkpoints] 当前会话暂无检查点（每轮输入前自动快照）")
+            else:
+                print(f"[checkpoints] 会话 {store.session} 共 {len(cps)} 个检查点：")
+                for cp in cps:
+                    nfiles = len(cp.get("workspace", {}).get("files", {}))
+                    print(f"  #{cp['id']}  {cp.get('ts','')}  "
+                          f"历史 {len(cp.get('history', []))} 条  "
+                          f"decisions {cp.get('decisions_count', 0)}  "
+                          f"工作区文件 {nfiles} 个")
+            continue
+        if q.startswith("/rewind"):
+            parts = q.split()
+            store = _checkpoint_store(mgr)
+            cps = store.list()
+            if not cps:
+                print("[rewind] 无可回滚的检查点")
+                continue
+            n = cps[-1]["id"]
+            if len(parts) > 1:
+                try:
+                    n = int(parts[1])
+                except ValueError:
+                    print(f"[rewind] 无效检查点编号: {parts[1]}（/checkpoints 查看可用编号）")
+                    continue
+            cp = store.rewind(n, ws=mgr.current())
+            if cp is None:
+                print(f"[rewind] 检查点 #{n} 不存在或已损坏（/checkpoints 查看可用编号）")
+                continue
+            history = list(cp.get("history", []))
+            print(f"[rewind] 已回滚到检查点 #{n}（会话历史 {len(history)} 条，"
+                  f"工作区文件按快照还原）")
+            continue
         blocked = _user_input_blocked(q)
         if blocked:
             print(f"[安全拦截] 输入命中注入防线：{blocked}")
@@ -358,6 +412,7 @@ def _repl(history=None):
             print(mgr.current().summary() if cur else "[workspace] 当前无打开的工作区")
             continue
 
+        _auto_checkpoint(mgr, history)
         _handle_resume_intent(q)
         ws = mgr.current()
         context = ws.summary() if ws else ""
