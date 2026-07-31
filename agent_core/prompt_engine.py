@@ -106,7 +106,7 @@ _FORBIDDEN_PATTERNS = [
     r"(将|把)?.{0,8}指令.{0,8}(忽略掉|统统忽略|全部忽略|不再理会)",
     r"忽略掉.{0,8}(指令|规则|准则|之前|以上|先前|设定)",
     r"(忘掉|忘记|忘却).{0,12}(之前|以前|先前|原先).{0,8}(设定|指令|规则|身份|要求)",
-    r"(规则|准则|设定|限制).{0,8}(作废|失效|废除|不再适用)",
+    r"(规则|准则|设定|限制).{0,4}(全部|统统|一律|立即|即刻|现在|马上).{0,4}(作废|失效|废除|不再适用)",
     # 中文同义改写补漏：无视/不遵循/不遵守之前的指令（"指令"可在后也可省略）
     r"(无视|漠视|不理会|不理睬|不要理会|别理会|不用理会).{0,12}(之前|以前|先前|原先|以上|所有|一切)?.{0,8}(指令|规则|设定|要求|指示|约束|提示)",
     r"(不要|不用|不必|无需|不需要|别再|不要再).{0,4}(遵循|遵守|遵照|执行|理会).{0,12}(之前|以前|先前|原先|以上|所有|一切).{0,8}(指令|规则|设定|要求|指示|约束|提示|内容)?",
@@ -131,7 +131,8 @@ _FORBIDDEN_PATTERNS = [
     r"(对|把|将).{0,6}(系统|安全|之前|以上|所有)?.{0,4}(指令|规则|准则|设定|要求|提示).{0,4}(不予理会|置之不理|当耳边风|当成耳边风)",
     r"(指令|规则|准则|设定|要求).{0,6}(右耳进左耳出|左耳进右耳出|当耳边风)",
     # 3) 开发者模式 / 英文 paraphrase 簇
-    r"(进入|开启|切换到|激活).{0,4}(开发者模式|开发模式|调试模式|developer|dev|debug).{0,4}(模式|mode)?",
+    r"(进入|开启|切换到|激活).{0,4}(开发者模式|开发模式|developer|dev).{0,4}(模式|mode)?",
+    r"(调试模式|debugmode).{0,8}(关闭|无限制|没有限制|不受约束|审核|审查)",
     r"(disregard|ignore|forget|drop).{0,15}(everything|anything|all).{0,12}(above|before|previous|prior)",
     r"startfresh.{0,15}(no|without|zero).{0,8}(rule|restriction|constraint|guideline)",
     r"(act|behave|function).{0,6}as.{0,12}(unrestricted|unfiltered|uncensored|no.restrictions?)",
@@ -140,10 +141,37 @@ _FORBIDDEN_PATTERNS = [
     r"(ignore|disregard|bypass).{0,12}(all|any|every).{0,6}(constraint|constraints|limitation|limitations)",
     # 4) system prompt 泄露/抽取（exfiltration 面）
     r"(reveal|print|show|leak|display|output|repeat|dump|expose).{0,15}(your|the|initial|original|full)?.{0,8}(systemprompt|instructions?|prompt|rules)",
-    r"(泄露|透露|展示|打印|输出|复述|背诵|转述).{0,8}(你的|初始|原始|完整)?.{0,4}(系统提示|系统提示词|提示词|systemprompt|初始指令|系统指令)",
+    r"(泄露|透露|背诵|逐字|一字不差|一字不漏).{0,8}(你的|初始|原始|完整|全部)?.{0,4}(系统提示|系统提示词|提示词|systemprompt|初始指令|系统指令)",
+    r"(展示|打印|输出|复述|转述).{0,8}(你的|初始|原始|完整|全部|全文|原文).{0,4}(系统提示|系统提示词|提示词|systemprompt|初始指令|系统指令)",
     # 5) 高危拼音词根（仅指令/规则语境，控制误杀）
     r"(wushi|hulue|hulve|wangji|wangle|zuofei).{0,15}(zhiling|guize|guiding|sheding|yaoqiu)",
     r"(zhiling|guize).{0,10}(zuofei|wuxiao|buzuoshu|hulue)",
+    # ══ 第四轮对抗收口 ══
+    # 1) 开发者模式无主语/裸名词形态（中英）
+    r"(enter|enable|activate|switchto|goto)?.{0,6}(developermode|devmode|debugmode|unrestrictedmode|norestrictions?mode)",
+    r"开发者模式.{0,8}(没有限制|无限制|不受约束|关闭|审核|审查)",
+    # 2) 文言文/古风 + 倒装
+    r"(前|旧|先|原)(令|规|诫).{0,4}(尽|悉|皆|咸|当)?.{0,2}(废|弃|除|黜)(?!.{0,8}(不可取|不对|错误|荒谬|荒唐|不可行))",
+    r"(令|规|诫|指令|规则)[，,]?(忽略|废|弃|忘)之",
+    r"(听吾|听我)(新令|号令|新规)",
+    # 3) 对话式撤销（绑定之前/前面语境，防误杀）
+    r"(之前|前面|以上|刚才|早先).{0,8}(说的|讲的|谈的|聊的)?.{0,4}(当我没说|当我没讲|都不算|不算数|不作数)",
+    r"(重新来过|从头来过|重新算起).{0,8}(之前|前面|以上)?.{0,4}(不算|作废|清空|无效)",
+    # 4) 多语言高危动词（日/韩/越/泰）
+    r"(以前|前).{0,2}の(指示|命令|指令).{0,4}(無視|無効|破棄|忘れ)",
+    r"無視して|指示を無視|命令を無視",
+    r"무시|지시를잊|이전지시",
+    r"bỏqua.{0,12}(hướngdẫn|chỉthị|lệnh)",
+    r"ละเว้น|มองข้าม",
+    # 5) 英文进行时/宣告式
+    r"(ignoring|disregarding|forgetting).{0,12}(your|the|all).{0,8}(rule|rules|instruction|instructions|guideline|guidelines)",
+    r"(instructions?|rules?|guidelines?).{0,12}(are|is).{0,8}(hereby)?.{0,8}(nullified|void|cancelled|canceled|revoked|nullandvoid)",
+    r"(instructions?|rules?).{0,10}nolongerapply",
+    # 6) 中文新簇
+    r"(不要管|别管|不用管|不必管).{0,6}(你的|安全)?.{0,4}(准则|规则|安全|限制|约束|设定)",
+    r"(抛到|扔到|丢到|甩到).{0,4}(九霄云外|脑后|云外)",
+    r"(清空|清除|格式化).{0,6}(你的)?.{0,4}(规则库|规则|指令库|指令|设定库|记忆)",
+    r"删去.{0,8}(先前|之前|以上|所有|全部)?.{0,4}(约束|限制|规则|指令|设定)",
 ]
 
 
@@ -241,7 +269,40 @@ def validate_injection(content: str) -> tuple[bool, str]:
         for w in _FORBIDDEN_WORDS:
             if _normalize_for_injection_check(w) in normalized:
                 return False, f"命中禁止词（归一化后）: {w}"
+    # base64/编码载荷二次校验：对疑似编码 token 解码后递归校验（防 aWdub3Jl... 绕过）
+    for decoded in _decode_suspect_tokens(content):
+        for i, rex in enumerate(_FORBIDDEN_RE):
+            if rex.search(decoded):
+                return False, f"命中禁止 pattern#{i}（base64 解码后）: 编码载荷绕过尝试"
+        for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
+            if rex.search(decoded):
+                return False, f"命中归一化禁止 pattern#{i}（base64 解码后）: 编码载荷绕过尝试"
     return True, ""
+
+
+_B64_TOKEN_RE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
+
+
+def _decode_suspect_tokens(text: str) -> list[str]:
+    """提取疑似 base64 token（≥16 字符），解码成功且为可读文本时返回归一化结果。"""
+    import base64 as _b64
+    out = []
+    for tok in _B64_TOKEN_RE.findall(text):
+        for pad in ("", "=", "=="):
+            try:
+                raw = _b64.b64decode(tok + pad, validate=True)
+            except Exception:
+                continue
+            try:
+                s = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+            # 可读性粗筛：解码结果含空字符或控制字符则不是文本载荷
+            if "\x00" in s:
+                continue
+            out.append(_normalize_for_injection_check(s))
+            break
+    return out
 
 
 def _sm3_hex(data: str) -> str:
