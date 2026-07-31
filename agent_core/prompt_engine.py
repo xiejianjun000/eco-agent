@@ -241,12 +241,18 @@ _FORBIDDEN_PATTERNS = [
     r"(规矩|规则|规定|指令|要求|设定).{0,4}(别|不要|不用|甭).{0,2}(往心里去|放在心上|当回事|当真)",
     r"(没有|不存在|无).{0,2}(任何)?.{0,2}(条条框框|规矩|约束|限制|束缚)了?$",
     r"(切换成|切换到|进入|变成|转为).{0,4}(无所顾忌|肆无忌惮|无禁忌|无底线|百无禁忌).{0,2}(模式|状态)?",
+    # ══ 第十一轮对抗收口 ══
+    # 中文口语残余 II（R11 穿透：全是放屁 / 规矩全清空 / 忘掉我之前说的一切）
+    r"(之前|以前|刚才|那些|上面).{0,6}(话|说的|讲的|交代的)?.{0,4}(都|全|统统)?.{0,2}(是|当|算)?.{0,2}(放屁|狗屁|废话|耳边风|空气)",
+    r"(规矩|规则|规定|限制|约束|束缚|指令|设定).{0,6}(全|都|统统|一股脑)?.{0,2}(清空|清除|抹掉|删掉|扔掉|丢掉|忘掉)",
+    r"(忘掉|忘记|抹去|抹除|删除).{0,4}(你|我)?.{0,4}(之前|以前|刚才|早先).{0,6}(说|讲|交代|嘱咐|指令|一切|所有)",
     # 2) 英文语义残余（stop following / no longer have limits / set aside）
     r"(stop|quit|cease).{0,8}(following|obeying|heeding).{0,12}(your|the)?.{0,4}(rule|rules|instruction|instructions|guideline)",
     r"(you|u).{0,4}(nolonger|notanymore|anymore).{0,8}(have)?.{0,4}(any)?.{0,2}(limit|limits|restriction|restrictions|constraint)",
     r"(setaside|putaside|castaside|brushaside).{0,15}(everything|all|what|whatever).{0,12}(told|said|instructed|given)",
     r"(instructions?|rules?|guidelines?).{0,12}(are|is).{0,8}(hereby)?.{0,8}(nullified|void|cancelled|canceled|revoked|nullandvoid)",
     r"(instructions?|rules?).{0,10}nolongerapply",
+    r"(clear|wipe|erase|delete|purge).{0,10}(your|the|all|those).{0,4}(rules?|instructions?|guidelines?|constraints?|limits?)",
     # 6) 中文新簇
     r"(不要管|别管|不用管|不必管).{0,6}(你的|安全)?.{0,4}(准则|规则|安全|限制|约束|设定)",
     r"(抛到|扔到|丢到|甩到).{0,4}(九霄云外|脑后|云外)",
@@ -553,6 +559,7 @@ _EXOTIC_SCRIPT_RE = re.compile(
 _B64_TOKEN_RE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
 _HEX_TOKEN_RE = re.compile(r"(?:\\x[0-9a-fA-F]{2}){6,}|(?:\b[0-9a-fA-F]{2}){8,}\b|\b(?:[0-9a-fA-F]{2}){10,}\b")
 _URL_ENC_RE = re.compile(r"(?:%[0-9a-fA-F]{2}){3,}")
+_UNI_ESC_RE = re.compile(r"(?:\\u[0-9a-fA-F]{4}){2,}")
 
 
 def _decode_suspect_tokens(text: str) -> list[str]:
@@ -560,7 +567,7 @@ def _decode_suspect_tokens(text: str) -> list[str]:
     import base64 as _b64
     out = []
 
-    def _try_append(raw: bytes):
+    def _try_append(raw: bytes, tok: str = None):
         try:
             s = raw.decode("utf-8")
         except UnicodeDecodeError:
@@ -568,6 +575,10 @@ def _decode_suspect_tokens(text: str) -> list[str]:
         if "\x00" in s:
             return
         out.append(_normalize_for_injection_check(s))
+        # 还原变体：把解码结果替换回原串再整体校验，
+        # 防止 "execute \x69\x67... your rules" 这类"解码词+明文上下文"组合逃逸
+        if tok:
+            out.append(_normalize_for_injection_check(text.replace(tok, s)))
 
     for tok in _B64_TOKEN_RE.findall(text):
         for pad in ("", "=", "=="):
@@ -575,18 +586,27 @@ def _decode_suspect_tokens(text: str) -> list[str]:
                 raw = _b64.b64decode(tok + pad, validate=True)
             except Exception:
                 continue
-            _try_append(raw)
+            _try_append(raw, tok)
             break
     for tok in _HEX_TOKEN_RE.findall(text):
         try:
             hexs = tok.replace("\\x", "")
-            _try_append(bytes.fromhex(hexs))
+            _try_append(bytes.fromhex(hexs), tok)
         except Exception:
             continue
     for tok in _URL_ENC_RE.findall(text):
         try:
             from urllib.parse import unquote_to_bytes
-            _try_append(unquote_to_bytes(tok))
+            _try_append(unquote_to_bytes(tok), tok)
+        except Exception:
+            continue
+    # 字面 \uXXXX 转义序列（JSON/Python 风格）：解码后还原校验
+    for tok in _UNI_ESC_RE.findall(text):
+        try:
+            s = tok.encode("ascii").decode("unicode_escape")
+            if "\x00" not in s:
+                out.append(_normalize_for_injection_check(s))
+                out.append(_normalize_for_injection_check(text.replace(tok, s)))
         except Exception:
             continue
     return out
