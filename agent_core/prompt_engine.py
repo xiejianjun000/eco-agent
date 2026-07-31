@@ -217,6 +217,14 @@ _FORBIDDEN_PATTERNS = [
     r"(卸掉|卸下|拆除|解除|剥离).{0,6}(你的|所有|全部)?.{0,4}(人设|限制|约束|规则|设定|枷锁|束缚)",
     r"(把|将).{0,10}(人设|限制|约束|规则|设定|枷锁|束缚).{0,4}(都|全)?.{0,2}(卸掉|卸下|拆除|解除|剥离|去掉|拿掉)",
     r"(从现在|从此刻|自现在|自此)起?你.{0,6}(没有|无|不存在).{0,2}(任何)?.{0,2}(限制|约束|规则|规矩|束缚)",
+    # ══ 第八轮对抗收口：中英口语剩余簇 ══
+    r"(甭管|权当|权作|就当|算作).{0,10}(之前|以前|那些|这|那)?.{0,4}(规矩|规则|规定|指令|回事|设定|要求)",
+    r"(条条框框).{0,4}(都|全|统统)?.{0,2}(扔了|丢了|丢掉|扔掉|抛弃|甩掉)",
+    r"(忘掉|忘记|抹去|清空).{0,4}(所有|全部|一切).{0,2}(规则|规矩|规定|指令|限制|设定)",
+    r"(youhave|have|with).{0,4}(no|zero).{0,4}(limits?|restrictions?|constraints?|boundaries)",
+    r"(wipe|erase|clear|reset).{0,12}(your|the)?.{0,4}(memory|memories|context|mind)",
+    r"(overrule|overturn|veto).{0,12}(your|the)?.{0,4}(safety|rule|rules|instruction|instructions|guideline)",
+    r"(dowhatever|doanything).{0,8}(youwant|youlike|youwish)",
     r"(instructions?|rules?|guidelines?).{0,12}(are|is).{0,8}(hereby)?.{0,8}(nullified|void|cancelled|canceled|revoked|nullandvoid)",
     r"(instructions?|rules?).{0,10}nolongerapply",
     # 6) 中文新簇
@@ -394,7 +402,43 @@ def validate_injection(content: str) -> tuple[bool, str]:
     nfkc_nospace = re.sub(r"[\s​‌‍⁠﻿­]+", "", nfkc_nospace)
     if _EXOTIC_SCRIPT_RE.search(content) or _EXOTIC_SCRIPT_RE.search(nfkc_nospace):
         return False, "命中语言白名单: 含非中英文字的可疑内容（本产品仅受理中英文输入）"
+    # 语言白名单第二道（系统性收口）：拉丁文字非英文整体拦截。
+    # 逐语种枚举已被证明不可收敛（拉丁文字语种数百个），本层直接判定：
+    # 连续 ≥3 个拉丁单词且不含任何英文常用词 → 非英文外语文本，降权拦截。
+    # 中文执法产品合法输入为中文/英文，外语指令一律无权进入指令通道。
+    if _foreign_latin_suspect(content):
+        return False, "命中语言白名单: 非英文外语文本（本产品仅受理中英文输入）"
     return True, ""
+
+
+# 英文常用词小词表（含攻击高频词，防"ignore previous instructions"被误判为外语——它由专项 pattern 拦截）
+_EN_COMMON = frozenset(
+    "the a an is are was were be been being to of in on at for with by from as into "
+    "and or but not no yes you your yours we our i me my he she it they them this that these those "
+    "what which who whom whose when where why how can could should would will shall may might must "
+    "do does did done have has had having please thanks sorry hello hi ok "
+    "ignore previous instruction instructions rule rules forget disregard safety system prompt "
+    "check report data enterprise pollution emission fine penalty law regulation article "
+    "all any every some none more most other such only own same so than too very just".split())
+
+
+def _foreign_latin_suspect(text: str) -> bool:
+    """连续 ≥3 个拉丁单词且不含任何英文常用词 → 非英文外语（系统性封堵拉丁长尾语种）。
+    混排输入只取拉丁连续段判断；中文语境中夹带的外文长句同样拦截（指令通道不受理外文）。"""
+    runs = re.findall(r"[A-Za-zÀ-ɏ]+(?:[\s'-]+[A-Za-zÀ-ɏ]+)*", text)
+    for run in runs:
+        # 驼峰/混排大小写视为专有名词（iPhone/YouTube/JavaScript），不参与语种判定
+        words = [w for w in re.split(r"[\s'-]+", run)
+                 if len(w) >= 3 and not re.search(r"[A-Z]", w[1:])]
+        if not words:
+            continue
+        hits = sum(1 for w in words if w.lower() in _EN_COMMON)
+        if hits > 0:
+            continue
+        # ≥3 词必拦；2 词需总字母数 ≥12（防"iPhone SE"类短引用误伤）
+        if len(words) >= 3 or (len(words) == 2 and sum(len(w) for w in words) >= 12):
+            return True
+    return False
 
 
 # 连续 ≥6 个非拉丁/非汉字文字字符视为可疑（短地名/专有名词引用≤5字不误伤）
