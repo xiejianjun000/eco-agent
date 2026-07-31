@@ -119,6 +119,31 @@ _FORBIDDEN_PATTERNS = [
     r"(跳出|脱离|摆脱|逃离).{0,8}(你的|原定|初始|系统)?.{0,4}(角色|设定|身份|限制|约束)",
     r"(将|把)?.{0,8}(要求|指令|规则|设定|指示).{0,8}(抛之脑后|抛到脑后|丢到脑后|置之脑后|丢在一边)",
     r"(把|将).{0,10}(指令|规则|要求|设定|指示|提示).{0,4}(删除|删掉|清除|抹去|去掉)",
+    # ══ 第三轮对抗收口：语义 paraphrase 四大面 ══
+    # 1) 身份重设/角色越狱（含"没有限制"形态——此前只认"无限制"）
+    r"(重新设定|重设|换个|换一个|更换|换掉).{0,6}(你的|你的原)?.{0,2}(身份|角色|设定)",
+    r"扮演.{0,12}(没有限制|不受限制|不受约束|无审查|无限制|不设限)",
+    r"你现在是.{0,20}(没有限制|不受限制|不受约束|不设限)",
+    r"(装作|假装|假设|当作).{0,10}(没有|没|从未|从来没有|不曾).{0,8}(收到|设定|规则|限制|约束|系统提示)",
+    # 2) 搁置/耳边风语义簇（必须指向指令/规则/准则语境，防误杀）
+    r"(指令|规则|准则|设定|要求|提示).{0,8}(搁置|放到一边|放在一边|丢到一边|丢在一边|搁在一边)",
+    r"(搁置|放到一边|放在一边).{0,8}(指令|规则|准则|设定|要求)",
+    r"(对|把|将).{0,6}(系统|安全|之前|以上|所有)?.{0,4}(指令|规则|准则|设定|要求|提示).{0,4}(不予理会|置之不理|当耳边风|当成耳边风)",
+    r"(指令|规则|准则|设定|要求).{0,6}(右耳进左耳出|左耳进右耳出|当耳边风)",
+    # 3) 开发者模式 / 英文 paraphrase 簇
+    r"(进入|开启|切换到|激活).{0,4}(开发者模式|开发模式|调试模式|developer|dev|debug).{0,4}(模式|mode)?",
+    r"(disregard|ignore|forget|drop).{0,15}(everything|anything|all).{0,12}(above|before|previous|prior)",
+    r"startfresh.{0,15}(no|without|zero).{0,8}(rule|restriction|constraint|guideline)",
+    r"(act|behave|function).{0,6}as.{0,12}(unrestricted|unfiltered|uncensored|no.restrictions?)",
+    r"(youare|you're|yourenow|nowyouare).{0,10}(in)?.{0,4}(developermode|devmode|debugmode|unrestrictedmode)",
+    r"fromthispointforward|fromnowonignore",
+    r"(ignore|disregard|bypass).{0,12}(all|any|every).{0,6}(constraint|constraints|limitation|limitations)",
+    # 4) system prompt 泄露/抽取（exfiltration 面）
+    r"(reveal|print|show|leak|display|output|repeat|dump|expose).{0,15}(your|the|initial|original|full)?.{0,8}(systemprompt|instructions?|prompt|rules)",
+    r"(泄露|透露|展示|打印|输出|复述|背诵|转述).{0,8}(你的|初始|原始|完整)?.{0,4}(系统提示|系统提示词|提示词|systemprompt|初始指令|系统指令)",
+    # 5) 高危拼音词根（仅指令/规则语境，控制误杀）
+    r"(wushi|hulue|hulve|wangji|wangle|zuofei).{0,15}(zhiling|guize|guiding|sheding|yaoqiu)",
+    r"(zhiling|guize).{0,10}(zuofei|wuxiao|buzuoshu|hulue)",
 ]
 
 
@@ -131,15 +156,37 @@ _LEET_MAP = str.maketrans({
 _LEET_FILLER_RE = re.compile(r"[013457@$]")
 
 
+# 西里尔/希腊等同形字映射（对抗 іgnore 用 U+0456 冒充 i 等手法）
+_CONFUSABLE_MAP = str.maketrans({
+    "і": "i", "о": "o", "а": "a", "е": "e", "с": "c", "р": "p",
+    "х": "x", "ѕ": "s", "ј": "j", "у": "y", "ν": "v", "ρ": "p",
+    "ο": "o", "α": "a", "е": "e",
+})
+
+# emoji/符号/装饰字符（So/Sk/Cf 等类别）在注入校验中视为噪声剥离——对抗 无🙂视🙂之🙂前 插入绕过
+def _strip_symbols(text: str) -> str:
+    import unicodedata
+    return "".join(ch for ch in text
+                   if not unicodedata.category(ch).startswith(("S", "C")) or ch in "@$")
+
+
 def _normalize_for_injection_check(text: str) -> str:
     """注入校验前归一化：去全部空白（含零宽字符）、全角转半角、转小写、
+    emoji/符号剥离、西里尔同形字映射、
     leetspeak 形近字符映射（0→o 1→i 3→e 4→a 5→s 7→t @→a $→s）。
-    对抗"忽 略 之 前 的 指 令"插空格/全半角混淆/大小写混淆/leet 替换等绕过手法。"""
+    对抗"忽 略 之 前 的 指 令"插空格/全半角混淆/大小写混淆/leet/emoji/同形字等绕过手法。"""
     import unicodedata
     t = unicodedata.normalize("NFKC", text)
+    t = t.translate(_CONFUSABLE_MAP)
     # 去除所有空白字符与零宽字符（ZWSP/ZWNJ/ZWJ/BOM/软连字符等）
     t = re.sub(r"[\s​‌‍⁠﻿­]+", "", t)
-    return t.lower().translate(_LEET_MAP)
+    t = _strip_symbols(t)
+    t = t.lower().translate(_LEET_MAP)
+    # 高危谐音拆字归并（对抗 乎略/呼略→忽略 等；仅限注入高危词根，控制误杀面）
+    for homo, canon in (("乎略", "忽略"), ("呼略", "忽略"), ("忽洛", "忽略"),
+                        ("望记", "忘记"), ("旺记", "忘记"), ("妄记", "忘记")):
+        t = t.replace(homo, canon)
+    return t
 
 
 def _normalized_variants(text: str) -> list[str]:
