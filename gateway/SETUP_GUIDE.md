@@ -70,9 +70,12 @@ ngrok http 7070
 
 ### 使用方式
 ```python
-from gateway.platforms.feishu_bot import FeishuBot
-bot = FeishuBot()
-bot.send_text("open_id", "消息内容")
+from agent_core.channels import get_channel
+ch = get_channel("feishu")
+ch.reply("open_id", "消息内容")
+# 审批交互卡片（actions 含 approve/reject 回调 value）
+ch.send_card("open_id", "审批标题", "详情内容",
+             approve_callback="cb-1", reject_callback="cb-2")
 ```
 
 ---
@@ -112,11 +115,13 @@ bot.send_text("open_id", "消息内容")
 
 ### 使用方式
 ```python
-from gateway.platforms.wecom_bot import WecomBot
-bot = WecomBot()
-bot.send_text("user_id", "消息内容")
+from agent_core.channels import get_channel
+ch = get_channel("wecom")
+ch.reply("user_id", "消息内容")
 # 或发送卡片消息
-bot.send_text_card("user_id", "标题", "描述内容")
+ch.send_text_card("user_id", "标题", "描述内容")
+# 或创建 OA 审批申请（返回 sp_no）
+ch.create_approval("creator_id", ["approver_id"], "template_id", {"contents": []})
 ```
 
 ---
@@ -156,11 +161,13 @@ bot.send_text_card("user_id", "标题", "描述内容")
 
 ### 使用方式
 ```python
-from gateway.platforms.dingtalk_bot import DingTalkBot
-bot = DingTalkBot()
-bot.send_text("user_id", "消息内容")
+from agent_core.channels import get_channel
+ch = get_channel("dingtalk")
+ch.send_text("user_id", "消息内容")
 # 或发送群消息
-bot.send_group_message("group_open_id", "消息内容")
+ch.send_group_message("group_open_id", "消息内容")
+# 或查询审批实例
+ch.query_approval("process_instance_id")
 ```
 
 ---
@@ -191,9 +198,11 @@ bot.send_group_message("group_open_id", "消息内容")
 
 #### 使用方式
 ```python
-from gateway.platforms.wechat_bot import WechatBot
-bot = WechatBot()
-bot.send_template_msg("open_id", "消息内容")
+# 公众号统一走 r15 适配器 agent_core.channels.wechat_oa
+from agent_core.channels import get_channel
+ch = get_channel("wechat_oa")
+ch.reply("open_id", "消息内容")
+# 旧 gateway/platforms/wechat_bot.py 已归档至 _deprecated/gateway-platforms/（未迁移）
 ```
 
 ### 4.2 Wechaty（个人微信，可选）

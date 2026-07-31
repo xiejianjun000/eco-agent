@@ -40,7 +40,7 @@ gateway:
     feishu:
       enabled: true            # ✅ 已启用（凭证已配置）
       type: "feishu"
-      adapter: "hermes.gateway.platforms.feishu"
+      # 统一走 agent_core.channels.feishu（r15 适配器，含 send_card 审批卡片）
 
       bot:
         name: "ECO AGENT 执法助手"
@@ -86,7 +86,7 @@ gateway:
     wecom:
       enabled: false
       type: "wecom"
-      adapter: "hermes.gateway.platforms.wecom"
+      # 统一走 agent_core.channels.wecom（r15 适配器，含 send_text_card/send_news/create_approval）
 
       bot:
         name: "ECO AGENT"
@@ -132,7 +132,7 @@ gateway:
     dingtalk:
       enabled: false
       type: "dingtalk"
-      adapter: "hermes.gateway.platforms.dingtalk"
+      # 统一走 agent_core.channels.dingtalk（r15 适配器，含 send_group_message/send_card/query_approval）
 
       bot:
         name: "ECO AGENT"

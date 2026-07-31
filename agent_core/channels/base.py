@@ -86,6 +86,12 @@ def http_post_json(url: str, payload: dict, headers: dict | None = None,
         return json.loads(resp.read().decode("utf-8"))
 
 
+def http_get_json(url: str, timeout: int = 10) -> dict:
+    """GET JSON（urllib 实现；测试中 mock 此函数，禁止真实外呼）。"""
+    with urllib.request.urlopen(url, timeout=timeout) as resp:  # noqa: S310
+        return json.loads(resp.read().decode("utf-8"))
+
+
 def body_bytes(request: dict) -> bytes:
     """统一取原始请求体 bytes。"""
     body = request.get("body", b"")

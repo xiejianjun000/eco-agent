@@ -116,7 +116,8 @@ class ChannelAdapter(ABC):
     """通道适配器抽象接口——所有通道必须实现以下四个成员
 
     当前已接入：telegram / discord / slack（gateway/channels/）
-    独立平台 bot（未走适配器接口）：feishu / wecom / dingtalk / wechat（gateway/platforms/）
+    国内平台统一走 r15 适配器（agent_core/channels/）：feishu / wecom / dingtalk / wechat_oa
+    旧独立平台 bot 已归档至 _deprecated/gateway-platforms/
     枚举预留待接入：CLI / API / WEB / QQ / WHATSAPP（见 Platform）
     """
 

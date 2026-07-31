@@ -82,7 +82,7 @@ profiles/agents/*_soul.md ─┘            │
 | 状态 | 通道 |
 |:-----|:-----|
 | ✅ 已实现 ChannelAdapter（`gateway/channels/`） | Telegram / Discord / Slack |
-| ✅ 独立平台 Bot（`gateway/platforms/`，未走适配器接口） | 飞书 / 企业微信 / 钉钉 |
+| ✅ 国内平台 r15 统一适配器（`agent_core/channels/`，验签+收发+审批出站） | 飞书 / 企业微信 / 钉钉 |
 | 🚧 骨架/待接入 | 微信个人号（Wechaty 依赖外部服务）/ CLI / Web API |
 
 - 统一消息协议，已接入通道归一化为 UnifiedMessage

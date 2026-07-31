@@ -4,7 +4,8 @@
   EncodingAESKey 为 43 字符，实际 key = base64(EncodingAESKey + "=")，iv = key[:16]
   明文结构：random(16) + msg_len(4, network order) + msg + receiveid
 - 验签：msg_signature = sha1(sort(token, timestamp, nonce, encrypt_msg))
-- 主动发消息：应用 message/send API（需 access_token）
+- 主动发消息：应用 message/send API（需 access_token，带缓存）
+- 出站扩展：文本卡片 / 图文消息 / OA 审批申请（oa/applyevent）
 """
 from __future__ import annotations
 
@@ -12,16 +13,18 @@ import base64
 import hashlib
 import os
 import struct
+import time
 import xml.etree.ElementTree as ET
 from typing import Optional
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .base import (BLOCK_TEXT, Channel, InboundMessage, body_bytes, body_json,
-                   http_post_json)
+                   http_get_json, http_post_json)
 
 SEND_URL = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={token}"
 TOKEN_URL = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={cid}&corpsecret={secret}"
+APPROVAL_URL = "https://qyapi.weixin.qq.com/cgi-bin/oa/applyevent?access_token={token}"
 
 
 def _sha1_sig(token: str, *parts: str) -> str:
@@ -125,24 +128,81 @@ class WeComChannel(Channel):
             extras={"agent_id": _xml_get(plain, "AgentID")},
         )
 
-    def reply(self, user_id: str, text: str, **kw) -> bool:
-        token = kw.get("access_token") or self.config.get("access_token")
-        if not token:
-            cid = self.config.get("corp_id") or os.environ.get("WECOM_CORP_ID", "")
-            secret = self.config.get("secret") or os.environ.get("WECOM_SECRET", "")
-            token = self._get_token(cid, secret).get("access_token", "")
+    def __init__(self, config: dict | None = None):
+        super().__init__(config)
+        #: access_token 缓存 (token, 过期时间戳)
+        self._token_cache: tuple[str, float] = ("", 0.0)
+
+    def _agent_id(self) -> int:
         agent_id = self.config.get("agent_id") or os.environ.get("WECOM_AGENT_ID", "")
+        return int(agent_id or 0)
+
+    def get_access_token(self) -> str:
+        """应用 access_token（带缓存，过期前 60s 刷新）。"""
+        token = self.config.get("access_token")
+        if token:
+            return token
+        token, expires_at = self._token_cache
+        if token and time.time() < expires_at - 60:
+            return token
+        cid = self.config.get("corp_id") or os.environ.get("WECOM_CORP_ID", "")
+        secret = self.config.get("secret") or os.environ.get("WECOM_SECRET", "")
+        resp = self._get_token(cid, secret)
+        token = resp.get("access_token", "")
+        if token:
+            self._token_cache = (token, time.time() + resp.get("expires_in", 7200))
+        return token
+
+    def reply(self, user_id: str, text: str, **kw) -> bool:
+        token = kw.get("access_token") or self.get_access_token()
         payload = {"touser": user_id, "msgtype": "text",
-                   "agentid": int(agent_id or 0), "text": {"content": text}}
+                   "agentid": self._agent_id(), "text": {"content": text}}
         resp = http_post_json(SEND_URL.format(token=token), payload)
         return resp.get("errcode") == 0
 
+    def send_text_card(self, user_id: str, title: str, description: str,
+                       url: str = "") -> bool:
+        """发送文本卡片消息。"""
+        token = self.get_access_token()
+        if not token:
+            return False
+        payload = {"touser": user_id, "msgtype": "textcard",
+                   "agentid": self._agent_id(),
+                   "textcard": {"title": title, "description": description,
+                                "url": url or "https://work.weixin.qq.com",
+                                "btntxt": "查看详情"}}
+        resp = http_post_json(SEND_URL.format(token=token), payload)
+        return resp.get("errcode") == 0
+
+    def send_news(self, user_id: str, articles: list[dict]) -> bool:
+        """发送图文消息。"""
+        token = self.get_access_token()
+        if not token:
+            return False
+        payload = {"touser": user_id, "msgtype": "news",
+                   "agentid": self._agent_id(),
+                   "news": {"articles": articles}}
+        resp = http_post_json(SEND_URL.format(token=token), payload)
+        return resp.get("errcode") == 0
+
+    def create_approval(self, creator_id: str, approver_id: list[str],
+                        template_id: str, details: dict) -> str | None:
+        """创建 OA 审批申请，成功返回审批实例 ID（sp_no）。"""
+        token = self.get_access_token()
+        if not token:
+            return None
+        payload = {"creator_userid": creator_id,
+                   "template_id": template_id,
+                   "use_template_approver": 0,
+                   "approver": [{"attr": 0, "userid": approver_id}],
+                   "apply_data": details}
+        resp = http_post_json(APPROVAL_URL.format(token=token), payload)
+        if resp.get("errcode") == 0:
+            return resp.get("sp_no", "")
+        return None
+
     def _get_token(self, cid: str, secret: str) -> dict:
-        import urllib.request
-        import json as _json
-        with urllib.request.urlopen(  # noqa: S310 测试中 mock
-                TOKEN_URL.format(cid=cid, secret=secret), timeout=10) as r:
-            return _json.loads(r.read().decode("utf-8"))
+        return http_get_json(TOKEN_URL.format(cid=cid, secret=secret))
 
 
 __all__ = ["WeComChannel", "WeComCrypto", "BLOCK_TEXT", "body_json"]

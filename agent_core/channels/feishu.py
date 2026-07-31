@@ -4,7 +4,8 @@
 - encrypt key AES 解密：key = SHA256(encrypt_key)，AES-256-CBC，iv = key[:16]，PKCS7
   密文结构（飞书官方）：base64(AES-CBC 密文) — 见 open.feishu.cn 文档
 - token 校验：body.token == verification_token（加密模式下在校验前先解密）
-- tenant_access_token 获取与发消息（im/v1/messages）
+- tenant_access_token 获取（带缓存）与发消息（im/v1/messages）
+- 出站扩展：send_card 审批交互卡片（actions 含 approve/reject 回调 value）
 """
 from __future__ import annotations
 
@@ -12,6 +13,7 @@ import base64
 import hashlib
 import json
 import os
+import time
 from typing import Optional
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -96,13 +98,25 @@ class FeishuChannel(Channel):
                     "chat_id": message.get("chat_id", "")},
         )
 
+    def __init__(self, config: dict | None = None):
+        super().__init__(config)
+        #: tenant_access_token 缓存 (token, 过期时间戳)
+        self._token_cache: tuple[str, float] = ("", 0.0)
+
     def get_tenant_access_token(self) -> str:
+        """获取 tenant_access_token（带缓存，过期前 60s 刷新）。"""
+        token, expires_at = self._token_cache
+        if token and time.time() < expires_at - 60:
+            return token
         resp = http_post_json(TOKEN_URL, {
             "app_id": self.config.get("app_id") or os.environ.get("FEISHU_APP_ID", ""),
             "app_secret": self.config.get("app_secret")
                           or os.environ.get("FEISHU_APP_SECRET", ""),
         })
-        return resp.get("tenant_access_token", "")
+        token = resp.get("tenant_access_token", "")
+        if token:
+            self._token_cache = (token, time.time() + resp.get("expire", 7200))
+        return token
 
     def reply(self, user_id: str, text: str, **kw) -> bool:
         token = kw.get("tenant_access_token") or self.config.get("tenant_access_token") \
@@ -110,5 +124,43 @@ class FeishuChannel(Channel):
         payload = {"receive_id": user_id, "msg_type": "text",
                    "content": json.dumps({"text": text}, ensure_ascii=False)}
         resp = http_post_json(SEND_URL, payload,
+                              headers={"Authorization": f"Bearer {token}"})
+        return resp.get("code") == 0
+
+    def send_card(self, receive_id: str, title: str, content: str,
+                  approve_callback: str = "", reject_callback: str = "",
+                  id_type: str = "open_id") -> bool:
+        """发送交互卡片（审批场景：可带批准/拒绝回调按钮）。"""
+        card: dict = {
+            "config": {"wide_screen_mode": True},
+            "header": {
+                "title": {"tag": "plain_text", "content": title},
+                "template": "red" if "审批" in title else "blue",
+            },
+            "elements": [{"tag": "markdown", "content": content}],
+        }
+        if approve_callback and reject_callback:
+            card["elements"].append({
+                "tag": "action",
+                "actions": [
+                    {"tag": "button",
+                     "text": {"tag": "plain_text", "content": "✅ 批准"},
+                     "type": "primary",
+                     "value": {"action": "approve", "callback": approve_callback}},
+                    {"tag": "button",
+                     "text": {"tag": "plain_text", "content": "❌ 拒绝"},
+                     "type": "danger",
+                     "value": {"action": "reject", "callback": reject_callback}},
+                ],
+            })
+        token = self.config.get("tenant_access_token") \
+            or self.get_tenant_access_token()
+        if not token:
+            return False
+        url = ("https://open.feishu.cn/open-apis/im/v1/messages"
+               f"?receive_id_type={id_type}")
+        payload = {"receive_id": receive_id, "msg_type": "interactive",
+                   "content": json.dumps(card, ensure_ascii=False)}
+        resp = http_post_json(url, payload,
                               headers={"Authorization": f"Bearer {token}"})
         return resp.get("code") == 0

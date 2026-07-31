@@ -101,9 +101,27 @@ def _build_app(api_key):
 
     return app
 
+def _token_totals():
+    """stats.jsonl 累计 token 数（请求前后取差值得到本次用量）"""
+    try:
+        sys.path.insert(0, str(ROOT))
+        from agent_core.llm_client import summarize_llm_stats
+        s = summarize_llm_stats()
+        return s["prompt_tokens"], s["completion_tokens"]
+    except Exception:
+        return 0, 0
+
+def _usage_since(before):
+    """根据请求前的累计快照计算本次请求的 usage（含 EcoLoops 多轮调用）"""
+    pt0, ct0 = before
+    pt1, ct1 = _token_totals()
+    pt, ct = max(pt1 - pt0, 0), max(ct1 - ct0, 0)
+    return {"prompt_tokens": pt, "completion_tokens": ct, "total_tokens": pt + ct}
+
 async def _stream_response(query, model_id):
     rid = f"chatcmpl-{int(time.time())}"
     ts = int(time.time())
+    before = _token_totals()
     # Role chunk
     yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})}\n\n"
     try:
@@ -131,10 +149,11 @@ async def _stream_response(query, model_id):
             await asyncio.sleep(0.01)
     except Exception as e:
         yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'content': f'[Error: {e}]'}, 'finish_reason': None}]})}\n\n"
-    yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}]})}\n\n"
+    yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}], 'usage': _usage_since(before)})}\n\n"
     yield "data: [DONE]\n\n"
 
 async def _sync_response(query, model_id):
+    before = _token_totals()
     try:
         sys.path.insert(0, str(ROOT))
         from agent_core.eco_loops_integration import EcoLoops
@@ -165,5 +184,5 @@ async def _sync_response(query, model_id):
         "created": int(time.time()),
         "model": model_id,
         "choices": [{"index": 0, "message": {"role": "assistant", "content": output}, "finish_reason": "stop"}],
-        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        "usage": _usage_since(before),
     }
