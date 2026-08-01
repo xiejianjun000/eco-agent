@@ -1,3 +1,21 @@
+## [2026-08-01] v5.0.0a7 — L3 Pulse 五占位步骤真实化
+
+### Changed (G3 渐进交付)
+- **`agent_core/heartbeat.py` PulseSteps（新类，路径全注入，离线安全）**
+  - step_sync：扫描受管目录（文件数/字节数/mtime 清单）落盘快照，不再返回 "sync_ok"
+  - step_diff：当前扫描 vs 上次快照，报告新增/修改/删除的具体文件
+  - step_rule_engine：知识保鲜规则——mtime 超 90 天的文件触发提醒（D10 知识新鲜度抓手）
+  - step_mem_cron：SQLite VACUUM + integrity_check（DB 缺失跳过不崩）
+  - step_suggestions：基于其他步骤结果生成建议；无事发生返回 None（静默原则）
+- 旧静态接口保留，委托 `default_steps()` 生产默认实例（memory-tree + OBSIDIAN_VAULT + ~/.eco SQLite）
+
+### Tests
+- 新增 `tests/modules/test_pulse_steps.py` 10 例：真实计数、快照落盘、
+  无差异/新增+修改检出、过期触发/新鲜不触发、VACUUM 真实性、
+  DB 缺失优雅、建议含数量、静默返回 None（973 passed）
+
+---
+
 ## [2026-08-01] v5.0.0a6 — rag_score 反幻觉核验接入 eco-knowledge-mcp
 
 ### Added (G4 质量门禁)

@@ -8,6 +8,8 @@ heartbeat.py — Eco Agent L3 后台心跳循环 (Autonomous Pulse)
 节律：每5~20分钟（自适应）
 """
 
+import json
+import os
 import time
 import logging
 import threading
@@ -93,32 +95,32 @@ class PulseLoop:
         elif elapsed_s < self._interval * 0.2:
             self._interval = max(self._interval * 0.8, self._min_interval)
 
-    # ── 内置心跳步骤 ──
+    # ── 内置心跳步骤（兼容旧接口，委托 PulseSteps 默认实例）──
 
     @staticmethod
     def step_sync():
-        """STEP 1: 全平台数据同步（占位）"""
-        return "sync_ok"
+        """STEP 1: 全平台数据同步"""
+        return default_steps().step_sync()
 
     @staticmethod
     def step_diff():
         """STEP 2: 差异检测"""
-        return "no_changes"
+        return default_steps().step_diff()
 
     @staticmethod
     def step_rule_engine():
         """STEP 3: 自动触发规则引擎"""
-        return "no_rules_triggered"
+        return default_steps().step_rule_engine()
 
     @staticmethod
     def step_mem_cron():
         """STEP 4: 内存碎片整理"""
-        return "mem_ok"
+        return default_steps().step_mem_cron()
 
     @staticmethod
     def step_suggestions():
         """STEP 5: 主动建议生成"""
-        return None
+        return default_steps().step_suggestions()
 
     def get_stats(self) -> dict:
         return {
@@ -128,6 +130,139 @@ class PulseLoop:
             "listeners": len(self._listeners),
             "last_pulse": self._pulse_log[-1]["timestamp"][:19] if self._pulse_log else "N/A",
         }
+
+
+# ═══════════════════════════════════
+# PulseSteps — 五步骤真实实现
+# ═══════════════════════════════════
+
+class PulseSteps:
+    """L3 心跳五步骤真实实现（路径全部可注入，离线测试安全）
+
+    sync → 扫描受管目录，落盘快照（文件数/字节/mtime 清单）
+    diff → 当前扫描 vs 上次快照，报告新增/修改
+    rule_engine → 知识保鲜规则：mtime 超 stale_days 的文件触发提醒（D10 抓手）
+    mem_cron → SQLite VACUUM + 完整性检查
+    suggestions → 基于其他步骤结果生成建议；一切正常返回 None（静默原则）
+    """
+
+    def __init__(self, vault_path: Path | None = None, watch_dirs: list | None = None,
+                 state_file: Path | None = None, db_paths: list | None = None,
+                 stale_days: int = 90):
+        self._vault = Path(vault_path) if vault_path else None
+        self._watch = [Path(d) for d in (watch_dirs or [])]
+        self._state_file = Path(state_file) if state_file else (
+            DATA_DIR / "pulse_state.json")
+        self._dbs = [Path(d) for d in (db_paths or [])]
+        self._stale_days = stale_days
+
+    # ── 扫描与快照 ──
+
+    def _scan(self) -> dict[str, float]:
+        """扫描受管目录 → {文件路径: mtime}（.md/.txt）"""
+        files: dict[str, float] = {}
+        for root in self._watch:
+            if not root.exists():
+                continue
+            for f in root.rglob("*"):
+                if f.is_file() and f.suffix.lower() in (".md", ".txt"):
+                    try:
+                        files[str(f)] = f.stat().st_mtime
+                    except OSError:
+                        continue
+        return files
+
+    def _load_snapshot(self) -> dict:
+        try:
+            return json.loads(self._state_file.read_text(encoding="utf-8"))
+        except Exception:
+            return {"files": {}, "taken_at": ""}
+
+    def _save_snapshot(self, files: dict[str, float]):
+        self._state_file.parent.mkdir(parents=True, exist_ok=True)
+        self._state_file.write_text(json.dumps(
+            {"files": files, "taken_at": datetime.now().isoformat()},
+            ensure_ascii=False), encoding="utf-8")
+
+    # ── 五步骤 ──
+
+    def step_sync(self) -> dict:
+        """STEP 1: 数据同步——扫描受管存储，落盘快照，返回真实计数"""
+        files = self._scan()
+        total_bytes = 0
+        for p in files:
+            try:
+                total_bytes += Path(p).stat().st_size
+            except OSError:
+                pass
+        self._save_snapshot(files)
+        stores = sum(1 for d in self._watch if d.exists())
+        return {"stores": stores, "files": len(files), "bytes": total_bytes}
+
+    def step_diff(self) -> dict:
+        """STEP 2: 差异检测——当前扫描 vs 上次快照（新增/修改）"""
+        old = self._load_snapshot()["files"]
+        cur = self._scan()
+        changed = [p for p, mt in cur.items() if p not in old or old[p] < mt]
+        deleted = [p for p in old if p not in cur]
+        self._save_snapshot(cur)
+        return {"changed": len(changed) + len(deleted), "files": sorted(changed),
+                "deleted": len(deleted)}
+
+    def step_rule_engine(self) -> dict:
+        """STEP 3: 规则触发——知识保鲜：超期未更新文件触发提醒（D10 知识新鲜度）"""
+        cutoff = time.time() - self._stale_days * 86400
+        triggered = [p for p, mt in self._scan().items() if mt < cutoff]
+        return {"rule": "knowledge_freshness", "stale_days": self._stale_days,
+                "triggered": sorted(triggered)}
+
+    def step_mem_cron(self) -> dict:
+        """STEP 4: 内存整理——SQLite VACUUM + 完整性检查（DB 不存在跳过不崩）"""
+        import sqlite3
+        vacuumed = 0
+        integrity = "ok"
+        for db in self._dbs:
+            if not db.exists():
+                continue
+            try:
+                conn = sqlite3.connect(db)
+                if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                    integrity = "corrupt"
+                conn.execute("VACUUM")
+                conn.close()
+                vacuumed += 1
+            except sqlite3.Error as e:
+                logger.warning(f"[Pulse] mem_cron {db.name}: {e}")
+                integrity = "error"
+        return {"vacuumed": vacuumed, "integrity": integrity}
+
+    def step_suggestions(self, context: dict | None = None) -> list[str] | None:
+        """STEP 5: 主动建议——基于其他步骤结果；无事发生返回 None（静默原则）"""
+        ctx = context or {}
+        suggestions = []
+        stale = ctx.get("stale_count", 0)
+        if stale > 0:
+            suggestions.append(f"{stale} 条知识超过 {self._stale_days} 天未更新，建议复核时效性")
+        if ctx.get("changed", 0) > 0:
+            suggestions.append(f"检测到 {ctx['changed']} 处知识库变更，建议确认是否需要重建索引")
+        return suggestions or None
+
+
+_default_steps: PulseSteps | None = None
+
+
+def default_steps() -> PulseSteps:
+    """生产默认实例：监控 memory-tree 与（存在的）Obsidian vault、~/.eco SQLite"""
+    global _default_steps
+    if _default_steps is None:
+        watch = [ROOT / "memory-tree"]
+        vault = os.environ.get("OBSIDIAN_VAULT", "")
+        if vault and Path(vault).is_dir():
+            watch.append(Path(vault))
+        eco_dir = Path.home() / ".eco"
+        dbs = [eco_dir / "hybrid_vectors.db"] if (eco_dir / "hybrid_vectors.db").exists() else []
+        _default_steps = PulseSteps(watch_dirs=watch, db_paths=dbs)
+    return _default_steps
 
 
 # ===== 快速包装 =====
