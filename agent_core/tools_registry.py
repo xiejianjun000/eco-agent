@@ -283,7 +283,7 @@ ALL_TOOL_DEFS = [
     "type": "function",
     "function": {
       "name": "analyze_document",
-      "description": "parse documents PDF/TXT/DOCX",
+      "description": "read local plain-text document by path (txt/md/csv/log); PDF/DOCX not supported",
       "parameters": {
         "type": "object",
         "properties": {
@@ -2582,6 +2582,27 @@ def _h_query_permit(company_name: str):
 @tool("query_water_quality")
 def _h_query_water_quality(water_body: str, section: str = ""):
     return {"water_body": water_body, "section": section}
+
+
+
+@tool("analyze_document")
+def _h_analyze_document(file_path: str):
+    """真实读取本地纯文本文档（txt/md/csv/log/json 等），返回内容（截断 20000 字符防撑爆上下文）。
+    权限级别 L1（analyze_ 前缀，只读）。PDF/DOCX 无解析依赖，如实报不支持。"""
+    from pathlib import Path as _P
+    p = _P(str(file_path or "")).expanduser()
+    if not p.is_file():
+        return {"error": f"file not found: {file_path}"}
+    if p.suffix.lower() in (".pdf", ".docx", ".doc"):
+        return {"error": f"{p.suffix} 解析依赖未安装，当前仅支持纯文本；请先另存为 .txt",
+                "file_path": str(p)}
+    try:
+        content = p.read_text(encoding="utf-8", errors="replace")
+    except Exception as e:
+        return {"error": str(e), "file_path": str(p)}
+    cap = 20000
+    return {"file_path": str(p), "chars": len(content),
+            "truncated": len(content) > cap, "content": content[:cap]}
 
 
 

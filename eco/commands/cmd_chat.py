@@ -277,6 +277,11 @@ _HELP_TEXT = """  REPL 命令：
     /todo      查看当前工作区待办（复杂任务 DAG 步骤在此勾选进度）
     /verbose   切换轨迹模式（思考/工具调用/耗时/DAG 边，写入 SM3 审计链）
     /model [名称]  查看当前模型与可选 provider（✅=已配 Key）；带名称则运行时切换
+    /plan      规划模式：先出分步计划，确认后再执行
+    /spec      规格模式：先澄清需求并产出 SPEC，对齐后再实现
+    /goal      目标模式：转为带完成判据的目标，逐轮推进直到满足
+    /auto      自动模式：自主拆解、连续多步推进，减少确认
+    /chat      返回普通对话模式
     /checkpoints  列出会话检查点（每轮输入前自动快照）
     /rewind [n]   回滚到第 n 个检查点（默认最近一个）：截断会话历史并还原工作区文件
   生成中 Ctrl+C 只取消当前回答，会话保留。
@@ -353,10 +358,46 @@ def _model_cmd_text(arg: str) -> str:
             f"或用 eco config model test {arg} 排查")
 
 
-def _combine_extra(extra: str) -> str:
-    """把自述信息拼进动态层（workspace 片段在前，自述在后）"""
-    self_info = _self_system_extra()
-    return f"{extra}\n\n{self_info}" if extra else self_info
+def _combine_extra(extra: str, mode: str = "chat") -> str:
+    """把自述信息与当前模式指令拼进动态层（workspace 片段在前，自述/模式在后）"""
+    parts = [p for p in (extra, _self_system_extra()) if p]
+    if mode in _MODES:
+        parts.append(_MODES[mode])
+    return "\n\n".join(parts)
+
+
+# 对话模式预设（对标 Kimi 的 plan/spec/goal/auto 快捷命令）：
+# 切换后作为模式指令注入动态层，状态栏左侧同步显示
+_MODES = {
+    "plan": ("【模式:plan】规划模式：先输出分步实施计划（步骤、涉及对象、验证方式），"
+             "等用户明确确认后再展开执行；确认前不直接给最终答案或实质性改动。"),
+    "spec": ("【模式:spec】规格模式：以需求规格说明为中心，先澄清需求并产出结构化 SPEC"
+             "（目标、范围、验收标准、约束），对齐后再进入实现讨论。"),
+    "goal": ("【模式:goal】目标模式：先把用户意图转成带可验证完成判据的目标陈述，"
+             "每轮自检与目标的差距并给出下一步，直到判据满足。"),
+    "auto": ("【模式:auto】自动模式：在不越权（L4 操作仍需授权）、不破坏的前提下，"
+             "主动拆解任务、连续多步推进，减少向用户反复确认。"),
+}
+
+# 输入框长文本阈值（字符）：超过则落盘为 txt，消息体替换为文件引用（对标 Kimi 的粘贴压缩）
+_PASTE_THRESHOLD = 2000
+
+
+def _maybe_compress_paste(q: str) -> str:
+    """输入框收到长文时自动压缩：写入 ~/.eco/paste/*.txt，返回文件引用消息；
+    模型可用 analyze_document 工具按路径读取全文。短文本/斜杠命令原样返回。"""
+    if len(q) <= _PASTE_THRESHOLD or q.startswith("/"):
+        return q
+    import time
+    from pathlib import Path
+    d = Path.home() / ".eco" / "paste"
+    d.mkdir(parents=True, exist_ok=True)
+    p = d / f"paste-{time.strftime('%Y%m%d-%H%M%S')}.txt"
+    p.write_text(q, encoding="utf-8")
+    print(f"[paste] 长文本 {len(q)} 字已自动保存: {p}")
+    return (f"用户粘贴了一段长文本（共 {len(q)} 字），已保存到文件 {p}。"
+            f"请先调用 analyze_document 工具（file_path={p}）读取全文，"
+            f"再按文本本身的意图处理；若文本末尾带有明确问题或指令，优先响应它。")
 
 
 def _display_width(s: str) -> int:
@@ -387,8 +428,8 @@ def _context_status(history) -> str:
     return f"context: {pct}% ({used / 1000:.1f}k/{limit // 1000}k)"
 
 
-def _status_left() -> str:
-    """左侧状态：provider/model + 工作区 + 权限闸门（简写）"""
+def _status_left(mode: str = "chat") -> str:
+    """左侧状态：模式 + provider/model + 工作区 + 权限闸门（对标 Kimi 左栏）"""
     try:
         from agent_core.llm_client import get_default_client
         s = get_default_client().get_stats()
@@ -402,26 +443,26 @@ def _status_left() -> str:
         ws = "无"
     import os as _os
     gate = "off" if _os.environ.get("ECO_PERMISSION_GATE", "").strip().lower() == "0" else "on"
-    return f" {llm}  ws:{ws}  gate:{gate}"
+    return f" {mode}  {llm}  ws:{ws}  gate:{gate}"
 
 
-def _status_bar(history) -> str:
-    """Kimi 风格状态栏：左对齐模型/工作区/闸门，右对齐 context 用量"""
-    left = _status_left()
+def _status_bar(history, mode: str = "chat") -> str:
+    """Kimi 风格状态栏：左对齐模式/模型/工作区/闸门，右对齐 context 用量"""
+    left = _status_left(mode)
     right = _context_status(history) + " "
     pad = max(_term_width() - _display_width(left) - _display_width(right), 1)
     return left + " " * pad + right
 
 
-def _print_status_bar(history):
+def _print_status_bar(history, mode: str = "chat"):
     if _HAVE_RICH:
-        _console.print(_status_bar(history), style="dark_green")
+        _console.print(_status_bar(history, mode), style="dark_green")
     else:
-        print(_status_bar(history))
+        print(_status_bar(history, mode))
 
 
-def _boxed_input() -> str:
-    """Kimi 风格圆角输入框：上边框 → │ > 读入 → 下边框"""
+def _boxed_input(history, mode: str = "chat") -> str:
+    """Kimi 风格圆角输入框：上边框 → │ > 读入 → 下边框 → 状态栏（紧随框下）"""
     bar = "─" * (min(_term_width(), 100) - 2)
     if _HAVE_RICH:
         _console.print(f"╭{bar}╮", style="dark_green")
@@ -434,6 +475,7 @@ def _boxed_input() -> str:
             _console.print(f"╰{bar}╯", style="dark_green")
         else:
             print(f"╰{bar}╯")
+        _print_status_bar(history, mode)
 
 
 def _checkpoint_store(mgr):
@@ -485,13 +527,12 @@ def _repl(history=None):
         print("  /help 命令帮助 | /new 新会话 | /verbose 轨迹模式 | /exit 退出")
         print()
 
-    _print_status_bar(history)
-
     from agent_core.workspace import get_workspace_manager
     mgr = get_workspace_manager()
+    mode = "chat"
     while True:
         try:
-            q = _boxed_input().strip()
+            q = _boxed_input(history, mode).strip()
         except (EOFError, KeyboardInterrupt):
             print()
             break
@@ -499,6 +540,14 @@ def _repl(history=None):
         if q in ("/exit", "/quit"): break
         if q == "/help":
             print(_HELP_TEXT); continue
+        if q in ("/plan", "/spec", "/goal", "/auto"):
+            mode = q[1:]
+            print(f"[mode] 已切换到 {mode} 模式（/chat 返回普通对话）")
+            continue
+        if q == "/chat":
+            mode = "chat"
+            print("[mode] 已返回普通对话模式")
+            continue
         if q == "/todo":
             cur = mgr.current()
             if cur is None:
@@ -552,8 +601,9 @@ def _repl(history=None):
             continue
         if q == "/model" or q.startswith("/model "):
             print(_model_cmd_text(q[len("/model"):].strip().lower()))
-            _print_status_bar(history)
+            _print_status_bar(history, mode)
             continue
+        q = _maybe_compress_paste(q)
         blocked = _user_input_blocked(q)
         if blocked:
             print(f"[安全拦截] 输入命中注入防线：{blocked}")
@@ -569,7 +619,7 @@ def _repl(history=None):
         context = ws.summary() if ws else ""
         from eco.trace import get_tracer
         tracer = get_tracer()
-        extra = _combine_extra(_workspace_system_extra(q, tracer=tracer))
+        extra = _combine_extra(_workspace_system_extra(q, tracer=tracer), mode)
 
         answer = _maybe_swarm(q, context=context, tracer=tracer)
         if answer is None:
@@ -584,5 +634,4 @@ def _repl(history=None):
         if ws:
             ws.add_event("user", q)
             ws.add_event("assistant", answer[:800])
-        _print_status_bar(history)
     return 0

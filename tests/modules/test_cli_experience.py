@@ -27,6 +27,40 @@ class TestHelpAndBanner:
         assert "自述信息" in info and "/model" in info
         assert "eco config model use" in info
 
+    def test_mode_presets_injected(self):
+        assert "模式:plan" in cmd_chat._combine_extra("", mode="plan")
+        assert "模式:auto" in cmd_chat._combine_extra("", mode="auto")
+        for m in ("/plan", "/spec", "/goal", "/auto"):
+            assert m in cmd_chat._HELP_TEXT
+        # chat 模式不注入任何模式指令
+        plain = cmd_chat._combine_extra("", mode="chat")
+        assert "模式:" not in plain
+
+    def test_long_paste_compressed_to_txt(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("HOME", str(tmp_path))
+        long_text = "某企业违法线索材料：" + "详细内容。" * 500  # > 2000 字
+        out = cmd_chat._maybe_compress_paste(long_text)
+        assert "analyze_document" in out and ".txt" in out
+        assert long_text[:20] not in out  # 原文不再进入消息体
+        saved = list((tmp_path / ".eco" / "paste").glob("*.txt"))
+        assert len(saved) == 1 and saved[0].read_text(encoding="utf-8") == long_text
+        # 短文本与斜杠命令原样返回
+        assert cmd_chat._maybe_compress_paste("短问题") == "短问题"
+        assert cmd_chat._maybe_compress_paste("/plan") == "/plan"
+
+    def test_analyze_document_handler_reads_txt(self, tmp_path):
+        from agent_core.tools_registry import _HANDLERS
+        f = tmp_path / "note.txt"
+        text = "违法线索：暗管偷排"
+        f.write_text(text, encoding="utf-8")
+        h = _HANDLERS["analyze_document"]
+        r = h(file_path=str(f))
+        assert r["chars"] == len(text) and "暗管偷排" in r["content"]
+        assert "error" in h(file_path=str(tmp_path / "none.txt"))
+        pdf = tmp_path / "x.pdf"
+        pdf.write_bytes(b"%PDF-1.4 fake")
+        assert "仅支持纯文本" in h(file_path=str(pdf))["error"]
+
     def test_status_bar_format(self):
         bar = cmd_chat._status_bar([{"role": "user", "content": "你好 eco"}])
         assert "context:" in bar
