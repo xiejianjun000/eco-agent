@@ -8,6 +8,8 @@ _IS_WINDOWS = sys.platform.startswith("win")
 import logging
 logging.basicConfig(level=logging.WARNING)
 
+from eco import __version__
+
 try:
     from rich.console import Console
     from rich.panel import Panel  # noqa: F401
@@ -329,7 +331,7 @@ def _repl(history=None):
         _console.print(Text(LOGO, style="#3a8a6f"))
         _console.print(Text(LOGO_LINE, style="#5ae0a0 bold"))
         _console.print(Text(_banner_summary(), style="#4a7a5a"))
-        _console.print(Text("  /exit  /new  /help  /verbose  |  ECO AGENT v5.0.0a2", style="#2a5a3a"))
+        _console.print(Text(f"  /exit  /new  /help  /verbose  |  ECO AGENT v{__version__}", style="#2a5a3a"))
         _console.print()
     else:
         print(LOGO)

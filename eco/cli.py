@@ -3,9 +3,12 @@
 import argparse
 import sys
 
+from eco import __version__
+
 def _build_parser():
     parser = argparse.ArgumentParser(prog="eco", description="ECO AGENT")
-    parser.add_argument("--version", "-V", action="version", version="eco 5.0.0a1")
+    parser.add_argument("--version", "-V", action="version",
+                        version=f"eco {__version__}")
     sub = parser.add_subparsers(dest="command")
 
     p = sub.add_parser("chat", help="Talk to ECO AGENT")
@@ -85,7 +88,6 @@ def main(argv=None):
         parser.print_help()
         return 0
     if args.command == "version":
-        from eco import __version__
         print(f"ECO AGENT v{__version__}")
         return 0
     mod = __import__(f"eco.commands.cmd_{args.command}", fromlist=["run"])

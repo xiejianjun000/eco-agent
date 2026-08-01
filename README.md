@@ -2,7 +2,7 @@
 
 > **五层循环驱动，持续自我进化的 AI 智能体。**
 
-[![Version](https://img.shields.io/badge/version-5.0.0--alpha-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-5.0.0a2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-orange)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-901%20passed-brightgreen)](TEST_LOG.md)
@@ -22,8 +22,8 @@ Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环
 |:-----|:------|:--------|
 | **L1 ReAct++** | 毫秒~秒 | 置信度评分，低于 0.6 自动暂停反思。工具调用失败自动回滚到上一个安全点 |
 | **L2 Task** | 秒~分 | 多 Agent 并行执行，自动解析任务依赖图（DAG），检测循环依赖后 5 秒内自动破环。失败后最多 2 轮重规划，超额上报 |
-| **L3 Pulse** | 5~20 分钟 | 自适应频率后台心跳（电池模式自动降频）。5 个内置步骤：数据同步→差异检测→规则触发→内存整理→主动建议。全部静默执行，不打扰用户 |
-| **L4 Evolve** | 每次任务后 / 每日 | 五阶段进化：经验回放→差距分析→技能生成/优化→记忆固化→版本快照。每次进化输出可读报告 `evolution_report.md`，高风险操作需用户确认 |
+| **L3 Pulse** | 5~20 分钟 | ✅ 自适应频率后台心跳：按上次心跳耗时在 5~20 分钟伸缩。🚧 电池模式自动降频：规划中，代码暂无电源/电池感知。内置 5 个步骤（数据同步→差异检测→规则触发→内存整理→主动建议）目前为占位实现（返回常量），生产接线仅注册数据同步/差异检测两个，静默执行不打扰用户 |
+| **L4 Evolve** | 手动触发（🚧 每次任务后 / 每日自动触发：未实现，无任务完成钩子与每日调度接线） | ✅ 五阶段进化闭环可运行：经验回放→差距分析→技能生成/优化→记忆固化→版本快照，目前仅通过 `eco evolution` CLI 手动触发。每次进化输出可读报告 `evolution_report.md`，高风险操作需用户确认 |
 | **L5 Heal** | 实时 | 异常自动分类（瞬时/持久/死锁），指数退避重试（1s/2s/4s/8s）。熔断器防止雪崩，优雅降级切备用模型。检查点快照支持"时光倒流"撤销 |
 
 ### Agent 协作

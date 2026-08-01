@@ -315,29 +315,32 @@ class TestStatsAndOps:
         assert rec["provider"] == "kimi" and rec["prompt_tokens"] == 11
 
     def test_skills_versions_and_rollback(self, tmp_path, monkeypatch, capsys):
+        from types import SimpleNamespace
         from eco.commands import cmd_skills
+        # 隔离：ROOT/SKILLS_DIR 重定向到 tmp_path，versions 快照、skills/、
+        # profiles/SOUL.md 全部落在临时目录，不触碰仓库内真实文件
+        # （并发下写真实 SOUL.md 会让其它断言 SOUL 内容的测试偶发失败）
+        monkeypatch.setattr(cmd_skills, "ROOT", tmp_path)
+        monkeypatch.setattr(cmd_skills, "SKILLS_DIR", tmp_path / "skills")
+        # rollback 的 SOUL 热更新只重读真实文件并污染全局引擎，stub 掉
+        monkeypatch.setattr("agent_core.prompt_engine.get_prompt_engine",
+                            lambda: SimpleNamespace(reload_soul=lambda: None))
+        soul = tmp_path / "profiles" / "eco-agent" / "SOUL.md"
+        soul.parent.mkdir(parents=True)
+        soul.write_text("# ORIG SOUL", encoding="utf-8")
         vdir = cmd_skills._versions_dir()
         snap = vdir / "v999_test"
         (snap / "skills").mkdir(parents=True, exist_ok=True)
         (snap / "version.txt").write_text("v999.test")
         (snap / "SOUL.md").write_text("# TEST SOUL SNAPSHOT", encoding="utf-8")
-        try:
-            assert cmd_skills._versions() == 0
-            out = capsys.readouterr().out
-            assert "v999_test" in out
-            # rollback：备份原 SOUL，验证恢复后还原
-            soul = cmd_skills.ROOT / "profiles" / "eco-agent" / "SOUL.md"
-            orig = soul.read_text(encoding="utf-8")
-            try:
-                assert cmd_skills._rollback("v999_test") == 0
-                assert soul.read_text(encoding="utf-8") == "# TEST SOUL SNAPSHOT"
-            finally:
-                soul.write_text(orig, encoding="utf-8")
-            # 不存在的版本报错
-            assert cmd_skills._rollback("v_no_such") == 1
-        finally:
-            import shutil
-            shutil.rmtree(snap, ignore_errors=True)
+        assert cmd_skills._versions() == 0
+        out = capsys.readouterr().out
+        assert "v999_test" in out
+        # rollback：覆盖 tmp 下的 SOUL，验证恢复内容
+        assert cmd_skills._rollback("v999_test") == 0
+        assert soul.read_text(encoding="utf-8") == "# TEST SOUL SNAPSHOT"
+        # 不存在的版本报错
+        assert cmd_skills._rollback("v_no_such") == 1
 
     def test_ctrl_c_cancels_generation_keeps_session(self, monkeypatch, capsys):
         from eco.commands import cmd_chat

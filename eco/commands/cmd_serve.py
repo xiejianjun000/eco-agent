@@ -39,7 +39,8 @@ def _build_app(api_key):
     from fastapi.responses import StreamingResponse, JSONResponse
     from pydantic import BaseModel
 
-    app = FastAPI(title="ECO AGENT API", version="5.0.0a1")
+    from eco import __version__
+    app = FastAPI(title="ECO AGENT API", version=__version__)
 
     if api_key:
         @app.middleware("http")
