@@ -46,6 +46,8 @@ class Task:
     id: str = ""; description: str = ""; agent_role: AgentRole = AgentRole.CUSTOM
     priority: int = 5; status: TaskStatus = TaskStatus.PENDING
     input: dict = field(default_factory=dict); output: str = ""; error: str = ""
+    expectation: str = ""   # 完成判据：预期世界状态（EcoAgent 锚点）
+    verdict: str = ""       # 验证结论：expectation vs 实际产出的核验记录
     depends_on: list[str] = field(default_factory=list)
     replan_count: int = 0; max_replans: int = 2
     worktree: str = ""; file_locks: list[str] = field(default_factory=list)
@@ -230,36 +232,52 @@ class DAGValidator:
 # ═══════════════════════════════════
 
 class TaskDecomposerV2:
-    """任务分解器 v2——深层分解"""
+    """任务分解器 v2——深层分解（每步携带 expectation 完成判据）"""
 
     def __init__(self):
+        # 模板: (步骤描述, 角色, expectation 完成判据)
         self._patterns = {
-            "开发": [("分析需求", AgentRole.ANALYST), ("设计架构", AgentRole.DESIGNER),
-                     ("前端实现", AgentRole.FRONTEND), ("后端实现", AgentRole.BACKEND),
-                     ("编写测试", AgentRole.TESTER), ("代码审查", AgentRole.REVIEWER),
-                     ("部署发布", AgentRole.DEVOPS)],
-            "研究": [("收集资料", AgentRole.RESEARCHER), ("分析数据", AgentRole.ANALYST),
-                     ("可视化", AgentRole.DESIGNER), ("撰写报告", AgentRole.WRITER),
-                     ("审查结论", AgentRole.REVIEWER)],
-            "写作": [("确定大纲", AgentRole.PLANNER), ("调研素材", AgentRole.RESEARCHER),
-                     ("撰写初稿", AgentRole.WRITER), ("审查修改", AgentRole.REVIEWER),
-                     ("定稿输出", AgentRole.WRITER)],
-            "通用": [("理解需求", AgentRole.ANALYST), ("制定计划", AgentRole.PLANNER),
-                     ("执行前置", AgentRole.CUSTOM), ("执行主体", AgentRole.CUSTOM),
-                     ("验证结果", AgentRole.REVIEWER), ("交付输出", AgentRole.CUSTOM)],
+            "开发": [("分析需求", AgentRole.ANALYST, "产出需求清单，功能点与约束无遗漏"),
+                     ("设计架构", AgentRole.DESIGNER, "产出架构方案，模块划分与接口定义明确"),
+                     ("前端实现", AgentRole.FRONTEND, "前端页面可运行，覆盖需求清单中的交互"),
+                     ("后端实现", AgentRole.BACKEND, "接口按架构方案实现，可正常响应"),
+                     ("编写测试", AgentRole.TESTER, "关键路径有测试且全部通过"),
+                     ("代码审查", AgentRole.REVIEWER, "审查意见逐条闭环，无未处理的 CRITICAL"),
+                     ("部署发布", AgentRole.DEVOPS, "服务部署完成，健康检查通过")],
+            "研究": [("收集资料", AgentRole.RESEARCHER, "资料来源可溯源，覆盖主题主要方面"),
+                     ("分析数据", AgentRole.ANALYST, "分析结论有数据支撑，方法可复现"),
+                     ("可视化", AgentRole.DESIGNER, "图表准确表达分析结论"),
+                     ("撰写报告", AgentRole.WRITER, "报告结构完整，结论与证据一一对应"),
+                     ("审查结论", AgentRole.REVIEWER, "结论经核验无事实性错误")],
+            "写作": [("确定大纲", AgentRole.PLANNER, "大纲层级完整，覆盖主题要点"),
+                     ("调研素材", AgentRole.RESEARCHER, "素材真实可溯源，与大纲各节对应"),
+                     ("撰写初稿", AgentRole.WRITER, "初稿覆盖大纲全部章节"),
+                     ("审查修改", AgentRole.REVIEWER, "修改意见闭环，事实与逻辑错误清零"),
+                     ("定稿输出", AgentRole.WRITER, "定稿格式规范，可交付")],
+            "通用": [("理解需求", AgentRole.ANALYST, "需求复述准确，关键约束无遗漏"),
+                     ("制定计划", AgentRole.PLANNER, "计划步骤有序且可执行，依赖关系明确"),
+                     ("执行前置", AgentRole.CUSTOM, "前置条件就绪，产出可供下游使用"),
+                     ("执行主体", AgentRole.CUSTOM, "主体任务产出符合需求描述"),
+                     ("验证结果", AgentRole.REVIEWER, "逐项对照需求核验，无未达标项"),
+                     ("交付输出", AgentRole.CUSTOM, "交付物完整，格式符合要求")],
         }
 
-    def decompose(self, goal: str, context: dict = None) -> list[Task]:
-        """分解目标（B-01：≥5子任务，10秒内）"""
+    def decompose(self, goal: str, context: dict = None,
+                  skip: int = 0, note: str = "") -> list[Task]:
+        """分解目标（B-01：≥5子任务，10秒内）
+        skip: 跳过前 skip 步（前缀保留 replan 时只重写剩余步骤）
+        note: 附加上下文（如失败教训），写入每个任务的描述"""
         gl = goal.lower()
         pattern = self._patterns.get("通用")
         for key in self._patterns:
             if key in gl: pattern = self._patterns[key]; break
         if len(pattern) < 5: pattern = self._patterns["通用"]
         tasks = []
-        for i, (desc, role) in enumerate(pattern):
-            t = Task(description=f"[{i+1}/{len(pattern)}] {desc}：{goal[:40]}",
-                     agent_role=role, priority=10 - i,
+        for i, (desc, role, expectation) in enumerate(pattern):
+            if i < skip: continue
+            prefix = f"[{i+1}/{len(pattern)}] "
+            t = Task(description=f"{prefix}{desc}：{goal[:40]}" + (f"（{note}）" if note else ""),
+                     agent_role=role, priority=10 - i, expectation=expectation,
                      depends_on=[tasks[-1].id] if tasks else [])
             tasks.append(t)
         return tasks
@@ -305,9 +323,16 @@ class Negotiator:
 # ═══════════════════════════════════
 
 class CommanderV2:
-    """指挥官 v2——动态自组织 + 并行执行 + 协商"""
+    """指挥官 v2——动态自组织 + 并行执行 + 协商 + expectation 锚点 + 前缀保留 replan
 
-    def __init__(self):
+    可注入三件套（默认实现保持原占位行为，生产接线时替换）：
+      executor(task) -> str                 真实执行任务，返回产出
+      verifier(task) -> (bool, verdict)     对照 task.expectation 核验产出
+      replanner(goal, done, failed, remaining) -> list[Task]  重写剩余计划
+    """
+
+    def __init__(self, executor=None, verifier=None, replanner=None,
+                 max_mission_replans: int = 2):
         self.pool = AgentPoolV2()
         self.decomposer = TaskDecomposerV2()
         self.dag = DAGValidator()
@@ -315,6 +340,34 @@ class CommanderV2:
         self._tasks: dict[str, Task] = {}
         self._results: list[dict] = []
         self._lock = threading.Lock()
+        self._executor = executor or self._default_executor
+        self._verifier = verifier or self._default_verifier
+        self._replanner = replanner or self._default_replanner
+        self._max_mission_replans = max_mission_replans
+        self._mission_replans = 0
+
+    # ── 默认三件套（占位，保持原行为可跑通）──────────────────────
+
+    @staticmethod
+    def _default_executor(task: Task) -> str:
+        time.sleep(0.2)  # 原占位执行
+        return f"完成 {task.description[:30]}"
+
+    @staticmethod
+    def _default_verifier(task: Task) -> tuple[bool, str]:
+        # 规则兜底：产出非空即放行。语义核验需注入 LLM verifier（对照 expectation）
+        if task.output:
+            return True, f"规则验证通过（产出非空；expectation「{task.expectation[:20]}」未做语义核验）"
+        return False, "产出为空，无法对照 expectation 核验"
+
+    def _default_replanner(self, goal: str, done: list[Task],
+                           failed: Task, remaining: list[Task]) -> list[Task]:
+        """默认重规划：冻结 done，按原模板重写剩余步骤，附失败教训"""
+        reason = failed.verdict or failed.error or "原因未知"
+        note = f"replan：前序「{failed.description[:20]}」未达标（{reason[:30]}）"
+        return self.decomposer.decompose(goal, skip=len(done), note=note)
+
+    # ── 主流程 ────────────────────────────────────────────────
 
     def execute(self, goal: str, context: dict = None) -> dict:
         start = time.time()
@@ -332,18 +385,8 @@ class CommanderV2:
             logger.warning(f"  检测到循环依赖: {cycle}，自动破环")
             tasks = self.dag.break_cycle(tasks)
 
-        # 并行调度
-        threads = []
-        def run_task(t: Task):
-            with self._lock:
-                if t.id not in self._tasks: return
-            self._execute_task(t)
-
-        for t in tasks[:8]:  # B-02：最多8并行
-            th = threading.Thread(target=run_task, args=(t,), daemon=True)
-            threads.append(th); th.start()
-
-        for th in threads: th.join(timeout=60)
+        self._mission_replans = 0
+        tasks = self._run_waves(goal, tasks)
 
         # B-04：自动回收空闲
         self.pool.auto_scale()
@@ -353,30 +396,71 @@ class CommanderV2:
         self._results.append(summary)
         return summary
 
+    def _run_waves(self, goal: str, tasks: list[Task]) -> list[Task]:
+        """波浪调度：每波跑「依赖已完成」的任务（≤8并行），失败后前缀保留 replan"""
+        while True:
+            by_id = {t.id: t for t in tasks}
+            runnable = [t for t in tasks if t.status == TaskStatus.PENDING
+                        and all(by_id.get(d) and by_id[d].status == TaskStatus.COMPLETED
+                                for d in t.depends_on)]
+            if not runnable:
+                return tasks
+
+            threads = [threading.Thread(target=self._execute_task, args=(t,), daemon=True)
+                       for t in runnable[:8]]  # B-02：最多8并行
+            for th in threads: th.start()
+            for th in threads: th.join(timeout=60)
+
+            failed = next((t for t in runnable if t.status == TaskStatus.FAILED), None)
+            if failed is None:
+                continue  # 本波全部完成，进入下一波
+
+            if self._mission_replans >= self._max_mission_replans:
+                logger.warning(f"  重规划预算耗尽（{self._max_mission_replans}轮），失败定格: {failed.description[:30]}")
+                for t in tasks:  # 依赖链下游定格 BLOCKED
+                    if t.status == TaskStatus.PENDING:
+                        t.status = TaskStatus.BLOCKED; t.error = f"上游失败: {failed.id}"
+                return tasks
+
+            tasks = self._replan_prefix(goal, tasks, failed)
+
+    def _replan_prefix(self, goal: str, tasks: list[Task], failed: Task) -> list[Task]:
+        """前缀保留 replan：冻结 COMPLETED 前缀（绝不重跑），重写失败点之后的计划"""
+        done = [t for t in tasks if t.status == TaskStatus.COMPLETED]
+        remaining = [t for t in tasks if t.status in (TaskStatus.PENDING, TaskStatus.BLOCKED)]
+        failed.replan_count += 1
+        self._mission_replans += 1
+        logger.info(f"  重规划 {self._mission_replans}/{self._max_mission_replans}："
+                    f"冻结 {len(done)} 个已完成任务，重写 {len(remaining) + 1} 个")
+
+        new_tasks = self._replanner(goal=goal, done=done, failed=failed, remaining=remaining)
+        for i, t in enumerate(new_tasks):
+            t.depends_on = [new_tasks[i - 1].id] if i else ([done[-1].id] if done else [])
+            self._tasks[t.id] = t
+        # 保留 failed 作为审计记录；旧 remaining 被新计划取代，从 _tasks 移除避免幽灵任务
+        for t in remaining:
+            self._tasks.pop(t.id, None)
+        return done + [failed] + new_tasks
+
     def _execute_task(self, task: Task):
-        for dep_id in list(task.depends_on):
-            dep = self._tasks.get(dep_id)
-            if dep and dep.status != TaskStatus.COMPLETED:
-                task.status = TaskStatus.BLOCKED; task.error = f"依赖: {dep_id}"
-                return
         agent = self.pool.get_or_spawn(task.agent_role)
         self.pool.assign_task(agent.id, task.id)
         task.status = TaskStatus.RUNNING; task.started_at = datetime.now().isoformat()
         st = time.time()
         try:
-            time.sleep(0.2)
-            task.output = f"[{agent.name}] 完成 {task.description[:30]}"
-            task.status = TaskStatus.COMPLETED
-            self.pool.complete_task(agent.id, True)
+            task.output = self._executor(task)
         except Exception as e:
-            # G-01：最多2轮重规划
-            if task.replan_count < task.max_replans:
-                task.replan_count += 1
-                logger.info(f"  重规划 {task.replan_count}/{task.max_replans}")
-                self._execute_task(task)
-                return
             task.status = TaskStatus.FAILED; task.error = str(e)
             self.pool.complete_task(agent.id, False)
+            task.execution_time_ms = (time.time() - st) * 1000
+            return
+        # expectation 锚点：没抛异常不算完成，必须对照判据核验
+        ok, verdict = self._verifier(task)
+        task.verdict = verdict
+        task.status = TaskStatus.COMPLETED if ok else TaskStatus.FAILED
+        if not ok:
+            task.error = f"验证未通过: {verdict[:60]}"
+        self.pool.complete_task(agent.id, ok)
         task.execution_time_ms = (time.time() - st) * 1000
 
     def _summarize(self, elapsed_ms: float) -> dict:
@@ -384,6 +468,8 @@ class CommanderV2:
         return {"total_tasks": len(tasks),
                 "completed": sum(1 for t in tasks if t.status == TaskStatus.COMPLETED),
                 "failed": sum(1 for t in tasks if t.status == TaskStatus.FAILED),
+                "verified": sum(1 for t in tasks if t.verdict),
+                "mission_replans": self._mission_replans,
                 "total_time_ms": round(elapsed_ms, 1),
                 "replanned": sum(1 for t in tasks if t.replan_count > 0),
                 "agents_used": self.pool.get_stats()["total"],

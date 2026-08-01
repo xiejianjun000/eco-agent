@@ -1,3 +1,36 @@
+## [2026-08-01] v5.0.0a4 — L2 任务层：expectation 锚点 + 前缀保留 replan
+
+> 设计来源：Yi-Biao/EcoAgent (AAAI 2026) 端云协同闭环——计划步骤携带预期状态、
+> 失败重规划冻结已成功前缀。落地到 CommanderV2。
+
+### Added (G4 质量门禁)
+- **expectation 锚点**
+  - `Task` 新增 `expectation`（完成判据）与 `verdict`（验证结论）字段
+  - 分解器全部模板（开发/研究/写作/通用）每步携带明确完成判据
+  - 任务完成不再等于"没抛异常"：执行后必须经 verifier 对照 expectation 核验，
+    未达标 → FAILED 并记录 verdict，为 D12 反幻觉率提供子任务级抓手
+
+- **前缀保留 replan**
+  - 失败重规划冻结 COMPLETED 前缀（已发消息/已落盘文档等副作用绝不重跑）
+  - 仅重写失败点之后的计划，新任务继承 expectation 并附失败教训
+  - 任务级盲重试（递归重跑同一任务）移除，升级为任务级预算（默认 2 轮）
+
+- **可注入三件套**（G6 职责分离）
+  - `CommanderV2(executor=, verifier=, replanner=)` 默认占位实现保持原行为，
+    生产接线替换为真实 LLM 执行/语义核验/重规划
+
+### Changed
+- 调度器从"依赖未满足即 BLOCKED"改为波浪调度：每波仅运行依赖已完成的任务，
+  链式模板现在可以真正跑完整个 DAG
+- `_summarize` 新增 `verified`（有验证结论的任务数）与 `mission_replans` 指标
+
+### Tests
+- 新增 `tests/modules/test_commander_expectation.py` 8 例（934 passed）：
+  锚点生成、verdict 留痕、验证失败定格、恰好 1 轮 replan、前缀零重跑、
+  预算耗尽、重规划任务锚点不丢、异常与验证失败统一 replan 路径
+
+---
+
 ## [2026-07-31] v5.0.0a3 — IDE工作台 + 人机协同编辑（G方法论）
 
 ### Added (G1 宪法治理)
