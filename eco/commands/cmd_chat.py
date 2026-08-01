@@ -25,14 +25,12 @@ except ImportError:
 
 LOGO = r"""
    ███████╗ ██████╗ ██████╗     █████╗  ██████╗ ███████╗███╗  ██╗████████╗
-   ██╔════╝██╔═══██╗██╔══██╗   ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝
-   █████╗  ██║   ██║██████╔╝   ███████║██║  ███╗█████╗  ██╔██╗██║   ██║
-   ██╔══╝  ██║   ██║██╔══██╗   ██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║
-   ███████╗╚██████╔╝██║  ██║   ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║
-   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝
+   ██╔════╝██╔════╝██╔═══██╗   ██╔══██╗██╔════╝ ██╔════╝████╗ ██║╚══██╔══╝
+   █████╗  ██║     ██║   ██║   ███████║██║  ███╗█████╗  ██╔██╗██║   ██║
+   ██╔══╝  ██║     ██║   ██║   ██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║
+   ███████╗╚██████╗╚██████╔╝   ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║
+   ╚══════╝ ╚═════╝ ╚═════╝    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝
 """
-
-LOGO_LINE = "  ECO AGENT  --  da qi dai lv shi  --  Environmental Regulation AI"
 
 def _build_messages(history, question, system_extra=""):
     from agent_core.prompt_engine import get_prompt_engine
@@ -262,7 +260,7 @@ def run(args):
             return 2
         tracer = get_tracer()
         _handle_resume_intent(args.query)
-        extra = _workspace_system_extra(args.query, tracer=tracer)
+        extra = _combine_extra(_workspace_system_extra(args.query, tracer=tracer))
         answer = _maybe_swarm(args.query, tracer=tracer)
         if answer is None:
             messages = _build_messages(restored, args.query, system_extra=extra)
@@ -278,6 +276,7 @@ _HELP_TEXT = """  REPL 命令：
     /ws        查看当前工作区摘要（无则提示）
     /todo      查看当前工作区待办（复杂任务 DAG 步骤在此勾选进度）
     /verbose   切换轨迹模式（思考/工具调用/耗时/DAG 边，写入 SM3 审计链）
+    /model [名称]  查看当前模型与可选 provider（✅=已配 Key）；带名称则运行时切换
     /checkpoints  列出会话检查点（每轮输入前自动快照）
     /rewind [n]   回滚到第 n 个检查点（默认最近一个）：截断会话历史并还原工作区文件
   生成中 Ctrl+C 只取消当前回答，会话保留。
@@ -305,6 +304,138 @@ def _banner_summary() -> str:
     return f"  provider/model: {llm}  |  workspace: {ws}  |  权限闸门: {gate}"
 
 
+def _self_system_extra() -> str:
+    """ECO AGENT 自述信息（当前模型与切换方式），随动态层注入系统提示词：
+    用户问"如何切换模型/怎么配置/有哪些命令"等关于本产品的元问题时，
+    模型照此事实直接作答，而不是用"不在能力范围"套话拒绝。"""
+    try:
+        from agent_core.llm_client import get_default_client
+        s = get_default_client().get_stats()
+        llm = f"{s['provider']}/{s['model']}" if s.get("has_api_key") else "未配置(eco setup)"
+    except Exception:
+        llm = "未知"
+    return (
+        "【ECO AGENT 自述信息】\n"
+        f"- 当前底层模型: {llm}\n"
+        "- 切换模型: 对话内输入 /model 查看可选 provider 并切换（本次会话生效）；"
+        "持久化默认模型用 `eco config model use <名称>`，清单见 `eco config model list`"
+        "（支持 deepseek/moonshot/qwen/zhipu/doubao 等 15 家），"
+        "连通验证用 `eco config model test <名称>`\n"
+        "- 其它入口: eco setup（配置向导）、eco doctor（健康检查）、/help（对话内命令）\n"
+        "用户询问 ECO AGENT 自身的使用方法、配置或模型切换属于本产品的正常使用范畴，"
+        "依据以上事实简要、直接回答，不要拒绝。"
+    )
+
+
+def _model_cmd_text(arg: str) -> str:
+    """Kimi 风格 /model：空参列出当前与可选 provider；带名称运行时切换"""
+    from agent_core.llm_client import get_default_client
+    from agent_core.llm_providers import PROVIDERS as _REG
+    client = get_default_client()
+    if not arg:
+        s = client.get_stats()
+        cur = f"{s['provider']}/{s['model']}" if s.get("has_api_key") else "未配置(eco setup)"
+        lines = [f"[model] 当前: {cur}",
+                 "[model] 可选 provider（✅=已配置 Key，/model <名称> 切换）:"]
+        for name, spec in _REG.items():
+            mark = "✅" if spec.has_key() else "  "
+            lines.append(f"  {mark} {name:<12} {spec.display}  默认模型: {spec.default_model}")
+        lines.append("[model] 持久化默认模型: eco config model use <名称>")
+        return "\n".join(lines)
+    if arg not in _REG:
+        return f"[model] 未知 provider: {arg}（可选: {'、'.join(_REG)}）"
+    if client.switch_provider(arg):
+        s = client.get_stats()
+        return (f"[model] 已切换到 {arg}（当前模型 {s.get('model', '?')}，本次会话生效；"
+                f"持久化请 eco config model use {arg}）")
+    spec = _REG[arg]
+    return (f"[model] 切换失败：未检测到 {spec.env_key}。先在 ~/.eco/.env 配置该 Key，"
+            f"或用 eco config model test {arg} 排查")
+
+
+def _combine_extra(extra: str) -> str:
+    """把自述信息拼进动态层（workspace 片段在前，自述在后）"""
+    self_info = _self_system_extra()
+    return f"{extra}\n\n{self_info}" if extra else self_info
+
+
+def _display_width(s: str) -> int:
+    """终端显示宽度（中日韩全角字符按 2 计）"""
+    import unicodedata
+    return sum(2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1 for ch in s)
+
+
+def _term_width() -> int:
+    import shutil
+    return shutil.get_terminal_size((80, 20)).columns
+
+
+def _context_limit() -> int:
+    """上下文窗口大小（token），默认 64k，可用 ECO_CONTEXT_LIMIT 覆盖"""
+    import os
+    try:
+        return int(os.environ.get("ECO_CONTEXT_LIMIT", "64000"))
+    except ValueError:
+        return 64000
+
+
+def _context_status(history) -> str:
+    """右侧 context 用量（字符数/4 粗估 token，仅供显示）"""
+    used = sum(len(m.get("content", "")) for m in history) // 4
+    limit = _context_limit()
+    pct = min(used * 100 // limit, 100)
+    return f"context: {pct}% ({used / 1000:.1f}k/{limit // 1000}k)"
+
+
+def _status_left() -> str:
+    """左侧状态：provider/model + 工作区 + 权限闸门（简写）"""
+    try:
+        from agent_core.llm_client import get_default_client
+        s = get_default_client().get_stats()
+        llm = f"{s['provider']}/{s['model']}" if s.get("has_api_key") else "未配置(eco setup)"
+    except Exception:
+        llm = "未知"
+    try:
+        from agent_core.workspace import get_workspace_manager
+        ws = get_workspace_manager().current_name() or "无"
+    except Exception:
+        ws = "无"
+    import os as _os
+    gate = "off" if _os.environ.get("ECO_PERMISSION_GATE", "").strip().lower() == "0" else "on"
+    return f" {llm}  ws:{ws}  gate:{gate}"
+
+
+def _status_bar(history) -> str:
+    """Kimi 风格状态栏：左对齐模型/工作区/闸门，右对齐 context 用量"""
+    left = _status_left()
+    right = _context_status(history) + " "
+    pad = max(_term_width() - _display_width(left) - _display_width(right), 1)
+    return left + " " * pad + right
+
+
+def _print_status_bar(history):
+    if _HAVE_RICH:
+        _console.print(_status_bar(history), style="dark_green")
+    else:
+        print(_status_bar(history))
+
+
+def _boxed_input() -> str:
+    """Kimi 风格圆角输入框：上边框 → │ > 读入 → 下边框"""
+    bar = "─" * (min(_term_width(), 100) - 2)
+    if _HAVE_RICH:
+        _console.print(f"╭{bar}╮", style="dark_green")
+    else:
+        print(f"╭{bar}╮")
+    try:
+        return input("│ > ")
+    finally:
+        if _HAVE_RICH:
+            _console.print(f"╰{bar}╯", style="dark_green")
+        else:
+            print(f"╰{bar}╯")
+
+
 def _checkpoint_store(mgr):
     """当前会话检查点存储：会话 id 取当前工作区 slug，无工作区用 default"""
     from agent_core.checkpoint import CheckpointStore
@@ -328,25 +459,39 @@ def _repl(history=None):
     if _HAVE_RICH:
         from rich.text import Text
         _console.print()
-        _console.print(Text(LOGO, style="#3a8a6f"))
-        _console.print(Text(LOGO_LINE, style="#5ae0a0 bold"))
-        _console.print(Text(_banner_summary(), style="#4a7a5a"))
-        _console.print(Text(f"  /exit  /new  /help  /verbose  |  ECO AGENT v{__version__}", style="#2a5a3a"))
+        _console.print(Text(LOGO, style="dark_green"))
+        _console.print(Text(f"  ECO AGENT v{__version__}  --  Environmental Regulation AI", style="dark_green bold"))
+        _console.print(Text(_banner_summary(), style="dark_green"))
+        _console.print()
+        tips = (
+            "  /help      查看全部命令\n"
+            "  /new       开启新会话\n"
+            "  /verbose   切换轨迹模式（思考/工具调用/耗时）\n"
+            "  /exit      退出（生成中 Ctrl+C 只取消当前回答）"
+        )
+        _console.print(Panel(
+            tips,
+            title="快速上手",
+            title_align="left",
+            border_style="dark_green",
+            box=box.ROUNDED,
+            padding=(0, 1),
+        ))
         _console.print()
     else:
         print(LOGO)
-        print(LOGO_LINE)
+        print(f"  ECO AGENT v{__version__}  --  Environmental Regulation AI")
         print(_banner_summary())
-        print("  (/exit /new /help)")
+        print("  /help 命令帮助 | /new 新会话 | /verbose 轨迹模式 | /exit 退出")
         print()
+
+    _print_status_bar(history)
 
     from agent_core.workspace import get_workspace_manager
     mgr = get_workspace_manager()
     while True:
         try:
-            cur = mgr.current_name()
-            prompt_str = f"eco[{cur}]> " if cur else "eco> "
-            q = input(prompt_str).strip()
+            q = _boxed_input().strip()
         except (EOFError, KeyboardInterrupt):
             print()
             break
@@ -405,6 +550,10 @@ def _repl(history=None):
             print(f"[rewind] 已回滚到检查点 #{n}（会话历史 {len(history)} 条，"
                   f"工作区文件按快照还原）")
             continue
+        if q == "/model" or q.startswith("/model "):
+            print(_model_cmd_text(q[len("/model"):].strip().lower()))
+            _print_status_bar(history)
+            continue
         blocked = _user_input_blocked(q)
         if blocked:
             print(f"[安全拦截] 输入命中注入防线：{blocked}")
@@ -420,7 +569,7 @@ def _repl(history=None):
         context = ws.summary() if ws else ""
         from eco.trace import get_tracer
         tracer = get_tracer()
-        extra = _workspace_system_extra(q, tracer=tracer)
+        extra = _combine_extra(_workspace_system_extra(q, tracer=tracer))
 
         answer = _maybe_swarm(q, context=context, tracer=tracer)
         if answer is None:
@@ -435,4 +584,5 @@ def _repl(history=None):
         if ws:
             ws.add_event("user", q)
             ws.add_event("assistant", answer[:800])
+        _print_status_bar(history)
     return 0

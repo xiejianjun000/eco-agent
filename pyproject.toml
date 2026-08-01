@@ -17,6 +17,7 @@ dependencies = [
     "uvicorn>=0.29",
     "python-dotenv>=1.0",
     "numpy>=1.26",
+    "rich>=13.0",
 ]
 
 [project.urls]

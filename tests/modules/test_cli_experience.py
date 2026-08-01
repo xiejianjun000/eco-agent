@@ -15,6 +15,27 @@ class TestHelpAndBanner:
         assert "workspace" in line
         assert "权限闸门" in line
 
+    def test_model_command_text(self):
+        out = cmd_chat._model_cmd_text("")
+        assert "[model] 当前" in out and "deepseek" in out
+        assert "eco config model use" in out
+        bad = cmd_chat._model_cmd_text("no_such_provider")
+        assert "未知 provider" in bad
+
+    def test_self_system_extra_facts(self):
+        info = cmd_chat._self_system_extra()
+        assert "自述信息" in info and "/model" in info
+        assert "eco config model use" in info
+
+    def test_status_bar_format(self):
+        bar = cmd_chat._status_bar([{"role": "user", "content": "你好 eco"}])
+        assert "context:" in bar
+        assert "gate:" in bar and ("gate:on" in bar or "gate:off" in bar)
+        assert cmd_chat._context_status([]).startswith("context: 0%")
+        # 长会话逼近上限时不应超过 100%
+        huge = [{"role": "user", "content": "x" * 4 * 200000}]
+        assert "100%" in cmd_chat._context_status(huge)
+
 
 class TestTraceCommand:
     class Args:
