@@ -13,6 +13,7 @@ commander_v2.py — Eco Agent 指挥官 v2（Phase 3 多智能体协作深化）
   G-03 DAG循环检测：5秒告警并自动破环
 """
 
+import os
 import time
 import uuid
 import logging
@@ -340,11 +341,24 @@ class CommanderV2:
         self._tasks: dict[str, Task] = {}
         self._results: list[dict] = []
         self._lock = threading.Lock()
-        self._executor = executor or self._default_executor
+        self._executor = executor if executor is not None else self._pick_default_executor()
         self._verifier = verifier or self._default_verifier
         self._replanner = replanner or self._default_replanner
         self._max_mission_replans = max_mission_replans
         self._mission_replans = 0
+
+    @staticmethod
+    def _pick_default_executor():
+        """方案 A：ECO_RUNTIME_EXECUTOR=1 才启用真实运行时（RuntimeExecutor），
+        否则保持占位——避免 CLI/benchmark 等现有调用方无意中消耗 API 配额。"""
+        if os.environ.get("ECO_RUNTIME_EXECUTOR", "").strip().lower() in ("1", "true", "yes"):
+            try:
+                from agent_core.task_executor import RuntimeExecutor
+                logger.info("[CommanderV2] ECO_RUNTIME_EXECUTOR=1：启用真实工具运行时")
+                return RuntimeExecutor()
+            except Exception as e:
+                logger.warning(f"[CommanderV2] RuntimeExecutor 加载失败，回退占位: {e}")
+        return CommanderV2._default_executor
 
     # ── 默认三件套（占位，保持原行为可跑通）──────────────────────
 
@@ -438,6 +452,13 @@ class CommanderV2:
             if not runnable:
                 return tasks
 
+            # 上游上下文注入：下游任务携带前置产出（镜像 role_swarm【前置产出】）
+            for t in runnable:
+                t.input["upstream"] = {
+                    by_id[d].description[:40]: by_id[d].output[:500]
+                    for d in t.depends_on if by_id[d].output
+                }
+
             threads = [threading.Thread(target=self._execute_task, args=(t,), daemon=True)
                        for t in runnable[:8]]  # B-02：最多8并行
             for th in threads: th.start()
@@ -502,6 +523,7 @@ class CommanderV2:
                 "failed": sum(1 for t in tasks if t.status == TaskStatus.FAILED),
                 "verified": sum(1 for t in tasks if t.verdict),
                 "mission_replans": self._mission_replans,
+                "llm_loops": getattr(self._executor, "llm_loops", 0),
                 "total_time_ms": round(elapsed_ms, 1),
                 "replanned": sum(1 for t in tasks if t.replan_count > 0),
                 "agents_used": self.pool.get_stats()["total"],

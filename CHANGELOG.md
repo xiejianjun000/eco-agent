@@ -1,3 +1,33 @@
+## [2026-08-01] v5.0.0a5 — L2 executor 接真实工具运行时（RuntimeExecutor）
+
+### Added (G6 职责分离)
+- **`agent_core/task_executor.py`（新模块）**
+  - 每个 L2 Task 起一个 L1 ReAct++ 循环（think→act→observe，置信度门控），
+    max_steps 压至 5（子任务粒度成本控制）
+  - tools_registry 全量工具经同步 wrapper 注入 ReAct 循环（async execute_tool
+    桥接；权限闸门 L1-L4 在 execute_tool 内部统一生效，本层不重复设卡）
+  - 任务 prompt = 描述 + expectation 判据 + 【前置产出】（镜像 role_swarm 拼法）
+  - ReAct 循环无产出 → 抛异常走 L2 replan 路径（统一失败语义）
+
+- **上游上下文注入**
+  - 波浪调度执行前把上游产出注入下游 `task.input["upstream"]`
+
+- **成本控制**
+  - 方案 A 显式启用：`CommanderV2(executor=RuntimeExecutor())` 或
+    `ECO_RUNTIME_EXECUTOR=1`；无参构造保持占位，现有调用方零配额风险
+  - `_summarize` 新增 `llm_loops` 指标（实际 LLM 循环数）
+
+### Safety
+- 降级红线：LLM 未配置/不可用时 RuntimeExecutor 静默回退占位行为，
+  离线测试零配额消耗（946 passed）
+
+### Tests
+- 新增 `tests/modules/test_task_executor.py` 9 例：降级占位、无客户端兜底、
+  ReAct 循环上下文（expectation/上游入 prompt、max_steps=5）、工具同步注入、
+  空产出抛异常、上游注入、默认占位、环境开关、llm_loops 指标
+
+---
+
 ## [2026-08-01] v5.0.0a4 — L2 任务层：expectation 锚点 + 前缀保留 replan
 
 > 设计来源：Yi-Biao/EcoAgent (AAAI 2026) 端云协同闭环——计划步骤携带预期状态、
