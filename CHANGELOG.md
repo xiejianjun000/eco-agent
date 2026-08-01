@@ -1,3 +1,27 @@
+## [2026-08-01] v5.0.0a8 — L4 Evolve 自动触发钩子
+
+> 补上 README 自标缺口：「每次任务后 / 每日自动触发：未实现」
+
+### Added (G3 渐进交付)
+- **`agent_core/evolve_trigger.py`（新模块）**
+  - `record_mission()`：L2 mission 结束沉淀 (expectation, output, verdict, status)
+    三元组进经验库 `memory-tree/data/evolution/experience.jsonl`
+  - `maybe_trigger()`：阈值（默认5）+ 冷却期（默认4h）双门控自动调起
+    MetaEvolution.run_full_cycle()；含失败任务的经验双倍计权
+    （失败是差距分析的最佳原料）；进化后清空已消费经验
+  - `should_evolve_daily()`：每日调度检查（供 L3 Pulse 调用）
+  - 方案A一致性：`ECO_AUTO_EVOLVE=1` 显式启用，默认完全 no-op 零副作用
+- CommanderV2.execute() 收尾接入 mission_hook（异常不影响主流程）
+
+### Tests
+- 新增 `tests/modules/test_evolve_trigger.py` 9 例：三元组沉淀、积累、
+  阈值门控、失败双倍计权提前触发、冷却期防重复、每日调度、
+  默认关闭零副作用、环境启用自动沉淀（982 passed）
+- 集成冒烟：2 个 mission → 第 1 个即触发（失败双倍计权）→ stamp +
+  第 2 个冷却期跳过，行为全部符合设计
+
+---
+
 ## [2026-08-01] v5.0.0a7 — L3 Pulse 五占位步骤真实化
 
 ### Changed (G3 渐进交付)

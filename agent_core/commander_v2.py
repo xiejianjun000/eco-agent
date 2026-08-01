@@ -440,6 +440,13 @@ class CommanderV2:
         elapsed = (time.time() - start) * 1000
         summary = self._summarize(elapsed)
         self._results.append(summary)
+
+        # L4 钩子：mission 三元组沉淀 + 条件触发（ECO_AUTO_EVOLVE=1 才启用）
+        try:
+            from agent_core.evolve_trigger import mission_hook
+            mission_hook(summary, list(self._tasks.values()))
+        except Exception as e:
+            logger.warning(f"[CommanderV2] evolve 钩子异常（不影响主流程）: {e}")
         return summary
 
     def _run_waves(self, goal: str, tasks: list[Task]) -> list[Task]:
