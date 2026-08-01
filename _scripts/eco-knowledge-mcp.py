@@ -16,6 +16,14 @@ import time
 from pathlib import Path
 from datetime import datetime
 
+# rag_score 忠实度核验（vendored，agent_core 内；numpy 缺失时优雅降级）
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+try:
+    from agent_core.rag_score import RAGScorer
+    _SCORER = RAGScorer()
+except Exception:
+    _SCORER = None
+
 # ===== 配置 =====
 
 # Obsidian Vault 路径（自动检测 + 环境变量覆盖）
@@ -140,6 +148,32 @@ TOOLS = [
                 }
             },
             "required": ["category"]
+        }
+    },
+    {
+        "name": "eco_faithfulness_check",
+        "description": "答案忠实度核验：对照法规原文检查答案是否有原文支撑，输出忠实度/幻觉风险评分（幻觉预警，D12 反幻觉抓手）",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string",
+                    "description": "待核验的答案文本"
+                },
+                "source": {
+                    "type": "string",
+                    "description": "对照原文（直接给文本）；与 statute 二选一"
+                },
+                "statute": {
+                    "type": "string",
+                    "description": "法规名称（如 大气污染防治法），自动从 vault 取原文对照"
+                },
+                "query": {
+                    "type": "string",
+                    "description": "原始问题（可选，用于相关性/完整性评分）"
+                }
+            },
+            "required": ["answer"]
         }
     }
 ]
@@ -628,6 +662,64 @@ def handle_tool_call(req_id, tool_name, args):
                             }, ensure_ascii=False, indent=2)
                         }
                     ]
+                }
+            }
+
+        elif tool_name == "eco_faithfulness_check":
+            # 答案忠实度核验：答案 claims 对照法规原文，输出幻觉风险（D12 抓手）
+            if _SCORER is None:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32000, "message": "rag_score 不可用（numpy 缺失或导入失败）"}
+                }
+
+            answer = args.get("answer", "")
+            source = args.get("source", "")
+            statute = args.get("statute", "")
+            query = args.get("query", "") or answer[:50]
+
+            if not answer.strip():
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32602, "message": "answer 不能为空"}
+                }
+
+            contexts = []
+            if source.strip():
+                contexts.append(source)
+            if statute.strip():
+                target_path = find_statute_file(vault, statute)
+                if not target_path:
+                    return {
+                        "jsonrpc": "2.0",
+                        "id": req_id,
+                        "error": {"code": -32000, "message": f"未找到法规: {statute}"}
+                    }
+                with open(target_path, encoding='utf-8', errors='ignore') as f:
+                    contexts.append(f.read(100000))
+            if not contexts:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "error": {"code": -32602, "message": "必须提供 source（内联原文）或 statute（法规名）之一"}
+                }
+
+            r = _SCORER.score(query, answer, contexts)
+            risk = "low" if r.is_low_risk else ("medium" if r.is_medium_risk else "high")
+            d = r.to_dict()
+            d["risk_level"] = risk
+            d["verdict_note"] = {
+                "low": "答案 claims 有原文支撑，幻觉风险低",
+                "medium": "部分 claims 缺乏原文支撑，建议人工复核后交付",
+                "high": "大量 claims 无原文支撑，疑似幻觉，禁止直接交付",
+            }[risk]
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "content": [{"type": "text", "text": json.dumps(d, ensure_ascii=False, indent=2)}]
                 }
             }
 

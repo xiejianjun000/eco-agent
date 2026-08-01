@@ -1,3 +1,23 @@
+## [2026-08-01] v5.0.0a6 — rag_score 反幻觉核验接入 eco-knowledge-mcp
+
+### Added (G4 质量门禁)
+- **`agent_core/rag_score.py`**（vendored from taiji-verify v2.2, MIT）
+  - RAG 三维评分：忠实度/相关性/完整性，幻觉风险 = 1 − 忠实度
+  - 本地修改：① claims 提取增加「含数字/条文号即视为声明」规则
+    （法规关键事实不一定含判断词）；② 数字实体正则支持中文数字——
+    原实现只认阿拉伯数字，「第八百八十八条」式编造完全逃逸检测（实测 faith=1.0）
+- **`eco_faithfulness_check` MCP 工具**（eco-knowledge-mcp v0.3.0）
+  - answer + source（内联原文）/ statute（自动取 vault 原文）→ 三维评分 +
+    risk_level（low/medium/high）+ 处置建议（high=禁止直接交付）
+  - numpy 缺失时优雅降级报错，不影响其他工具
+
+### Tests
+- 新增 `tests/modules/test_rag_score.py` 7 例：忠实/幻觉两端可区分、
+  to_dict 契约、工具注册、内联原文核验、幻觉标记、缺参报错
+- MCP stdio 实测：编造条款 → faithfulness 0.0 / high risk（963 passed）
+
+---
+
 ## [2026-08-01] v5.0.0a5 — L2 executor 接真实工具运行时（RuntimeExecutor）
 
 ### Added (G6 职责分离)
