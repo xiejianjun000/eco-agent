@@ -13,6 +13,7 @@ react_loop.py — Eco Agent L1 微观行动循环 (ReAct++)
   result = loop.execute("查询大气污染防治法", tools=[...])
 """
 
+import json
 import time
 import logging
 from pathlib import Path
@@ -76,9 +77,11 @@ class ReActPlusPlus:
             logger.warning(f"[ReAct++] LLM 客户端不可用: {e}")
         return None
 
-    def register_tool(self, name: str, handler: Callable, description: str = "") -> None:
-        """注册工具"""
-        self._tools[name] = handler
+    def register_tool(self, name: str, handler: Callable, description: str = "",
+                      schema: dict = None) -> None:
+        """注册工具。schema 为该工具的 parameters JSON Schema（供 LLM 结构化决策用）"""
+        self._tools[name] = {"handler": handler, "description": description,
+                             "schema": schema or {}}
 
     # ── 主执行入口 ──
 
@@ -121,15 +124,9 @@ class ReActPlusPlus:
             state.action = action
 
             if action == "__complete__":
-                # ChatGPT 风格：用上一次的思考作为输出；
-                # 但规则模式的“继续执行步骤N”占位思考不是结论——
-                # 工具已产出结果时不应用它覆盖最终观测
-                if state.thought and not state.thought.startswith("继续执行步骤"):
-                    final = state.thought
-                else:
-                    final = "任务完成"
-                state.action_result = final
-                logger.info(f"[ReAct++] 步骤{step}: 完成 - {final[:60]}")
+                # 显式交付合成：不再拿 thought（下一步计划）充产出
+                state.action_result = self._synthesize_final(state, context or {})
+                logger.info(f"[ReAct++] 步骤{step}: 完成 - {state.action_result[:60]}")
                 break
 
             if action == "__error__":
@@ -321,10 +318,18 @@ class ReActPlusPlus:
     # ── ACT 阶段 ──
 
     def _decide_action(self, state: ReActState, context: dict) -> tuple:
-        """决定下一步行动"""
+        """决定下一步行动：LLM 可用时按工具 schema 结构化决策，失败降级规则路径"""
         if state.confidence < 0.2:
             return ("__error__", "置信度过低")
 
+        # LLM 结构化决策：工具目录带参数 schema，LLM 输出 {action, tool, args}
+        client = self._llm()
+        if client:
+            structured = self._decide_action_llm(state, client)
+            if structured is not None:
+                return structured
+
+        # ── 规则降级路径（离线行为与修复前一致）──
         # 已完成条件：已成功执行过工具且无错误
         if state.action_result and not state.error and state.step > 1:
             return ("__complete__", {})
@@ -338,15 +343,112 @@ class ReActPlusPlus:
         # 不匹配任何工具 = 纯对话模式，直接输出 LLM 的思考结果
         return ("__complete__", {})
 
+    def _decide_action_llm(self, state: ReActState, client) -> tuple | None:
+        """LLM 结构化决策：schema 进 prompt，JSON 出决策。解析失败返回 None 走规则降级"""
+        try:
+            catalog = json.dumps(
+                [{"name": n, "description": t.get("description", ""),
+                  "parameters": t.get("schema") or {}}
+                 for n, t in self._tools.items()], ensure_ascii=False)
+            prompt = (
+                f"任务: {state.observation[:300]}\n"
+                f"当前步骤: {state.step}\n"
+                f"上一步思考: {state.thought[:200]}\n"
+                f"上一步结果: {str(state.action_result)[:300] or '无'}\n"
+                f"可用工具（含参数 schema）: {catalog[:3000]}\n"
+                "请决定下一步，只输出 JSON：\n"
+                '调用工具 → {"action": "tool", "tool": "<工具名>", "args": {<按 schema 填参数>}}\n'
+                '任务已完成或无需工具 → {"action": "complete"}'
+            )
+            raw = client.complete(prompt, system="你是行动决策器，只输出 JSON，不输出解释。",
+                                  max_tokens=300)
+            parsed = self._parse_action_json(raw or "")
+            if parsed is None:
+                return None
+            if parsed.get("action") == "complete":
+                return ("__complete__", {})
+            if parsed.get("action") == "tool":
+                name = str(parsed.get("tool", ""))
+                args = parsed.get("args")
+                if name in self._tools and isinstance(args, dict):
+                    return (name, args)
+            return None
+        except Exception as e:
+            logger.warning(f"[ReAct++] LLM 结构化决策失败，降级规则路径: {e}")
+            return None
+
+    @staticmethod
+    def _parse_action_json(raw: str) -> dict | None:
+        """从 LLM 输出中提取行动 JSON（平衡括号扫描，容忍嵌套 args 与前后杂讯）"""
+        start = raw.find("{")
+        while start != -1:
+            depth = 0
+            in_str = False
+            esc = False
+            for i in range(start, len(raw)):
+                ch = raw[i]
+                if esc:
+                    esc = False
+                    continue
+                if ch == "\\" and in_str:
+                    esc = True
+                    continue
+                if ch == '"':
+                    in_str = not in_str
+                    continue
+                if in_str:
+                    continue
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            return json.loads(raw[start:i + 1])
+                        except (json.JSONDecodeError, ValueError):
+                            break
+            start = raw.find("{", start + 1)
+        return None
+
     def _execute_action(self, action: str, params: dict) -> Any:
-        """执行工具调用"""
-        handler = self._tools.get(action)
+        """执行工具调用（工具表存 {handler, description, schema}）"""
+        entry = self._tools.get(action)
+        handler = entry.get("handler") if isinstance(entry, dict) else entry
         if not handler:
             return f"工具不存在: {action}"
         try:
             return handler(**params)
         except Exception as e:
             return f"工具执行异常: {e}"
+
+    def _synthesize_final(self, state: ReActState, context: dict) -> str:
+        """显式交付合成：LLM 可用时基于任务+判据+行动结果生成最终交付物；
+        合成失败/无 LLM 降级旧逻辑（thought → "任务完成"）"""
+        client = self._llm()
+        if client:
+            try:
+                expectation = str(context.get("expectation", "") or "")
+                prompt = (
+                    f"任务: {state.observation[:300]}\n"
+                    + (f"完成判据: {expectation[:200]}\n" if expectation else "")
+                    + f"最近思考: {state.thought[:300]}\n"
+                    f"最近行动结果: {str(state.action_result)[:500] or '无'}\n"
+                    "请输出任务的最终交付物（完整内容本身，不是下一步计划）。"
+                )
+                text = client.complete(
+                    prompt,
+                    system="你是交付合成器：基于已完成的行动产出最终交付物，"
+                           "输出交付内容本身，不输出计划或步骤。",
+                    max_tokens=1500)
+                if text and text.strip():
+                    return text.strip()
+                logger.warning("[ReAct++] 交付合成返回空，降级旧逻辑")
+            except Exception as e:
+                logger.warning(f"[ReAct++] 交付合成失败，降级旧逻辑: {e}")
+        # 降级：规则模式的"继续执行步骤N"占位思考不是结论
+        if state.thought and not state.thought.startswith("继续执行步骤"):
+            return state.thought
+        return "任务完成"
 
     # ── 外部控制 ──
 

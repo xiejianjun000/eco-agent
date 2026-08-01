@@ -73,10 +73,12 @@ class RuntimeExecutor:
         from agent_core.react_loop import ReActPlusPlus
         loop = ReActPlusPlus()
         loop._max_steps = self._max_steps
-        self._register_tools(loop)
+        self._register_tools(loop, role=task.agent_role.value)
 
         prompt = self._build_prompt(task)
-        result = loop.execute(prompt, context={"task_id": task.id, "role": task.agent_role.value})
+        result = loop.execute(prompt, context={"task_id": task.id,
+                                               "role": task.agent_role.value,
+                                               "expectation": task.expectation})
         self.llm_loops += 1
 
         final = (result.get("final_observation") or "").strip()
@@ -97,14 +99,29 @@ class RuntimeExecutor:
             parts.append(f"\n【前置产出】\n{ctx}")
         return "".join(parts)
 
-    def _register_tools(self, loop) -> int:
-        """tools_registry 全量工具注入 ReAct 循环（同步 wrapper 桥接 async execute_tool）。
+    # 分析/规划/写作/审查/研究类角色：只给只读（L1）工具。
+    # 纯分析任务塞全量工具会诱导 LLM 不思考反而乱调工具（冒烟实测缺陷3）
+    _READONLY_ROLES = frozenset({"analyst", "planner", "writer", "reviewer", "researcher"})
+
+    def _register_tools(self, loop, role: str = "") -> int:
+        """tools_registry 工具注入 ReAct 循环（同步 wrapper 桥接 async execute_tool，
+        并携带 parameters schema 供 LLM 结构化决策）。
+        角色感知过滤：分析类角色只注册 L1 只读工具，执行类角色给全量。
         权限闸门（L1-L4）在 execute_tool 内部统一生效，本层不重复设卡。"""
         try:
             from agent_core.tools_registry import get_tools, execute_tool
         except Exception as e:
             logger.warning(f"[RuntimeExecutor] tools_registry 不可用，无工具运行: {e}")
             return 0
+
+        readonly = role in self._READONLY_ROLES
+        risk_level = None
+        if readonly:
+            try:
+                from agent_core.permissions import tool_risk_level
+                risk_level = tool_risk_level
+            except Exception:
+                risk_level = None  # 权限模块缺席时退化为全量（闸门仍在 execute_tool 内）
 
         def _make_sync(name):
             def _handler(**kwargs):
@@ -117,7 +134,12 @@ class RuntimeExecutor:
             name = fn.get("name", "")
             if not name:
                 continue
-            loop.register_tool(name, _make_sync(name), description=fn.get("description", ""))
+            if readonly and risk_level is not None and risk_level(name) != "L1":
+                continue
+            loop.register_tool(name, _make_sync(name),
+                               description=fn.get("description", ""),
+                               schema=fn.get("parameters") or {})
             count += 1
-        logger.info(f"[RuntimeExecutor] 注入 {count} 个工具")
+        logger.info(f"[RuntimeExecutor] 注入 {count} 个工具（role={role or 'default'}"
+                    f"{'，只读过滤' if readonly else ''}）")
         return count

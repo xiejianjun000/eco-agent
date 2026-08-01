@@ -30,7 +30,7 @@ class _FakeLoop:
         self._max_steps = 20
         _FakeLoop.instances.append(self)
 
-    def register_tool(self, name, handler, description=""):
+    def register_tool(self, name, handler, description="", schema=None):
         self._tools[name] = handler
 
     def execute(self, task, context=None, observer=None):
