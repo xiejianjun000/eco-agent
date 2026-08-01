@@ -138,3 +138,52 @@ class TestPrefixPreservingReplan:
         assert result["mission_replans"] == 1
         failed = [t for t in cmd._tasks.values() if t.status == TaskStatus.FAILED]
         assert any("超时" in t.error for t in failed)
+
+
+class _FakeLLM:
+    """模拟 get_default_client：available + complete"""
+    def __init__(self, reply: str, usable: bool = True):
+        self._reply = reply
+        self._usable = usable
+
+    def available(self):
+        return self._usable
+
+    def complete(self, prompt, system="", max_tokens=512, timeout=90.0):
+        return self._reply
+
+
+class TestLLMVerifier:
+    """默认 verifier 已接真实 LLM：语义核验优先，LLM 缺席降级规则兜底"""
+
+    def test_llm_verdict_fail_blocks_completion(self, monkeypatch):
+        """LLM 判未达标 → 任务 FAILED，verdict 含 LLM 理由"""
+        import agent_core.llm_client as llm_mod
+        monkeypatch.setattr(llm_mod, "get_default_client",
+                            lambda: _FakeLLM("未达标\n缺少排放标准条款引用"))
+        cmd = CommanderV2(max_mission_replans=0)
+        result = cmd.execute("通用LLM核验拦截测试")
+        assert result["failed"] >= 1
+        failed = [t for t in cmd._tasks.values() if t.status == TaskStatus.FAILED]
+        assert any("LLM核验" in t.verdict and "条款" in t.verdict for t in failed)
+
+    def test_llm_verdict_pass_completes(self, monkeypatch):
+        """LLM 判达标 → 任务 COMPLETED，链式全跑完"""
+        import agent_core.llm_client as llm_mod
+        monkeypatch.setattr(llm_mod, "get_default_client",
+                            lambda: _FakeLLM("达标\n判据逐条满足"))
+        cmd = CommanderV2()
+        result = cmd.execute("通用LLM核验放行测试")
+        assert result["failed"] == 0
+        assert result["completed"] == result["total_tasks"]
+        assert all("LLM核验" in t.verdict for t in cmd._tasks.values())
+
+    def test_llm_unavailable_falls_back_to_rule(self, monkeypatch):
+        """LLM 缺席 → 静默降级规则核验（产出非空即过），不报错不阻塞"""
+        import agent_core.llm_client as llm_mod
+        monkeypatch.setattr(llm_mod, "get_default_client",
+                            lambda: _FakeLLM("", usable=False))
+        cmd = CommanderV2()
+        result = cmd.execute("通用降级测试")
+        assert result["failed"] == 0
+        assert any("规则验证" in t.verdict for t in cmd._tasks.values())

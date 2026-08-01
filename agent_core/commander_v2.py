@@ -355,10 +355,42 @@ class CommanderV2:
 
     @staticmethod
     def _default_verifier(task: Task) -> tuple[bool, str]:
-        # 规则兜底：产出非空即放行。语义核验需注入 LLM verifier（对照 expectation）
+        # 优先 LLM 语义核验（对照 expectation）；LLM 不可用/异常时降级规则兜底
+        llm = CommanderV2._llm_verdict(task)
+        if llm is not None:
+            return llm
         if task.output:
             return True, f"规则验证通过（产出非空；expectation「{task.expectation[:20]}」未做语义核验）"
         return False, "产出为空，无法对照 expectation 核验"
+
+    @staticmethod
+    def _llm_verdict(task: Task) -> tuple[bool, str] | None:
+        """LLM 语义核验：对照 expectation 判断产出是否达标。
+        LLM 未配置/调用失败返回 None，由调用方降级为规则核验。"""
+        try:
+            from agent_core.llm_client import get_default_client
+            c = get_default_client()
+            if not c.available():
+                return None
+            prompt = (
+                f"任务：{task.description}\n"
+                f"完成判据（expectation）：{task.expectation}\n"
+                f"实际产出：\n{task.output[:2000]}\n\n"
+                "请对照完成判据逐条核验实际产出。第一行只回答「达标」或「未达标」，"
+                "第二行起给出简要理由（指出缺失项）。"
+            )
+            resp = c.complete(prompt, system="你是严格的验收员：只依据完成判据核验，"
+                                           "证据不足一律判未达标，不臆测。", max_tokens=200)
+            if not resp:
+                return None
+            first, _, rest = resp.strip().partition("\n")
+            # 先判「未达标」再判「达标」——前者包含后者子串
+            ok = "未达标" not in first and "达标" in first
+            reason = (rest.strip() or first.strip())[:80]
+            return ok, f"LLM核验：{reason}"
+        except Exception as e:
+            logger.warning(f"[verifier] LLM 核验异常，降级规则核验: {e}")
+            return None
 
     def _default_replanner(self, goal: str, done: list[Task],
                            failed: Task, remaining: list[Task]) -> list[Task]:
