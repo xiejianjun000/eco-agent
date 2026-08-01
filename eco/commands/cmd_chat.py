@@ -203,11 +203,12 @@ def _safe(text):
 
 def _stream_answer(messages, tracer=None):
     from agent_core.llm_client import get_default_client
-    from agent_core.tools_registry import get_tools
+    from agent_core.tools_registry import get_tools, attach_mcp_tools
     c = get_default_client()
     if not c.available():
         print("[LLM not configured. Run: eco setup]")
         return ""
+    attach_mcp_tools()  # ECO_MCP_SERVERS 配置的远程工具并入（幂等，未配置则跳过）
     # ── 结构化 span 树：会话根 span → llm_call → tool_call 嵌套，落 ~/.eco/traces/ ──
     from agent_core.observability import SpanTree
     tree = SpanTree(meta={"provider": getattr(c, "_provider_name", ""),

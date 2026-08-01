@@ -2796,3 +2796,60 @@ async def execute_tool(name: str, args: dict) -> str:
 
 if __name__ == "__main__":
     print(f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools")
+
+
+# ── MCP 远程工具并入（ECO_MCP_SERVERS 配置驱动，优雅降级）─────────────
+_MCP_MGR = None
+_MCP_ATTACHED = False
+
+
+def attach_mcp_tools() -> list[str]:
+    """把 ECO_MCP_SERVERS 配置的 MCP server 工具并入工具体系。
+
+    远程工具命名 mcp__{server}__{tool}，schema 入 ALL_TOOL_DEFS、handler 入
+    _HANDLERS，与内置工具同等待遇（权限闸门按 mcp__ 内层名归一化分级，见
+    permissions.tool_risk_level）。未配置 / mcp SDK 缺失 / 连接失败均返回 []
+    并优雅降级，不影响内置工具。幂等：重复调用不重复连接、不重复注册。
+    """
+    global _MCP_MGR, _MCP_ATTACHED
+    if _MCP_ATTACHED:
+        return [n for n in _HANDLERS if n.startswith("mcp__")]
+    _MCP_ATTACHED = True
+    try:
+        from agent_core.mcp_connector import MCPConnectorManager, MCP_AVAILABLE
+        if not MCP_AVAILABLE:
+            return []
+        mgr = MCPConnectorManager()
+        if not mgr.configs:
+            mgr.close()
+            return []
+        status = mgr.connect_all()
+        if not any(status.values()):
+            mgr.close()
+            return []
+        _MCP_MGR = mgr
+    except Exception as e:
+        log.warning("[tools_registry] MCP 接入失败（降级跳过）: %s", e)
+        return []
+    registered = []
+    for t in _MCP_MGR.all_tools():
+        full = f"mcp__{t['server']}__{t['name']}"
+        if full in _HANDLERS:
+            continue
+        schema = t.get("inputSchema") or {"type": "object", "properties": {}}
+        ALL_TOOL_DEFS.append({
+            "type": "function",
+            "function": {"name": full,
+                         "description": f"[MCP:{t['server']}] {t.get('description', '')}",
+                         "parameters": schema},
+        })
+
+        def _make(srv=t["server"], tool=t["name"]):
+            def _h(**kwargs):
+                return _MCP_MGR.call_tool(srv, tool, kwargs)
+            return _h
+        _HANDLERS[full] = _make()
+        registered.append(full)
+    if registered:
+        log.info("[tools_registry] 并入 %d 个 MCP 工具: %s", len(registered), registered)
+    return registered

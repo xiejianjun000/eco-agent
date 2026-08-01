@@ -117,7 +117,10 @@ def load_l3_whitelist() -> list[str]:
 
 
 def tool_risk_level(tool_name: str, overrides: dict[str, str] | None = None) -> str:
-    """判定工具风险等级：覆盖表 > 前缀映射 > 未知默认 L3"""
+    """判定工具风险等级：覆盖表 > 前缀映射 > 未知默认 L3。
+    注意：mcp__{server}__{tool} 远程工具不按内层名猜测风险——服务端不受信，
+    写操作可以伪装成 query_ 前缀命名；MCP 工具一律走默认 L3，
+    确需放行的只读工具在 PERMISSION.md tool_risk_overrides 逐名豁免（决策写 SM3 审计链）。"""
     if overrides is None:
         overrides = load_overrides()
     if tool_name in overrides:

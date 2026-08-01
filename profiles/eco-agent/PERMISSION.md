@@ -133,9 +133,20 @@ require_approval:
 块可逐工具覆盖（增删条目后重启会话生效，全部决策写 SM3 审计链 source=permission）：
 
 ```yaml
+# MCP 法规知识库（eco_kb）五个只读检索工具：L1 自动放行
 tool_risk_overrides:
   - tool: execute_code
     level: L3
   - tool: generate_approval_document
     level: L4
+  - tool: mcp__eco_kb__eco_search
+    level: L1
+  - tool: mcp__eco_kb__eco_retrieve
+    level: L1
+  - tool: mcp__eco_kb__eco_statute_query
+    level: L1
+  - tool: mcp__eco_kb__eco_graph_query
+    level: L1
+  - tool: mcp__eco_kb__eco_list_statutes
+    level: L1
 ```

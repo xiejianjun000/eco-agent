@@ -73,8 +73,19 @@ class MCPServerConfig:
 
 
 def load_configs_from_env(env_var: str = "ECO_MCP_SERVERS") -> list[MCPServerConfig]:
-    """从环境变量 / .env 加载 MCP server 配置（JSON 数组），解析失败返回空列表"""
+    """从环境变量 / ~/.eco/.env 加载 MCP server 配置（JSON 数组），解析失败返回空列表"""
     raw = os.environ.get(env_var, "").strip()
+    if not raw:
+        # 环境变量未设：回退读 ~/.eco/.env（与 llm_client 配置来源一致）
+        from pathlib import Path
+        env_file = Path.home() / ".eco" / ".env"
+        if env_file.exists():
+            for line in env_file.read_text().splitlines():
+                if "=" in line and not line.startswith("#"):
+                    k, v = line.split("=", 1)
+                    if k.strip() == env_var:
+                        raw = v.strip()
+                        break
     if not raw:
         return []
     try:
@@ -207,6 +218,16 @@ class MCPServerConnection:
                     "elapsed_ms": int((time.time() - start) * 1000),
                 }
             except Exception as e:
+                # 工具级错误（服务端 JSON-RPC error，如"未找到法规"）不是连接故障：
+                # 直接返回失败，不重连不重试——重连只会把同一条诚实错误放大成两次
+                if type(e).__name__ in ("McpError", "MCPError"):
+                    return {
+                        "success": False,
+                        "error": str(e),
+                        "server": self.config.name,
+                        "tool": tool,
+                        "elapsed_ms": int((time.time() - start) * 1000),
+                    }
                 last_exc = e
                 logger.warning(f"[MCP] {self.config.name}.{tool} 第{attempt}次调用失败: {e}")
                 if attempt == 1:

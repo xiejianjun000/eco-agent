@@ -12,6 +12,7 @@ import json
 import sys
 import os
 import re
+import time
 from pathlib import Path
 from datetime import datetime
 
@@ -33,12 +34,6 @@ if not OBSIDIAN_VAULT or not os.path.isdir(OBSIDIAN_VAULT):
             break
     else:
         OBSIDIAN_VAULT = _DEFAULT_VAULTS[0]
-
-# 支持的 raw/ 子目录
-RAW_SUBDIRS = [
-    "01_法律法规", "02_复函", "03_部长信箱回复",
-    "05_标准规范", "06_年报公报"
-]
 
 # ===== 工具定义 =====
 
@@ -160,43 +155,72 @@ def find_vault_path():
     return vault
 
 
-def search_in_files(file_paths, query, max_results=10):
-    """在文件列表中搜索关键词，返回匹配结果"""
-    keywords = query.lower().split()
-    results = []
+_FILE_LIST_CACHE: dict = {}
 
+
+def _cached_files(root, ttl: float = 300.0):
+    """目录文件清单缓存：服务进程常驻，避免每次调用对 11 万文件的 vault 重新 rglob。
+    ttl 秒内的重复调用直接复用上次的清单。"""
+    key = str(root)
+    hit = _FILE_LIST_CACHE.get(key)
+    if hit and time.time() - hit[0] < ttl:
+        return hit[1]
+    files = [f for f in root.rglob("*") if f.suffix.lower() in (".md", ".txt") and f.is_file()]
+    _FILE_LIST_CACHE[key] = (time.time(), files)
+    return files
+
+
+def search_in_files(file_paths, query, max_results=10):
+    """两轮检索：先文件名命中（不读内容，快），再对剩余文件做内容命中（读前 50KB）。
+    关键词评分逻辑不变；文件名命中加 1.0 权重排在内容命中之前。"""
+    keywords = query.lower().split()
+    if not keywords:
+        return []
+    vault = find_vault_path()
+
+    def _rel(fpath):
+        return str((fpath.relative_to(vault) if vault in fpath.parents else fpath).as_posix())
+
+    def _make_hit(fpath, content, boost):
+        content_lower = content.lower()
+        match_count = sum(1 for kw in keywords if kw in content_lower)
+        frontmatter = extract_frontmatter(content)
+        return {
+            "path": _rel(fpath),
+            "score": boost + match_count / len(keywords),
+            "title": frontmatter.get("title", fpath.stem),
+            "snippet": extract_snippet(content, keywords, max_length=300),
+            "tags": frontmatter.get("tags", []),
+            "updated": frontmatter.get("updated", ""),
+        }
+
+    results = []
+    remaining = []
     for fpath in file_paths:
+        if len(results) >= max_results:
+            break
+        if any(kw in fpath.stem.lower() for kw in keywords):
+            try:
+                with open(fpath, encoding='utf-8', errors='ignore') as f:
+                    results.append(_make_hit(fpath, f.read(50000), boost=1.0))
+            except OSError:
+                pass
+        else:
+            remaining.append(fpath)
+
+    for fpath in remaining:
         if len(results) >= max_results:
             break
         try:
             with open(fpath, encoding='utf-8', errors='ignore') as f:
-                content = f.read(50000)  # 读取前 50KB
-
-            # 关键词匹配评分
-            content_lower = content.lower()
-            match_count = sum(1 for kw in keywords if kw in content_lower)
-            if match_count == 0:
+                content = f.read(50000)
+            if not any(kw in content.lower() for kw in keywords):
                 continue
-
-            # 提取匹配段落（前后文）
-            snippet = extract_snippet(content, keywords, max_length=300)
-            # 提取 frontmatter
-            frontmatter = extract_frontmatter(content)
-
-            rel_path = fpath.relative_to(find_vault_path()) if find_vault_path() in fpath.parents else fpath
-
-            results.append({
-                "path": str(rel_path.as_posix()),
-                "score": match_count / len(keywords),
-                "title": frontmatter.get("title", fpath.stem),
-                "snippet": snippet,
-                "tags": frontmatter.get("tags", []),
-                "updated": frontmatter.get("updated", ""),
-            })
+            results.append(_make_hit(fpath, content, boost=0.0))
         except OSError:
             continue
 
-    # 按评分排序
+    # 按评分排序（文件名命中经 boost 排在前面）
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:max_results]
 
@@ -263,42 +287,30 @@ def collect_wiki_files(vault_root):
 
 
 def collect_raw_files(vault_root, category=None):
-    """收集 raw/ 目录下法规文件"""
+    """收集 raw/ 目录下法规文件：递归全部子目录（vault 真实结构含 inbox/、
+    china_eia_articles/、排污许可执行报告/ 等，不再依赖硬编码的 01_ 五分类），
+    同时纳入 .txt（部分原文以 txt 入仓）"""
     raw_root = vault_root / "raw"
     if not raw_root.exists():
         return []
-
+    files = _cached_files(raw_root)
     if category:
-        # 按分类筛选
-        for subdir in RAW_SUBDIRS:
-            target = raw_root / subdir
-            if target.exists():
-                files = list(target.rglob("*.md"))
-                # 根据分类名称过滤
-                if category.lower() in subdir.lower():
-                    return files
-        # 如果没找到精确匹配，返回所有并过滤
-        all_files = []
-        for subdir in RAW_SUBDIRS:
-            target = raw_root / subdir
-            if target.exists():
-                all_files.extend(list(target.rglob("*.md")))
-        return [f for f in all_files if category.lower() in f.stem.lower()]
-    else:
-        files = []
-        for subdir in RAW_SUBDIRS:
-            target = raw_root / subdir
-            if target.exists():
-                files.extend(list(target.rglob("*.md")))
-        return files
+        c = category.lower()
+        matched = [f for f in files if c in f.stem.lower() or c in f.parent.name.lower()]
+        return matched
+    return files
 
 
 def find_statute_file(vault_root, statute_name):
     """按法规名称查找对应文件"""
+    # 空名或含 glob 元字符的名称直接判未找到，避免拼出非法 glob 模式（如 **/**.md）
+    name = re.sub(r"[*?\[\]/]", "", str(statute_name or "")).strip()
+    if not name:
+        return None
     # 先搜 wiki/
     for pattern in [
-        f"wiki/**/*{statute_name}*.md",
-        f"wiki/**/{statute_name}*.md",
+        f"wiki/**/*{name}*.md",
+        f"wiki/**/{name}*.md",
     ]:
         matches = list(vault_root.glob(pattern))
         if matches:
@@ -306,8 +318,8 @@ def find_statute_file(vault_root, statute_name):
 
     # 再搜 raw/
     for pattern in [
-        f"raw/**/*{statute_name}*.md",
-        f"raw/**/{statute_name}*.md",
+        f"raw/**/*{name}*.md",
+        f"raw/**/{name}*.md",
     ]:
         matches = list(vault_root.glob(pattern))
         if matches:
@@ -338,25 +350,42 @@ def extract_article(content, article=None):
 # ===== MCP 协议处理 =====
 
 
+def _std_tools() -> list:
+    """标准 MCP 工具表：官方 SDK 识别 inputSchema 键（本服务内部沿用 input_schema）"""
+    return [{"name": t["name"], "description": t["description"],
+             "inputSchema": t.get("input_schema") or t.get("inputSchema") or {}} for t in TOOLS]
+
+
 def handle_request(request):
-    """处理 JSON-RPC 2.0 请求"""
+    """处理 JSON-RPC 2.0 请求（标准 MCP 方法 + mcp.* 历史方言别名）"""
     req_id = request.get("id")
     method = request.get("method", "")
     params = request.get("params", {})
 
-    if method == "mcp.list_tools":
+    if method == "initialize":
         return {
             "jsonrpc": "2.0",
             "id": req_id,
-            "result": {"tools": TOOLS}
+            "result": {
+                "protocolVersion": params.get("protocolVersion", "2024-11-05"),
+                "capabilities": {"tools": {}},
+                "serverInfo": {"name": "eco-knowledge-mcp", "version": "0.2.0"},
+            },
         }
 
-    elif method == "mcp.call_tool":
+    elif method in ("tools/list", "mcp.list_tools"):
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {"tools": _std_tools()}
+        }
+
+    elif method in ("tools/call", "mcp.call_tool"):
         tool_name = params.get("name", "")
         tool_args = params.get("arguments", {})
         return handle_tool_call(req_id, tool_name, tool_args)
 
-    elif method == "mcp.ping":
+    elif method in ("ping", "mcp.ping"):
         return {
             "jsonrpc": "2.0",
             "id": req_id,
@@ -466,7 +495,8 @@ def handle_tool_call(req_id, tool_name, args):
                 }
 
         elif tool_name == "eco_statute_query":
-            statute = args.get("statute", "")
+            # 容错：模型常误传 keyword/query 作法规名，兜底兼容
+            statute = args.get("statute") or args.get("keyword") or args.get("query", "")
             article = args.get("article", "")
 
             target_path = find_statute_file(vault, statute)
@@ -572,8 +602,8 @@ def handle_tool_call(req_id, tool_name, args):
                     "error": {"code": -32000, "message": f"目录不存在: {root_dir}"}
                 }
 
-            # 搜索所有 .md 文件，按文件名筛选
-            all_files = list(root_dir.rglob("*.md"))
+            # 搜索所有 .md/.txt 文件（走清单缓存），按文件名筛选
+            all_files = _cached_files(root_dir)
             matched = []
             for f in all_files:
                 if category.lower() in f.stem.lower():
@@ -621,19 +651,16 @@ def handle_tool_call(req_id, tool_name, args):
 
 def main():
     """MCP 服务器主循环：从 stdin 读取 JSON-RPC 请求，处理，写入 stdout"""
-    # 启动通知
+    # 启动信息走 stderr，避免污染 stdout 的 JSON-RPC 帧（官方 MCP SDK 客户端会被打乱）
     startup_msg = json.dumps({
-        "jsonrpc": "2.0",
-        "method": "mcp.startup",
-        "params": {
-            "server_name": "eco-knowledge-mcp",
-            "version": "0.1.0",
-            "vault_path": str(find_vault_path()),
-            "tools_count": len(TOOLS)
-        }
+        "event": "mcp.startup",
+        "server_name": "eco-knowledge-mcp",
+        "version": "0.2.0",
+        "vault_path": str(find_vault_path()),
+        "tools_count": len(TOOLS)
     }, ensure_ascii=False)
-    sys.stdout.write(startup_msg + "\n")
-    sys.stdout.flush()
+    sys.stderr.write(startup_msg + "\n")
+    sys.stderr.flush()
 
     for line in sys.stdin:
         line = line.strip()
@@ -652,6 +679,10 @@ def main():
             sys.stdout.flush()
             continue
 
+        # JSON-RPC 通知（无 id，如 notifications/initialized）只处理不回包
+        if "id" not in request:
+            continue
+
         response = handle_request(request)
         resp_str = json.dumps(response, ensure_ascii=False)
         sys.stdout.write(resp_str + "\n")
@@ -659,4 +690,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BrokenPipeError:
+        # 客户端断开（管道关闭）属正常退出路径，重定向 stdout 避免解释器收尾再报错
+        import os
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        sys.exit(0)
