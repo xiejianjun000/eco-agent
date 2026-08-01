@@ -121,6 +121,33 @@ class TestExplicitDelivery:
         result = loop.execute("search 测试")
         assert result["final_observation"], "合成失败也必须有最终产出"
 
+    def test_max_steps_exhausted_still_synthesizes(self, monkeypatch):
+        """步数耗尽未 complete → 收尾仍走交付合成，不得把原始工具 JSON 当产出"""
+        fake = _DispatchFakeLLM(
+            decide_reply='{"action": "tool", "tool": "search", "args": {"keyword": "大气"}}',
+            synth_reply="【交付】基于检索结果的调研笔记正文")
+        _patch_llm(monkeypatch, fake)
+
+        loop = ReActPlusPlus()
+        loop._max_steps = 3
+        loop.register_tool("search", lambda **kw: '{"raw": "data"}', "搜索",
+                           schema={"type": "object", "properties": {"keyword": {"type": "string"}}})
+        result = loop.execute("检索并整理调研笔记")
+
+        assert result["final_observation"] == "【交付】基于检索结果的调研笔记正文", \
+            f"步数耗尽时必须合成交付物而不是裸工具结果: {result['final_observation'][:80]}"
+
+    def test_final_observation_not_truncated_at_200(self, monkeypatch):
+        """交付物长度截断必须放宽（法规/报告类产出远超 200 字）"""
+        fake = _DispatchFakeLLM(synth_reply="长" * 1000)
+        _patch_llm(monkeypatch, fake)
+
+        loop = ReActPlusPlus()
+        loop.register_tool("search", lambda query: "结果", "搜索")
+        result = loop.execute("search 长文测试")
+        assert len(result["final_observation"]) >= 1000, \
+            f"交付物被截断到 {len(result['final_observation'])} 字"
+
 
 class _CaptureLoop:
     """捕获 register_tool 调用的 fake ReAct 循环（供角色过滤测试）"""

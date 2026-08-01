@@ -150,6 +150,11 @@ class ReActPlusPlus:
                     state.retry_count += 1
                     logger.info(f"[ReAct++] 步骤{step}: Observer建议重试")
                     continue
+        else:
+            # 步数耗尽未 __complete__：收尾仍走显式交付合成，
+            # 不得把最后一步的裸工具结果当任务产出（冒烟实测缺陷）
+            if state.action_result:
+                state.action_result = self._synthesize_final(state, context or {})
 
         # 汇总
         total_time = (time.time() - start_time) * 1000
@@ -159,7 +164,7 @@ class ReActPlusPlus:
             "total_time_ms": round(total_time, 1),
             "confidence": state.confidence,
             "retries": state.retry_count,
-            "final_observation": state.action_result[:200] if state.action_result else "",
+            "final_observation": state.action_result[:4000] if state.action_result else "",
             "thought": state.thought[:200] if state.thought else "",
             "interrupted": state.interrupted,
         }
@@ -358,7 +363,9 @@ class ReActPlusPlus:
                 f"可用工具（含参数 schema）: {catalog[:3000]}\n"
                 "请决定下一步，只输出 JSON：\n"
                 '调用工具 → {"action": "tool", "tool": "<工具名>", "args": {<按 schema 填参数>}}\n'
-                '任务已完成或无需工具 → {"action": "complete"}'
+                '任务已完成或无需工具 → {"action": "complete"}\n'
+                "注意：已收集的信息足以产出交付物时必须 complete；"
+                "不要重复调用已经成功过的工具。"
             )
             raw = client.complete(prompt, system="你是行动决策器，只输出 JSON，不输出解释。",
                                   max_tokens=300)
