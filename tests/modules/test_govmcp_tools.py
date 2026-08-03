@@ -4,8 +4,6 @@ tests/modules/test_govmcp_tools.py
 govmcp 工具集成测试
 """
 
-import pytest
-import asyncio
 from agent_core.govmcp.tools.registry import ToolRegistry
 
 
@@ -49,7 +47,7 @@ def test_full_registration():
     register_approval(reg)
 
     count = reg.count()
-    tools = reg.list_tools()
+    reg.list_tools()
 
     assert count >= 100, f"Expected at least 100 tools, got {count}"
     print(f"[PASS] Registered {count} govmcp tools")
