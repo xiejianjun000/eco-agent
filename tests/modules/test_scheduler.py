@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """tests/modules/test_scheduler.py — Cron Scheduler 单元测试"""
 
-import io
 import sys
-import time
-import json
 import unittest
 from pathlib import Path
 
@@ -13,7 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from agent_core.scheduler import (
-    CronScheduler, ScheduledJob, nl_to_cron, NL_TIME_PATTERNS
+    CronScheduler, ScheduledJob, nl_to_cron
 )
 
 
