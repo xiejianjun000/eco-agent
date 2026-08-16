@@ -38,7 +38,7 @@ P0-P3 全阶段开发已完成（v3.0.0）。
 
 | 服务 | 状态 | 说明 |
 |:-----|:----:|:------|
-| 飞书 Bot | ✅ 已配置 | App ID: cli_aae3f90345385be0 |
+| 飞书 Bot | ✅ 已配置 | App ID 经环境变量 FEISHU_APP_ID 配置（不落盘） |
 | 飞书 Token | ✅ 已验证 | tenant_access_token 获取成功 |
 
 ### 启动命令
