@@ -1,0 +1,13 @@
+{
+  "name": "gongwen-format",
+  "version": "1.0.0",
+  "author": "wzbwan (GitHub) / eco-official",
+  "description": "确定性公文排版 Skill——受控 Markdown/JSON 输入，生成符合 GB/T 9704 规范的 Word 公文（字体/字号/行距/首行缩进/主送机关/附件/页码）",
+  "category": "公文排版",
+  "tags": ["公文", "排版", "GB/T 9704", "docx", "红头文件"],
+  "trust_tier": "community",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": ["python-docx"],
+  "min_eco_version": "1.0.0"
+}

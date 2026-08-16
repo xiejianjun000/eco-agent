@@ -1,0 +1,13 @@
+{
+  "name": "gongwen-draft",
+  "version": "1.0.0",
+  "author": "Rimagination (GitHub) / eco-official",
+  "description": "中文公文与政务材料写作 Skill——23 种文种（15 法定 + 8 机关材料），先查先核再写，含去 AI 味语言润色（Normalize/Tighten/Formalize/De-risk/Rebuild）",
+  "category": "公文写作",
+  "tags": ["公文", "写作", "去AI味", "润色", "政务材料"],
+  "trust_tier": "community",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}
