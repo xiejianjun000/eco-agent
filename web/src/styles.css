@@ -137,6 +137,23 @@ body {
 .side-panel .trace-list { padding: 0; }
 .side-panel .trace-result { max-height: 90px; overflow-y: auto; }
 
+/* 文档面板 */
+.side-doc-section {
+  font-size: 11px; font-weight: 600; color: var(--t-sub);
+  margin: 8px 0 4px; border-bottom: 1px solid var(--line); padding-bottom: 3px;
+}
+.doc-file-row {
+  border: 1px solid var(--fill); border-radius: 8px; padding: 6px 8px; margin-bottom: 6px;
+}
+.doc-file-name { font-size: 12px; font-weight: 600; word-break: break-all; }
+.doc-file-meta { font-size: 10px; color: var(--t-aux); margin: 1px 0 3px; }
+.doc-file-actions { display: flex; gap: 4px; }
+.doc-tool-row {
+  display: flex; align-items: center; gap: 6px; padding: 2px 0;
+  font-size: 11px; border-bottom: 1px dashed var(--fill);
+}
+.doc-tool-desc { color: var(--t-sub); font-size: 10px; flex: 1; }
+
 /* ── DSH 式轨迹树（Duration / Turns / Calls） ── */
 .trace-tree { font-size: 11px; }
 .trace-node { margin-bottom: 2px; }

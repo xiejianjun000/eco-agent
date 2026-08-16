@@ -84,6 +84,8 @@ export const api = {
   tools: () => get<{ tools: ToolEntry[]; categories: Record<string, number> }>('/tools'),
   system: () => get<Record<string, unknown>>('/system'),
   metrics: () => get<Record<string, unknown>>('/metrics'),
+  documents: () => get<{ count: number; files: { name: string; path: string; size_kb: number; modified: number }[] }>('/documents'),
+  documentTools: () => get<{ count: number; tools: { name: string; desc: string }[] }>('/documents/tools'),
 };
 
 /** POST /api/v1/chat/stream 的 SSE 流式读取，逐块回调。

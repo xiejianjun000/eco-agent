@@ -63,7 +63,16 @@ export default function ChatView(): React.ReactElement {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [branchTag, setBranchTag] = useState<string | null>(null);
-  const [sideTab, setSideTab] = useState<'trace' | 'artifact'>('trace');
+  const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc'>('trace');
+  const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
+  const [docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
+
+  React.useEffect(() => {
+    import('../api').then(({ api }) => {
+      api.documents().then((r) => setDocFiles(r.files)).catch(() => {});
+      api.documentTools().then((r) => setDocTools(r.tools)).catch(() => {});
+    });
+  }, [messages]);
   const [selectedTrace, setSelectedTrace] = useState<number | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -249,6 +258,12 @@ export default function ChatView(): React.ReactElement {
           >
             产物{artifacts.length > 0 ? ` (${artifacts.length})` : ''}
           </button>
+          <button
+            className={`side-tab${sideTab === 'doc' ? ' active' : ''}`}
+            onClick={() => setSideTab('doc')}
+          >
+            文档{docFiles.length > 0 ? ` (${docFiles.length})` : ''}
+          </button>
         </div>
 
         {sideTab === 'trace' && (
@@ -342,6 +357,36 @@ export default function ChatView(): React.ReactElement {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {sideTab === 'doc' && (
+          <div className="side-artifacts">
+            <div className="side-doc-section">已生成文件（output/）</div>
+            {docFiles.length === 0 ? (
+              <div className="empty" style={{ padding: 16 }}>暂无文档——对话中让模型生成 Word/PPT 后会出现在这里。</div>
+            ) : (
+              docFiles.map((f) => (
+                <div key={f.path} className="doc-file-row">
+                  <div className="doc-file-name">{f.name}</div>
+                  <div className="doc-file-meta">{f.size_kb} KB</div>
+                  <div className="doc-file-actions">
+                    <button className="tb-btn" onClick={() => void navigator.clipboard.writeText(f.path)}>复制路径</button>
+                    <button className="tb-btn" onClick={() => window.open(`file://${f.path}`, '_blank')}>打开</button>
+                  </div>
+                </div>
+              ))
+            )}
+            <div className="side-doc-section">腾讯 MCP-Doc 工具（{docTools.length}）</div>
+            {docTools.map((t) => (
+              <div key={t.name} className="doc-tool-row">
+                <span className="trace-badge badge-read">{t.name}</span>
+                <span className="doc-tool-desc">{t.desc}</span>
+              </div>
+            ))}
+            <div className="empty" style={{ padding: 10, fontSize: 11 }}>
+              用法：对话中说"创建一份 Word 文档，标题…"，模型会调用 MCP-Doc 工具生成真实 .docx。
+            </div>
           </div>
         )}
 
