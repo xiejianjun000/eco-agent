@@ -35,6 +35,7 @@ def run(args):
 
     app = create_app()
     log.info("\n  ECO AGENT Management API (v%s)", get_version())
+    log.info("  Web GUI:  http://%s:%s/", args.host, args.port)
     log.info("  API docs: http://%s:%s/docs", args.host, args.port)
     log.info("  Health:   http://%s:%s/healthz", args.host, args.port)
     log.info("  Chat:     POST http://%s:%s/api/v1/chat\n", args.host, args.port)

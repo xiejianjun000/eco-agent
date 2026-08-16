@@ -1,0 +1,117 @@
+/* ECO AGENT Web GUI 设计系统 — 低饱和暖色（对齐 EcoAegis design.md 基调） */
+:root {
+  --bg: #f7f4ee;
+  --panel: #ffffff;
+  --nav: #3e3831;
+  --nav-active: #c97c3e;
+  --line: #e4ddd2;
+  --fill: #efe9df;
+  --t-main: #2e2a26;
+  --t-sub: #6e665c;
+  --t-aux: #9a9184;
+  --t-invert: #f5f1ea;
+  --terra: #c97c3e;
+  --terra-dark: #a8642f;
+  --olive: #7c8b5f;
+  --red: #b0574a;
+  --amber: #c9a24b;
+  --blue: #6e8299;
+  --purple: #8a7a9b;
+  --mono: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--t-main);
+  font: 13px/1.7 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+}
+
+.app { display: flex; height: 100%; }
+
+/* ── 左侧导航 ── */
+.nav {
+  width: 200px; background: var(--nav); color: var(--t-invert);
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.nav .brand { padding: 18px 16px 10px; font-size: 15px; font-weight: 600; }
+.nav .brand .sub { display: block; font-size: 11px; color: #b8ada1; font-weight: 400; margin-top: 2px; }
+.nav .item {
+  padding: 10px 18px; cursor: pointer; color: #d8cfc4; font-size: 13px;
+  border-left: 3px solid transparent; transition: all 150ms;
+}
+.nav .item:hover { background: rgba(255,255,255,.05); color: #fff; }
+.nav .item.active { color: #fff; border-left-color: var(--nav-active); background: rgba(201,124,62,.18); }
+.nav .foot { margin-top: auto; padding: 14px 16px; font-size: 11px; color: #9b9083; }
+
+/* ── 主区 ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+  padding: 12px 24px; background: var(--panel); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 12px;
+}
+.topbar h1 { font-size: 16px; font-weight: 600; margin: 0; }
+.topbar .meta { color: var(--t-aux); font-size: 12px; }
+.content { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+/* ── 通用卡片/徽章 ── */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+.card h2 { font-size: 14px; margin: 0 0 10px; }
+.card h3 { font-size: 13px; margin: 12px 0 6px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.stat { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat-label { color: var(--t-sub); font-size: 12px; }
+.badge {
+  display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px;
+  background: var(--fill); color: var(--t-sub);
+}
+.badge.olive { background: #eef0e6; color: var(--olive); }
+.badge.amber { background: #f6efdd; color: #a8873a; }
+.badge.red { background: #f6e6e2; color: var(--red); }
+.badge.blue { background: #e9eef2; color: var(--blue); }
+.badge.terra { background: #f5e8dc; color: var(--terra-dark); }
+
+/* ── 会话页 ── */
+.chat-box { display: flex; flex-direction: column; height: 100%; }
+.chat-log { flex: 1; overflow-y: auto; padding: 8px 4px 16px; }
+.msg { margin-bottom: 14px; max-width: 78%; }
+.msg.user { margin-left: auto; }
+.msg .bubble {
+  padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; word-break: break-word;
+}
+.msg.user .bubble { background: var(--terra); color: #fff; border-bottom-right-radius: 4px; }
+.msg.assistant .bubble { background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg .role { font-size: 11px; color: var(--t-aux); margin-bottom: 2px; }
+.msg.user .role { text-align: right; }
+.chat-input-row { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+.chat-input-row textarea {
+  flex: 1; resize: none; min-height: 44px; max-height: 160px; padding: 10px 14px;
+  border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff;
+}
+.chat-input-row textarea:focus { outline: none; border-color: var(--terra); box-shadow: 0 0 0 3px rgba(201,124,62,.15); }
+.btn {
+  border: none; border-radius: 10px; padding: 0 20px; font: inherit; font-weight: 600;
+  background: var(--terra); color: #fff; cursor: pointer; transition: background 150ms;
+}
+.btn:hover { background: var(--terra-dark); }
+.btn:disabled { background: #d9d2c6; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--t-sub); border: 1px solid var(--line); }
+
+/* ── 列表行 / 搜索框 ── */
+.row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 4px; border-bottom: 1px solid var(--fill);
+}
+.row:last-child { border-bottom: none; }
+.row .title { font-weight: 600; }
+.row .desc { color: var(--t-sub); font-size: 12px; }
+.search-input {
+  width: 100%; max-width: 420px; padding: 9px 14px; border: 1px solid var(--line);
+  border-radius: 10px; font: inherit; background: #fff; margin-bottom: 14px;
+}
+.search-input:focus { outline: none; border-color: var(--terra); }
+.mono { font-family: var(--mono); font-size: 12px; }
+.muted { color: var(--t-aux); }
+.tag { display: inline-block; margin: 0 4px 4px 0; padding: 1px 8px; border-radius: 8px; background: var(--fill); font-size: 11px; color: var(--t-sub); }
+.empty { color: var(--t-aux); text-align: center; padding: 40px 0; }

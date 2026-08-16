@@ -63,7 +63,24 @@ def create_app() -> FastAPI:
     async def healthz() -> dict:
         return {"status": "ok", "version": get_version()}
 
+    _mount_web_gui(app)
     return app
+
+
+def _mount_web_gui(app: FastAPI) -> None:
+    """挂载 web/dist 静态前端（SPA）。未构建时静默跳过，API 仍可用。"""
+    web_dist = _ROOT / "web" / "dist"
+    if not web_dist.is_dir():
+        logger.info("web/dist not found — Web GUI 未构建（cd web && npm run build），仅 API 可用")
+        return
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/assets", StaticFiles(directory=str(web_dist / "assets")), name="web-assets")
+
+    @app.get("/", include_in_schema=False)
+    async def index() -> FileResponse:
+        return FileResponse(str(web_dist / "index.html"))
 
 
 def run(host: str = "127.0.0.1", port: int = 8788, reload: bool = False) -> None:
