@@ -90,22 +90,61 @@ def _audit(tool: str, args: dict, result: str, duration_ms: int) -> None:
         pass
 
 
+def _cred() -> tuple[str, str, str, str]:
+    """返回 (secret_id, secret_key, source水印, base_url)——环境变量配置。"""
+    return (
+        os.environ.get("EPMAP_SECRET_ID", "").strip(),
+        os.environ.get("EPMAP_SECRET_KEY", "").strip(),
+        os.environ.get("EPMAP_SOURCE", "").strip(),      # 签名水印值（青悦文档提供）
+        os.environ.get("EPMAP_BASE_URL", "https://service-xxxx.apigw.example.com").strip(),
+    )
+
+
 def _token() -> str:
-    return os.environ.get("EPMAP_TOKEN", "").strip()
+    return _cred()[0]
+
+
+def _hmac_sha1(key: bytes, msg: str) -> str:
+    import base64
+    import hashlib
+    import hmac
+
+    return base64.b64encode(
+        hmac.new(key, msg.encode("utf-8"), hashlib.sha1).digest()).decode()
 
 
 def _fetch_epmap(endpoint: str, params: dict) -> dict:
-    """TODO: token 就位后按 epmap 后台接口文档实现——
-    通常形如 GET/POST https://api.epmap.org/<endpoint>?token=<EPMAP_TOKEN>&...
-    返回解析后的 JSON。此处为骨架占位。"""
-    raise NotImplementedError(
-        "EPMAP_TOKEN 未配置或接口未实现——请先向 epmap.org 申请授权 token，"
-        "并设置环境变量 EPMAP_TOKEN；接口实现见 _fetch_epmap 的 TODO")
+    """腾讯云 API 网关密钥对鉴权（青悦环境数据云的标准接入方式）：
+    Authorization: hmac id="<SecretID>", algorithm="hmac-sha1",
+                   headers="date source", signature="<HmacSHA1(SecretKey, date+source)>"
+    端点与签名水印（source）以青悦接入文档为准，经 EPMAP_* 环境变量配置。"""
+    import urllib.parse
+    import urllib.request
+    from email.utils import formatdate
+
+    secret_id, secret_key, source, base_url = _cred()
+    if not (secret_id and secret_key and source and "example.com" not in base_url):
+        raise NotImplementedError(
+            "EPMAP 接入参数不全——需要环境变量: EPMAP_SECRET_ID / EPMAP_SECRET_KEY / "
+            "EPMAP_SOURCE（签名水印，青悦文档提供）/ EPMAP_BASE_URL（API 网关端点）。"
+            "这些值在申请 epmap 数据 API 时青悦提供的接入文档/邮件里。")
+    date = formatdate(timeval=time.time(), localtime=False, usegmt=True)
+    signing_str = f"date: {date}\nsource: {source}"
+    signature = _hmac_sha1(secret_key.encode("utf-8"), signing_str)
+    auth = (f'hmac id="{secret_id}", algorithm="hmac-sha1", '
+            f'headers="date source", signature="{signature}"')
+    qs = urllib.parse.urlencode(params)
+    url = f"{base_url}/{endpoint}?{qs}" if qs else f"{base_url}/{endpoint}"
+    req = urllib.request.Request(url, headers={"Date": date, "Authorization": auth,
+                                               "User-Agent": "eco-agent-epmap/1.0"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8"))
 
 
 def _no_token(tool: str, args: dict, t0: float) -> dict:
-    result = {"error": "未配置 EPMAP_TOKEN（需向 epmap.org 申请环境数据云授权后，"
-                       "export EPMAP_TOKEN=<token>）", "status": "skeleton"}
+    result = {"error": "EPMAP 接入参数不全——需要 EPMAP_SECRET_ID / EPMAP_SECRET_KEY / "
+                       "EPMAP_SOURCE（签名水印）/ EPMAP_BASE_URL（网关端点），"
+                       "见青悦申请 API 时提供的接入文档", "status": "skeleton"}
     _audit(tool, args, result, int((time.monotonic() - t0) * 1000))
     return result
 
@@ -164,7 +203,11 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.selftest:
-        print("token:", "已配置" if _token() else "未配置（骨架模式）")
+        sid, sk, source, base = _cred()
+        print("EPMAP_SECRET_ID:", "已配置" if sid else "缺失")
+        print("EPMAP_SECRET_KEY:", "已配置" if sk else "缺失")
+        print("EPMAP_SOURCE（签名水印）:", "已配置" if source else "缺失（青悦文档提供）")
+        print("EPMAP_BASE_URL:", base)
         print(json.dumps(_call("water_quality", {"basin": "资水"}), ensure_ascii=False, indent=2))
         return 0
 
