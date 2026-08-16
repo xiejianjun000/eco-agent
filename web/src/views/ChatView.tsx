@@ -46,7 +46,19 @@ export default function ChatView(): React.ReactElement {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [branchTag, setBranchTag] = useState<string | null>(null);
+  const [sideTab, setSideTab] = useState<'trace' | 'artifact'>('trace');
+  const [selectedTrace, setSelectedTrace] = useState<number | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
+
+  // 最新一条带轨迹的 assistant 消息自动选中
+  const lastTraceIndex = (() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i].role === 'assistant' && (messages[i].trace?.length ?? 0) > 0) return i;
+    }
+    return null;
+  })();
+  const activeTraceMsg = selectedTrace !== null ? messages[selectedTrace] : null;
+  const activeTrace = activeTraceMsg?.trace ?? messages[lastTraceIndex ?? -1]?.trace ?? [];
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
@@ -139,32 +151,6 @@ export default function ChatView(): React.ReactElement {
 
   return (
     <div className="chat-wrap">
-      {/* 左侧产物栏（有产物时显示） */}
-      {artifacts.length > 0 && (
-        <aside className="artifact-panel">
-          <div className="artifact-title">产物 ({artifacts.length})</div>
-          {artifacts.map((a, i) => (
-            <details key={i} className="artifact-item">
-              <summary className="artifact-summary">
-                <span className="artifact-lang">{a.lang}</span>
-                <span className="artifact-len">{a.code.length} 字符</span>
-                <button
-                  className="btn ghost artifact-copy"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    void navigator.clipboard.writeText(a.code);
-                  }}
-                >
-                  复制
-                </button>
-              </summary>
-              <pre className="artifact-code">{escapeHtml(a.code)}</pre>
-            </details>
-          ))}
-        </aside>
-      )}
-
       <div className="chat-box" style={{ height: 'calc(100vh - 120px)' }}>
         {branchTag && <div className="branch-tag">{branchTag}</div>}
         <div className="chat-log" ref={logRef}>
@@ -180,57 +166,6 @@ export default function ChatView(): React.ReactElement {
                   <span className="msg-stat">用时 {fmtMs(m.durationMs)}</span>
                 )}
               </div>
-              {m.role === 'assistant' && m.trace && m.trace.length > 0 && (
-                <details className="trace-block">
-                  <summary className="trace-summary">
-                    <span className="trace-icon">⚙</span>
-                    执行轨迹 · {m.trace.length} 步
-                    <span className="trace-hint">（点击展开）</span>
-                  </summary>
-                  <div className="trace-list">
-                    {m.trace.map((t, ti) => (
-                      <div key={ti} className={`trace-row trace-${t.type}`}>
-                        <span className="trace-step">{ti + 1}</span>
-                        {t.type === 'think' && (
-                          <span className="trace-body">
-                            <span className="trace-badge badge-think">思考</span>
-                            {(t.tools?.length ?? 0) > 0 && (
-                              <span className="trace-detail">决定调用 {t.tools?.join(', ')}</span>
-                            )}
-                            {t.thought && <span className="trace-thought">{t.thought}</span>}
-                            <span className="trace-cost">{t.cost_ms}ms</span>
-                          </span>
-                        )}
-                        {t.type === 'tool' && (
-                          <span className="trace-body">
-                            <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
-                              {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
-                            </span>
-                            <span className="trace-detail">{t.name}({JSON.stringify(t.args ?? {}).slice(0, 80)})</span>
-                            <span className="trace-cost">{t.cost_ms}ms</span>
-                            {t.result_preview && (
-                              <span className="trace-result">{t.result_preview.slice(0, 120)}</span>
-                            )}
-                          </span>
-                        )}
-                        {t.type === 'answer' && (
-                          <span className="trace-body">
-                            <span className="trace-badge badge-answer">综合</span>
-                            <span className="trace-detail">基于检索结果生成回答（{t.chars}字）</span>
-                            <span className="trace-cost">{t.cost_ms ?? ''}ms</span>
-                          </span>
-                        )}
-                        {t.type === 'correction' && (
-                          <span className="trace-body">
-                            <span className="trace-badge badge-correction">纠偏</span>
-                            <span className="trace-detail">{t.note}</span>
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              )}
               <div
                 className="bubble"
                 dangerouslySetInnerHTML={{
@@ -254,6 +189,14 @@ export default function ChatView(): React.ReactElement {
                     title="踩"
                     onClick={() => rateMsg(i, 'down')}
                   >👎</button>
+                  <button
+                    className={`tb-btn${selectedTrace === i ? ' active' : ''}`}
+                    title="查看执行轨迹"
+                    onClick={() => {
+                      setSelectedTrace(i);
+                      setSideTab('trace');
+                    }}
+                  >⚙ 轨迹</button>
                   <button className="tb-btn" title="在此处分支新对话" onClick={() => branchFrom(i)}>⑂ 分支</button>
                 </div>
               )}
@@ -273,6 +216,124 @@ export default function ChatView(): React.ReactElement {
           </button>
         </div>
       </div>
+
+      {/* 右侧标签页面板：轨迹 / 产物 */}
+      <aside className="side-panel">
+        <div className="side-tabs">
+          <button
+            className={`side-tab${sideTab === 'trace' ? ' active' : ''}`}
+            onClick={() => setSideTab('trace')}
+          >
+            轨迹{activeTrace.length > 0 ? ` (${activeTrace.length})` : ''}
+          </button>
+          <button
+            className={`side-tab${sideTab === 'artifact' ? ' active' : ''}`}
+            onClick={() => setSideTab('artifact')}
+          >
+            产物{artifacts.length > 0 ? ` (${artifacts.length})` : ''}
+          </button>
+        </div>
+
+        {sideTab === 'trace' && (
+          <div className="side-trace">
+            {activeTrace.length === 0 ? (
+              <div className="empty" style={{ padding: 24 }}>
+                暂无轨迹——问一个需要查法条/知识库的问题，
+                或点击消息下方「⚙ 轨迹」查看对应执行过程。
+              </div>
+            ) : (
+              <>
+                <div className="trace-selector">
+                  选择消息查看轨迹：
+                  {messages.map((m, i) =>
+                    m.role === 'assistant' && (m.trace?.length ?? 0) > 0 ? (
+                      <button
+                        key={i}
+                        className={`trace-chip${selectedTrace === i ? ' active' : ''}`}
+                        onClick={() => setSelectedTrace(i)}
+                      >
+                        第 {i + 1} 条 · {m.trace!.length} 步
+                      </button>
+                    ) : null,
+                  )}
+                </div>
+                <div className="trace-list">
+                  {activeTrace.map((t, ti) => (
+                    <div key={ti} className={`trace-row trace-${t.type}`}>
+                      <span className="trace-step">{ti + 1}</span>
+                      {t.type === 'think' && (
+                        <span className="trace-body">
+                          <span className="trace-badge badge-think">思考</span>
+                          {(t.tools?.length ?? 0) > 0 && (
+                            <span className="trace-detail">决定调用 {t.tools?.join(', ')}</span>
+                          )}
+                          {t.thought && <span className="trace-thought">{t.thought}</span>}
+                          <span className="trace-cost">{t.cost_ms}ms</span>
+                        </span>
+                      )}
+                      {t.type === 'tool' && (
+                        <span className="trace-body">
+                          <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
+                            {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
+                          </span>
+                          <span className="trace-detail">{t.name}({JSON.stringify(t.args ?? {}).slice(0, 80)})</span>
+                          <span className="trace-cost">{t.cost_ms}ms</span>
+                          {t.result_preview && (
+                            <span className="trace-result">{t.result_preview.slice(0, 120)}</span>
+                          )}
+                        </span>
+                      )}
+                      {t.type === 'answer' && (
+                        <span className="trace-body">
+                          <span className="trace-badge badge-answer">综合</span>
+                          <span className="trace-detail">基于检索结果生成回答（{t.chars}字）</span>
+                          <span className="trace-cost">{t.cost_ms ?? ''}ms</span>
+                        </span>
+                      )}
+                      {t.type === 'correction' && (
+                        <span className="trace-body">
+                          <span className="trace-badge badge-correction">纠偏</span>
+                          <span className="trace-detail">{t.note}</span>
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {sideTab === 'artifact' && (
+          <div className="side-artifacts">
+            {artifacts.length === 0 ? (
+              <div className="empty" style={{ padding: 24 }}>
+                暂无产物——回复中的代码块会自动提取到这里。
+              </div>
+            ) : (
+              artifacts.map((a, i) => (
+                <details key={i} className="artifact-item">
+                  <summary className="artifact-summary">
+                    <span className="artifact-lang">{a.lang}</span>
+                    <span className="artifact-len">{a.code.length} 字符</span>
+                    <button
+                      className="btn ghost artifact-copy"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        void navigator.clipboard.writeText(a.code);
+                      }}
+                    >
+                      复制
+                    </button>
+                  </summary>
+                  <pre className="artifact-code">{escapeHtml(a.code)}</pre>
+                </details>
+              ))
+            )}
+          </div>
+        )}
+      </aside>
     </div>
   );
 }
