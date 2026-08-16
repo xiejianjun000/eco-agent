@@ -58,6 +58,7 @@ class MCPServerConfig:
     url: str = ""                       # sse 传输必填
     command: list[str] = field(default_factory=list)  # stdio 传输必填
     env: dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)  # SSE 自定义请求头（如 X-API-Key 鉴权）
     timeout: float = DEFAULT_TIMEOUT
 
     @classmethod
@@ -68,6 +69,7 @@ class MCPServerConfig:
             url=d.get("url", ""),
             command=list(d.get("command", [])),
             env=dict(d.get("env", {})),
+            headers=dict(d.get("headers", {})),
             timeout=float(d.get("timeout", DEFAULT_TIMEOUT)),
         )
 
@@ -119,7 +121,7 @@ class MCPServerConnection:
             raise RuntimeError("官方 mcp SDK 未安装（pip install mcp）")
         cfg = self.config
         if cfg.transport == "sse":
-            cm = sse_client(cfg.url)
+            cm = sse_client(cfg.url, headers=cfg.headers or None)
         elif cfg.transport == "stdio":
             env = dict(os.environ)
             env.update(cfg.env)

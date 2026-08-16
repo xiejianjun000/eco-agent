@@ -2812,6 +2812,24 @@ def external_tool_overrides() -> dict[str, str]:
     """当前外部工具的风险覆盖表（execute_tool 闸门注入用）。"""
     return dict(_EXTERNAL_RISK_OVERRIDES)
 
+
+_RISK_ORDER = {"L1": 1, "L2": 2, "L3": 3, "L4": 4}
+
+
+def _merged_risk_overrides(load_overrides_fn) -> dict[str, str]:
+    """合并 PERMISSION.md 覆盖与插件声明覆盖，同工具取更严格（最严格优先，S-05）。
+
+    load_overrides_fn: permissions.load_overrides（调用方注入，避免循环依赖）。
+    """
+    merged = dict(_EXTERNAL_RISK_OVERRIDES)
+    try:
+        for k, v in load_overrides_fn().items():
+            if k not in merged or _RISK_ORDER.get(v, 3) > _RISK_ORDER.get(merged[k], 3):
+                merged[k] = v
+    except Exception as e:  # noqa: BLE001 — 覆盖解析失败不影响主流程
+        log.warning("[tools_registry] PERMISSION.md 覆盖解析失败: %s", e)
+    return merged
+
 _GATE_DISABLED_WARNED = False
 
 async def execute_tool(name: str, args: dict) -> str:
@@ -2832,8 +2850,8 @@ async def execute_tool(name: str, args: dict) -> str:
             except Exception:
                 pass
     else:
-        from agent_core.permissions import gate_tool_call
-        allowed, level, reason = gate_tool_call(name, args, overrides=external_tool_overrides())
+        from agent_core.permissions import gate_tool_call, load_overrides
+        allowed, level, reason = gate_tool_call(name, args, overrides=_merged_risk_overrides(load_overrides))
         if not allowed:
             return json.dumps(
                 {"error": f"permission denied [{level}]: {reason}",
