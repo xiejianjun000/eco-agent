@@ -118,3 +118,54 @@ class TestStepSuggestions:
         """一切正常 → None（静默原则：不打扰用户）"""
         steps = _make_env(tmp_path)
         assert steps.step_suggestions({"stale_count": 0, "changed": 0}) is None
+
+
+class TestStepVerify:
+    """STEP 6: 运维体检集成测试"""
+
+    def test_verify_silent_when_clean(self, tmp_path, monkeypatch):
+        """无异常时静默返回 None（体检不干扰心跳）"""
+        from agent_core.heartbeat import PulseSteps
+        steps = PulseSteps(state_file=tmp_path / "state.json")
+
+        import _scripts.verify_ops as vo
+        monkeypatch.setattr(vo, "run_checks", lambda: {
+            "session_logs": {"all_verified": True, "truncated_total": 0},
+            "evolution_report": {"exists": False, "pass": False},
+            "memory_conflicts": {"open_conflicts": 0},
+        })
+        assert steps.step_verify() is None
+
+    def test_verify_reports_issues(self, tmp_path, monkeypatch):
+        """发现异常时返回问题清单，供 suggestions 汇总"""
+        from agent_core.heartbeat import PulseSteps
+        steps = PulseSteps(state_file=tmp_path / "state.json")
+
+        import _scripts.verify_ops as vo
+        monkeypatch.setattr(vo, "run_checks", lambda: {
+            "session_logs": {"all_verified": False, "truncated_total": 2},
+            "evolution_report": {"exists": True, "chars": 100, "pass": False},
+            "memory_conflicts": {"open_conflicts": 3},
+        })
+        issues = steps.step_verify()
+        assert issues is not None
+        assert any("日志校验异常" in i for i in issues)
+        assert any("进化报告篇幅不足" in i for i in issues)
+        assert any("3 条记忆矛盾" in i for i in issues)
+
+    def test_verify_failure_does_not_raise(self, tmp_path, monkeypatch):
+        """体检执行失败不得击穿心跳（降级为单条提示）"""
+        from agent_core.heartbeat import PulseSteps
+        steps = PulseSteps(state_file=tmp_path / "state.json")
+
+        import _scripts.verify_ops as vo
+        monkeypatch.setattr(vo, "run_checks", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+        issues = steps.step_verify()
+        assert issues is not None and any("不可用" in i for i in issues)
+
+    def test_suggestions_include_verify_issues(self, tmp_path):
+        from agent_core.heartbeat import PulseSteps
+        steps = PulseSteps(state_file=tmp_path / "state.json")
+        sug = steps.step_suggestions({"verify_issues": ["问题A", "问题B", "问题C", "问题D"]})
+        assert sug is not None
+        assert sum(1 for s in sug if "[运维体检]" in s) == 3  # 最多带 3 条

@@ -245,7 +245,38 @@ class PulseSteps:
             suggestions.append(f"{stale} 条知识超过 {self._stale_days} 天未更新，建议复核时效性")
         if ctx.get("changed", 0) > 0:
             suggestions.append(f"检测到 {ctx['changed']} 处知识库变更，建议确认是否需要重建索引")
+        issues = ctx.get("verify_issues") or []
+        suggestions.extend(f"[运维体检] {i}" for i in issues[:3])
         return suggestions or None
+
+    def step_verify(self) -> list[str] | None:
+        """STEP 6: 运维体检——会话日志链/进化报告/记忆矛盾/技能库健康检查。
+
+        全部正常返回 None（静默原则）；发现异常返回问题清单，
+        供 step_suggestions 汇总与心跳上报。离线安全：所有检查无网络依赖。
+        """
+        try:
+            import sys
+            if str(ROOT) not in sys.path:
+                sys.path.insert(0, str(ROOT))
+            from _scripts.verify_ops import run_checks
+
+            report = run_checks()
+        except Exception as e:  # noqa: BLE001 — 体检失败不得击穿心跳
+            logger.warning("[Pulse] verify_ops 执行失败: %s", e)
+            return [f"运维体检不可用: {e}"]
+
+        issues: list[str] = []
+        sl = report.get("session_logs") or {}
+        if not sl.get("all_verified"):
+            issues.append(f"会话日志校验异常（截断 {sl.get('truncated_total', 0)} 处）")
+        er = report.get("evolution_report") or {}
+        if er.get("exists") and not er.get("pass"):
+            issues.append(f"进化报告篇幅不足（{er.get('chars', 0)} 字 < 500）")
+        mc = report.get("memory_conflicts") or {}
+        if mc.get("open_conflicts", 0) > 0:
+            issues.append(f"{mc['open_conflicts']} 条记忆矛盾待消解")
+        return issues or None
 
 
 _default_steps: PulseSteps | None = None
