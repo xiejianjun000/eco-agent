@@ -16,7 +16,8 @@ class TestToolSchemaQuality:
         cnt = Counter(t["function"].get("description", "") for t in tr.get_tools())
         shared = {d: n for d, n in cnt.items() if n > 2}
         assert shared == {}, f"同一描述被 >2 个工具共用: {shared}"
-        assert len(descs) > 100
+        # 白名单瘦身（2026-08-16）：LLM 可见表仅真实实现（内置5+外部注册）
+        assert len(descs) >= 5
 
     def test_all_params_have_description(self):
         bad = [(t["function"]["name"], p)

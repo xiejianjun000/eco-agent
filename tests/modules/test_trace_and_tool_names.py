@@ -22,8 +22,8 @@ class TestToolNameNormalization:
         assert len(names) == len(set(names))
 
     def test_chinese_name_fixed_at_source(self):
-        """历史中文工具名已在源头修复：注册表直接导出合法 slug 名，无中文名残留"""
-        assert "query_snow_xueliang_video" in tr.get_tool_names()
+        """历史中文工具名已在源头修复：导出名全部为合法 slug，无中文名残留。
+        （历史占位工具 query_snow_xueliang_video 已随白名单瘦身隐藏）"""
         for n in tr.get_tool_names():
             assert tr.TOOL_NAME_RE.match(n), f"非法工具名导出: {n!r}"
 

@@ -178,6 +178,10 @@ class TestPermissions:
 
     def test_risk_table_covers_all_tools(self):
         from agent_core.permissions import risk_table, LEVELS
+        from agent_core import tools_registry as tr
         table = risk_table()
-        assert len(table) > 100
+        # 覆盖全部 LLM 可见工具（白名单瘦身后 5 内置 + 外部注册）
+        visible = tr.get_tool_names()
+        missing = [n for n in visible if n not in table]
+        assert missing == [], f"风险表未覆盖工具: {missing}"
         assert all(lv in LEVELS for lv in table.values())

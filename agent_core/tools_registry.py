@@ -77,6 +77,126 @@ def tool(name):
         return f
     return dec
 
+# ── LLM 可见表白名单（ALL_TOOL_DEFS 内）────────────────────────────
+# 内置定义表中只有以下工具是真实实现；其余（govmcp 占位 status:ok 假数据、
+# 无 handler 的 vision/ocr、假数据内置）一律对 LLM 不可见——
+# 占位工具暴露给模型会污染回答（模型拿到假数据后可能编造结论）。
+# 外部注册工具（statute_*/devtools/MCP）不在此表，不受此过滤影响。
+ALL_TOOL_DEFS_KEEP: set[str] = {
+    "execute_code", "query_air_quality", "analyze_document",
+    "save_document", "search_regulation",
+}
+
+# 历史占位工具黑名单（保留记录：接真实政务后端后从这里移除对应名即上架）
+TOOL_EXCLUDE_LIST: set[str] = set(json.loads(
+    r'''[
+  "approval_cross_department",
+  "approval_query_archive",
+  "approval_query_audit_trail",
+  "approval_query_counterpart",
+  "approval_query_expedited",
+  "approval_query_license_print",
+  "approval_query_pending_list",
+  "approval_query_statistics",
+  "approval_query_status",
+  "approval_query_template",
+  "approval_query_withdraw",
+  "approval_review_node",
+  "approval_submit_appeal",
+  "approval_submit_application",
+  "approval_verify_signature",
+  "calculate_carbon_emission",
+  "carbon_calculate_footprint",
+  "carbon_query_baseline",
+  "carbon_query_compliance",
+  "carbon_query_emission_factor",
+  "carbon_query_enterprise_emission",
+  "carbon_query_esg_score",
+  "carbon_query_green_bond",
+  "carbon_query_offset_project",
+  "carbon_query_policy",
+  "carbon_query_quota",
+  "carbon_query_technology",
+  "carbon_query_trading",
+  "carbon_submit_annual_report",
+  "carbon_submit_offset_application",
+  "carbon_submit_verification",
+  "citizen_query_appointment",
+  "citizen_query_birth_registration",
+  "citizen_query_business_license",
+  "citizen_query_certificate",
+  "citizen_query_complaint",
+  "citizen_query_death_certificate",
+  "citizen_query_disability_benefits",
+  "citizen_query_driver_license",
+  "citizen_query_education",
+  "citizen_query_household",
+  "citizen_query_housing_fund",
+  "citizen_query_id_card",
+  "citizen_query_marriage",
+  "citizen_query_medical_insurance",
+  "citizen_query_pension",
+  "citizen_query_property_rights",
+  "citizen_query_social_security",
+  "citizen_query_subsistence_allowance",
+  "citizen_query_tax_record",
+  "citizen_query_vehicle",
+  "enterprise_query_annual_report",
+  "enterprise_query_bidding",
+  "enterprise_query_change_record",
+  "enterprise_query_construction_permit",
+  "enterprise_query_credit_report",
+  "enterprise_query_customs",
+  "enterprise_query_environmental_penalty",
+  "enterprise_query_food_license",
+  "enterprise_query_foreign_trade",
+  "enterprise_query_inspection",
+  "enterprise_query_labor_dispute",
+  "enterprise_query_patent",
+  "enterprise_query_pharma_license",
+  "enterprise_query_registration",
+  "enterprise_query_special_industry",
+  "enterprise_query_statistics",
+  "enterprise_query_subsidy",
+  "enterprise_query_tax_info",
+  "enterprise_query_trademark",
+  "enterprise_query_work_safety",
+  "env_query_air_quality",
+  "env_query_carbon_data",
+  "env_query_cnemc_standard",
+  "env_query_discharge_permit",
+  "env_query_ecological_redline",
+  "env_query_eia_report",
+  "env_query_emergency_monitor",
+  "env_query_noise",
+  "env_query_pollution_source",
+  "env_query_radiation",
+  "env_query_soil_quality",
+  "env_query_trend",
+  "env_query_waste_transfer",
+  "env_query_water_quality",
+  "env_query_weather_forecast",
+  "get_emission_standard",
+  "query_environmental_penalty",
+  "query_pollution_discharge_permit",
+  "query_water_quality",
+  "smart_query_city_app_service",
+  "smart_query_city_camera",
+  "smart_query_city_governance",
+  "smart_query_digital_twin",
+  "smart_query_emergency_response",
+  "smart_query_gas_supply",
+  "smart_query_iot_device",
+  "smart_query_open_data",
+  "smart_query_parking",
+  "smart_query_power_grid",
+  "smart_query_public_transport",
+  "smart_query_street_lamp",
+  "smart_query_traffic_congestion",
+  "smart_query_waste_management",
+  "smart_query_water_supply"
+]'''))
+
 ALL_TOOL_DEFS = [
   {
     "type": "function",
@@ -2555,9 +2675,22 @@ def _h_query_air_quality(city: str, station: str = ""):
 
 @tool("search_regulation")
 def _h_search_regulation(keyword: str, law_name: str = ""):
-    return {"keyword": keyword, "results": [
-        {"law": "大气污染防治法", "article": "第九十九条",
-         "summary": "超标排放处10-100万元罚款"}], "source": "法规知识库"}
+    """法规检索——转发《生态环境法典》条文检索。
+
+    旧单行法已于 2026-08-15 废止（法典第1242条），本工具只返回法典原文，
+    避免引用已废止法律；附旧法双标注提示。
+    """
+    result = _ecocodex_search(keyword)
+    try:
+        parsed = json.loads(result)
+        hits = parsed.get("hits", [])
+    except json.JSONDecodeError:
+        hits = []
+    return {
+        "keyword": keyword,
+        "note": "旧单行法（大气/水/固废法等）已于2026-08-15废止，引用须以《生态环境法典》为准",
+        "results": [{"codex": h.get("file", ""), "text": h.get("text", "")[:200]} for h in hits],
+    }
 
 @tool("get_emission_standard")
 def _h_get_emission_standard(standard_code: str, pollutant: str = ""):
@@ -2728,9 +2861,18 @@ def _sanitized_defs() -> list:
     非法名自动 slug 化；重名定义只保留首个并记日志（重名会让 LLM 端整批 400）。"""
     out = []
     seen: set[str] = set()
+    excluded = 0
     for t in ALL_TOOL_DEFS:
         fn = t.get("function", {})
         slug = normalize_tool_name(fn.get("name", ""))
+        # 白名单制：内置定义仅真实实现可见；外部注册工具（插件/法典/MCP）
+        # 豁免：_EXTERNAL_TOOL_SOURCES 标记（register_external_tool）与
+        # mcp__ 前缀（attach_mcp_tools 直接并入）
+        if (slug not in ALL_TOOL_DEFS_KEEP
+                and slug not in _EXTERNAL_TOOL_SOURCES
+                and not slug.startswith("mcp__")):
+            excluded += 1
+            continue
         if slug in seen:
             if slug not in _DUPLICATE_TOOLS:
                 _DUPLICATE_TOOLS.append(slug)
