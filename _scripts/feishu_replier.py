@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Feishu Bot auto-replier - reads events from consumer, replies via API"""
 import sys
+import os
 import json
 import time
 import importlib
@@ -14,11 +15,16 @@ ROOT = Path(__file__).resolve().parent.parent
 EVENTS = ROOT / "gateway" / "feishu_events"
 CACHE = EVENTS / ".done"
 
-AP_ID, AP_KEY = "cli_aae3f90345385be0", "g9xr95QkZTAgscShUa7b6e6nHbzevSGM"
+# 凭证从环境变量读取（铁律：绝不硬编码密钥）——2026-08-16 修复明文凭证问题
+AP_ID = os.environ.get("FEISHU_APP_ID", "")
+AP_KEY = os.environ.get("FEISHU_APP_SECRET", "")
 _token, _exp = None, 0
 
 def gt():
     global _token, _exp
+    if not AP_ID or not AP_KEY:
+        sys.stderr.write("[feishu_replier] 缺少 FEISHU_APP_ID/FEISHU_APP_SECRET 环境变量\n")
+        return None
     if _token and time.time() < _exp - 60: return _token
     r = requests.post("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
                      json={"app_id":AP_ID,"app_secret":AP_KEY}, timeout=10).json()
