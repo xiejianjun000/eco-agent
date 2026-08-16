@@ -76,6 +76,11 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
             "或任何文本形式模拟工具调用，禁止编造不存在的工具名（只有上述四个工具）。\n"
             "4. 禁止输出'正在调用工具''请稍候'之类的话——直接调用工具，不要预告。\n"
             "5. 引用条文必须与工具返回的原文一致，条号以工具结果为准。\n"
+            "6. 用户要求生成文件（PPT/Word/Excel）时，必须调用对应工具（如 generate_pptx）\n"
+            "   产出真实文件并返回文件路径；禁止只输出文字大纲声称已交付。\n"
+            "7. 【generate_pptx 已在本轮工具列表中】用户说'生成PPT/做课件/出演示文稿'时，\n"
+            "   立即调用 generate_pptx(slides=[{\"title\":\"页标题\",\"bullets\":[\"要点\"]}], title=名称)，\n"
+            "   然后把工具返回的 path 文件路径告诉用户。不要先写文字大纲再问要不要文件。\n"
         )
     system = system + "\n" + codex_note
     messages: list[dict] = [{"role": "system", "content": system}]
@@ -154,6 +159,33 @@ def _codex_tools() -> list[dict]:
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "generate_pptx",
+                "description": "生成 PowerPoint 演示文稿（.pptx 真实文件）——多页标题+要点，返回真实文件路径。"
+                               "用于执法培训课件、案卷评查通报、督察汇报 PPT。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "slides": {
+                            "type": "array",
+                            "description": "每页: {title, bullets}",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {"type": "string"},
+                                    "bullets": {"type": "array", "items": {"type": "string"}},
+                                },
+                                "required": ["title"],
+                            },
+                        },
+                        "title": {"type": "string", "description": "演示文稿名称"},
+                    },
+                    "required": ["slides"],
+                },
+            },
+        },
     ]
 
 
@@ -185,6 +217,23 @@ async def _run_tool(name: str, arguments: dict) -> str:
         result = await execute_tool("execute_code", {
             "code": arguments.get("code", ""),
             "language": arguments.get("language", "python"),
+        })
+        return result[:2000]
+    if name == "generate_pptx":
+        # PPT 真实文件生成（docgen 插件能力，L2 本地写入）
+        # 惰性确保插件已加载（server 不预载插件；首次调用时注册 handler）
+        from agent_core.plugins import get_plugin_manager
+        from agent_core.tools_registry import execute_tool
+
+        pm = get_plugin_manager()
+        if "docgen" not in [p["name"] for p in pm.scan() if p["name"] == "docgen"]:
+            return "docgen 插件不存在（plugins/docgen）"
+        if pm.get("docgen") is not None and pm.get("docgen").get("status") != "loaded" or pm.get("docgen") is None:
+            pm.load("docgen")
+        result = await execute_tool("generate_pptx", {
+            "slides": arguments.get("slides", []),
+            "title": arguments.get("title", "未命名"),
+            "filename": arguments.get("filename", ""),
         })
         return result[:2000]
     return f"未知工具: {name}"

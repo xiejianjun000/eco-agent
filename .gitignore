@@ -55,3 +55,4 @@ web/node_modules/
 
 # Playwright CLI 快照（测试产物）
 .playwright-cli/
+output/
