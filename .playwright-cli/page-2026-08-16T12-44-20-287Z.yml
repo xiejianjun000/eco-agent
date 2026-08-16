@@ -1,0 +1,28 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - text: ECO AGENT
+      - generic [ref=e6]: 生态环境执法 AI 智能体
+    - generic [ref=e7] [cursor=pointer]: 会话
+    - generic [ref=e8] [cursor=pointer]: 记忆树
+    - generic [ref=e9] [cursor=pointer]: 技能
+    - generic [ref=e10] [cursor=pointer]: 系统
+    - generic [ref=e11]: v1.0.0
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - heading "会话" [level=1] [ref=e14]
+      - generic [ref=e15]: 与 ECO AGENT 对话
+    - generic [ref=e18]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: ECO AGENT
+          - generic [ref=e23]: 20:44
+        - paragraph [ref=e25]: 你好，我是 ECO AGENT。生态环境执法领域的 AI 同事——可以问我法规、案卷、裁量、督察相关的问题。
+        - generic [ref=e26]:
+          - button "⧉ 复制" [ref=e27] [cursor=pointer]
+          - button "👍" [ref=e28] [cursor=pointer]
+          - button "👎" [ref=e29] [cursor=pointer]
+          - button "⑂ 分支" [ref=e30] [cursor=pointer]
+      - generic [ref=e31]:
+        - textbox "输入问题，Enter 发送，Shift+Enter 换行" [ref=e32]
+        - button "发送" [disabled] [ref=e33]

@@ -136,6 +136,40 @@ body {
   padding: 8px; border-radius: 0 0 8px 8px; overflow-x: auto;
   max-height: 200px; line-height: 1.5; white-space: pre-wrap; word-break: break-all;
 }
+
+/* ── 执行轨迹折叠块（DSH 式） ── */
+.trace-block {
+  margin: 2px 0 4px; border: 1px solid var(--line); border-radius: 8px;
+  background: #fbf9f5; font-size: 11px;
+}
+.trace-summary {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 4px 10px; color: var(--t-sub); list-style: none; user-select: none;
+}
+.trace-summary::-webkit-details-marker { display: none; }
+.trace-icon { color: var(--terra); }
+.trace-hint { color: var(--t-aux); font-size: 10px; }
+.trace-list { padding: 0 10px 8px; }
+.trace-row {
+  display: flex; gap: 8px; padding: 3px 0; align-items: flex-start;
+  border-top: 1px dashed var(--fill);
+}
+.trace-row:first-child { border-top: none; }
+.trace-step {
+  flex-shrink: 0; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--fill); color: var(--t-sub); text-align: center;
+  line-height: 16px; font-size: 10px; font-variant-numeric: tabular-nums;
+}
+.trace-body { flex: 1; color: var(--t-main); line-height: 1.5; word-break: break-all; }
+.trace-cost { color: var(--t-aux); margin-left: 6px; font-variant-numeric: tabular-nums; }
+.trace-result {
+  display: block; color: var(--t-sub); background: #f5f1ea; border-radius: 5px;
+  padding: 3px 8px; margin-top: 2px; font-size: 10px; word-break: break-all;
+}
+.trace-tool .trace-step { background: #e9eef2; color: var(--blue); }
+.trace-think .trace-step { background: #f5e8dc; color: var(--terra-dark); }
+.trace-answer .trace-step { background: #eef0e6; color: var(--olive); }
+.trace-correction .trace-step { background: #f6e6e2; color: var(--red); }
 .chat-input-row { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
 .chat-input-row textarea {
   flex: 1; resize: none; min-height: 44px; max-height: 160px; padding: 10px 14px;

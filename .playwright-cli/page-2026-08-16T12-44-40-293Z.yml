@@ -1,0 +1,74 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - text: ECO AGENT
+      - generic [ref=e6]: 生态环境执法 AI 智能体
+    - generic [ref=e7] [cursor=pointer]: 会话
+    - generic [ref=e8] [cursor=pointer]: 记忆树
+    - generic [ref=e9] [cursor=pointer]: 技能
+    - generic [ref=e10] [cursor=pointer]: 系统
+    - generic [ref=e11]: v1.0.0
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - heading "会话" [level=1] [ref=e14]
+      - generic [ref=e15]: 与 ECO AGENT 对话
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]: ECO AGENT
+            - generic [ref=e23]: 20:44
+          - paragraph [ref=e25]: 你好，我是 ECO AGENT。生态环境执法领域的 AI 同事——可以问我法规、案卷、裁量、督察相关的问题。
+          - generic [ref=e34]:
+            - button "⧉ 复制" [ref=e35] [cursor=pointer]
+            - button "👍" [ref=e36] [cursor=pointer]
+            - button "👎" [ref=e37] [cursor=pointer]
+            - button "⑂ 分支" [ref=e38] [cursor=pointer]
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - generic [ref=e41]: 你
+            - generic [ref=e42]: 20:44
+          - generic [ref=e43]: 生态环境法典第897条是什么？
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: ECO AGENT
+            - generic [ref=e47]: 20:44
+            - generic [ref=e48]: 首token 4.4s
+            - generic [ref=e49]: 用时 5.6s
+          - generic [ref=e50]:
+            - paragraph [ref=e51]:
+              - strong [ref=e52]: 《生态环境法典》第八百九十七条
+            - blockquote [ref=e53]: 县级以上人民政府水行政主管部门应当加强对地表扰动、土石方开挖等人为活动的管理，严格管控因人为活动造成的水土流失。
+            - paragraph [ref=e54]:
+              - strong [ref=e55]: 要点提示
+              - text: （中置信度）：
+            - table [ref=e56]:
+              - rowgroup [ref=e57]:
+                - row "要素 说明" [ref=e58]:
+                  - columnheader "要素" [ref=e59]
+                  - columnheader "说明" [ref=e60]
+              - rowgroup [ref=e61]:
+                - row "所在编 第三编 生态保护" [ref=e62]:
+                  - cell "所在编" [ref=e63]
+                  - cell "第三编 生态保护" [ref=e64]
+                - row "责任主体 县级以上人民政府水行政主管部门" [ref=e65]:
+                  - cell "责任主体" [ref=e66]
+                  - cell "县级以上人民政府水行政主管部门" [ref=e67]
+                - row "管控对象 地表扰动、土石方开挖等人为活动" [ref=e68]:
+                  - cell "管控对象" [ref=e69]
+                  - cell "地表扰动、土石方开挖等人为活动" [ref=e70]
+                - row "立法目的 严格管控因人为活动造成的水土流失" [ref=e71]:
+                  - cell "立法目的" [ref=e72]
+                  - cell "严格管控因人为活动造成的水土流失" [ref=e73]
+            - paragraph [ref=e74]:
+              - text: 本条属
+              - strong [ref=e75]: 水土流失防治
+              - text: 监管职责条款，明确了水行政主管部门对人为活动引发水土流失的行政管理职责。如需进一步了解与之配套的行政处罚条款（如生产建设项目未落实水土保持措施的责任条款）或裁量基准，可继续提问。
+          - generic [ref=e76]:
+            - button "⧉ 复制" [ref=e77] [cursor=pointer]
+            - button "👍" [ref=e78] [cursor=pointer]
+            - button "👎" [ref=e79] [cursor=pointer]
+            - button "⑂ 分支" [ref=e80] [cursor=pointer]
+      - generic [ref=e31]:
+        - textbox "输入问题，Enter 发送，Shift+Enter 换行" [ref=e32]
+        - button "发送" [disabled] [ref=e33]

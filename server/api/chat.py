@@ -34,6 +34,7 @@ class ChatResponse(BaseModel):
     usage: dict = Field(default_factory=dict)
     duration_ms: int = Field(default=0, description="总耗时（毫秒）")
     ttft_ms: int = Field(default=0, description="首 token 耗时（毫秒）")
+    trace: list[dict] = Field(default_factory=list, description="执行轨迹（思考/工具调用/耗时）")
 
 
 def _load_codex_skill_rules() -> str:
@@ -183,20 +184,31 @@ async def chat(req: ChatRequest) -> ChatResponse:
     messages = _build_messages(req.message, req.history)
     t0 = time.monotonic()
     try:
-        reply = await _chat_with_codex_loop(client, messages, req.model)
+        reply, trace = await _chat_with_codex_loop(client, messages, req.model)
     except Exception as e:  # noqa: BLE001 — API 边界兜底
         logger.exception("chat failed")
         return ChatResponse(reply=f"[eco-server] 对话失败: {e}", model=req.model or "default", usage={})
     duration_ms = int((time.monotonic() - t0) * 1000)
     usage = client.get_stats() if hasattr(client, "get_stats") else {}
+    # 轨迹审计入链（govmcp SM3，五要素）
+    try:
+        from agent_core.trace_audit import get_trace_audit
+
+        get_trace_audit().record_trace(req.message, reply, len(trace), duration_ms,
+                                       model=req.model or client._provider["default_model"])
+    except Exception as e:  # noqa: BLE001 — 审计失败不阻断业务
+        logger.warning("trace audit failed: %s", e)
     # 非流式：首 token 约等于总耗时（无中间增量）
     return ChatResponse(reply=reply, model=req.model or "default", usage=usage,
-                        duration_ms=duration_ms, ttft_ms=duration_ms)
+                        duration_ms=duration_ms, ttft_ms=duration_ms, trace=trace)
 
 
 async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
-                                max_rounds: int = 3) -> str:
+                                max_rounds: int = 3) -> tuple[str, list[dict]]:
     """法典工具循环：LLM 决定查条 → 执行检索 → 结果回填 → 综合回答。
+
+    返回 (reply, trace)：trace 为 DSH 式执行轨迹（思考轮/工具调用/耗时），
+    供 Web UI 折叠展示与 trace_audit 审计入链。
 
     兜底：模型输出"正在调用工具"之类空话但未真正调用时，追加纠偏消息
     强制其实际调用工具（空话绝不作为最终回复返回）。
@@ -204,24 +216,37 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
     import asyncio
     import json
     import re
+    import time
 
+    from agent_core.trace_audit import get_trace_audit
+
+    audit = get_trace_audit()
     tools = _codex_tools()
+    trace: list[dict] = []
     empty_talk_re = re.compile(
         r"正在(调用|查询|检索|获取|调取)|请稍候|稍等|马上(为您)?(查询|检索)|我先(查|检索)"
         r"|待工具返回|待.*填入|（此处待|占位）|<invoke|invoke name|kb_get_document|让我直接"
     )
+    round_idx = 0
     for _ in range(max_rounds):
+        round_idx += 1
         loop = asyncio.get_event_loop()
+        t_llm = time.monotonic()
         msg, err = await loop.run_in_executor(
             None, lambda: client._call_chat_with_tools(model or client._provider["default_model"],
                                                        messages, tools))
+        llm_ms = int((time.monotonic() - t_llm) * 1000)
         if err or msg is None:
-            return f"[eco-server] LLM 调用失败: {err}"
+            return f"[eco-server] LLM 调用失败: {err}", trace
+        audit.record_llm_call(model or client._provider["default_model"],
+                              round_idx, llm_ms)
         tool_calls = msg.get("tool_calls")
         if not tool_calls:
             content = str(msg.get("content") or "")
             # 空话检测：提及调用工具但未真调用 → 纠偏重试
             if empty_talk_re.search(content):
+                trace.append({"type": "correction", "round": round_idx,
+                              "note": "空话纠偏", "cost_ms": llm_ms})
                 messages.append({"role": "assistant", "content": content})
                 messages.append({
                     "role": "user",
@@ -230,7 +255,11 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
                                "基于工具返回的真实结果回答，不要再输出预告。",
                 })
                 continue
-            return content
+            trace.append({"type": "answer", "round": round_idx, "cost_ms": llm_ms,
+                          "chars": len(content)})
+            return content, trace
+        trace.append({"type": "think", "round": round_idx, "cost_ms": llm_ms,
+                      "tools": [tc["function"]["name"] for tc in tool_calls]})
         messages.append({"role": "assistant", "content": msg.get("content") or None,
                          "tool_calls": tool_calls})
         # 并行执行同轮全部工具调用（4 个串行是 12s+ 延迟的主因）
@@ -241,15 +270,24 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
                 args = json.loads(raw_args) if isinstance(raw_args, str) else (raw_args or {})
             except json.JSONDecodeError:
                 args = {}
+            t_tool = time.monotonic()
             try:
                 result = await _run_tool(name, args)
             except Exception as e:  # noqa: BLE001 — 单工具失败不拖垮整轮
                 logger.warning("tool %s failed: %s", name, e)
                 result = f"工具执行失败: {e}"
-            return tc.get("id", ""), result
+            tool_ms = int((time.monotonic() - t_tool) * 1000)
+            return tc.get("id", ""), name, args, result, tool_ms
 
         results = await asyncio.gather(*[_exec_one(tc) for tc in tool_calls])
-        for tool_call_id, result in results:
+        for tool_call_id, name, args, result, tool_ms in results:
+            # 轨迹事件（UI 展示）
+            trace.append({"type": "tool", "round": round_idx, "name": name,
+                          "args": args, "result_preview": str(result)[:200],
+                          "cost_ms": tool_ms})
+            # govmcp SM3 审计入链（五要素，等保）
+            audit.record_tool_call(name, args, result, tool_ms,
+                                   level=_tool_level(name), decision="allow")
             messages.append({"role": "tool", "tool_call_id": tool_call_id,
                              "content": result})
     # 循环耗尽：追加总结指令，强制基于已检索结果直接回答
@@ -263,10 +301,11 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
         None, lambda: client._call_chat_with_tools(model or client._provider["default_model"],
                                                    messages, []))
     if err or msg is None:
-        return f"[eco-server] LLM 调用失败: {err}"
+        return f"[eco-server] LLM 调用失败: {err}", trace
     content = str(msg.get("content") or "")
     # 幻觉兜底：仍输出工具调用格式（含全角变体）→ 最强约束重试一次
     if "tool_calls" in content or "invoke" in content:
+        trace.append({"type": "correction", "round": round_idx, "note": "幻觉格式纠偏"})
         messages.append({"role": "user",
                          "content": "禁止输出 tool_calls、invoke 等任何工具调用格式（含全角符号），"
                                     "现在只输出给用户的最终文字回答。"})
@@ -278,7 +317,17 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
     # 末层兜底：贪婪剥离未闭合的工具调用残留（半角/全角通吃）
     content = re.sub(r"[<＜]tool_calls>[\s\S]*$", "", content).strip()
     content = re.sub(r"[<＜]invoke[\s\S]*$", "", content).strip()
-    return content or "[eco-server] 模型未给出有效回答"
+    trace.append({"type": "answer", "round": round_idx, "chars": len(content)})
+    return (content or "[eco-server] 模型未给出有效回答"), trace
+
+
+def _tool_level(name: str) -> str:
+    """工具风险级（审计台账用）。"""
+    if name.startswith("statute_") or name in ("kb_search", "kb_semantic_search"):
+        return "L1"
+    if name in ("kb_upload", "kb_delete", "kb_sync"):
+        return "L3"
+    return "L2"
 
 
 @router.post("/chat/stream")
@@ -299,7 +348,7 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
     async def gen():
         # 工具循环（与 /chat 相同逻辑：法典查询 + 空话兜底）
         try:
-            reply = await _chat_with_codex_loop(client, messages, req.model)
+            reply, trace = await _chat_with_codex_loop(client, messages, req.model)
         except Exception as e:  # noqa: BLE001
             logger.exception("chat_stream failed")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
@@ -307,6 +356,8 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
             return
 
         prep_ms = int((time.monotonic() - t0) * 1000)
+        # 轨迹事件（前端折叠展示）
+        yield f"data: {json.dumps({'trace': trace}, ensure_ascii=False)}\n\n"
         # 小片输出：6 字符/片 + 微小间隔，保留流式节奏
         step = 6
         for i in range(0, len(reply), step):

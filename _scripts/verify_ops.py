@@ -74,6 +74,17 @@ def check_conflicts() -> dict:
         return {"error": str(e)}
 
 
+def check_trace_audit() -> dict:
+    """执行轨迹审计链（govmcp SM3）完整性——等保三级台账项。"""
+    try:
+        from agent_core.trace_audit import get_trace_audit
+
+        audit = get_trace_audit()
+        return audit.stats()
+    except Exception as e:  # noqa: BLE001
+        return {"error": str(e)}
+
+
 def check_skills() -> dict:
     try:
         from agent_core.skill_system import SkillRegistry
@@ -88,6 +99,7 @@ def run_checks() -> dict:
     return {
         "checked_at": datetime.now().isoformat(),
         "session_logs": check_session_logs(),
+        "trace_audit": check_trace_audit(),
         "evolution_report": check_evolution_report(),
         "memory_tree": check_memory_tree(),
         "memory_conflicts": check_conflicts(),
@@ -111,6 +123,12 @@ def main() -> int:
     sl = report["session_logs"]
     print(f"\n[会话日志] {sl['sessions']} 个会话 / {sl['events_total']} 事件 / "
           f"校验{'通过' if sl['all_verified'] else '异常'} / 截断 {sl['truncated_total']}")
+    ta = report["trace_audit"]
+    if "error" in ta:
+        print(f"[轨迹审计] 异常: {ta['error']}")
+    else:
+        print(f"[轨迹审计] {ta['entries']} 条 / SM3 链{'✅ 完整' if ta['ok'] else '❌ 断裂'} / "
+              f"尾哈希 {ta.get('last_hash', '')}")
     er = report["evolution_report"]
     print(f"[进化报告] {'存在' if er['exists'] else '缺失'} / {er['chars']} 字 / "
           f"{'✅ 达标' if er['pass'] else '⚠️ ' + er['note']}")

@@ -26,6 +26,19 @@ export interface ChatResp {
   usage: Record<string, number>;
   duration_ms?: number;
   ttft_ms?: number;
+  trace?: TraceEvent[];
+}
+
+export interface TraceEvent {
+  type: 'think' | 'tool' | 'answer' | 'correction';
+  round?: number;
+  name?: string;
+  args?: Record<string, unknown>;
+  result_preview?: string;
+  cost_ms?: number;
+  chars?: number;
+  tools?: string[];
+  note?: string;
 }
 
 export interface Skill {
@@ -72,12 +85,13 @@ export const api = {
 };
 
 /** POST /api/v1/chat/stream 的 SSE 流式读取，逐块回调。
- * onDelta(text, meta) — meta 首块携带 {ttft_ms}；结束事件 onDone({duration_ms})。 */
+ * onDelta(text, meta) — meta 首块携带 {ttft_ms}；trace 事件携带 {trace}；
+ * 结束事件 onDone({duration_ms})。 */
 export async function streamChat(
   message: string,
   history: { role: string; content: string }[],
   onDelta: (text: string, meta?: { ttft_ms?: number }) => void,
-  onDone?: (meta: { duration_ms?: number }) => void,
+  onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[] }) => void,
 ): Promise<void> {
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
@@ -88,6 +102,7 @@ export async function streamChat(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let traceAcc: TraceEvent[] | undefined;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -104,12 +119,18 @@ export async function streamChat(
           delta?: string;
           error?: string;
           done?: boolean;
+          trace?: TraceEvent[];
           ttft_ms?: number;
           duration_ms?: number;
         };
         if (obj.error) throw new Error(obj.error);
         if (obj.done) {
-          onDone?.({ duration_ms: obj.duration_ms });
+          onDone?.({ duration_ms: obj.duration_ms, trace: obj.trace ?? traceAcc });
+          continue;
+        }
+        if (obj.trace) {
+          // 轨迹事件先行（缓存，done 时统一回传）
+          traceAcc = obj.trace;
           continue;
         }
         if (obj.delta) onDelta(obj.delta, obj.ttft_ms !== undefined ? { ttft_ms: obj.ttft_ms } : undefined);

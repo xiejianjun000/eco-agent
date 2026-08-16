@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { streamChat } from '../api';
+import { streamChat, type TraceEvent } from '../api';
 import { renderMarkdown, escapeHtml } from '../utils/markdown';
 
 interface Msg {
@@ -10,6 +10,7 @@ interface Msg {
   ttftMs?: number;      // 首 token 耗时
   rating?: 'up' | 'down' | null;
   branchId?: string;    // 该消息所属分支（分支新对话后标记）
+  trace?: TraceEvent[]; // 执行轨迹（DSH 式折叠展示）
 }
 
 /** 从 Markdown 回复里提取代码块作为产物（artifact） */
@@ -83,7 +84,12 @@ export default function ChatView(): React.ReactElement {
         setMessages((prev) => {
           const next = [...prev];
           const last = next[next.length - 1];
-          next[next.length - 1] = { ...last, durationMs: meta.duration_ms, time: fmtClock() };
+          next[next.length - 1] = {
+            ...last,
+            durationMs: meta.duration_ms,
+            trace: meta.trace ?? last.trace,
+            time: fmtClock(),
+          };
           return next;
         });
       });
@@ -174,6 +180,43 @@ export default function ChatView(): React.ReactElement {
                   <span className="msg-stat">用时 {fmtMs(m.durationMs)}</span>
                 )}
               </div>
+              {m.role === 'assistant' && m.trace && m.trace.length > 0 && (
+                <details className="trace-block">
+                  <summary className="trace-summary">
+                    <span className="trace-icon">⚙</span>
+                    执行轨迹 · {m.trace.length} 步
+                    <span className="trace-hint">（点击展开）</span>
+                  </summary>
+                  <div className="trace-list">
+                    {m.trace.map((t, ti) => (
+                      <div key={ti} className={`trace-row trace-${t.type}`}>
+                        <span className="trace-step">{ti + 1}</span>
+                        {t.type === 'think' && (
+                          <span className="trace-body">
+                            💭 思考{(t.tools?.length ?? 0) > 0 ? ` → 决定调用 ${(t.tools ?? []).join(', ')}` : ''}
+                            <span className="trace-cost">{t.cost_ms}ms</span>
+                          </span>
+                        )}
+                        {t.type === 'tool' && (
+                          <span className="trace-body">
+                            🔧 {t.name}({JSON.stringify(t.args ?? {}).slice(0, 80)})
+                            <span className="trace-cost">{t.cost_ms}ms</span>
+                            {t.result_preview && (
+                              <span className="trace-result">{t.result_preview.slice(0, 120)}</span>
+                            )}
+                          </span>
+                        )}
+                        {t.type === 'answer' && (
+                          <span className="trace-body">✍ 综合回答 <span className="trace-cost">{t.cost_ms ?? ''}ms · {t.chars}字</span></span>
+                        )}
+                        {t.type === 'correction' && (
+                          <span className="trace-body">↺ 纠偏：{t.note}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
               <div
                 className="bubble"
                 dangerouslySetInnerHTML={{
