@@ -39,6 +39,13 @@ CITY_CODES = {
     "北京": "101010100", "广州": "101280101",
 }
 
+# 城市 → 经纬度（Open-Meteo 历史天气用）
+CITY_COORDS = {
+    "长沙": (28.20, 112.98), "娄底": (27.70, 111.99), "冷水江": (27.69, 111.44),
+    "双峰": (27.46, 112.19), "涟源": (27.69, 111.67), "新化": (27.73, 111.33),
+    "北京": (39.90, 116.41), "广州": (23.13, 113.26),
+}
+
 _BASE = "http://d1.weather.com.cn"
 _HEADERS = {
     "Referer": "http://www.weather.com.cn/",
@@ -63,6 +70,20 @@ TOOLS = [
             "type": "object",
             "properties": {"city": {"type": "string", "description": "城市名或 101 城市码"}},
             "required": ["city"],
+        },
+    },
+    {
+        "name": "weather_history",
+        "description": "查询城市历史天气（Open-Meteo 存档）：逐日最高/最低气温、降水量、最大风速。"
+                       "执法用途：案发当日气象条件佐证、重污染天气应急复盘。",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "city": {"type": "string", "description": "城市名（如 冷水江）"},
+                "start_date": {"type": "string", "description": "开始日期 YYYY-MM-DD"},
+                "end_date": {"type": "string", "description": "结束日期 YYYY-MM-DD（含）"},
+            },
+            "required": ["city", "start_date", "end_date"],
         },
     },
     {
@@ -166,6 +187,50 @@ def _city_list() -> dict:
     return result
 
 
+def _weather_history(city: str, start_date: str, end_date: str) -> dict:
+    """历史天气（Open-Meteo archive，免费无 key）。"""
+    t0 = time.monotonic()
+    coords = CITY_COORDS.get(city.strip())
+    if not coords:
+        result = {"error": f"未知城市: {city}（内置城市见 weather_city_list）"}
+        _audit("weather_history", {"city": city, "start_date": start_date, "end_date": end_date},
+               result, int((time.monotonic() - t0) * 1000))
+        return result
+    try:
+        import urllib.parse
+        import urllib.request
+
+        lat, lon = coords
+        params = urllib.parse.urlencode({
+            "latitude": lat, "longitude": lon,
+            "start_date": start_date, "end_date": end_date,
+            "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max",
+            "timezone": "Asia/Shanghai",
+        })
+        req = urllib.request.Request(
+            f"https://archive-api.open-meteo.com/v1/archive?{params}",
+            headers={"User-Agent": "eco-agent-weather-mcp/1.0"})
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            raw = json.loads(resp.read().decode("utf-8"))
+        daily = raw.get("daily", {})
+        days = []
+        for i, date in enumerate(daily.get("time", [])):
+            days.append({
+                "date": date,
+                "temp_max_c": daily.get("temperature_2m_max", [None] * (i + 1))[i],
+                "temp_min_c": daily.get("temperature_2m_min", [None] * (i + 1))[i],
+                "precipitation_mm": daily.get("precipitation_sum", [None] * (i + 1))[i],
+                "wind_max_kmh": daily.get("wind_speed_10m_max", [None] * (i + 1))[i],
+            })
+        result = {"city": city, "lat": lat, "lon": lon,
+                  "source": "open-meteo-archive", "days": days}
+    except Exception as e:  # noqa: BLE001
+        result = {"error": f"历史天气获取失败: {e}", "city": city}
+    _audit("weather_history", {"city": city, "start_date": start_date, "end_date": end_date},
+           result, int((time.monotonic() - t0) * 1000))
+    return result
+
+
 # ── MCP 协议 ───────────────────────────────────────────────
 
 
@@ -189,6 +254,10 @@ def handle_request(request: dict) -> dict:
             data = _weather_now(str(args.get("city", "")))
         elif name == "weather_forecast":
             data = _weather_forecast(str(args.get("city", "")))
+        elif name == "weather_history":
+            data = _weather_history(str(args.get("city", "")),
+                                    str(args.get("start_date", "")),
+                                    str(args.get("end_date", "")))
         elif name == "weather_city_list":
             data = _city_list()
         else:

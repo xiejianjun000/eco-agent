@@ -34,7 +34,7 @@ def test_initialize():
 def test_tools_list():
     resp = _rpc({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     names = [t["name"] for t in resp["result"]["tools"]]
-    assert names == ["weather_now", "weather_forecast", "weather_city_list"]
+    assert names == ["weather_now", "weather_forecast", "weather_history", "weather_city_list"]
 
 
 def test_city_list():
