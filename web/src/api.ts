@@ -75,9 +75,35 @@ export interface ToolEntry {
   approval_required: boolean;
 }
 
+/** 子代理摘要/详情（对标 DSH subagent） */
+export interface SubagentInfo {
+  id: string;
+  label: string;
+  status: 'pending' | 'running' | 'idle' | 'done' | 'failed' | 'killed';
+  parent_id?: string | null;
+  created_at: number;
+  duration_ms?: number;
+  turns?: number;
+  usage?: ChatUsage;
+  result?: string | null;
+  error?: string | null;
+  output_seq?: number;
+}
+
+export interface SessionOut {
+  session_id: string;
+  platform: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
 export const api = {
   health: () => fetch('/healthz').then((r) => r.json()),
   version: () => get<{ version: string }>('/version'),
+  sessions: () => get<SessionOut[]>('/sessions'),
+  createSession: (userName?: string) => post<SessionOut>('/sessions', { user_name: userName ?? '' }),
   chat: (message: string, history: { role: string; content: string }[]) =>
     post<ChatResp>('/chat', { message, history }),
   chatStream: (message: string, history: { role: string; content: string }[]) =>
@@ -93,6 +119,13 @@ export const api = {
   metrics: () => get<Record<string, unknown>>('/metrics'),
   documents: () => get<{ count: number; files: { name: string; path: string; size_kb: number; modified: number }[] }>('/documents'),
   documentTools: () => get<{ count: number; tools: { name: string; desc: string }[] }>('/documents/tools'),
+  subagentSpawn: (body: { message: string; history?: { role: string; content: string }[]; background?: boolean; label?: string }) =>
+    post<SubagentInfo>('/subagents', body),
+  subagentList: () => get<{ agents: SubagentInfo[]; stats: Record<string, number> }>('/subagents'),
+  subagentGet: (id: string, sinceSeq = 0) =>
+    get<{ agent: SubagentInfo; output: { seq: number; kind: string; status?: string; result?: string; event?: TraceEvent }[]; seq: number }>(`/subagents/${id}?since_seq=${sinceSeq}`),
+  subagentMessage: (id: string, message: string) => post<{ id: string; status: string }>(`/subagents/${id}/message`, { message }),
+  subagentInterrupt: (id: string) => post<{ id: string; interrupted: boolean }>(`/subagents/${id}/interrupt`, {}),
 };
 
 /** POST /api/v1/chat/stream 的 SSE 流式读取，逐块回调（DSH 式实时事件流）。

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { streamChat, type ChatUsage, type TraceEvent } from '../api';
+import { streamChat, api, type ChatUsage, type TraceEvent, type SubagentInfo } from '../api';
 import { renderMarkdown, escapeHtml } from '../utils/markdown';
 
 interface Msg {
@@ -134,9 +134,16 @@ export default function ChatView(): React.ReactElement {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [branchTag, setBranchTag] = useState<string | null>(null);
-  const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc'>('trace');
+  const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc' | 'task'>('trace');
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
   const [docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
+  // 子代理任务面板（对标 DSH subagent/jobs）
+  const [taskAgents, setTaskAgents] = useState<SubagentInfo[]>([]);
+  const [taskInput, setTaskInput] = useState('');
+  const [taskSpawnBusy, setTaskSpawnBusy] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<string | null>(null);
+  const [taskDetail, setTaskDetail] = useState<{ agent: SubagentInfo; output: { seq: number; kind: string; status?: string; result?: string }[] } | null>(null);
+  const [taskFollowup, setTaskFollowup] = useState('');
 
   React.useEffect(() => {
     import('../api').then(({ api }) => {
@@ -145,6 +152,8 @@ export default function ChatView(): React.ReactElement {
     });
   }, [messages]);
   const [selectedTrace, setSelectedTrace] = useState<number | null>(null);
+  const [turnsOpen, setTurnsOpen] = useState(true);
+  const [callsOpen, setCallsOpen] = useState(true);
   const logRef = useRef<HTMLDivElement>(null);
 
   // 最新一条带轨迹的 assistant 消息自动选中
@@ -164,6 +173,62 @@ export default function ChatView(): React.ReactElement {
   const artifacts = messages
     .filter((m) => m.role === 'assistant')
     .flatMap((m) => extractArtifacts(m.content));
+
+  // ── 子代理任务面板逻辑 ─────────────────────────────
+  // 选中任务轮询（running/pending 时每 2.5s 刷新，done 后停止）
+  useEffect(() => {
+    if (!selectedTask) return;
+    let alive = true;
+    const poll = async () => {
+      try {
+        const d = await api.subagentGet(selectedTask);
+        if (!alive) return;
+        setTaskDetail({ agent: d.agent, output: d.output });
+        void api.subagentList().then((l) => { if (alive) setTaskAgents(l.agents); }).catch(() => {});
+        if (d.agent.status === 'running' || d.agent.status === 'pending') {
+          window.setTimeout(() => void poll(), 2500);
+        }
+      } catch { /* 任务已移除 */ }
+    };
+    void poll();
+    return () => { alive = false; };
+  }, [selectedTask]);
+
+  const spawnTask = async () => {
+    const text = taskInput.trim();
+    if (!text || taskSpawnBusy) return;
+    setTaskSpawnBusy(true);
+    setTaskInput('');
+    try {
+      const snap = await api.subagentSpawn({ message: text, background: true, label: text.slice(0, 24) });
+      setSelectedTask(snap.id);
+      setSideTab('task');
+      const list = await api.subagentList();
+      setTaskAgents(list.agents);
+    } catch (e) {
+      setTaskInput(text);
+      window.alert(`任务发起失败: ${(e as Error).message}`);
+    } finally {
+      setTaskSpawnBusy(false);
+    }
+  };
+
+  const followupTask = async (id: string) => {
+    const text = taskFollowup.trim();
+    if (!text) return;
+    setTaskFollowup('');
+    try {
+      await api.subagentMessage(id, text);
+      const d = await api.subagentGet(id);
+      setTaskDetail({ agent: d.agent, output: d.output });
+    } catch (e) {
+      window.alert(`续聊失败: ${(e as Error).message}`);
+    }
+  };
+
+  const refreshTaskList = () => {
+    void api.subagentList().then((l) => setTaskAgents(l.agents)).catch(() => {});
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -343,6 +408,12 @@ export default function ChatView(): React.ReactElement {
           >
             文档{docFiles.length > 0 ? ` (${docFiles.length})` : ''}
           </button>
+          <button
+            className={`side-tab${sideTab === 'task' ? ' active' : ''}`}
+            onClick={() => { setSideTab('task'); refreshTaskList(); }}
+          >
+            任务{taskAgents.length > 0 ? ` (${taskAgents.length})` : ''}
+          </button>
         </div>
 
         {sideTab === 'trace' && (
@@ -354,6 +425,27 @@ export default function ChatView(): React.ReactElement {
               </div>
             ) : (
               <>
+                <div className="trace-toolbar">
+                  <span className="trace-stat">
+                    <b>{fmtMs(activeTraceMsg?.durationMs ?? activeTrace.reduce((s, t) => s + (t.cost_ms ?? 0), 0))}</b>
+                    <span>Duration</span>
+                  </span>
+                  <span className="trace-stat">
+                    <b>{groupTraceByRound(activeTrace).length}</b>
+                    <span>Turns</span>
+                  </span>
+                  <span className="trace-stat">
+                    <b>{activeTrace.filter((t) => t.type === 'tool').length}</b>
+                    <span>Calls</span>
+                  </span>
+                  <span className="trace-spacer" />
+                  <button className="tb-btn" onClick={() => setTurnsOpen((v) => !v)}>
+                    {turnsOpen ? '收起轮次' : '展开轮次'}
+                  </button>
+                  <button className="tb-btn" onClick={() => setCallsOpen((v) => !v)}>
+                    {callsOpen ? '收起调用' : '展开调用'}
+                  </button>
+                </div>
                 <div className="trace-selector">
                   选择消息查看轨迹：
                   {messages.map((m, i) =>
@@ -377,67 +469,88 @@ export default function ChatView(): React.ReactElement {
                         {fmtMs(activeTraceMsg?.durationMs ?? activeTrace.reduce((s, t) => s + (t.cost_ms ?? 0), 0))}
                       </span>
                     </summary>
-                    {groupTraceByRound(activeTrace).map((turn) => (
-                      <details key={turn.round} className="trace-node trace-turn" open>
-                        <summary className="trace-node-summary">
-                          <span className="trace-caret">▼</span>
-                          <span className="trace-label">Turn {turn.round}</span>
-                          <span className="trace-cost">{fmtMs(turn.totalMs)}</span>
-                        </summary>
-                        <div className="trace-node-body">
-                          {turn.events.map((t, ti) => {
-                            if (t.type === 'think') {
-                              return (
-                                <div key={ti} className="trace-event">
-                                  <span className="trace-badge badge-think">思考</span>
-                                  {(t.tools?.length ?? 0) > 0 && (
-                                    <span className="trace-detail">决定调用 {t.tools?.join(', ')}</span>
-                                  )}
-                                  <span className="trace-cost">{t.cost_ms}ms</span>
-                                </div>
-                              );
-                            }
-                            if (t.type === 'answer') {
-                              return (
-                                <div key={ti} className="trace-event">
-                                  <span className="trace-badge badge-answer">综合</span>
-                                  <span className="trace-detail">生成回答（{t.chars}字）</span>
-                                  <span className="trace-cost">{t.cost_ms ?? ''}ms</span>
-                                </div>
-                              );
-                            }
-                            if (t.type === 'correction') {
-                              return (
-                                <div key={ti} className="trace-event">
-                                  <span className="trace-badge badge-correction">纠偏</span>
-                                  <span className="trace-detail">{t.note}</span>
-                                </div>
-                              );
-                            }
-                            return (
-                              <div key={ti} className="trace-call">
-                                <div className="trace-event">
-                                  <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
-                                    {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
-                                  </span>
-                                  <span className="trace-detail">{t.name}({JSON.stringify(t.args ?? {}).slice(0, 70)})</span>
-                                  <span className="trace-cost">{t.cost_ms}ms</span>
-                                </div>
-                                {t.result_preview && (
-                                  <details className="trace-result-wrap">
-                                    <summary className="trace-result">
-                                      {t.result_preview.slice(0, 150)}
-                                      {t.result_preview.length > 150 ? ' …(展开全文)' : ''}
-                                    </summary>
-                                    <pre className="trace-result-full">{escapeHtml(t.result_preview)}</pre>
-                                  </details>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </details>
-                    ))}
+                    <div className="trace-group">
+                      <div className="trace-group-label">Turns · {groupTraceByRound(activeTrace).length}</div>
+                      {groupTraceByRound(activeTrace).map((turn) => {
+                        const callEvts = turn.events.filter((t) => t.type === 'tool');
+                        const thinkEvts = turn.events.filter((t) => t.type !== 'tool');
+                        return (
+                          <details key={turn.round} className="trace-node trace-turn" open={turnsOpen}>
+                            <summary className="trace-node-summary">
+                              <span className="trace-caret">▼</span>
+                              <span className="trace-label">Turn {turn.round}</span>
+                              <span className="trace-cost">{fmtMs(turn.totalMs)}</span>
+                            </summary>
+                            <div className="trace-node-body">
+                              {thinkEvts.map((t, ti) => {
+                                if (t.type === 'think') {
+                                  return (
+                                    <div key={ti} className="trace-event">
+                                      <span className="trace-badge badge-think">思考</span>
+                                      {(t.tools?.length ?? 0) > 0 && (
+                                        <span className="trace-detail">决定调用 {t.tools?.join(', ')}</span>
+                                      )}
+                                      <span className="trace-cost">{t.cost_ms}ms</span>
+                                    </div>
+                                  );
+                                }
+                                if (t.type === 'answer') {
+                                  return (
+                                    <div key={ti} className="trace-event">
+                                      <span className="trace-badge badge-answer">综合</span>
+                                      <span className="trace-detail">生成回答（{t.chars}字）</span>
+                                      <span className="trace-cost">{t.cost_ms ?? ''}ms</span>
+                                    </div>
+                                  );
+                                }
+                                if (t.type === 'correction') {
+                                  return (
+                                    <div key={ti} className="trace-event">
+                                      <span className="trace-badge badge-correction">纠偏</span>
+                                      <span className="trace-detail">{t.note}</span>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })}
+                              {callEvts.length > 0 && (
+                                <details className="trace-node trace-calls" open={callsOpen}>
+                                  <summary className="trace-node-summary">
+                                    <span className="trace-caret">▼</span>
+                                    <span className="trace-label">Calls · {callEvts.length}</span>
+                                    <span className="trace-cost">
+                                      {fmtMs(callEvts.reduce((s, t) => s + (t.cost_ms ?? 0), 0))}
+                                    </span>
+                                  </summary>
+                                  <div className="trace-node-body">
+                                    {callEvts.map((t, ti) => (
+                                      <div key={ti} className="trace-call">
+                                        <div className="trace-event">
+                                          <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
+                                            {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
+                                          </span>
+                                          <span className="trace-detail">{t.name}({JSON.stringify(t.args ?? {}).slice(0, 70)})</span>
+                                          <span className="trace-cost">{t.cost_ms}ms</span>
+                                        </div>
+                                        {t.result_preview && (
+                                          <details className="trace-result-wrap">
+                                            <summary className="trace-result">
+                                              {t.result_preview.slice(0, 150)}
+                                              {t.result_preview.length > 150 ? ' …(展开全文)' : ''}
+                                            </summary>
+                                            <pre className="trace-result-full">{escapeHtml(t.result_preview)}</pre>
+                                          </details>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </details>
+                              )}
+                            </div>
+                          </details>
+                        );
+                      })}
+                    </div>
                   </details>
                 </div>
               </>
@@ -501,6 +614,76 @@ export default function ChatView(): React.ReactElement {
                   <pre className="artifact-code">{escapeHtml(a.code)}</pre>
                 </details>
               ))
+            )}
+          </div>
+        )}
+
+        {sideTab === 'task' && (
+          <div className="side-tasks">
+            <div className="task-spawn">
+              <textarea
+                value={taskInput}
+                onChange={(e) => setTaskInput(e.target.value)}
+                placeholder="派发后台子代理任务（如：查六个督察局子站最新动态）"
+                rows={2}
+              />
+              <button className="btn" onClick={() => void spawnTask()} disabled={taskSpawnBusy || !taskInput.trim()}>
+                {taskSpawnBusy ? '派发中' : '派发'}
+              </button>
+            </div>
+            <div className="task-list">
+              {taskAgents.length === 0 ? (
+                <div className="empty" style={{ padding: 16 }}>暂无子代理任务——派发一个后台任务，主对话继续提问，完成后自动归档。</div>
+              ) : (
+                taskAgents.map((a) => (
+                  <div
+                    key={a.id}
+                    className={`task-row${selectedTask === a.id ? ' active' : ''}`}
+                    onClick={() => { setSelectedTask(a.id); setTaskDetail(null); }}
+                  >
+                    <span className={`task-status st-${a.status}`}>{a.status}</span>
+                    <span className="task-label">{a.label}</span>
+                    <span className="task-dur">{a.duration_ms ? `${(a.duration_ms / 1000).toFixed(0)}s` : ''}</span>
+                  </div>
+                ))
+              )}
+            </div>
+            {selectedTask && taskDetail && (
+              <div className="task-detail">
+                <div className="task-detail-head">
+                  <span className={`task-status st-${taskDetail.agent.status}`}>{taskDetail.agent.status}</span>
+                  <span className="task-label">{taskDetail.agent.label}</span>
+                  {(taskDetail.agent.status === 'running' || taskDetail.agent.status === 'pending') && (
+                    <button className="tb-btn" onClick={() => { void api.subagentInterrupt(selectedTask); }}>⏹ 中断</button>
+                  )}
+                </div>
+                <div className="task-output">
+                  {taskDetail.output.map((o) => (
+                    <div key={o.seq} className="task-output-line">
+                      {o.kind === 'trace' ? (
+                        <span className="task-output-trace">[工具]</span>
+                      ) : o.kind === 'done' ? (
+                        <div className="task-result" dangerouslySetInnerHTML={{ __html: renderMarkdown(o.result ?? '') }} />
+                      ) : (
+                        <span className="task-output-status">状态: {o.status ?? o.kind}</span>
+                      )}
+                    </div>
+                  ))}
+                  {taskDetail.agent.status === 'failed' && taskDetail.agent.error && (
+                    <div className="task-error">失败: {taskDetail.agent.error}</div>
+                  )}
+                </div>
+                {(taskDetail.agent.status === 'done' || taskDetail.agent.status === 'idle') && (
+                  <div className="task-followup">
+                    <input
+                      value={taskFollowup}
+                      onChange={(e) => setTaskFollowup(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') void followupTask(selectedTask); }}
+                      placeholder="追问这个子代理（续聊）…"
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

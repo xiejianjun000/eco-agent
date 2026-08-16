@@ -1,23 +1,90 @@
-/* ECO AGENT Web GUI 设计系统 — 低饱和暖色（对齐 EcoAegis design.md 基调） */
+/* ECO AGENT Web GUI 设计系统 — 对齐 DSH ui-theme（deepseek-harness design-platform.css 取值） */
 :root {
-  --bg: #f7f4ee;
-  --panel: #ffffff;
-  --nav: #3e3831;
-  --nav-active: #c97c3e;
-  --line: #e4ddd2;
-  --fill: #efe9df;
-  --t-main: #2e2a26;
-  --t-sub: #6e665c;
-  --t-aux: #9a9184;
-  --t-invert: #f5f1ea;
-  --terra: #c97c3e;
-  --terra-dark: #a8642f;
-  --olive: #7c8b5f;
-  --red: #b0574a;
-  --amber: #c9a24b;
-  --blue: #6e8299;
-  --purple: #8a7a9b;
-  --mono: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  /* 静态色板：DSH bluish neutral + deepseek brand */
+  --ds-n-0: #FFFFFF;
+  --ds-n-60: #F5F6F7;
+  --ds-n-75: #F1F3F5;
+  --ds-n-100: #EBEEF2;
+  --ds-n-200: #E1E5EE;
+  --ds-n-300: #CFD3D6;
+  --ds-n-400: #ADB2B8;
+  --ds-n-500: #979DA6;
+  --ds-n-600: #818588;
+  --ds-n-700: #616567;
+  --ds-n-800: #353638;
+  --ds-n-850: #2C2C2E;
+  --ds-n-875: #232324;
+  --ds-n-900: #1B1B1C;
+  --ds-n-950: #151517;
+  --ds-brand: #4176E6;
+  --ds-brand-soft: #EDF3FE;
+  --ds-brand-strong: #4868B2;
+  --ds-brand-450: #5696FE;
+  --ds-green: #22C55E;
+  --ds-green-soft: #E6FAED;
+  --ds-red: #EF4444;
+  --ds-red-soft: #FEE2E2;
+  --ds-amber: #F59E0B;
+  --ds-amber-soft: #FEF5E7;
+  --ds-purple: #8A7A9B;
+
+  /* 别名层（组件变量名不变，值对齐 DSH alias） */
+  --bg: var(--ds-n-0);
+  --panel: var(--ds-n-0);
+  --line: rgba(0, 0, 0, 0.08);
+  --fill: var(--ds-n-60);
+  --t-main: #0F1115;
+  --t-sub: var(--ds-n-600);
+  --t-aux: var(--ds-n-500);
+  --t-invert: var(--ds-n-60);
+  --terra: var(--ds-brand);
+  --terra-dark: var(--ds-brand-strong);
+  --terra-soft: var(--ds-brand-soft);
+  --olive: var(--ds-green);
+  --red: var(--ds-red);
+  --amber: var(--ds-amber);
+  --blue: #3B82F6;
+  --purple: var(--ds-purple);
+
+  /* 侧栏（DSH specific-sidebar-fill 亮色体系） */
+  --nav: #F9FAFB;
+  --nav-text: var(--ds-n-600);
+  --nav-text-dim: var(--ds-n-500);
+  --nav-hover: var(--ds-n-75);
+  --nav-active-bg: var(--ds-n-100);
+  --nav-active-accent: var(--ds-brand);
+  --nav-line: rgba(0, 0, 0, 0.06);
+  --nav-input-bg: var(--ds-n-75);
+  --nav-btn-bg: var(--ds-n-75);
+  --nav-btn-border: rgba(0, 0, 0, 0.08);
+
+  --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei';
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 暗色主题（对齐 DSH body[data-ds-dark-theme] 别名层） */
+html[data-theme='dark'] {
+  --bg: var(--ds-n-950);
+  --panel: var(--ds-n-875);
+  --line: rgba(255, 255, 255, 0.1);
+  --fill: var(--ds-n-800);
+  --t-main: #F9FAFB;
+  --t-sub: var(--ds-n-400);
+  --t-aux: var(--ds-n-700);
+  --t-invert: var(--ds-n-800);
+  --terra: var(--ds-brand-450);
+  --terra-dark: var(--ds-brand);
+  --terra-soft: rgba(86, 150, 254, 0.16);
+  --nav: var(--ds-n-900);
+  --nav-text: var(--ds-n-400);
+  --nav-text-dim: var(--ds-n-700);
+  --nav-hover: rgba(255, 255, 255, 0.06);
+  --nav-active-bg: rgba(255, 255, 255, 0.08);
+  --nav-active-accent: var(--ds-brand-450);
+  --nav-line: rgba(255, 255, 255, 0.08);
+  --nav-input-bg: rgba(255, 255, 255, 0.06);
+  --nav-btn-bg: rgba(255, 255, 255, 0.07);
+  --nav-btn-border: rgba(255, 255, 255, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -36,6 +103,11 @@ body {
   display: flex; flex-direction: column; flex-shrink: 0;
 }
 .nav .brand { padding: 18px 16px 10px; font-size: 15px; font-weight: 600; }
+.brand-logo {
+  width: 132px; height: auto; display: block; margin-bottom: 4px;
+  filter: brightness(1.5) drop-shadow(0 1px 2px rgba(0,0,0,.35));
+}
+.nav.collapsed .brand-logo { width: 34px; margin: 0 auto; }
 .nav .brand .sub { display: block; font-size: 11px; color: #b8ada1; font-weight: 400; margin-top: 2px; }
 .nav .item {
   padding: 10px 18px; cursor: pointer; color: #d8cfc4; font-size: 13px;
@@ -43,7 +115,45 @@ body {
 }
 .nav .item:hover { background: rgba(255,255,255,.05); color: #fff; }
 .nav .item.active { color: #fff; border-left-color: var(--nav-active); background: rgba(201,124,62,.18); }
-.nav .foot { margin-top: auto; padding: 14px 16px; font-size: 11px; color: #9b9083; }
+.nav .foot { margin-top: auto; padding: 14px 16px; font-size: 11px; color: #9b9083; display: flex; justify-content: space-between; align-items: center; }
+.foot-btn { cursor: pointer; color: #b8ada1; }
+.foot-btn:hover { color: #fff; }
+
+/* ── 侧栏：新建会话 / 工作区 / 会话树（对齐 DSH 侧栏结构） ── */
+.nav-top-actions { display: flex; gap: 6px; padding: 8px 12px; }
+.new-session-btn {
+  flex: 1; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.07);
+  color: #e8e0d6; border-radius: 8px; padding: 7px 10px; font-size: 12px; cursor: pointer;
+}
+.new-session-btn:hover { background: rgba(255,255,255,.13); color: #fff; }
+.collapse-btn {
+  border: 1px solid rgba(255,255,255,.12); background: transparent; color: #b8ada1;
+  border-radius: 8px; padding: 0 9px; cursor: pointer; font-size: 12px;
+}
+.collapse-btn:hover { color: #fff; }
+.nav.collapsed { width: 56px; }
+.nav.collapsed .brand { padding: 18px 8px 10px; text-align: center; font-size: 12px; }
+.nav-section { padding: 6px 12px 4px; }
+.nav-section-title {
+  font-size: 10px; letter-spacing: 1px; color: #9b9083;
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.nav-search input {
+  width: 100%; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.18);
+  color: #e8e0d6; border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none;
+}
+.nav-search input::placeholder { color: #7d7468; }
+.nav-search input:focus { border-color: var(--nav-active); }
+.session-list { margin-top: 6px; max-height: 220px; overflow-y: auto; }
+.session-row {
+  padding: 7px 10px; border-radius: 8px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.session-row:hover { background: rgba(255,255,255,.06); }
+.session-name { color: #d8cfc4; font-size: 12px; }
+.session-meta { color: #9b9083; font-size: 10px; }
+.nav-empty { color: #7d7468; font-size: 11px; padding: 6px 10px; }
+.nav-pages { margin-top: 8px; border-top: 1px solid rgba(255,255,255,.08); padding-top: 6px; }
 
 /* ── 主区 ── */
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -155,6 +265,24 @@ body {
 .doc-tool-desc { color: var(--t-sub); font-size: 10px; flex: 1; }
 
 /* ── DSH 式轨迹树（Duration / Turns / Calls） ── */
+.trace-toolbar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 6px 2px; border-bottom: 1px solid var(--line); margin-bottom: 6px;
+}
+.trace-stat {
+  display: inline-flex; flex-direction: column; align-items: flex-start;
+  padding: 3px 10px; border-radius: 8px; background: var(--fill);
+  border: 1px solid var(--line); min-width: 52px;
+}
+.trace-stat b { font-size: 13px; color: var(--terra-dark); font-variant-numeric: tabular-nums; }
+.trace-stat span { font-size: 9px; color: var(--t-aux); letter-spacing: 0.4px; }
+.trace-spacer { flex: 1; }
+.trace-group { margin-left: 4px; }
+.trace-group-label {
+  font-size: 10px; color: var(--t-aux); padding: 2px 6px; letter-spacing: 0.3px;
+}
+.trace-calls { margin-left: 6px; border-left: 2px solid var(--fill); padding-left: 4px; }
+.trace-calls > .trace-node-summary { color: var(--t-sub); }
 .trace-tree { font-size: 11px; }
 .trace-node { margin-bottom: 2px; }
 .trace-node-summary {
@@ -366,3 +494,40 @@ body {
 .bubble em { font-style: italic; color: var(--t-sub); }
 .bubble p:first-child { margin-top: 0; }
 .bubble p:last-child { margin-bottom: 0; }
+
+/* 子代理任务面板 */
+.side-tasks { display: flex; flex-direction: column; gap: 10px; }
+.task-spawn { display: flex; gap: 6px; align-items: flex-end; }
+.task-spawn textarea {
+  flex: 1; resize: none; min-height: 40px; padding: 8px 10px; font: inherit;
+  border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 12px;
+}
+.task-list { display: flex; flex-direction: column; gap: 4px; max-height: 40vh; overflow-y: auto; }
+.task-row {
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: #fff;
+}
+.task-row:hover { background: #f6f2ea; }
+.task-row.active { border-color: var(--terra); background: #fbf4ec; }
+.task-status {
+  flex-shrink: 0; padding: 0 6px; border-radius: 5px; font-size: 10px; font-weight: 600;
+}
+.st-running, .st-pending { background: #e9eef2; color: var(--blue); }
+.st-done { background: #eef0e6; color: var(--olive); }
+.st-idle { background: #f5e8dc; color: var(--terra-dark); }
+.st-failed { background: #f6e6e2; color: var(--red); }
+.st-killed { background: #eee; color: var(--t-aux); }
+.task-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.task-dur { color: var(--t-aux); font-size: 11px; font-variant-numeric: tabular-nums; }
+.task-detail { border: 1px solid var(--line); border-radius: 10px; background: #fbfaf7; overflow: hidden; }
+.task-detail-head { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.task-output { max-height: 46vh; overflow-y: auto; padding: 8px 10px; }
+.task-output-line { margin-bottom: 6px; }
+.task-output-trace { color: var(--t-aux); font-size: 11px; }
+.task-output-status { color: var(--t-sub); font-size: 11px; }
+.task-result { font-size: 12px; line-height: 1.6; }
+.task-error { color: var(--red); font-size: 11px; padding: 6px 10px; }
+.task-followup { padding: 6px 10px; border-top: 1px solid var(--line); }
+.task-followup input {
+  width: 100%; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 12px;
+}
