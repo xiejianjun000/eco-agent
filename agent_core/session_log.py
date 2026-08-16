@@ -44,7 +44,8 @@ class SessionEventLog:
     # ── 追加 ─────────────────────────────────────────────
 
     def append(self, event_type: str, data: dict[str, Any]) -> int:
-        """追加一条事件，返回 seq。event_type 见 SESSION_EVENT_TYPES。"""
+        """追加一条事件，返回 seq。event_type 见 SESSION_EVENT_TYPES。
+        支持嵌套 session_id（如 'subagent/xxx'）：自动创建父目录。"""
         with self._lock:
             seq = self._next_seq()
             event = {
@@ -57,6 +58,7 @@ class SessionEventLog:
             payload = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
             event["hash"] = hashlib.sha256(payload.encode("utf-8")).hexdigest()
             line = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
+            self.path.parent.mkdir(parents=True, exist_ok=True)
             with self.path.open("a", encoding="utf-8") as f:
                 f.write(line + "\n")
                 f.flush()

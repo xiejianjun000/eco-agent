@@ -50,7 +50,7 @@ def create_app() -> FastAPI:
         version=get_version(),
     )
 
-    from server.api import chat, documents, memory, plugins, sessions, skills, system, tools
+    from server.api import chat, documents, memory, plugins, sessions, skills, subagents, system, tools
 
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
     app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
@@ -59,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(skills.router, prefix="/api/v1", tags=["skills"])
     app.include_router(tools.router, prefix="/api/v1", tags=["tools"])
     app.include_router(plugins.router, prefix="/api/v1", tags=["plugins"])
+    app.include_router(subagents.router, prefix="/api/v1/subagents", tags=["subagents"])
     app.include_router(system.router, prefix="/api/v1", tags=["system"])
 
     @app.get("/healthz", tags=["system"])
