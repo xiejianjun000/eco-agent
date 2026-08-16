@@ -128,3 +128,14 @@ def test_metrics(client):
     r = client.get("/api/v1/metrics")
     assert r.status_code == 200
     assert "llm" in r.json()
+
+
+def test_execute_code_gated_in_chat(monkeypatch):
+    """execute_code 挂入对话循环后：L3 非白名单执行被闸门拦截并返回拒绝原因。"""
+    import asyncio
+
+    from agent_core.tools_registry import execute_tool
+
+    monkeypatch.setenv("ECO_PERMISSION_GATE", "1")
+    result = asyncio.run(execute_tool("execute_code", {"code": "print(1+1)", "language": "python"}))
+    assert "permission denied" in result

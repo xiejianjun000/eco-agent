@@ -137,6 +137,23 @@ def _codex_tools() -> list[dict]:
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "execute_code",
+                "description": "在沙箱中执行 Python 代码（Docker/bwrap 隔离 + 超时限制）。"
+                               "用于数据计算、超标倍数计算、日期推算等。"
+                               "受 L3 权限闸门保护：非白名单执行会被拒绝并返回拒绝原因。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "code": {"type": "string", "description": "Python 代码"},
+                        "language": {"type": "string", "description": "语言（默认 python）"},
+                    },
+                    "required": ["code"],
+                },
+            },
+        },
     ]
 
 
@@ -160,6 +177,15 @@ async def _run_tool(name: str, arguments: dict) -> str:
         arg_map = {"kb_search": "query", "kb_semantic_search": "query"}
         result = await execute_tool(full, {arg_map.get(name, "query"): arguments.get("query", "")})
         # 截断长结果（知识库返回目录级列表，过长会稀释模型注意力）
+        return result[:2000]
+    if name == "execute_code":
+        # 沙箱代码执行——经 L1-L4 权限闸门（L3：非白名单拒绝并返回原因）
+        from agent_core.tools_registry import execute_tool
+
+        result = await execute_tool("execute_code", {
+            "code": arguments.get("code", ""),
+            "language": arguments.get("language", "python"),
+        })
         return result[:2000]
     return f"未知工具: {name}"
 
