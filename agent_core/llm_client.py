@@ -118,6 +118,10 @@ class LLMClient:
                                or env.get("ECO_PROVIDER") or env.get("ECO_LLM_PROVIDER") or "deepseek")
         prov = PROVIDERS.get(self._provider_name, PROVIDERS["deepseek"])
         self._provider = prov
+        # 模型覆盖：ECO_MODEL 环境变量（如 deepseek-v4-pro）覆盖 provider 默认模型
+        eco_model = os.environ.get("ECO_MODEL", "").strip()
+        if eco_model:
+            self._provider = dict(prov, default_model=eco_model)
         self._api_key = os.environ.get(prov["api_key_env"]) or env.get(prov["api_key_env"], "")
         self._stats = {"calls": 0, "errors": 0, "total_elapsed_s": 0.0}
         self._last_error: dict | None = None  # {"kind": "quota|http|network", "status": int|None, "detail": str}
