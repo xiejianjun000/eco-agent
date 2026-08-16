@@ -58,7 +58,7 @@ def create_app() -> FastAPI:
     except Exception:  # noqa: BLE001 — 装配失败不阻断 API
         pass
 
-    from server.api import chat, documents, memory, plugins, sessions, skills, slots, subagents, system, tools
+    from server.api import chat, documents, goals, inspect, memory, plugins, sessions, skills, slots, subagents, system, tools
 
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
     app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
@@ -68,6 +68,8 @@ def create_app() -> FastAPI:
     app.include_router(tools.router, prefix="/api/v1", tags=["tools"])
     app.include_router(plugins.router, prefix="/api/v1", tags=["plugins"])
     app.include_router(subagents.router, prefix="/api/v1/subagents", tags=["subagents"])
+    app.include_router(goals.router, prefix="/api/v1", tags=["goals"])
+    app.include_router(inspect.router, prefix="/api/v1", tags=["inspect"])
     app.include_router(slots.router, prefix="/api/v1", tags=["slots"])
     app.include_router(system.router, prefix="/api/v1", tags=["system"])
 
