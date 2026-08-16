@@ -122,12 +122,14 @@ class ScheduledJob:
 class CronScheduler:
     """内置 Cron 调度器——对标 OpenClaw/Hermes"""
 
-    def __init__(self):
+    def __init__(self, jobs_file: str | Path | None = None):
         self._running = False
         self._thread: threading.Thread | None = None
         self._jobs: dict[str, ScheduledJob] = {}
         self._handlers: dict[str, callable] = {}
         self._check_interval = 30  # 30秒检查一次
+        # 可注入任务持久化路径：生产用默认 JOBS_FILE，测试可传临时路径实现隔离
+        self._jobs_file = Path(jobs_file) if jobs_file else JOBS_FILE
         self._load_jobs()
 
     def register_handler(self, name: str, handler: callable):
@@ -214,9 +216,9 @@ class CronScheduler:
             time.sleep(self._check_interval)
 
     def _load_jobs(self):
-        if JOBS_FILE.exists():
+        if self._jobs_file.exists():
             try:
-                data = json.loads(JOBS_FILE.read_text(encoding="utf-8"))
+                data = json.loads(self._jobs_file.read_text(encoding="utf-8"))
                 for d in data.get("jobs", []):
                     job = ScheduledJob.from_dict(d)
                     self._jobs[job.job_id] = job
@@ -224,8 +226,8 @@ class CronScheduler:
                 logger.warning(f"[Scheduler] 加载任务失败: {e}")
 
     def _save_jobs(self):
-        JOBS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        JOBS_FILE.write_text(json.dumps(
+        self._jobs_file.parent.mkdir(parents=True, exist_ok=True)
+        self._jobs_file.write_text(json.dumps(
             {"jobs": [j.to_dict() for j in self._jobs.values()],
              "updated_at": datetime.now().isoformat()},
             ensure_ascii=False, indent=2), encoding="utf-8")

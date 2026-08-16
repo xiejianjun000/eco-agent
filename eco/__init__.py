@@ -26,7 +26,7 @@ def _detect_version() -> str:
                 return m.group(1)
     except OSError:
         pass
-    return "5.0.0a2"  # last resort; keep in sync with pyproject.toml
+    return "5.0.0a8"  # last resort; keep in sync with pyproject.toml
 
 __version__ = _detect_version()
 __author__ = "Taiji Agent Team"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eco-agent"
-version = "5.0.0a2"
+version = "5.0.0a8"
 description = "ECO AGENT - Five-layer loop driven autonomous AI agent system"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -37,6 +37,8 @@ eco = "eco.cli:main"
 packages = [
     "agent_core", "gateway",
     "eco", "eco.commands", "eco.config",
+    "govmcp", "govmcp.crypto", "govmcp.protocol", "govmcp.server", "govmcp.tools",
+    "govmcp_tools",
 ]
 
 [tool.pytest.ini_options]
@@ -59,3 +61,4 @@ ignore = [
 "_scripts/**" = ["F841", "B007"]
 "eco/**" = ["E501", "E701", "E702", "E741", "F841"]
 "agent_core/**" = ["E501", "E701", "E702", "E741", "F841", "F401"]
+"govmcp/__init__.py" = ["F401"]

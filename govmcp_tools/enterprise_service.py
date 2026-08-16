@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-agent_core/govmcp_tools/enterprise_service.py
+govmcp_tools/enterprise_service.py
 企业服务工具集 (20 tools)
 """
 
 import json
-from typing import Optional
 
-from agent_core.govmcp.tools.registry import ToolRegistry, govmcp_tool
+from govmcp.tools.registry import ToolRegistry, govmcp_tool
 
 
 def register_enterprise(registry: ToolRegistry):
@@ -109,7 +108,7 @@ def register_enterprise(registry: ToolRegistry):
         category="企业服务-招投标",
         tags=["enterprise", "bidding", "procurement", "tender"],
     )
-    async def query_bidding(keyword: str, region: Optional[str] = None) -> str:
+    async def query_bidding(keyword: str, region: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_bidding"}, ensure_ascii=False)
 
     @govmcp_tool(

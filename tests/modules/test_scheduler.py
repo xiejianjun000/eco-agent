@@ -2,6 +2,7 @@
 """tests/modules/test_scheduler.py — Cron Scheduler 单元测试"""
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -44,7 +45,12 @@ class TestScheduledJob(unittest.TestCase):
 
 class TestCronScheduler(unittest.TestCase):
     def setUp(self):
-        self.s = CronScheduler()
+        # 使用临时目录隔离持久化，避免与本机/历史测试的 scheduled_jobs.json 互相污染
+        self._tmp = tempfile.TemporaryDirectory()
+        self.s = CronScheduler(jobs_file=Path(self._tmp.name) / "scheduled_jobs.json")
+
+    def tearDown(self):
+        self._tmp.cleanup()
 
     def test_add_and_remove_job(self):
         jid = self.s.add_job("0 12 * * *", "测试任务", "test_handler")

@@ -16,7 +16,7 @@ from __future__ import annotations
 import functools
 import inspect
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional, get_type_hints
 from collections.abc import Callable
 
@@ -133,6 +133,10 @@ class ToolInfo:
             "inputSchema": self.input_schema,
         }
 
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """工具对象可直接调用，转发到注册的 handler。"""
+        return self.handler(*args, **kwargs)
+
 
 # ---------------------------------------------------------------------------
 # ToolRegistry — 工具注册中心
@@ -158,6 +162,65 @@ class ToolRegistry:
 
     def register(
         self,
+        name: str | Callable,
+        description: str = "",
+        input_schema: dict[str, Any] | None = None,
+        handler: Callable | None = None,
+        approval_required: bool = False,
+        audit_enabled: bool = True,
+    ) -> None:
+        """
+        注册一个工具。
+
+        两种调用形式：
+        1. 显式注册：register(name, description, input_schema, handler, ...)
+        2. 装饰器注册：register(decorated_func)——func 携带 _govmcp_meta 元信息
+
+        Args:
+            name: 工具名称（唯一标识），或已用 @govmcp_tool 装饰的函数。
+            description: 工具描述。
+            input_schema: JSON Schema 格式的输入参数定义。
+            handler: 工具调用时执行的函数。
+            approval_required: 是否需要审批。
+            audit_enabled: 是否启用审计。
+        """
+        # 装饰器形式：register(func)
+        if callable(name) and hasattr(name, "_govmcp_meta"):
+            meta = name._govmcp_meta  # type: ignore[attr-defined]
+            self._register_tool(
+                name=meta["name"],
+                description=meta.get("description", ""),
+                input_schema=meta.get("input_schema", {}),
+                handler=name,
+                approval_required=meta.get("approval_required", False),
+                audit_enabled=meta.get("audit_enabled", True),
+            )
+            return
+        if not isinstance(name, str) or handler is None:
+            raise ValueError(
+                "register() requires either a decorated function or "
+                "(name, description, input_schema, handler)"
+            )
+        self._register_tool(
+            name=name,
+            description=description,
+            input_schema=input_schema or {},
+            handler=handler,
+            approval_required=approval_required,
+            audit_enabled=audit_enabled,
+        )
+
+    def register_batch(self, funcs: list[Callable]) -> int:
+        """批量注册携带 _govmcp_meta 的装饰函数，返回成功注册数量。"""
+        count = 0
+        for func in funcs:
+            if callable(func) and hasattr(func, "_govmcp_meta"):
+                self.register(func)
+                count += 1
+        return count
+
+    def _register_tool(
+        self,
         name: str,
         description: str,
         input_schema: dict[str, Any],
@@ -165,17 +228,6 @@ class ToolRegistry:
         approval_required: bool = False,
         audit_enabled: bool = True,
     ) -> None:
-        """
-        注册一个工具。
-
-        Args:
-            name: 工具名称（唯一标识）。
-            description: 工具描述。
-            input_schema: JSON Schema 格式的输入参数定义。
-            handler: 工具调用时执行的函数。
-            approval_required: 是否需要审批。
-            audit_enabled: 是否启用审计。
-        """
         if not name or not isinstance(name, str):
             raise ValueError("Tool name must be a non-empty string.")
         if name in self.tools:
@@ -290,6 +342,8 @@ def govmcp_tool(
     description: str = "",
     approval_required: bool = False,
     audit_enabled: bool = True,
+    category: str = "",
+    tags: list[str] | None = None,
 ) -> Callable:
     """
     装饰器：将 Python 函数自动注册为 MCP 工具。
@@ -303,6 +357,7 @@ def govmcp_tool(
 
         # 装饰后会附加一个 ._govmcp_meta 属性，包含 ToolRegistry.register() 所需信息。
         # 也可配合 ToolRegistry.register_decorated() 批量注册。
+        # category/tags 为可选的分类元数据（供工具目录分组展示，不影响注册）。
     """
 
     def decorator(func: Callable) -> Callable:
@@ -317,6 +372,8 @@ def govmcp_tool(
             "input_schema": input_schema,
             "approval_required": approval_required,
             "audit_enabled": audit_enabled,
+            "category": category,
+            "tags": tags or [],
         }
 
         @functools.wraps(func)

@@ -12,7 +12,7 @@
 
 import json
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from govmcp.crypto.sm import sm3_hash
 

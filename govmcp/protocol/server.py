@@ -53,33 +53,18 @@ except ImportError:
 
 from govmcp.protocol.authorization import (
     AuthorizationManager,
-    AuthorizationScope,
     FineGrainedPermissionManager,
-    GrantType,
-    Permission,
-    TokenType,
 )
 from govmcp.protocol.elicitation import (
     ElicitationManager,
-    ElicitRequest,
-    ElicitResponse,
-    ElicitStatus,
-    ElicitType,
-    URLElicitation,
 )
 from govmcp.protocol.sampling import (
     SamplingCreateMessageRequest,
     SamplingManager,
-    SamplingMessage,
-    SamplingResponse,
 )
 from govmcp.protocol.tasks import (
-    SSEHandler,
-    TaskInfo,
     TaskManager,
     TaskStatus,
-    TaskSubscriber,
-    create_sse_response,
 )
 
 XINCHUANG_MODELS: list[str] = [
@@ -661,7 +646,9 @@ class GovMCPServer:
     def _mcp_tasks_subscribe(self, params: dict[str, Any]) -> dict[str, Any]:
         """tasks/subscribe — 订阅任务更新（SSE）"""
         task_ids = params.get("taskIds")
-        all_tasks = params.get("allTasks", False)
+        # NOTE: "allTasks" 参数由客户端可选携带；订阅按 taskIds 过滤，
+        # allTasks=True 时由 TaskManager 内部展开（当前协议层占位）。
+        params.get("allTasks", False)
 
         subscriber = self._task_manager.subscribe(
             task_ids=set(task_ids) if task_ids else None,

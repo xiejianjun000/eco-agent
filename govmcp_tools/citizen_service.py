@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-agent_core/govmcp_tools/citizen_service.py
+govmcp_tools/citizen_service.py
 市民服务工具集 (20 tools)
 """
 
 import json
-from typing import Optional
 
-from agent_core.govmcp.tools.registry import ToolRegistry, govmcp_tool
+from govmcp.tools.registry import ToolRegistry, govmcp_tool
 
 
 def register_citizen(registry: ToolRegistry):
@@ -91,7 +90,7 @@ def register_citizen(registry: ToolRegistry):
         category="市民服务-民政",
         tags=["citizen", "marriage", "registration"],
     )
-    async def query_marriage(application_id: Optional[str] = None) -> str:
+    async def query_marriage(application_id: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_marriage"}, ensure_ascii=False)
 
     @govmcp_tool(

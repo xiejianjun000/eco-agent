@@ -19,7 +19,7 @@ import time
 import re
 from pathlib import Path
 from datetime import datetime
-from typing import Callable
+from collections.abc import Callable
 
 logger = logging.getLogger("wechat_personal")
 

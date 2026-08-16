@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-agent_core/govmcp_tools/carbon_emission.py
+govmcp_tools/carbon_emission.py
 碳排放管理工具集 (15 tools)
 """
 
 import json
-from typing import Optional
 
-from agent_core.govmcp.tools.registry import ToolRegistry, govmcp_tool
+from govmcp.tools.registry import ToolRegistry, govmcp_tool
 
 
 def register_carbon(registry: ToolRegistry):
@@ -37,7 +36,7 @@ def register_carbon(registry: ToolRegistry):
         category="碳排放-交易",
         tags=["carbon", "trading", "market", "cea"],
     )
-    async def query_trading(date: Optional[str] = None) -> str:
+    async def query_trading(date: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_trading"}, ensure_ascii=False)
 
     @govmcp_tool(
@@ -82,7 +81,7 @@ def register_carbon(registry: ToolRegistry):
         category="碳排放-政策",
         tags=["carbon", "policy", "peaking", "neutrality"],
     )
-    async def query_policy(level: str = "national", keyword: Optional[str] = None) -> str:
+    async def query_policy(level: str = "national", keyword: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_policy"}, ensure_ascii=False)
 
     @govmcp_tool(
@@ -109,7 +108,7 @@ def register_carbon(registry: ToolRegistry):
         category="碳排放-因子",
         tags=["carbon", "factor", "database", "emission"],
     )
-    async def query_emission_factor(category: str = "electricity", region: Optional[str] = None) -> str:
+    async def query_emission_factor(category: str = "electricity", region: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_emission_factor", "category": category}, ensure_ascii=False)
 
     @govmcp_tool(
@@ -127,7 +126,7 @@ def register_carbon(registry: ToolRegistry):
         category="碳排放-绿色金融",
         tags=["carbon", "green", "bond", "finance"],
     )
-    async def query_green_bond(issuer: Optional[str] = None, year: int = 2025) -> str:
+    async def query_green_bond(issuer: str | None = None, year: int = 2025) -> str:
         return json.dumps({"status": "ok", "method": "query_green_bond"}, ensure_ascii=False)
 
     @govmcp_tool(

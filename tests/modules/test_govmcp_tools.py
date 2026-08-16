@@ -4,7 +4,7 @@ tests/modules/test_govmcp_tools.py
 govmcp 工具集成测试
 """
 
-from agent_core.govmcp.tools.registry import ToolRegistry
+from govmcp.tools.registry import ToolRegistry
 
 
 def test_registry_create():
@@ -16,7 +16,7 @@ def test_registry_create():
 
 def test_registry_register_single():
     """测试单工具注册"""
-    from agent_core.govmcp.tools.registry import govmcp_tool
+    from govmcp.tools.registry import govmcp_tool
 
     reg = ToolRegistry()
 
@@ -26,17 +26,18 @@ def test_registry_register_single():
 
     reg.register(hello)
     assert reg.count() == 1
-    assert "test_hello" in reg.list_tools()
+    names = [t["name"] for t in reg.list_tools()]
+    assert "test_hello" in names
 
 
 def test_full_registration():
     """测试全量工具注册"""
-    from agent_core.govmcp_tools.environmental import register_environmental
-    from agent_core.govmcp_tools.carbon_emission import register_carbon
-    from agent_core.govmcp_tools.citizen_service import register_citizen
-    from agent_core.govmcp_tools.enterprise_service import register_enterprise
-    from agent_core.govmcp_tools.smart_city import register_smart_city
-    from agent_core.govmcp_tools.approval_workflow import register_approval
+    from govmcp_tools.environmental import register_environmental
+    from govmcp_tools.carbon_emission import register_carbon
+    from govmcp_tools.citizen_service import register_citizen
+    from govmcp_tools.enterprise_service import register_enterprise
+    from govmcp_tools.smart_city import register_smart_city
+    from govmcp_tools.approval_workflow import register_approval
 
     reg = ToolRegistry()
     register_environmental(reg)
@@ -58,7 +59,7 @@ def test_tool_execution():
     import asyncio
 
     async def run():
-        from agent_core.govmcp_tools.environmental import register_environmental
+        from govmcp_tools.environmental import register_environmental
 
         reg = ToolRegistry()
         register_environmental(reg)

@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-agent_core/govmcp_tools/environmental.py
+govmcp_tools/environmental.py
 环境监测工具集 (15 tools)
 
 涵盖大气、水质、噪声、固废等环境监测相关 MCP 工具。
 """
 
 import json
-from typing import Optional
 
-from agent_core.govmcp.tools.registry import ToolRegistry, govmcp_tool
+from govmcp.tools.registry import ToolRegistry, govmcp_tool
 
 
 def register_environmental(registry: ToolRegistry):
@@ -21,14 +20,14 @@ def register_environmental(registry: ToolRegistry):
         category="环境监测-大气",
         tags=["environmental", "air", "aqi", "monitoring"],
     )
-    async def query_air_quality(city: str, station: Optional[str] = None) -> str:
+    async def query_air_quality(city: str, station: str | None = None) -> str:
         """
         查询实时空气质量。
-        
+
         Args:
             city: 城市名称，如"北京"
             station: 监测站点编号（可选）
-        
+
         Returns:
             JSON: {"aqi": int, "pm25": float, "pm10": float, "o3": float, "no2": float, "so2": float, "co": float, "level": str, "primary_pollutant": str}
         """
@@ -73,7 +72,7 @@ def register_environmental(registry: ToolRegistry):
     )
     async def query_pollution_source(
         enterprise: str,
-        outfall: Optional[str] = None,
+        outfall: str | None = None,
         date_range: str = "24h",
     ) -> str:
         return json.dumps(
@@ -128,7 +127,7 @@ def register_environmental(registry: ToolRegistry):
         category="环境监测-辐射",
         tags=["environmental", "radiation", "nuclear"],
     )
-    async def query_radiation(station: str, date: Optional[str] = None) -> str:
+    async def query_radiation(station: str, date: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_radiation", "station": station}, ensure_ascii=False)
 
 
@@ -148,7 +147,7 @@ def register_environmental(registry: ToolRegistry):
         category="环境监测-环评",
         tags=["environmental", "eia", "approval"],
     )
-    async def query_eia_report(project_name: str, approval_number: Optional[str] = None) -> str:
+    async def query_eia_report(project_name: str, approval_number: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_eia_report", "project_name": project_name}, ensure_ascii=False)
 
 
@@ -158,7 +157,7 @@ def register_environmental(registry: ToolRegistry):
         category="环境监测-许可证",
         tags=["environmental", "permit", "discharge"],
     )
-    async def query_discharge_permit(enterprise: str, permit_number: Optional[str] = None) -> str:
+    async def query_discharge_permit(enterprise: str, permit_number: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_discharge_permit", "enterprise": enterprise}, ensure_ascii=False)
 
 
@@ -168,7 +167,7 @@ def register_environmental(registry: ToolRegistry):
         category="环境监测-生态",
         tags=["environmental", "ecological", "redline", "protection"],
     )
-    async def query_ecological_redline(region: str, coordinates: Optional[list] = None) -> str:
+    async def query_ecological_redline(region: str, coordinates: list | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_ecological_redline", "region": region}, ensure_ascii=False)
 
 

@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-agent_core/govmcp_tools/smart_city.py
+govmcp_tools/smart_city.py
 智慧城市工具集 (15 tools)
 """
 
 import json
-from typing import Optional
 
-from agent_core.govmcp.tools.registry import ToolRegistry, govmcp_tool
+from govmcp.tools.registry import ToolRegistry, govmcp_tool
 
 
 def register_smart_city(registry: ToolRegistry):
@@ -28,7 +27,7 @@ def register_smart_city(registry: ToolRegistry):
         category="智慧城市-交通",
         tags=["smart_city", "traffic", "congestion"],
     )
-    async def query_traffic_congestion(city: str, road_section: Optional[str] = None) -> str:
+    async def query_traffic_congestion(city: str, road_section: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_traffic_congestion"}, ensure_ascii=False)
 
     @govmcp_tool(
@@ -37,7 +36,7 @@ def register_smart_city(registry: ToolRegistry):
         category="智慧城市-停车",
         tags=["smart_city", "parking", "lot"],
     )
-    async def query_parking(city: str, location: Optional[str] = None) -> str:
+    async def query_parking(city: str, location: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_parking"}, ensure_ascii=False)
 
     @govmcp_tool(

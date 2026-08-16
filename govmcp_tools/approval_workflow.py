@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-agent_core/govmcp_tools/approval_workflow.py
+govmcp_tools/approval_workflow.py
 审批工作流工具集 (15 tools)
 
 国密签名 + 审计链认证的政务审批流。
 """
 
 import json
-from typing import Optional
 
-from agent_core.govmcp.tools.registry import ToolRegistry, govmcp_tool
+from govmcp.tools.registry import ToolRegistry, govmcp_tool
 
 
 def register_approval(registry: ToolRegistry):
@@ -26,7 +25,7 @@ def register_approval(registry: ToolRegistry):
         department: str,
         application_type: str,
         content: dict,
-        attachments: Optional[list] = None,
+        attachments: list | None = None,
     ) -> str:
         return json.dumps(
             {"status": "ok", "method": "submit_application", "hash": "gm9_signature_placeholder"},
@@ -129,7 +128,7 @@ def register_approval(registry: ToolRegistry):
         category="审批-档案",
         tags=["approval", "archive", "history"],
     )
-    async def query_archive(department: str, year: int = 2025, keyword: Optional[str] = None) -> str:
+    async def query_archive(department: str, year: int = 2025, keyword: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_archive"}, ensure_ascii=False)
 
     @govmcp_tool(
@@ -156,7 +155,7 @@ def register_approval(registry: ToolRegistry):
         category="审批-申诉",
         tags=["approval", "appeal", "reject", "reconsideration"],
     )
-    async def submit_appeal(application_id: str, reason: str, attachments: Optional[list] = None) -> str:
+    async def submit_appeal(application_id: str, reason: str, attachments: list | None = None) -> str:
         return json.dumps({"status": "ok", "method": "submit_appeal", "application_id": application_id}, ensure_ascii=False)
 
     registry.register_batch([v for k, v in locals().items() if callable(v) and hasattr(v, "_govmcp_meta")])
