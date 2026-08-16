@@ -32,6 +32,8 @@ class ChatResponse(BaseModel):
     reply: str
     model: str
     usage: dict = Field(default_factory=dict)
+    duration_ms: int = Field(default=0, description="总耗时（毫秒）")
+    ttft_ms: int = Field(default=0, description="首 token 耗时（毫秒）")
 
 
 def _build_messages(message: str, history: list[dict]) -> list[dict]:
@@ -114,17 +116,23 @@ def _extract_reply(result: dict) -> str:
 
 @router.post("/chat")
 async def chat(req: ChatRequest) -> ChatResponse:
+    import time
+
     from agent_core.llm_client import get_default_client
 
     client = get_default_client()
     messages = _build_messages(req.message, req.history)
+    t0 = time.monotonic()
     try:
         reply = await _chat_with_codex_loop(client, messages, req.model)
     except Exception as e:  # noqa: BLE001 — API 边界兜底
         logger.exception("chat failed")
         return ChatResponse(reply=f"[eco-server] 对话失败: {e}", model=req.model or "default", usage={})
+    duration_ms = int((time.monotonic() - t0) * 1000)
     usage = client.get_stats() if hasattr(client, "get_stats") else {}
-    return ChatResponse(reply=reply, model=req.model or "default", usage=usage)
+    # 非流式：首 token 约等于总耗时（无中间增量）
+    return ChatResponse(reply=reply, model=req.model or "default", usage=usage,
+                        duration_ms=duration_ms, ttft_ms=duration_ms)
 
 
 async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
@@ -167,6 +175,8 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
 
 @router.post("/chat/stream")
 async def chat_stream(req: ChatRequest) -> StreamingResponse:
+    import time
+
     from agent_core.llm_client import get_default_client
 
     client = get_default_client()
@@ -176,7 +186,11 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
     def on_chunk(text: str) -> None:
         queue.put_nowait(text)
 
+    t0 = time.monotonic()
+    first_token_sent = False
+
     async def gen():
+        nonlocal first_token_sent
         loop = asyncio.get_event_loop()
 
         def _run() -> None:
@@ -192,8 +206,18 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
         while True:
             chunk = await queue.get()
             if chunk is None:
+                done_payload = json.dumps({"done": True, "duration_ms": int((time.monotonic() - t0) * 1000)})
+                yield f"data: {done_payload}\n\n"
                 yield "data: [DONE]\n\n"
                 break
-            yield f"data: {json.dumps({'delta': chunk})}\n\n"
+            if isinstance(chunk, str) and chunk.startswith("{"):
+                # 错误事件直通
+                yield f"data: {chunk}\n\n"
+                continue
+            payload = {"delta": chunk}
+            if not first_token_sent:
+                payload["ttft_ms"] = int((time.monotonic() - t0) * 1000)
+                first_token_sent = True
+            yield f"data: {json.dumps(payload)}\n\n"
 
     return StreamingResponse(gen(), media_type="text/event-stream")

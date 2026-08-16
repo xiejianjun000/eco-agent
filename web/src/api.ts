@@ -24,6 +24,8 @@ export interface ChatResp {
   reply: string;
   model: string;
   usage: Record<string, number>;
+  duration_ms?: number;
+  ttft_ms?: number;
 }
 
 export interface Skill {
@@ -69,11 +71,13 @@ export const api = {
   metrics: () => get<Record<string, unknown>>('/metrics'),
 };
 
-/** POST /api/v1/chat 的 SSE 流式读取（与 /chat/stream 端点同协议语义，逐块回调） */
+/** POST /api/v1/chat/stream 的 SSE 流式读取，逐块回调。
+ * onDelta(text, meta) — meta 首块携带 {ttft_ms}；结束事件 onDone({duration_ms})。 */
 export async function streamChat(
   message: string,
   history: { role: string; content: string }[],
-  onDelta: (text: string) => void,
+  onDelta: (text: string, meta?: { ttft_ms?: number }) => void,
+  onDone?: (meta: { duration_ms?: number }) => void,
 ): Promise<void> {
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
@@ -96,9 +100,19 @@ export async function streamChat(
       const payload = trimmed.slice(5).trim();
       if (payload === '[DONE]') return;
       try {
-        const obj = JSON.parse(payload) as { delta?: string; error?: string };
+        const obj = JSON.parse(payload) as {
+          delta?: string;
+          error?: string;
+          done?: boolean;
+          ttft_ms?: number;
+          duration_ms?: number;
+        };
         if (obj.error) throw new Error(obj.error);
-        if (obj.delta) onDelta(obj.delta);
+        if (obj.done) {
+          onDone?.({ duration_ms: obj.duration_ms });
+          continue;
+        }
+        if (obj.delta) onDelta(obj.delta, obj.ttft_ms !== undefined ? { ttft_ms: obj.ttft_ms } : undefined);
       } catch (e) {
         if ((e as Error).message && payload.startsWith('{')) {
           const obj = JSON.parse(payload) as { error?: string };
