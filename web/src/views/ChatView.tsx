@@ -24,6 +24,23 @@ function extractArtifacts(text: string): { lang: string; code: string }[] {
   return out;
 }
 
+/** 按轮次分组轨迹事件（DSH 式 Turns/Calls 结构） */
+function groupTraceByRound(trace: TraceEvent[]): { round: number; events: TraceEvent[]; totalMs: number }[] {
+  const map = new Map<number, TraceEvent[]>();
+  for (const t of trace) {
+    const r = t.round ?? 1;
+    if (!map.has(r)) map.set(r, []);
+    map.get(r)!.push(t);
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([round, events]) => ({
+      round,
+      events,
+      totalMs: events.reduce((s, e) => s + (e.cost_ms ?? 0), 0),
+    }));
+}
+
 function fmtClock(): string {
   const d = new Date();
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
@@ -257,47 +274,71 @@ export default function ChatView(): React.ReactElement {
                     ) : null,
                   )}
                 </div>
-                <div className="trace-list">
-                  {activeTrace.map((t, ti) => (
-                    <div key={ti} className={`trace-row trace-${t.type}`}>
-                      <span className="trace-step">{ti + 1}</span>
-                      {t.type === 'think' && (
-                        <span className="trace-body">
-                          <span className="trace-badge badge-think">思考</span>
-                          {(t.tools?.length ?? 0) > 0 && (
-                            <span className="trace-detail">决定调用 {t.tools?.join(', ')}</span>
-                          )}
-                          {t.thought && <span className="trace-thought">{t.thought}</span>}
-                          <span className="trace-cost">{t.cost_ms}ms</span>
-                        </span>
-                      )}
-                      {t.type === 'tool' && (
-                        <span className="trace-body">
-                          <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
-                            {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
-                          </span>
-                          <span className="trace-detail">{t.name}({JSON.stringify(t.args ?? {}).slice(0, 80)})</span>
-                          <span className="trace-cost">{t.cost_ms}ms</span>
-                          {t.result_preview && (
-                            <span className="trace-result">{t.result_preview.slice(0, 120)}</span>
-                          )}
-                        </span>
-                      )}
-                      {t.type === 'answer' && (
-                        <span className="trace-body">
-                          <span className="trace-badge badge-answer">综合</span>
-                          <span className="trace-detail">基于检索结果生成回答（{t.chars}字）</span>
-                          <span className="trace-cost">{t.cost_ms ?? ''}ms</span>
-                        </span>
-                      )}
-                      {t.type === 'correction' && (
-                        <span className="trace-body">
-                          <span className="trace-badge badge-correction">纠偏</span>
-                          <span className="trace-detail">{t.note}</span>
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                <div className="trace-tree">
+                  <details className="trace-node trace-root" open>
+                    <summary className="trace-node-summary">
+                      <span className="trace-caret">▼</span>
+                      <span className="trace-label">Duration</span>
+                      <span className="trace-cost">
+                        {fmtMs(activeTraceMsg?.durationMs ?? activeTrace.reduce((s, t) => s + (t.cost_ms ?? 0), 0))}
+                      </span>
+                    </summary>
+                    {groupTraceByRound(activeTrace).map((turn) => (
+                      <details key={turn.round} className="trace-node trace-turn" open>
+                        <summary className="trace-node-summary">
+                          <span className="trace-caret">▼</span>
+                          <span className="trace-label">Turn {turn.round}</span>
+                          <span className="trace-cost">{fmtMs(turn.totalMs)}</span>
+                        </summary>
+                        <div className="trace-node-body">
+                          {turn.events.map((t, ti) => {
+                            if (t.type === 'think') {
+                              return (
+                                <div key={ti} className="trace-event">
+                                  <span className="trace-badge badge-think">思考</span>
+                                  {(t.tools?.length ?? 0) > 0 && (
+                                    <span className="trace-detail">决定调用 {t.tools?.join(', ')}</span>
+                                  )}
+                                  <span className="trace-cost">{t.cost_ms}ms</span>
+                                </div>
+                              );
+                            }
+                            if (t.type === 'answer') {
+                              return (
+                                <div key={ti} className="trace-event">
+                                  <span className="trace-badge badge-answer">综合</span>
+                                  <span className="trace-detail">生成回答（{t.chars}字）</span>
+                                  <span className="trace-cost">{t.cost_ms ?? ''}ms</span>
+                                </div>
+                              );
+                            }
+                            if (t.type === 'correction') {
+                              return (
+                                <div key={ti} className="trace-event">
+                                  <span className="trace-badge badge-correction">纠偏</span>
+                                  <span className="trace-detail">{t.note}</span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div key={ti} className="trace-call">
+                                <div className="trace-event">
+                                  <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
+                                    {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
+                                  </span>
+                                  <span className="trace-detail">{t.name}({JSON.stringify(t.args ?? {}).slice(0, 70)})</span>
+                                  <span className="trace-cost">{t.cost_ms}ms</span>
+                                </div>
+                                {t.result_preview && (
+                                  <div className="trace-result">{t.result_preview.slice(0, 150)}</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </details>
+                    ))}
+                  </details>
                 </div>
               </>
             )}
