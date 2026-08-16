@@ -223,7 +223,7 @@ def _web_fetch(url: str, max_chars: int = 3000) -> str:
     # 白名单检查（可用 ECO_WEB_ALLOW_ALL=1 放开）
     import os
     if os.environ.get("ECO_WEB_ALLOW_ALL", "0") != "1":
-        host = urllib.parse.urlparse(url).netloc.lower()
+        host = (urllib.parse.urlparse(url).hostname or "").lower()  # hostname 不含端口
         if not any(host.endswith(w) for w in _WEB_WHITELIST):
             return json.dumps({
                 "error": f"域名 {host} 不在政务白名单（{', '.join(_WEB_WHITELIST[:6])}…）；"
