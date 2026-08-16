@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-govmcp — 国产信创MCP协议
-==========================
+govmcp — 国产信创MCP协议（对标国内等保合规）
+=============================================
 
 中国政务MCP (Model Context Protocol) 标准实现。
 在标准MCP协议基础上增加国密加密、审批工作流、不可篡改审计链。
@@ -10,6 +10,12 @@ govmcp — 国产信创MCP协议
 - JSON-RPC 2.0 over stdio (兼容标准MCP)
 - SM4 加密传输层 (govmcp独有)
 - SM3 数据完整性校验 (govmcp独有)
+
+实现状态（1.0）:
+- 可用: crypto（SM2/SM3/SM4）、tools.registry（100+ 政务工具注册/调用）、
+        server.approval（审批工作流）、protocol.server（核心骨架）
+- 规划: authorization / elicitation / sampling / tasks / models / transport
+        协议层模块（引用处已 try/except 隔离，补齐计划见 docs/ROADMAP-1.0.md）
 
 产品矩阵:
 - open-taiji    开源多智能体框架

@@ -1,3 +1,35 @@
+## [2026-08-16] v1.0.0 — 首个稳定发布版
+
+> 自 v5.0.0a8（alpha 开发线）收口为 **v1.0.0 稳定版**：补齐 DSH 式工程形态
+> （管理 API + Web 图形界面 + Python SDK + 动态插件系统），全量测试通过、lint 全绿。
+> 完整路线图见 [docs/ROADMAP-1.0.md](docs/ROADMAP-1.0.md)。
+
+### Added
+- **`server/` eco-server 管理 API**：13 端点（chat/SSE 流式、sessions、memory、skills、tools、plugins、system、metrics）+ `eco server` 命令，复用 agent_core 全部能力，无 LLM 时优雅降级
+- **`web/` eco-web 浏览器界面**：React 18 + Vite，四板块（会话/记忆树/技能/系统），`web/dist` 入库 clone 即用，`eco server` 一键打开
+- **`eco_agent_sdk/` Python SDK**：EcoClient（异步 httpx）+ SyncEcoClient（同步包装），类型契约 + 分层错误 + 11 例单测 + `examples/sdk_demo.py`
+- **`agent_core/plugins.py` 动态插件系统**：`plugins/` 目录规范（plugin.yaml + handler.py）、热加载/卸载/重载、L1-L4 风险闸门注入、跨插件工具冲突检测 + `examples/` 示例插件
+- **`examples/` 目录**：sdk_demo.py 使用示例
+
+### Fixed
+- govmcp / govmcp_tools 提升为顶层包（原 agent_core 内嵌结构导致导入自相矛盾），pyproject 包清单更新
+- `gateway_core.SessionManager` 死锁：持锁调用 `_save()` 再取锁 → `Lock` 改 `RLock`
+- `ToolRegistry` API 补齐：`register(装饰函数)` 重载 / `register_batch` / `ToolInfo.__call__` / `category`+`tags` 参数
+- `CronScheduler` 持久化路径可注入（`jobs_file` 参数），测试隔离不再互相污染
+- 版本号统一单源（pyproject），修复 5.0.0a2 与 CHANGELOG a8 漂移
+- `gate_tool_call` 支持 `overrides` 注入（插件 manifest 风险声明可精确生效）
+- ruff 全绿（含 per-file-ignores 收口）
+
+### Known Limitations（如实声明）
+- `govmcp`（对标国内等保的政务 MCP 协议栈）工具注册层完整可用：
+  **100+ 政务工具（govmcp_tools）全部注册、可检索、可调用**；
+  协议层模块（authorization/elicitation/sampling/tasks/models/transport）在 1.0 暂未实现，
+  引用处以 try/except 隔离不影响运行，补齐计划见 docs/ROADMAP-1.0.md 的 1.x 路线
+- Web GUI 覆盖四板块；协同编辑（eco-desktop Tauri 壳）保持独立，不在本版范围
+- HumanEval/MBPP 官方评测 harness 未接入（EcoBench 自带评测见 benchmarks/）
+
+---
+
 ## [2026-08-01] v5.0.0a8 — L4 Evolve 自动触发钩子
 
 > 补上 README 自标缺口：「每次任务后 / 每日自动触发：未实现」

@@ -74,6 +74,9 @@
 
 ## 四、风险与决策点
 
-1. **govmcp 半成品**：协议层缺失模块与 EcoMind-OS `backend/govmcp` 存在版本漂移，需决定"同步完整版"还是"按需补齐"。
+1. **govmcp 协议层补齐（1.x 首要工作项）**：govmcp 是对标国内等保合规的政务 MCP 协议栈。
+   1.0 已交付国密 crypto、100+ 工具注册表、审批工作流、协议骨架；authorization /
+   elicitation / sampling / tasks / models / transport 六个协议层模块列入 **1.1 里程碑**，
+   按等保要求补齐后 GovMCPServer 完整可用。
 2. **Web GUI 与 eco-desktop 关系**：桌面壳（Tauri）与 Web GUI 并存还是二选一？建议 Web GUI 为 1.0 主交付，desktop 保留为 P2。
 3. **E 域评测**：HumanEval/MBPP 依赖外部评测 harness 与 API 配额，建议接入 EcoBench（自带）作为 P0 替代口径。

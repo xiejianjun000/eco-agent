@@ -2,13 +2,64 @@
 
 > **五层循环驱动，持续自我进化的 AI 智能体。**
 
-[![Version](https://img.shields.io/badge/version-5.0.0a2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.12%2B-orange)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-926%20passed-brightgreen)](TEST_LOG.md)
+[![Python](https://img.shields.io/badge/python-3.10%2B-orange)](https://python.org)
+[![Tests](https://img.shields.io/badge/tests-1000%2B%20passed-brightgreen)](TEST_LOG.md)
 [![CI](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml)
 
 Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环，从毫秒级到天级，让 AI 在无人唤醒时也能思考，在无人纠正时也能进化。
+
+---
+
+## v1.0 应用形态（管理 API + Web 控制台 + SDK + 插件系统）
+
+除 CLI / 飞书 / 企微 / 钉钉外，v1.0 补齐了面向应用的完整工程形态：
+
+### Web 控制台 + 管理 API（`eco server`）
+
+```bash
+pip install -e .
+eco server                # 打开 http://127.0.0.1:8788/
+```
+
+| 能力 | 端点 |
+|:-----|:-----|
+| 浏览器管理界面 | `GET /`（会话 · 记忆树 · 技能 · 系统四板块，SSE 流式对话） |
+| 对话 | `POST /api/v1/chat` · `POST /api/v1/chat/stream`（SSE） |
+| 会话 | `GET/POST /api/v1/sessions` |
+| 记忆树 | `/api/v1/memory/nodes|hot|search|stats` |
+| 技能库 | `/api/v1/skills` |
+| 工具目录 | `/api/v1/tools`（100+ govmcp 政务工具，按分类检索） |
+| 插件 | `GET/POST /api/v1/plugins`（热加载/卸载/重载） |
+| 系统 | `/api/v1/system` · `/api/v1/metrics` · `/api/v1/version` |
+
+OpenAPI 文档：`GET /docs`。无 LLM 配置时所有端面优雅降级，不 500。
+
+### Python SDK（`eco_agent_sdk`）
+
+```python
+from eco_agent_sdk import EcoClient
+
+client = EcoClient("http://127.0.0.1:8788")
+resp = await client.chat("大气污染防治法对超标排放的处罚幅度是多少？")
+print(resp.reply)
+
+async for chunk in client.chat_stream("用一句话介绍生态环境法典"):
+    print(chunk, end="")
+```
+
+异步 `EcoClient` + 同步 `SyncEcoClient` 双形态；示例见 `examples/sdk_demo.py`。
+
+### 动态插件系统（`plugins/`）
+
+```
+plugins/<name>/plugin.yaml    # 元数据 + 工具声明 + L1-L4 风险级
+plugins/<name>/handler.py     # def load(ctx) / def unload(ctx)
+```
+
+热加载/卸载/重载、跨插件工具冲突检测、工具调用经 L1-L4 权限闸门
+（manifest 风险声明作为闸门覆盖）。规范见 `plugins/README.md`，示例插件 `plugins/example/`。
 
 ---
 
@@ -487,13 +538,21 @@ eco> /verbose    # [trace] verbose 轨迹模式: 开启
 ## 项目结构
 
 ```
-gateway/           统一网关（6 通道已接入，CLI/Web/微信骨架待接入）
-agent_core/        五层循环 + 多智能体 + 记忆 + 技能 + 进化 + 自愈
-_scripts/          自动化工具脚本（质量审计、lint、修复流水线）
-skills/            技能库（自动进化生成）
-plugins/           插件市场
-benchmarks/        基准测试框架（HumanEval / MBPP / OSWorld）
-docs/              架构文档
+eco/                CLI（chat/serve/server/skills/evolution/trace/auth/...）
+server/             eco-server 管理 API（chat/sessions/memory/skills/tools/plugins/system）
+web/                eco-web 浏览器管理界面（React+Vite，dist 已入库 clone 即用）
+eco_agent_sdk/      Python SDK（异步/同步客户端 + 类型契约）
+gateway/            统一网关（6 通道已接入，CLI/Web/微信骨架待接入）
+agent_core/         五层循环 + 多智能体 + 记忆 + 技能 + 进化 + 自愈 + 动态插件
+govmcp/             国产信创 MCP 协议栈（对标国内等保，国密 + 审计 + 100+ 政务工具）
+govmcp_tools/       政务工具集（环境监测/碳排放/市民服务/企业服务/智慧城市/审批）
+plugins/            动态插件目录（plugin.yaml + handler.py 规范）
+ecoskills/          技能库（自动进化生成）
+_scripts/           自动化工具脚本（质量审计、lint、修复流水线）
+skills/             技能库（自动进化生成）
+benchmarks/         基准测试框架（HumanEval / MBPP / OSWorld / EcoBench）
+docs/               架构文档 + 验收标准 + 1.0 路线图
+examples/           使用示例（sdk_demo.py）
 ```
 
 ---
