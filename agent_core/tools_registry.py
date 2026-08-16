@@ -2753,6 +2753,64 @@ def get_tools() -> list: return _sanitized_defs()
 def get_tool_names() -> list[str]: return [t["function"]["name"] for t in _sanitized_defs()]
 def get_tools_summary() -> str: return f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools"
 
+# ── 外部工具注册（插件系统接入）──────────────────────────────
+# 插件（plugins/）通过 register_external_tool 把工具注册进 LLM 可见定义表，
+# 其声明的风险级作为闸门覆盖（execute_tool 执行时生效），
+# 使插件工具与内置工具在模型视角完全等价。
+
+_EXTERNAL_RISK_OVERRIDES: dict[str, str] = {}
+_EXTERNAL_TOOL_SOURCES: dict[str, str] = {}  # name -> plugin_name
+
+
+def register_external_tool(name: str, description: str, parameters: dict,
+                           handler: Callable, risk_level: str = "L3",
+                           source: str = "plugin") -> None:
+    """注册外部（插件）工具：进入 LLM 工具表 + 执行分发 + 风险级声明。
+
+    Args:
+        name: 工具名（合法 OpenAI 函数名；重复名拒绝）。
+        description: 工具描述（LLM 可见）。
+        parameters: OpenAI JSON Schema（properties/required）。
+        handler: 同步/异步 callable(**args) -> 可 JSON 序列化结果。
+        risk_level: L1-L4，写入闸门覆盖表。
+        source: 来源标识（插件名），供审计与卸载时反查。
+    """
+    valid = ("L1", "L2", "L3", "L4")
+    if risk_level not in valid:
+        raise ValueError(f"风险级非法: {risk_level}")
+    if name in _HANDLERS:
+        raise ValueError(f"工具已存在: {name}")
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+        raise ValueError(f"工具名非法（OpenAI 函数名规范）: {name}")
+    _HANDLERS[name] = handler
+    ALL_TOOL_DEFS.append({
+        "type": "function",
+        "function": {"name": name, "description": description, "parameters": parameters},
+    })
+    _EXTERNAL_RISK_OVERRIDES[name] = risk_level
+    _EXTERNAL_TOOL_SOURCES[name] = source
+    log.info("[tools_registry] 外部工具已注册: %s (%s, %s)", name, risk_level, source)
+
+
+def unregister_external_tool(name: str) -> bool:
+    """移除外部工具（插件卸载时调用）。内置工具不可移除。"""
+    if name not in _EXTERNAL_TOOL_SOURCES:
+        return False
+    _HANDLERS.pop(name, None)
+    for i, t in enumerate(ALL_TOOL_DEFS):
+        if t.get("function", {}).get("name") == name:
+            ALL_TOOL_DEFS.pop(i)
+            break
+    _EXTERNAL_RISK_OVERRIDES.pop(name, None)
+    _EXTERNAL_TOOL_SOURCES.pop(name, None)
+    log.info("[tools_registry] 外部工具已移除: %s", name)
+    return True
+
+
+def external_tool_overrides() -> dict[str, str]:
+    """当前外部工具的风险覆盖表（execute_tool 闸门注入用）。"""
+    return dict(_EXTERNAL_RISK_OVERRIDES)
+
 _GATE_DISABLED_WARNED = False
 
 async def execute_tool(name: str, args: dict) -> str:
@@ -2774,7 +2832,7 @@ async def execute_tool(name: str, args: dict) -> str:
                 pass
     else:
         from agent_core.permissions import gate_tool_call
-        allowed, level, reason = gate_tool_call(name, args)
+        allowed, level, reason = gate_tool_call(name, args, overrides=external_tool_overrides())
         if not allowed:
             return json.dumps(
                 {"error": f"permission denied [{level}]: {reason}",

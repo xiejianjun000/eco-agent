@@ -130,20 +130,32 @@ def _run_degraded(cmd: list[str], policy: SandboxPolicy,
                                (_RLIMIT_AS_BYTES, _RLIMIT_AS_BYTES))
             resource.setrlimit(resource.RLIMIT_NOFILE,
                                (_RLIMIT_NOFILE, _RLIMIT_NOFILE))
-        # preexec_fn 仅在 Linux 可靠（macOS 受限环境会抛 SubprocessError）
-        if is_linux():
-            preexec = _limits
+        preexec = _limits
     except ImportError:
         log.warning("resource module unavailable, rlimits skipped")
 
-    result = subprocess.run(
-        list(cmd),
-        capture_output=True,
-        text=True,
-        timeout=policy.max_seconds,
-        env=scrub_env(),
-        preexec_fn=preexec,
-    )
+    try:
+        result = subprocess.run(
+            list(cmd),
+            capture_output=True,
+            text=True,
+            timeout=policy.max_seconds,
+            env=scrub_env(),
+            preexec_fn=preexec,
+        )
+    except subprocess.SubprocessError:
+        # 部分平台（如 macOS 受限环境）preexec_fn 不可用——不带 preexec 重试一次
+        if preexec is None:
+            raise
+        log.warning("preexec_fn unavailable on this platform, retrying without rlimits: %s", cmd[:1])
+        result = subprocess.run(
+            list(cmd),
+            capture_output=True,
+            text=True,
+            timeout=policy.max_seconds,
+            env=scrub_env(),
+            preexec_fn=None,
+        )
     result.stdout = _truncate(result.stdout, policy.max_output_bytes)
     result.stderr = _truncate(result.stderr, policy.max_output_bytes)
     return result
