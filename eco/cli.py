@@ -40,6 +40,11 @@ def _build_parser():
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--api-key", default=None)
 
+    p = sub.add_parser("server", help="Management API + Web GUI (eco-server)")
+    p.add_argument("--port", type=int, default=8788)
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--reload", action="store_true", help="开发模式热重载")
+
     p = sub.add_parser("setup", help="Setup wizard")
     p.add_argument("--quick", action="store_true")
     p = sub.add_parser("skills", help="Manage skills")

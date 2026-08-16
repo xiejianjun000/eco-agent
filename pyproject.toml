@@ -39,6 +39,7 @@ packages = [
     "eco", "eco.commands", "eco.config",
     "govmcp", "govmcp.crypto", "govmcp.protocol", "govmcp.server", "govmcp.tools",
     "govmcp_tools",
+    "server", "server.api",
 ]
 
 [tool.pytest.ini_options]

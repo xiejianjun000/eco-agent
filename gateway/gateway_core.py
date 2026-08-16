@@ -149,7 +149,7 @@ class SessionManager:
     def __init__(self):
         self._sessions: dict[str, Session] = {}
         self._db_path = DATA_DIR / "sessions.json"
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()  # 可重入：get_or_create 持锁时会调用 _save()
         self._load()
 
     def _load(self):
