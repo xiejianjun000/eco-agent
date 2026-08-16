@@ -233,15 +233,24 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
             return content
         messages.append({"role": "assistant", "content": msg.get("content") or None,
                          "tool_calls": tool_calls})
-        for tc in tool_calls:
+        # 并行执行同轮全部工具调用（4 个串行是 12s+ 延迟的主因）
+        async def _exec_one(tc):
             fn = tc.get("function", {})
             name, raw_args = fn.get("name", ""), fn.get("arguments", "{}")
             try:
                 args = json.loads(raw_args) if isinstance(raw_args, str) else (raw_args or {})
             except json.JSONDecodeError:
                 args = {}
-            result = await _run_tool(name, args)
-            messages.append({"role": "tool", "tool_call_id": tc.get("id", ""),
+            try:
+                result = await _run_tool(name, args)
+            except Exception as e:  # noqa: BLE001 — 单工具失败不拖垮整轮
+                logger.warning("tool %s failed: %s", name, e)
+                result = f"工具执行失败: {e}"
+            return tc.get("id", ""), result
+
+        results = await asyncio.gather(*[_exec_one(tc) for tc in tool_calls])
+        for tool_call_id, result in results:
+            messages.append({"role": "tool", "tool_call_id": tool_call_id,
                              "content": result})
     # 循环耗尽：追加总结指令，强制基于已检索结果直接回答
     messages.append({
@@ -256,8 +265,19 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
     if err or msg is None:
         return f"[eco-server] LLM 调用失败: {err}"
     content = str(msg.get("content") or "")
-    # 末轮兜底：若仍输出工具调用格式文本，剥离 <tool_calls> 块
-    content = re.sub(r"<tool_calls>.*?</tool_calls>", "", content, flags=re.S).strip()
+    # 幻觉兜底：仍输出工具调用格式（含全角变体）→ 最强约束重试一次
+    if "tool_calls" in content or "invoke" in content:
+        messages.append({"role": "user",
+                         "content": "禁止输出 tool_calls、invoke 等任何工具调用格式（含全角符号），"
+                                    "现在只输出给用户的最终文字回答。"})
+        msg2, err2 = await loop.run_in_executor(
+            None, lambda: client._call_chat_with_tools(
+                model or client._provider["default_model"], messages, []))
+        if err2 is None and msg2 is not None:
+            content = str(msg2.get("content") or "")
+    # 末层兜底：贪婪剥离未闭合的工具调用残留（半角/全角通吃）
+    content = re.sub(r"[<＜]tool_calls>[\s\S]*$", "", content).strip()
+    content = re.sub(r"[<＜]invoke[\s\S]*$", "", content).strip()
     return content or "[eco-server] 模型未给出有效回答"
 
 
