@@ -91,6 +91,18 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
             "    先尝试 web_fetch 实际抓取；禁止声称'没有联网权限'——除非抓取本身失败。\n"
         )
     system = system + "\n" + codex_note
+    # 历史教训注入（自愈闭环：此前踩过的坑自动带上，不用人工改提示词）
+    try:
+        from agent_core.lessons import get_lesson_store
+
+        related = get_lesson_store().search(message)
+        if related:
+            lines = ["【历史经验——此前处理类似问题的真实记录】"]
+            for i, l in enumerate(related, 1):
+                lines.append(f"{i}. {l.get('lesson', '')}")
+            system = system + "\n" + "\n".join(lines)
+    except Exception:  # noqa: BLE001 — 经验注入失败不影响主流程
+        pass
     messages: list[dict] = [{"role": "system", "content": system}]
     for h in history[-20:]:
         if isinstance(h, dict) and h.get("role") in ("user", "assistant"):
@@ -341,6 +353,17 @@ async def chat(req: ChatRequest) -> ChatResponse:
                                        model=req.model or client._provider["default_model"])
     except Exception as e:  # noqa: BLE001 — 审计失败不阻断业务
         logger.warning("trace audit failed: %s", e)
+    # 教训自动沉淀（自愈闭环：失败对话提炼为 lesson，下次自动注入）
+    try:
+        from agent_core.lessons import extract_lesson, get_lesson_store
+
+        tool_names = [t.get("name", "") for t in trace if t.get("type") == "tool"]
+        lesson = extract_lesson(req.message, reply, tool_names)
+        if lesson:
+            get_lesson_store().add(lesson)
+            logger.info("lesson 已沉淀: %s", lesson.get("lesson", "")[:80])
+    except Exception as e:  # noqa: BLE001
+        logger.warning("lesson extract failed: %s", e)
     # 非流式：首 token 约等于总耗时（无中间增量）
     return ChatResponse(reply=reply, model=req.model or "default", usage=usage,
                         duration_ms=duration_ms, ttft_ms=duration_ms, trace=trace)
