@@ -57,8 +57,10 @@ SAFETY_LAYER = (
 
 # 旧版 cmd_chat 单行系统提示词（已废弃，保留向后兼容引用）
 LEGACY_SYSTEM_PROMPT = (
-    "你是 ECO AGENT，生态环境法规领域的 AI 助手。精通中国生态环境法律法规。"
-    "可以调用 100+ 政务工具。引用法规时标注具体条款号。涉及处罚标注免责声明。用中文回答。"
+    "你是 ECO AGENT，生态环境执法领域的 AI 助手。精通中国生态环境法律法规与法典条文。"
+    "你有真实执行能力：法典条文检索、执法知识库检索、沙箱代码执行、"
+    "文件读写、git 操作（工具清单以本轮实际提供为准）。"
+    "引用法规时标注具体条款号。涉及处罚标注免责声明。用中文回答。"
 )
 
 # 硬编码人格兜底（SOUL.md 缺失时使用）
@@ -69,7 +71,7 @@ _FALLBACK_PERSONA = (
 # 三阶段执法提示词状态机：巡查 / 文书 / 评查
 PHASE_PRESETS: dict[str, list[str]] = {
     "inspection": [
-        "当前阶段：现场巡查。重点：线索发现、现场取证规范（照片/笔录/监测数据）、违法线索初步判断。引用法条时优先引用现行单行法。",
+        "当前阶段：现场巡查。重点：线索发现、现场取证规范（照片/笔录/监测数据）、违法线索初步判断。引用法条时优先引用《生态环境法典》（2026-08-15 施行，10 部单行法同日废止），旧法引用须双标注法典对应条款。",
     ],
     "documentation": [
         "当前阶段：执法文书制作。重点：文书要素完整（当事人/事实/证据/法律依据/裁量说明），用语规范，引用法律精确到条款款项。",
@@ -831,9 +833,37 @@ class PromptEngine:
         return list(self._injections)
 
     # ── 构建系统提示词 ──
+    def tool_capability_layer(self) -> str:
+        """工具能力声明层：动态从 tools_registry 拉取当前 LLM 可见工具清单，
+        按能力分类声明——让模型准确自知（防止'我没有执行环境'式错误认知，
+        也防止提示词与工具表漂移）。tools_registry 不可用时返回空串。"""
+        try:
+            from agent_core.tools_registry import get_tool_names
+
+            names = get_tool_names()
+        except Exception:  # noqa: BLE001 — 能力层失败不影响主流程
+            return ""
+        groups = {
+            "法典条文检索": [n for n in names if n.startswith("statute_") or n == "search_regulation"],
+            "执法知识库检索": [n for n in names if n.startswith("mcp__ehs_kb__kb_") and "search" in n or n.startswith("kb_")],
+            "沙箱代码执行": [n for n in names if n in ("execute_code", "shell_run")],
+            "文件读写": [n for n in names if n in ("analyze_document", "save_document", "file_read", "file_write")],
+            "git 操作": [n for n in names if n == "git_status"],
+            "其他工具": [n for n in names if n in ("query_air_quality", "vision_analyze", "ocr_extract")],
+        }
+        lines = ["【你的工具能力——本轮会话真实可用】",
+                 "你拥有真实执行能力，可以实际调用以下工具完成任务："]
+        for label, group in groups.items():
+            if group:
+                lines.append(f"- {label}: {', '.join(group)}")
+        lines.append("被要求执行任务时，直接调用对应工具；禁止声称'没有执行环境'"
+                     "或'无法运行代码'——除非工具调用本身失败。")
+        return "\n".join(lines)
+
     def build_system_prompt(self, task_id: str = "", extra: str = "") -> str:
-        """安全层（硬编码+SOUL硬边界，首位不可动摇）+ 人格层（SOUL）+ 阶段预设 + 动态注入（尾部追加）"""
-        parts = [self.safety_layer(), self.persona_layer()]
+        """安全层（硬编码+SOUL硬边界，首位不可动摇）+ 人格层（SOUL）+ 工具能力层
+        + 阶段预设 + 动态注入（尾部追加）"""
+        parts = [self.safety_layer(), self.persona_layer(), self.tool_capability_layer()]
         parts.extend(PHASE_PRESETS[self._phase])
         for inj in self._injections:
             parts.append(f"[{inj['source']}] {inj['content']}")
