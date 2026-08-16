@@ -126,6 +126,20 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
             "   与法律依据（折算规则、有效性判定、对应法典条款），不输出任何代码实现。\n"
         )
     system = system + "\n" + codex_note
+    # 技能目录匹配注入（对标 DSH skill 会话注入）：消息命中触发词的技能全文带上
+    try:
+        from agent_core.skill_dir import get_skill_dir_registry
+
+        matched = get_skill_dir_registry().match(message, top_n=2)
+        for skill in matched:
+            if skill.get("name") == "eco-codex":
+                continue  # eco-codex 规则已整本注入，跳过避免重复
+            body = (skill.get("body") or "")[:6000]
+            if body.strip():
+                system += (f"\n\n【技能注入：{skill['name']} — {skill.get('description', '')}】\n"
+                           + body)
+    except Exception:  # noqa: BLE001 — 技能注入失败不影响主流程
+        logger.warning("skill match inject failed")
     # 历史教训注入（自愈闭环：此前踩过的坑自动带上，不用人工改提示词）
     try:
         from agent_core.lessons import get_lesson_store
