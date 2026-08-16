@@ -153,6 +153,8 @@ tool_risk_overrides:
     level: L1
   - tool: mcp__ehs_kb__kb_status
     level: L1
+  - tool: mcp__ehs_kb__kb_semantic_search
+    level: L1
   - tool: mcp__eco_kb__eco_graph_query
     level: L1
   - tool: mcp__eco_kb__eco_list_statutes

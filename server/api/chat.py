@@ -70,9 +70,11 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
             "\n【工具使用纪律——必须遵守】\n"
             "1. 涉及法条/条款/处罚幅度的问题，必须实际调用 statute_lookup 或 statute_search 工具获取原文，"
             "拿到结果后再回答；禁止凭记忆说法条。\n"
-            "2. 禁止输出'正在调用工具''请稍候'之类的话——直接调用工具，不要预告。\n"
-            "3. 引用条文必须与工具返回的原文一致，条号以工具结果为准。\n"
-            "4. 工具返回的结果就是最终依据，不要编造工具没返回的内容。\n"
+            "2. 涉及案卷评查/执法实务/督察经验等问题，用 kb_search 或 kb_semantic_search 检索知识库。\n"
+            "3. 工具调用只能通过 function calling 机制发出；禁止在文本里用 <invoke> 标签"
+            "或任何文本形式模拟工具调用，禁止编造不存在的工具名（只有上述四个工具）。\n"
+            "4. 禁止输出'正在调用工具''请稍候'之类的话——直接调用工具，不要预告。\n"
+            "5. 引用条文必须与工具返回的原文一致，条号以工具结果为准。\n"
         )
     system = system + "\n" + codex_note
     messages: list[dict] = [{"role": "system", "content": system}]
@@ -84,7 +86,7 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
 
 
 def _codex_tools() -> list[dict]:
-    """法典检索工具（OpenAI tools 格式，供工具循环使用）。"""
+    """法典 + 知识库检索工具（OpenAI tools 格式，供工具循环使用）。"""
     return [
         {
             "type": "function",
@@ -110,19 +112,55 @@ def _codex_tools() -> list[dict]:
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "kb_search",
+                "description": "执法知识库全文搜索（案卷评查/执法办案/督察/法规解读等实战资料，自动识别角色加权）",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string", "description": "检索关键词或短句"}},
+                    "required": ["query"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "kb_semantic_search",
+                "description": "执法知识库语义搜索（向量检索，理解自然语言含义，适合自然语言问题）",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string", "description": "自然语言问题"}},
+                    "required": ["query"],
+                },
+            },
+        },
     ]
 
 
-def _run_codex_tool(name: str, arguments: dict) -> str:
-    import subprocess
-    import sys
-    from pathlib import Path
+async def _run_tool(name: str, arguments: dict) -> str:
+    """工具分发：statute_* 走本地法典库，kb_* 走 ehs-kb-ops MCP 知识库。"""
+    if name.startswith("statute_"):
+        import subprocess
+        import sys
+        from pathlib import Path
 
-    script = Path(__file__).resolve().parent.parent.parent / "ecoskills" / "eco-codex" / "scripts" / "lookup.py"
-    cmd = [sys.executable, str(script), "article" if name == "statute_lookup" else "search",
-           str(arguments.get("article") or arguments.get("keyword", ""))]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
-    return r.stdout.strip() or r.stderr.strip()[:300]
+        script = Path(__file__).resolve().parent.parent.parent / "ecoskills" / "eco-codex" / "scripts" / "lookup.py"
+        cmd = [sys.executable, str(script), "article" if name == "statute_lookup" else "search",
+               str(arguments.get("article") or arguments.get("keyword", ""))]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+        return r.stdout.strip() or r.stderr.strip()[:300]
+    if name.startswith("kb_"):
+        from agent_core.tools_registry import attach_mcp_tools, execute_tool
+
+        attach_mcp_tools()
+        full = f"mcp__ehs_kb__{name}"
+        arg_map = {"kb_search": "query", "kb_semantic_search": "query"}
+        result = await execute_tool(full, {arg_map.get(name, "query"): arguments.get("query", "")})
+        # 截断长结果（知识库返回目录级列表，过长会稀释模型注意力）
+        return result[:2000]
+    return f"未知工具: {name}"
 
 
 def _extract_reply(result: dict) -> str:
@@ -170,7 +208,7 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
     tools = _codex_tools()
     empty_talk_re = re.compile(
         r"正在(调用|查询|检索|获取|调取)|请稍候|稍等|马上(为您)?(查询|检索)|我先(查|检索)"
-        r"|待工具返回|待.*填入|（此处待|占位）"
+        r"|待工具返回|待.*填入|（此处待|占位）|<invoke|invoke name|kb_get_document|让我直接"
     )
     for _ in range(max_rounds):
         loop = asyncio.get_event_loop()
@@ -202,16 +240,25 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
                 args = json.loads(raw_args) if isinstance(raw_args, str) else (raw_args or {})
             except json.JSONDecodeError:
                 args = {}
-            result = await loop.run_in_executor(
-                None, lambda n=name, a=args: _run_codex_tool(n, a))
+            result = await _run_tool(name, args)
             messages.append({"role": "tool", "tool_call_id": tc.get("id", ""),
                              "content": result})
+    # 循环耗尽：追加总结指令，强制基于已检索结果直接回答
+    messages.append({
+        "role": "user",
+        "content": "工具检索已完成。请基于上面工具返回的真实结果，"
+                   "直接给出最终回答（不要再调用工具，不要输出工具调用格式）。"
+                   "如果结果不足以回答，就基于已有内容作答并标注局限。",
+    })
     msg, err = await loop.run_in_executor(
         None, lambda: client._call_chat_with_tools(model or client._provider["default_model"],
                                                    messages, []))
     if err or msg is None:
         return f"[eco-server] LLM 调用失败: {err}"
-    return str(msg.get("content") or "")
+    content = str(msg.get("content") or "")
+    # 末轮兜底：若仍输出工具调用格式文本，剥离 <tool_calls> 块
+    content = re.sub(r"<tool_calls>.*?</tool_calls>", "", content, flags=re.S).strip()
+    return content or "[eco-server] 模型未给出有效回答"
 
 
 @router.post("/chat/stream")
