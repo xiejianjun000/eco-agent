@@ -168,7 +168,10 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
     import re
 
     tools = _codex_tools()
-    empty_talk_re = re.compile(r"正在(调用|查询|检索)|请稍候|马上(为您)?(查询|检索)|我先(查|检索)")
+    empty_talk_re = re.compile(
+        r"正在(调用|查询|检索|获取|调取)|请稍候|稍等|马上(为您)?(查询|检索)|我先(查|检索)"
+        r"|待工具返回|待.*填入|（此处待|占位）"
+    )
     for _ in range(max_rounds):
         loop = asyncio.get_event_loop()
         msg, err = await loop.run_in_executor(
@@ -213,49 +216,40 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
 
 @router.post("/chat/stream")
 async def chat_stream(req: ChatRequest) -> StreamingResponse:
+    """流式对话——与 /chat 相同的法典工具循环（保证真实查询），
+    循环完成后按小片 SSE 输出（保留逐字呈现体验）。
+
+    ttft_ms 语义：模型+工具循环的准备耗时（首个可见字符出现时刻）。
+    """
     import time
 
     from agent_core.llm_client import get_default_client
 
     client = get_default_client()
     messages = _build_messages(req.message, req.history)
-    queue: asyncio.Queue[str | None] = asyncio.Queue()
-
-    def on_chunk(text: str) -> None:
-        queue.put_nowait(text)
-
     t0 = time.monotonic()
-    first_token_sent = False
 
     async def gen():
-        nonlocal first_token_sent
-        loop = asyncio.get_event_loop()
+        # 工具循环（与 /chat 相同逻辑：法典查询 + 空话兜底）
+        try:
+            reply = await _chat_with_codex_loop(client, messages, req.model)
+        except Exception as e:  # noqa: BLE001
+            logger.exception("chat_stream failed")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
 
-        def _run() -> None:
-            try:
-                client.chat_stream(messages, on_chunk=on_chunk)
-            except Exception as e:  # noqa: BLE001
-                logger.exception("chat_stream failed")
-                queue.put_nowait(json.dumps({"error": str(e)}))
-            finally:
-                queue.put_nowait(None)
-
-        await loop.run_in_executor(None, _run)
-        while True:
-            chunk = await queue.get()
-            if chunk is None:
-                done_payload = json.dumps({"done": True, "duration_ms": int((time.monotonic() - t0) * 1000)})
-                yield f"data: {done_payload}\n\n"
-                yield "data: [DONE]\n\n"
-                break
-            if isinstance(chunk, str) and chunk.startswith("{"):
-                # 错误事件直通
-                yield f"data: {chunk}\n\n"
-                continue
-            payload = {"delta": chunk}
-            if not first_token_sent:
-                payload["ttft_ms"] = int((time.monotonic() - t0) * 1000)
-                first_token_sent = True
-            yield f"data: {json.dumps(payload)}\n\n"
+        prep_ms = int((time.monotonic() - t0) * 1000)
+        # 小片输出：6 字符/片 + 微小间隔，保留流式节奏
+        step = 6
+        for i in range(0, len(reply), step):
+            payload = {"delta": reply[i:i + step]}
+            if i == 0:
+                payload["ttft_ms"] = prep_ms
+            yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+            await asyncio.sleep(0.02)
+        done_payload = json.dumps({"done": True, "duration_ms": int((time.monotonic() - t0) * 1000)})
+        yield f"data: {done_payload}\n\n"
+        yield "data: [DONE]\n\n"
 
     return StreamingResponse(gen(), media_type="text/event-stream")
