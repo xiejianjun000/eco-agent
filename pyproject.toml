@@ -20,6 +20,7 @@ dependencies = [
     "rich>=13.0",
     "mcp>=1.0",
     "PyYAML>=6.0",
+    "croniter>=1.4",
 ]
 
 [project.urls]
