@@ -71,8 +71,10 @@ def article(article_num: int) -> dict:
     return {"num": article_num, "text": None, "error": f"未找到第{article_num}条"}
 
 
-def search(keyword: str, limit: int = 5) -> dict:
-    """关键词检索：命中条文全文 + 所在编文件。"""
+def search(keyword: str, limit: int = 12) -> dict:
+    """关键词检索：命中条文全文 + 所在编文件。
+    单次返回有截断（达到 limit 即止），truncated=True 表示可能还有未返回的命中；
+    精确条号请用 article 直查。"""
     hits = []
     pattern = re.compile(r"^第[一二三四五六七八九十百千万零\d]+条[^\n]*", re.M)
     for f in _article_files():
@@ -81,8 +83,8 @@ def search(keyword: str, limit: int = 5) -> dict:
             if keyword in m.group(0):
                 hits.append({"text": m.group(0)[:400], "file": f.name})
                 if len(hits) >= limit:
-                    return {"keyword": keyword, "count": len(hits), "hits": hits}
-    return {"keyword": keyword, "count": len(hits), "hits": hits}
+                    return {"keyword": keyword, "count": len(hits), "hits": hits, "truncated": True}
+    return {"keyword": keyword, "count": len(hits), "hits": hits, "truncated": False}
 
 
 def nav() -> dict:

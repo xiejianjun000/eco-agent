@@ -32,7 +32,8 @@ LESSONS_FILE = DATA_DIR / "lessons.jsonl"
 
 # 失败特征（触发提炼的信号）
 _FAILURE_HINTS = ("找不到", "未收录", "404", "未找到", "不在", "失败", "被拒",
-                  "没有找到", "未检索到", "无结果", "不存在")
+                  "没有找到", "未检索到", "无结果", "不存在",
+                  "超时", "timed out", "timeout")
 
 
 class LessonStore:
@@ -90,6 +91,11 @@ def extract_lesson(user_msg: str, reply: str, tool_names: list[str]) -> dict | N
     reply = str(reply)
     if not any(hint in reply for hint in _FAILURE_HINTS):
         return None
+    # 严格判失败：失败特征须出现在回复开头（真实错误报告），或回复极短。
+    # 长回复中部出现"未检索到/0命中"是正常的诚实标注（[待确认]），不是失败。
+    head = reply[:400]
+    if not any(hint in head for hint in _FAILURE_HINTS) and len(reply) > 500:
+        return None
 
     # 教训主题 = 用户消息里的关键名词（去停用词）
     stopwords = {"的", "了", "吗", "呢", "在", "是", "有", "和", "与", "请", "帮", "我", "你"}
@@ -103,7 +109,7 @@ def extract_lesson(user_msg: str, reply: str, tool_names: list[str]) -> dict | N
     return {
         "keywords": kws,
         "lesson": f"曾尝试用 {', '.join(tool_names[:4])} 处理此问题，结果：{reason}。"
-                  f"下次先换渠道/方法，不要再重复同样操作。",
+                  f"下次先原样重试一次（多为瞬时网络故障），仍失败再换关键词/渠道。",
         "source": "auto-extract",
         "when": time.time(),
     }
