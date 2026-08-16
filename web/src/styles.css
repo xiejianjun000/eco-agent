@@ -170,6 +170,22 @@ body {
 .trace-think .trace-step { background: #f5e8dc; color: var(--terra-dark); }
 .trace-answer .trace-step { background: #eef0e6; color: var(--olive); }
 .trace-correction .trace-step { background: #f6e6e2; color: var(--red); }
+
+/* DSH 式轨迹类型徽章 */
+.trace-badge {
+  display: inline-block; padding: 0 6px; border-radius: 5px; font-size: 10px;
+  font-weight: 600; margin-right: 6px; line-height: 1.6; flex-shrink: 0;
+}
+.badge-think { background: #f5e8dc; color: var(--terra-dark); }
+.badge-read { background: #e9eef2; color: var(--blue); }
+.badge-write { background: #f6f6e2; color: #a8873a; }
+.badge-exec { background: #f6e6e2; color: var(--red); }
+.badge-answer { background: #eef0e6; color: var(--olive); }
+.badge-correction { background: #f6e6e2; color: var(--red); }
+.trace-detail { color: var(--t-sub); }
+.trace-thought {
+  display: block; color: var(--t-aux); font-size: 10px; margin-top: 1px;
+}
 .chat-input-row { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
 .chat-input-row textarea {
   flex: 1; resize: none; min-height: 44px; max-height: 160px; padding: 10px 14px;

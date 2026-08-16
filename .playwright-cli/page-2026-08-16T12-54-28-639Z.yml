@@ -1,0 +1,170 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - text: ECO AGENT
+      - generic [ref=e6]: 生态环境执法 AI 智能体
+    - generic [ref=e7] [cursor=pointer]: 会话
+    - generic [ref=e8] [cursor=pointer]: 记忆树
+    - generic [ref=e9] [cursor=pointer]: 技能
+    - generic [ref=e10] [cursor=pointer]: 系统
+    - generic [ref=e11]: v1.0.0
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - heading "会话" [level=1] [ref=e14]
+      - generic [ref=e15]: 与 ECO AGENT 对话
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]: ECO AGENT
+            - generic [ref=e23]: 20:53
+          - paragraph [ref=e25]: 你好，我是 ECO AGENT。生态环境执法领域的 AI 同事——可以问我法规、案卷、裁量、督察相关的问题。
+          - generic [ref=e47]:
+            - button "⧉ 复制" [ref=e48] [cursor=pointer]
+            - button "👍" [ref=e49] [cursor=pointer]
+            - button "👎" [ref=e50] [cursor=pointer]
+            - button "⑂ 分支" [ref=e51] [cursor=pointer]
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]: 你
+            - generic [ref=e37]: 20:53
+          - generic [ref=e38]: 逃避监管排污怎么罚？
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - generic [ref=e41]: ECO AGENT
+            - generic [ref=e42]: 20:54
+            - generic [ref=e52]: 首token 17.4s
+            - generic [ref=e53]: 用时 21.8s
+          - group [ref=e54]:
+            - generic "⚙ 执行轨迹 · 4 步 （点击展开）" [active] [ref=e55] [cursor=pointer]:
+              - generic [ref=e56]: ⚙
+              - text: 执行轨迹 · 4 步
+              - generic [ref=e57]: （点击展开）
+            - generic [ref=e130]:
+              - generic [ref=e131]:
+                - generic [ref=e132]: "1"
+                - generic [ref=e133]:
+                  - generic [ref=e134]: 思考
+                  - generic [ref=e135]: 决定调用 statute_search, kb_search
+                  - generic [ref=e136]: 2403ms
+              - generic [ref=e137]:
+                - generic [ref=e138]: "2"
+                - generic [ref=e139]:
+                  - generic [ref=e140]: 读
+                  - generic [ref=e141]: "statute_search({\"keyword\":\"逃避监管\"})"
+                  - generic [ref=e142]: 86ms
+                  - generic [ref=e143]: "{\"keyword\": \"逃避监管\", \"count\": 3, \"hits\": [{\"text\": \"第一百六十四条 禁止通过暗管、渗井、渗坑、灌注、裂隙、溶洞、篡改或者伪造监测数据、以逃避现场检查为目的的临时停产、非紧急情况下开启应急排放"
+              - generic [ref=e144]:
+                - generic [ref=e145]: "3"
+                - generic [ref=e146]:
+                  - generic [ref=e147]: 读
+                  - generic [ref=e148]: "kb_search({\"query\":\"逃避监管排污 处罚 移送\"})"
+                  - generic [ref=e149]: 567ms
+                  - generic [ref=e150]: "{\"success\": true, \"is_error\": false, \"text\": \"🔍 搜索 '逃避监管排污 处罚 移送' [enforcement] — 找到 19 条:\\n\\n📄 flowwiki/wiki/concepts"
+              - generic [ref=e151]:
+                - generic [ref=e152]: "4"
+                - generic [ref=e153]:
+                  - generic [ref=e154]: 综合
+                  - generic [ref=e155]: 基于检索结果生成回答（1225字）
+                  - generic [ref=e156]: 14277ms
+          - generic [ref=e43]:
+            - heading "逃避监管方式排污——处罚要点" [level=2] [ref=e58]
+            - heading "一、行为定性（禁止性规定）" [level=3] [ref=e59]
+            - paragraph [ref=e60]:
+              - text: 《生态环境法典》
+              - strong [ref=e61]: 第一千一百六十四条
+              - text: 明确列举了"逃避监管的方式"：
+            - blockquote [ref=e62]:
+              - text: 通过
+              - strong [ref=e63]: 暗管、渗井、渗坑、灌注、裂隙、溶洞、篡改或者伪造监测数据、以逃避现场检查为目的的临时停产、非紧急情况下开启应急排放通道、不正常运行污染防治设施
+              - text: 等逃避监管的方式排放污染物。
+            - paragraph [ref=e64]: 以上情形是法定的"逃避监管"行为方式（注意"等"字为不完全列举，需结合具体手段综合认定）。
+            - separator [ref=e65]
+            - heading "二、法律后果（处罚条款）" [level=3] [ref=e66]
+            - paragraph [ref=e67]:
+              - strong [ref=e68]: 《生态环境法典》第一千一百零八条
+              - text: 规定：
+            - table [ref=e69]:
+              - rowgroup [ref=e70]:
+                - row "处罚层级 内容 适用情形" [ref=e71]:
+                  - columnheader "处罚层级" [ref=e72]
+                  - columnheader "内容" [ref=e73]
+                  - columnheader "适用情形" [ref=e74]
+              - rowgroup [ref=e75]:
+                - row "基础处罚 责令改正，处 10 万—100 万元罚款；责令限制生产、停产整治 一般情形" [ref=e76]:
+                  - cell "基础处罚" [ref=e77]:
+                    - strong [ref=e78]: 基础处罚
+                  - cell "责令改正，处 10 万—100 万元罚款；责令限制生产、停产整治" [ref=e79]:
+                    - text: 责令改正，处
+                    - strong [ref=e80]: 10 万—100 万元
+                    - text: 罚款；责令限制生产、停产整治
+                  - cell "一般情形" [ref=e81]
+                - row "同步移送 案件移送公安机关，对直接负责的主管人员和其他直接责任人员处 5 日—10 日拘留 与基础处罚同步适用" [ref=e82]:
+                  - cell "同步移送" [ref=e83]:
+                    - strong [ref=e84]: 同步移送
+                  - cell "案件移送公安机关，对直接负责的主管人员和其他直接责任人员处 5 日—10 日拘留" [ref=e85]:
+                    - text: 案件
+                    - strong [ref=e86]: 移送公安机关
+                    - text: ，对直接负责的主管人员和其他直接责任人员处
+                    - strong [ref=e87]: 5 日—10 日拘留
+                  - cell "与基础处罚同步适用" [ref=e88]
+                - row "加重处罚 吊销排污许可证；报经有批准权的地方政府批准，责令停业、关闭；对直接责任人员处 10 日—15 日拘留 情节严重的" [ref=e89]:
+                  - cell "加重处罚" [ref=e90]:
+                    - strong [ref=e91]: 加重处罚
+                  - cell "吊销排污许可证；报经有批准权的地方政府批准，责令停业、关闭；对直接责任人员处 10 日—15 日拘留" [ref=e92]:
+                    - text: 吊销排污许可证；报经有批准权的地方政府批准，
+                    - strong [ref=e93]: 责令停业、关闭
+                    - text: ；对直接责任人员处
+                    - strong [ref=e94]: 10 日—15 日拘留
+                  - cell "情节严重的" [ref=e95]
+            - separator [ref=e96]
+            - heading "三、关键区分点（容易被忽略）" [level=3] [ref=e97]
+            - paragraph [ref=e98]:
+              - strong [ref=e99]: 《生态环境法典》第一千一百零四条
+              - text: 对"
+              - strong [ref=e100]: 不属于
+              - text: 以逃避监管方式"的情形作了单独规定：
+            - blockquote [ref=e101]:
+              - text: 未按排污许可证规定运行维护污染防治设施，致使设施不能正常发挥作用，但
+              - strong [ref=e102]: 不属于
+              - text: 以逃避监管方式排放污染物的：责令改正，处
+              - strong [ref=e103]: 5 万—20 万元
+              - text: 罚款。
+            - paragraph [ref=e104]:
+              - text: ⚠️ 实务提示：同是"污染防治设施不正常运行"，关键看
+              - strong [ref=e105]: 主观故意和方式
+              - text: 。若只是运行维护不到位（无逃避监管故意），走一千一百零四条；若构成"不正常运行污染防治设施等逃避监管方式"，走一千一百零八条。二者处罚幅度、是否移送公安差异极大，必须扎实取证。
+            - separator [ref=e106]
+            - heading "四、执法提示（高置信度）" [level=3] [ref=e107]
+            - list [ref=e108]:
+              - listitem [ref=e109]:
+                - strong [ref=e110]: 移送公安是法定必经程序
+                - text: ：一千一百零八条明确"并将案件移送公安机关"，属"处罚+拘留"双轨，不能只罚款不移送。
+              - listitem [ref=e111]:
+                - strong [ref=e112]: 裁量权提示
+                - text: ：10 万—100 万跨度大，须依据本地《生态环境行政处罚裁量基准》结合违法情节（排放量、持续时间、后果、整改态度）量罚，
+                - strong [ref=e113]: 不得承诺具体数额
+                - text: 。
+              - listitem [ref=e114]:
+                - strong [ref=e115]: 程序正当
+                - text: ：此类案件涉及拘留、吊销许可证，务必履行立案、调查取证、告知听证、法制审核、集体讨论等程序，确保程序合法。
+              - listitem [ref=e116]:
+                - strong [ref=e117]: 取证重点
+                - text: ：暗管/渗坑的现场影像与示意图、监测数据篡改的技术鉴定、污染防治设施运行记录、当事人陈述等，形成完整证据链。
+            - separator [ref=e118]
+            - paragraph [ref=e119]:
+              - strong [ref=e120]: 置信度说明
+              - text: ：以上条文均引自法典工具返回原文，条号与内容为
+              - strong [ref=e121]: 高置信度
+              - text: ；具体裁量幅度需结合地方裁量基准执行，属
+              - strong [ref=e122]: 中置信度
+              - text: ，以当地基准为准。
+            - paragraph [ref=e123]: 需要我进一步展开某一种逃避监管情形的取证要点，或调取相关典型案例吗？
+          - generic [ref=e124]:
+            - button "⧉ 复制" [ref=e125] [cursor=pointer]
+            - button "👍" [ref=e126] [cursor=pointer]
+            - button "👎" [ref=e127] [cursor=pointer]
+            - button "⑂ 分支" [ref=e128] [cursor=pointer]
+      - generic [ref=e31]:
+        - textbox "输入问题，Enter 发送，Shift+Enter 换行" [ref=e32]
+        - button "发送" [disabled] [ref=e129]

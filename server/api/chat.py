@@ -259,7 +259,8 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
                           "chars": len(content)})
             return content, trace
         trace.append({"type": "think", "round": round_idx, "cost_ms": llm_ms,
-                      "tools": [tc["function"]["name"] for tc in tool_calls]})
+                      "tools": [tc["function"]["name"] for tc in tool_calls],
+                      "thought": (str(msg.get("content") or "")[:100])})
         messages.append({"role": "assistant", "content": msg.get("content") or None,
                          "tool_calls": tool_calls})
         # 并行执行同轮全部工具调用（4 个串行是 12s+ 延迟的主因）
@@ -283,6 +284,7 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
         for tool_call_id, name, args, result, tool_ms in results:
             # 轨迹事件（UI 展示）
             trace.append({"type": "tool", "round": round_idx, "name": name,
+                          "category": _tool_category(name),
                           "args": args, "result_preview": str(result)[:200],
                           "cost_ms": tool_ms})
             # govmcp SM3 审计入链（五要素，等保）
@@ -328,6 +330,18 @@ def _tool_level(name: str) -> str:
     if name in ("kb_upload", "kb_delete", "kb_sync"):
         return "L3"
     return "L2"
+
+
+def _tool_category(name: str) -> str:
+    """工具动作分类（轨迹标签用）: read / write / exec。"""
+    read_tools = ("statute_lookup", "statute_search", "kb_search", "kb_semantic_search",
+                  "kb_read", "kb_list", "kb_status", "file_read", "git_status")
+    write_tools = ("kb_upload", "kb_delete", "kb_sync", "file_write")
+    if name in read_tools or name.startswith("statute_"):
+        return "read"
+    if name in write_tools:
+        return "write"
+    return "exec"
 
 
 @router.post("/chat/stream")

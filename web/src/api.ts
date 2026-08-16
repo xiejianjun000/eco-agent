@@ -33,11 +33,13 @@ export interface TraceEvent {
   type: 'think' | 'tool' | 'answer' | 'correction';
   round?: number;
   name?: string;
+  category?: 'read' | 'write' | 'exec';
   args?: Record<string, unknown>;
   result_preview?: string;
   cost_ms?: number;
   chars?: number;
   tools?: string[];
+  thought?: string;
   note?: string;
 }
 

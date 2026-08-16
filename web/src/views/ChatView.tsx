@@ -193,13 +193,20 @@ export default function ChatView(): React.ReactElement {
                         <span className="trace-step">{ti + 1}</span>
                         {t.type === 'think' && (
                           <span className="trace-body">
-                            💭 思考{(t.tools?.length ?? 0) > 0 ? ` → 决定调用 ${(t.tools ?? []).join(', ')}` : ''}
+                            <span className="trace-badge badge-think">思考</span>
+                            {(t.tools?.length ?? 0) > 0 && (
+                              <span className="trace-detail">决定调用 {t.tools?.join(', ')}</span>
+                            )}
+                            {t.thought && <span className="trace-thought">{t.thought}</span>}
                             <span className="trace-cost">{t.cost_ms}ms</span>
                           </span>
                         )}
                         {t.type === 'tool' && (
                           <span className="trace-body">
-                            🔧 {t.name}({JSON.stringify(t.args ?? {}).slice(0, 80)})
+                            <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
+                              {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
+                            </span>
+                            <span className="trace-detail">{t.name}({JSON.stringify(t.args ?? {}).slice(0, 80)})</span>
                             <span className="trace-cost">{t.cost_ms}ms</span>
                             {t.result_preview && (
                               <span className="trace-result">{t.result_preview.slice(0, 120)}</span>
@@ -207,10 +214,17 @@ export default function ChatView(): React.ReactElement {
                           </span>
                         )}
                         {t.type === 'answer' && (
-                          <span className="trace-body">✍ 综合回答 <span className="trace-cost">{t.cost_ms ?? ''}ms · {t.chars}字</span></span>
+                          <span className="trace-body">
+                            <span className="trace-badge badge-answer">综合</span>
+                            <span className="trace-detail">基于检索结果生成回答（{t.chars}字）</span>
+                            <span className="trace-cost">{t.cost_ms ?? ''}ms</span>
+                          </span>
                         )}
                         {t.type === 'correction' && (
-                          <span className="trace-body">↺ 纠偏：{t.note}</span>
+                          <span className="trace-body">
+                            <span className="trace-badge badge-correction">纠偏</span>
+                            <span className="trace-detail">{t.note}</span>
+                          </span>
                         )}
                       </div>
                     ))}
