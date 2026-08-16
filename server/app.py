@@ -50,6 +50,14 @@ def create_app() -> FastAPI:
         version=get_version(),
     )
 
+    # cordis 组合内核装配（服务注册 + 组合插件装载，对标 DSH boot）
+    try:
+        from agent_core.cordis.boot import get_app_context
+
+        get_app_context()
+    except Exception:  # noqa: BLE001 — 装配失败不阻断 API
+        pass
+
     from server.api import chat, documents, memory, plugins, sessions, skills, subagents, system, tools
 
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
@@ -76,14 +84,11 @@ def _mount_web_gui(app: FastAPI) -> None:
     if not web_dist.is_dir():
         logger.info("web/dist not found — Web GUI 未构建（cd web && npm run build），仅 API 可用")
         return
-    from fastapi.responses import FileResponse
     from fastapi.staticfiles import StaticFiles
 
-    app.mount("/assets", StaticFiles(directory=str(web_dist / "assets")), name="web-assets")
-
-    @app.get("/", include_in_schema=False)
-    async def index() -> FileResponse:
-        return FileResponse(str(web_dist / "index.html"))
+    # 整个 dist 作为静态根（含 public/ 拷贝产物：favicon.svg、eco-logo.svg 等）。
+    # 注册在所有 API 路由之后：/api/v1、/healthz 等由路由优先处理，其余路径回退 SPA 静态文件。
+    app.mount("/", StaticFiles(directory=str(web_dist), html=True), name="web-gui")
 
 
 def run(host: str = "127.0.0.1", port: int = 8788, reload: bool = False) -> None:

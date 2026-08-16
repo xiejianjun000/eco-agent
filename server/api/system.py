@@ -97,3 +97,14 @@ async def metrics() -> dict:
     except Exception:  # noqa: BLE001
         out["scheduler"] = {"jobs": 0}
     return out
+
+@router.get("/system/cordis")
+async def cordis_snapshot() -> dict:
+    """组合内核诊断：服务/插件/事件目录（对标 DSH Inspect list）。"""
+    try:
+        from agent_core.cordis.boot import get_app_context
+
+        return get_app_context().snapshot()
+    except Exception as e:  # noqa: BLE001
+        return {"error": str(e)}
+
