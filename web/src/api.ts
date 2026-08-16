@@ -127,6 +127,8 @@ export const api = {
   subagentMessage: (id: string, message: string) => post<{ id: string; status: string }>(`/subagents/${id}/message`, { message }),
   subagentInterrupt: (id: string) => post<{ id: string; interrupted: boolean }>(`/subagents/${id}/interrupt`, {}),
   sessionMessages: (sessionId = 'default') => get<{ session_id: string; messages: { role: string; content: string }[]; count: number }>(`/sessions/${sessionId}/messages`),
+  slots: () => get<{ slots: { slot: string; id: string; title: string; description: string }[]; stats: Record<string, number> }>('/slots'),
+  slotData: (id: string) => get<Record<string, unknown>>(`/slots/${id}/data`),
 };
 
 /** POST /api/v1/chat/stream 的 SSE 流式读取，逐块回调（DSH 式实时事件流）。

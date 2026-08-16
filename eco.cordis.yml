@@ -5,3 +5,6 @@
 - plugin: agent_core.cordis_plugins.subagent_cleaner
   config: { ttl_seconds: 1800, interval_seconds: 300 }
   inject: [subagents]
+
+- plugin: agent_core.cordis_plugins.audit_panel
+  inject: [slots, trace_audit]

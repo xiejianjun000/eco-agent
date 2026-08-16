@@ -14,12 +14,14 @@ from agent_core.cordis import Context
 def register_standard_services(ctx: Context) -> Context:
     """注册 eco-agent 存量核心模块为标准服务。"""
     from agent_core.lessons import get_lesson_store
+    from agent_core.slots import get_slot_registry
     from agent_core.subagent import get_subagent_registry
     from agent_core.trace_audit import get_trace_audit
 
     ctx.provide("lessons", get_lesson_store(), overwrite=True)
     ctx.provide("trace_audit", get_trace_audit(), overwrite=True)
     ctx.provide("subagents", get_subagent_registry(), overwrite=True)
+    ctx.provide("slots", get_slot_registry(), overwrite=True)
     try:
         from agent_core.llm_client import get_default_client
 

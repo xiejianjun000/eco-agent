@@ -51,6 +51,20 @@ class ChatResponse(BaseModel):
     trace: list[dict] = Field(default_factory=list, description="执行轨迹（思考/工具调用/耗时）")
 
 
+
+
+def _svc(name: str, fallback_fn):
+    """cordis 服务优先读取，未装配时回退直接获取（渐进服务化）。"""
+    try:
+        from agent_core.cordis.boot import get_app_context
+
+        value = get_app_context().get(name)
+        if value is not None:
+            return value
+    except Exception:  # noqa: BLE001
+        pass
+    return fallback_fn()
+
 def _load_codex_skill_rules() -> str:
     """加载 eco-codex skill 的检索规则（SKILL.md 全文注入系统提示词）。"""
     from pathlib import Path
@@ -144,7 +158,7 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
     try:
         from agent_core.lessons import get_lesson_store
 
-        related = get_lesson_store().search(message)
+        related = _svc("lessons", get_lesson_store).search(message)
         if related:
             lines = ["【历史经验——此前处理类似问题的真实记录】"]
             for i, l in enumerate(related, 1):
@@ -384,7 +398,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
 
     from agent_core.llm_client import get_default_client
 
-    client = get_default_client()
+    client = _svc("llm", get_default_client)
     messages = _build_messages(req.message, req.history)
     t0 = time.monotonic()
     try:
@@ -400,8 +414,9 @@ async def chat(req: ChatRequest) -> ChatResponse:
     try:
         from agent_core.trace_audit import get_trace_audit
 
-        get_trace_audit().record_trace(req.message, reply, len(trace), duration_ms,
-                                       model=req.model or client._provider["default_model"])
+        _svc("trace_audit", get_trace_audit).record_trace(
+            req.message, reply, len(trace), duration_ms,
+            model=req.model or client._provider["default_model"])
     except Exception as e:  # noqa: BLE001 — 审计失败不阻断业务
         logger.warning("trace audit failed: %s", e)
     # 教训自动沉淀（自愈闭环：失败对话提炼为 lesson，下次自动注入）
@@ -411,7 +426,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
         tool_names = [t.get("name", "") for t in trace if t.get("type") == "tool"]
         lesson = extract_lesson(req.message, reply, tool_names)
         if lesson:
-            get_lesson_store().add(lesson)
+            _svc("lessons", get_lesson_store).add(lesson)
             logger.info("lesson 已沉淀: %s", lesson.get("lesson", "")[:80])
     except Exception as e:  # noqa: BLE001
         logger.warning("lesson extract failed: %s", e)
@@ -445,7 +460,7 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
 
     from agent_core.trace_audit import get_trace_audit
 
-    audit = get_trace_audit()
+    audit = _svc("trace_audit", get_trace_audit)
     tools = _codex_tools()
     trace: list[dict] = []
     total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
@@ -723,7 +738,7 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
 
     from agent_core.llm_client import get_default_client
 
-    client = get_default_client()
+    client = _svc("llm", get_default_client)
     messages = _build_messages(req.message, req.history)
     t0 = time.monotonic()
     # 线程安全队列：工作线程（流式 chunk 回调）与事件循环（gen 消费）共用，

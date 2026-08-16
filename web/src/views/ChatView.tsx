@@ -102,6 +102,7 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
               return (
                 <details key={ti} className="call-item">
                   <summary className="call-summary">
+                    <svg className="call-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3.3a3.8 3.8 0 0 1-4.8 4.8l-5.1 5.1a1.6 1.6 0 1 1-2.3-2.3l5.1-5.1A3.8 3.8 0 0 1 11.7 1l-2.3 2.3 2.3 2.3L14 3.3Z" /></svg>
                     <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
                       {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
                     </span>
@@ -134,7 +135,7 @@ export default function ChatView(): React.ReactElement {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [branchTag, setBranchTag] = useState<string | null>(null);
-  const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc' | 'task'>('trace');
+  const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc' | 'task' | 'slot'>('trace');
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
   const [docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
   // 子代理任务面板（对标 DSH subagent/jobs）
@@ -144,6 +145,10 @@ export default function ChatView(): React.ReactElement {
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
   const [taskDetail, setTaskDetail] = useState<{ agent: SubagentInfo; output: { seq: number; kind: string; status?: string; result?: string }[] } | null>(null);
   const [taskFollowup, setTaskFollowup] = useState('');
+  // Slot 动态面板（插件注册）
+  const [slotPanels, setSlotPanels] = useState<{ id: string; title: string; description: string }[]>([]);
+  const [activeSlot, setActiveSlot] = useState<string | null>(null);
+  const [slotData, setSlotData] = useState<Record<string, unknown> | null>(null);
 
   React.useEffect(() => {
     import('../api').then(({ api }) => {
@@ -156,6 +161,8 @@ export default function ChatView(): React.ReactElement {
           setMessages((prev) => [...prev, ...restored]);
         }
       }).catch(() => {});
+      // Slot 面板动态加载
+      api.slots().then((r) => setSlotPanels(r.slots)).catch(() => {});
     });
   }, []);
   const [selectedTrace, setSelectedTrace] = useState<number | null>(null);
@@ -310,6 +317,20 @@ export default function ChatView(): React.ReactElement {
     void navigator.clipboard.writeText(m.content);
   };
 
+  /** 消息日志区点击委托：代码块横幅「复制」按钮（DSH code-block banner 行为） */
+  const onLogClick = (e: React.MouseEvent) => {
+    const btn = (e.target as HTMLElement).closest('.md-code-copy') as HTMLButtonElement | null;
+    if (!btn) return;
+    const code = btn.closest('.md-codeblock')?.querySelector('code')?.textContent ?? '';
+    void navigator.clipboard
+      .writeText(code)
+      .then(() => {
+        btn.textContent = '已复制';
+        window.setTimeout(() => { btn.textContent = '复制'; }, 1200);
+      })
+      .catch(() => {});
+  };
+
   const rateMsg = (index: number, rating: 'up' | 'down') => {
     setMessages((prev) => prev.map((m, i) => (i === index ? { ...m, rating: m.rating === rating ? null : rating } : m)));
   };
@@ -332,7 +353,7 @@ export default function ChatView(): React.ReactElement {
     <div className="chat-wrap">
       <div className="chat-box" style={{ height: 'calc(100vh - 120px)' }}>
         {branchTag && <div className="branch-tag">{branchTag}</div>}
-        <div className="chat-log" ref={logRef}>
+        <div className="chat-log" ref={logRef} onClick={onLogClick}>
           {messages.map((m, i) => (
             <div key={i} className={`msg ${m.role}`}>
               <div className="msg-meta">
@@ -375,6 +396,11 @@ export default function ChatView(): React.ReactElement {
                     }}
                   >⚙ 轨迹</button>
                   <button className="tb-btn" title="在此处分支新对话" onClick={() => branchFrom(i)}>⑂ 分支</button>
+                </div>
+              )}
+              {m.role === 'user' && m.content && (
+                <div className="msg-toolbar">
+                  <button className="tb-btn" title="复制" onClick={() => copyMsg(m)}>⧉ 复制</button>
                 </div>
               )}
             </div>
@@ -421,6 +447,21 @@ export default function ChatView(): React.ReactElement {
           >
             任务{taskAgents.length > 0 ? ` (${taskAgents.length})` : ''}
           </button>
+          {slotPanels.map((p) => (
+            <button
+              key={p.id}
+              className={`side-tab${activeSlot === p.id ? ' active' : ''}`}
+              title={p.description}
+              onClick={() => {
+                setSideTab('slot');
+                setActiveSlot(p.id);
+                setSlotData(null);
+                void api.slotData(p.id).then((d) => setSlotData(d)).catch(() => setSlotData({ error: '加载失败' }));
+              }}
+            >
+              {p.title}
+            </button>
+          ))}
         </div>
 
         {sideTab === 'trace' && (
@@ -533,6 +574,7 @@ export default function ChatView(): React.ReactElement {
                                     {callEvts.map((t, ti) => (
                                       <div key={ti} className="trace-call">
                                         <div className="trace-event">
+                                          <svg className="call-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3.3a3.8 3.8 0 0 1-4.8 4.8l-5.1 5.1a1.6 1.6 0 1 1-2.3-2.3l5.1-5.1A3.8 3.8 0 0 1 11.7 1l-2.3 2.3 2.3 2.3L14 3.3Z" /></svg>
                                           <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
                                             {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
                                           </span>
@@ -621,6 +663,19 @@ export default function ChatView(): React.ReactElement {
                   <pre className="artifact-code">{escapeHtml(a.code)}</pre>
                 </details>
               ))
+            )}
+          </div>
+        )}
+
+        {sideTab === 'slot' && activeSlot && (
+          <div className="side-artifacts slot-panel">
+            <div className="side-doc-section">{slotPanels.find((p) => p.id === activeSlot)?.title ?? activeSlot}</div>
+            {slotData === null ? (
+              <div className="empty" style={{ padding: 16 }}>加载中…</div>
+            ) : (
+              <pre className="artifact-code" style={{ whiteSpace: 'pre-wrap' }}>
+                {JSON.stringify(slotData, null, 2)}
+              </pre>
             )}
           </div>
         )}
