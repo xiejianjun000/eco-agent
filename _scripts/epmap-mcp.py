@@ -90,14 +90,52 @@ def _audit(tool: str, args: dict, result: str, duration_ms: int) -> None:
         pass
 
 
-def _cred() -> tuple[str, str, str, str]:
-    """返回 (secret_id, secret_key, source水印, base_url)——环境变量配置。"""
+def _cred() -> tuple[str, str]:
+    """返回 (secret_id, secret_key)——环境变量配置，不落仓库。"""
     return (
         os.environ.get("EPMAP_SECRET_ID", "").strip(),
         os.environ.get("EPMAP_SECRET_KEY", "").strip(),
-        os.environ.get("EPMAP_SOURCE", "").strip(),      # 签名水印值（青悦文档提供）
-        os.environ.get("EPMAP_BASE_URL", "https://service-xxxx.apigw.example.com").strip(),
     )
+
+
+def _sign_headers() -> dict:
+    """云市场 API 网关官方签名（青悦文档示例）：
+    签名字符串 = "x-date: <UTC时间>"，HMAC-SHA1(SecretKey) → base64。
+    Authorization = {"id", "x-date", "signature"} JSON。"""
+    import base64
+    import hashlib
+    import hmac
+    import uuid
+
+    secret_id, secret_key = _cred()
+    dt = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+    sign_str = f"x-date: {dt}"
+    digest = hmac.new(secret_key.encode('utf-8'), sign_str.encode('utf-8'),
+                      hashlib.sha1).digest()
+    signature = base64.b64encode(digest).decode('utf-8')
+    auth = json.dumps({"id": secret_id, "x-date": dt, "signature": signature})
+    return {"request-id": str(uuid.uuid1()), "Authorization": auth}
+
+
+def _fetch_epmap(endpoint: str, params: dict) -> dict:
+    """调用青悦环境数据云（腾讯云市场 API 网关，官方签名）。"""
+    import ssl
+    import urllib.parse
+    import urllib.request
+
+    base_url = os.environ.get(
+        "EPMAP_BASE_URL",
+        "https://ap-shanghai.cloudmarket-apigw.com/service-q53mzqub/api/v2").rstrip("/")
+    url = f"{base_url}/{endpoint}"
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    headers = _sign_headers()
+    req = urllib.request.Request(url, headers=headers)
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    with urllib.request.urlopen(req, context=ctx, timeout=30) as resp:
+        return json.loads(resp.read().decode('utf-8'))
 
 
 def _token() -> str:
@@ -111,34 +149,6 @@ def _hmac_sha1(key: bytes, msg: str) -> str:
 
     return base64.b64encode(
         hmac.new(key, msg.encode("utf-8"), hashlib.sha1).digest()).decode()
-
-
-def _fetch_epmap(endpoint: str, params: dict) -> dict:
-    """腾讯云 API 网关密钥对鉴权（青悦环境数据云的标准接入方式）：
-    Authorization: hmac id="<SecretID>", algorithm="hmac-sha1",
-                   headers="date source", signature="<HmacSHA1(SecretKey, date+source)>"
-    端点与签名水印（source）以青悦接入文档为准，经 EPMAP_* 环境变量配置。"""
-    import urllib.parse
-    import urllib.request
-    from email.utils import formatdate
-
-    secret_id, secret_key, source, base_url = _cred()
-    if not (secret_id and secret_key and source and "example.com" not in base_url):
-        raise NotImplementedError(
-            "EPMAP 接入参数不全——需要环境变量: EPMAP_SECRET_ID / EPMAP_SECRET_KEY / "
-            "EPMAP_SOURCE（签名水印，青悦文档提供）/ EPMAP_BASE_URL（API 网关端点）。"
-            "这些值在申请 epmap 数据 API 时青悦提供的接入文档/邮件里。")
-    date = formatdate(timeval=time.time(), localtime=False, usegmt=True)
-    signing_str = f"date: {date}\nsource: {source}"
-    signature = _hmac_sha1(secret_key.encode("utf-8"), signing_str)
-    auth = (f'hmac id="{secret_id}", algorithm="hmac-sha1", '
-            f'headers="date source", signature="{signature}"')
-    qs = urllib.parse.urlencode(params)
-    url = f"{base_url}/{endpoint}?{qs}" if qs else f"{base_url}/{endpoint}"
-    req = urllib.request.Request(url, headers={"Date": date, "Authorization": auth,
-                                               "User-Agent": "eco-agent-epmap/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read().decode("utf-8"))
 
 
 def _no_token(tool: str, args: dict, t0: float) -> dict:
@@ -203,12 +213,15 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.selftest:
-        sid, sk, source, base = _cred()
+        sid, sk = _cred()
         print("EPMAP_SECRET_ID:", "已配置" if sid else "缺失")
         print("EPMAP_SECRET_KEY:", "已配置" if sk else "缺失")
-        print("EPMAP_SOURCE（签名水印）:", "已配置" if source else "缺失（青悦文档提供）")
-        print("EPMAP_BASE_URL:", base)
-        print(json.dumps(_call("water_quality", {"basin": "资水"}), ensure_ascii=False, indent=2))
+        try:
+            result = _fetch_epmap("surface_water/stations", {})
+            print("接口调用: HTTP 200（签名通过）")
+            print(json.dumps(result, ensure_ascii=False, indent=1)[:400])
+        except Exception as e:  # noqa: BLE001
+            print("接口调用失败:", e)
         return 0
 
     sys.stderr.write(json.dumps({

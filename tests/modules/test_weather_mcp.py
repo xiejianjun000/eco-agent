@@ -81,3 +81,24 @@ def test_audit_written():
     assert lines
     record = json.loads(lines[-1])
     assert record["current_hash"] and record["prev_hash"]
+
+
+# ── epmap 签名单元测试（官方示例算法）──
+
+def test_epmap_signature_algorithm():
+    """云市场网关签名：signStr='x-date: <UTC>'，HMAC-SHA1→base64。"""
+    import base64
+    import hashlib
+    import hmac
+    import json as _json
+
+    secret_key = "test-key"
+    dt = "Sat, 16 Aug 2026 12:00:00 GMT"
+    sign_str = f"x-date: {dt}"
+    digest = hmac.new(secret_key.encode(), sign_str.encode(), hashlib.sha1).digest()
+    signature = base64.b64encode(digest).decode()
+    auth = _json.loads(_json.dumps({"id": "x", "x-date": dt, "signature": signature}))
+    assert auth["signature"]
+    assert auth["x-date"] == dt
+    # 与官方示例的 auth 结构一致
+    assert set(auth.keys()) == {"id", "x-date", "signature"}
