@@ -19,6 +19,7 @@ dependencies = [
     "numpy>=1.26",
     "rich>=13.0",
     "mcp>=1.0",
+    "PyYAML>=6.0",
 ]
 
 [project.urls]

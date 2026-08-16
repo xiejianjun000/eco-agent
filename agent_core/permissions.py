@@ -169,9 +169,13 @@ def _confirm(prompt: str) -> bool:
         return False
 
 
-def gate_tool_call(tool_name: str, args: dict | None = None) -> tuple[bool, str, str]:
-    """执行闸门。返回 (是否放行, 风险级, 原因)。全部决策写审计链。"""
-    level = tool_risk_level(tool_name)
+def gate_tool_call(tool_name: str, args: dict | None = None,
+                   overrides: dict[str, str] | None = None) -> tuple[bool, str, str]:
+    """执行闸门。返回 (是否放行, 风险级, 原因)。全部决策写审计链。
+
+    overrides: 调用方注入的风险覆盖（如插件 manifest 声明），优先级同 load_overrides。
+    """
+    level = tool_risk_level(tool_name, overrides)
 
     if level in ("L1", "L2"):
         _audit_decision(tool_name, level, "allow", "自动放行")
