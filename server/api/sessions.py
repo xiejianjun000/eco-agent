@@ -81,3 +81,19 @@ async def get_session(session_id: str) -> SessionOut:
         created_at=s.created_at, updated_at=s.updated_at,
         message_count=len(getattr(s, "messages", [])),
     )
+
+
+@router.get("/sessions/{session_id}/messages")
+async def get_session_messages(session_id: str) -> dict:
+    """从 session_log（SHA-256 链）重放对话消息，供前端重启后恢复。"""
+    from agent_core.session_log import SessionEventLog
+
+    slog = SessionEventLog(f"web/{session_id}")
+    messages: list[dict] = []
+    for e in slog.replay():
+        if e.get("type") == "user/message":
+            messages.append({"role": "user", "content": e["data"].get("content", "")})
+        elif e.get("type") == "assistant/message":
+            messages.append({"role": "assistant", "content": e["data"].get("content", "")})
+    return {"session_id": session_id, "messages": messages,
+            "count": len(messages)}

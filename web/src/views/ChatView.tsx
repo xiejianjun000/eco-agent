@@ -149,8 +149,15 @@ export default function ChatView(): React.ReactElement {
     import('../api').then(({ api }) => {
       api.documents().then((r) => setDocFiles(r.files)).catch(() => {});
       api.documentTools().then((r) => setDocTools(r.tools)).catch(() => {});
+      // 会话恢复：重启后从 session_log 重放历史
+      api.sessionMessages('default').then((r) => {
+        if (r.count > 0) {
+          const restored = r.messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content, time: fmtClock() }));
+          setMessages((prev) => [...prev, ...restored]);
+        }
+      }).catch(() => {});
     });
-  }, [messages]);
+  }, []);
   const [selectedTrace, setSelectedTrace] = useState<number | null>(null);
   const [turnsOpen, setTurnsOpen] = useState(true);
   const [callsOpen, setCallsOpen] = useState(true);
@@ -243,7 +250,7 @@ export default function ChatView(): React.ReactElement {
     ]);
     setBusy(true);
     try {
-      await streamChat(text, history, (delta, meta) => {
+      await streamChat(text, history, 'default', (delta, meta) => {
         setMessages((prev) => {
           const next = [...prev];
           const last = next[next.length - 1];

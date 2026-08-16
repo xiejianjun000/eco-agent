@@ -26,6 +26,20 @@ class ChatRequest(BaseModel):
     history: list[dict] = Field(default_factory=list, description="历史消息 [{role, content}]")
     model: str = Field(default="", description="模型名，留空用默认")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    session_id: str = Field(default="", description="会话 id，留空用 default（消息落盘/恢复用）")
+
+
+def _persist_turn(session_id: str, user_msg: str, reply: str, ok: bool) -> None:
+    """对话轮次落盘（session_log SHA-256 链，重启可恢复）。"""
+    try:
+        from agent_core.session_log import SessionEventLog
+
+        slog = SessionEventLog(f"web/{session_id or 'default'}")
+        slog.append("user/message", {"content": user_msg})
+        if ok and reply:
+            slog.append("assistant/message", {"content": reply[:8000]})
+    except Exception:  # noqa: BLE001 — 落盘失败不影响主流程
+        logger.warning("session persist failed: %s", session_id)
 
 
 class ChatResponse(BaseModel):
@@ -364,7 +378,9 @@ async def chat(req: ChatRequest) -> ChatResponse:
             client, messages, req.model)
     except Exception as e:  # noqa: BLE001 — API 边界兜底
         logger.exception("chat failed")
+        _persist_turn(req.session_id, req.message, "", ok=False)
         return ChatResponse(reply=f"[eco-server] 对话失败: {e}", model=req.model or "default", usage={})
+    _persist_turn(req.session_id, req.message, reply, ok=True)
     duration_ms = int((time.monotonic() - t0) * 1000)
     # 轨迹审计入链（govmcp SM3，五要素）
     try:
@@ -388,7 +404,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
     # 会话级 token 计量 + 首个 LLM 响应耗时（非流式下为近似首响应，非逐 token 采样）
     return ChatResponse(reply=reply, model=req.model or "default", usage=usage,
                         duration_ms=duration_ms,
-                        ttft_ms=first_token_ms if first_token_ms is not None else first_llm_ms,
+                        ttft_ms=(first_token_ms if first_token_ms is not None else first_llm_ms) or 0,
                         trace=trace)
 
 
@@ -741,6 +757,9 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
                 await asyncio.sleep(0.02)
         ttft = first_delta_ms if first_delta_ms is not None else (
             first_token_ms if first_token_ms is not None else first_llm_ms)
+        # 会话落盘（重启可恢复）：失败回复（[eco-server] 开头）不写 assistant 消息
+        ok = not reply.startswith("[eco-server]")
+        _persist_turn(req.session_id, req.message, reply, ok=ok)
         done_payload = json.dumps({"done": True, "usage": usage, "trace": trace,
                                    "ttft_ms": ttft,
                                    "duration_ms": int((time.monotonic() - t0) * 1000)})

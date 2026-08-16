@@ -126,6 +126,7 @@ export const api = {
     get<{ agent: SubagentInfo; output: { seq: number; kind: string; status?: string; result?: string; event?: TraceEvent }[]; seq: number }>(`/subagents/${id}?since_seq=${sinceSeq}`),
   subagentMessage: (id: string, message: string) => post<{ id: string; status: string }>(`/subagents/${id}/message`, { message }),
   subagentInterrupt: (id: string) => post<{ id: string; interrupted: boolean }>(`/subagents/${id}/interrupt`, {}),
+  sessionMessages: (sessionId = 'default') => get<{ session_id: string; messages: { role: string; content: string }[]; count: number }>(`/sessions/${sessionId}/messages`),
 };
 
 /** POST /api/v1/chat/stream 的 SSE 流式读取，逐块回调（DSH 式实时事件流）。
@@ -135,6 +136,7 @@ export const api = {
 export async function streamChat(
   message: string,
   history: { role: string; content: string }[],
+  sessionId: string,
   onDelta: (text: string, meta?: { ttft_ms?: number; reset?: boolean }) => void,
   onEvent?: (ev: TraceEvent) => void,
   onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[]; usage?: ChatUsage; ttft_ms?: number }) => void,
@@ -142,7 +144,7 @@ export async function streamChat(
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, session_id: sessionId }),
   });
   if (!res.body) throw new Error('stream body unavailable');
   const reader = res.body.getReader();
