@@ -82,6 +82,11 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
             "   立即调用 generate_pptx(slides=[{\"title\":\"页标题\",\"bullets\":[\"要点\"]}], title=名称)，\n"
             "   然后把工具返回的 path 文件路径告诉用户。不要先写文字大纲再问要不要文件。\n"
             "8. 【你有联网能力】web_fetch 工具可抓取政务网站正文（mee.gov.cn 等白名单），\n"
+            "9. 【督察资料检索路由——实测固化的官方渠道】\n"
+            "   督察动态/典型案例: mee.gov.cn/ywgz/zysthjbhdc/（进驻dcjz/整改dczg/管理dcjl）；\n"
+            "   六大区域督察局子站: hbdc/hddc/hndc/xbdc/xndc/dbdc.mee.gov.cn；\n"
+            "   制度文件（《督察工作规定》《条例》等党内法规）: 中办国办印发，\n"
+            "   发布渠道是 gov.cn（中国政府网），不在生态环境部官网——先查 gov.cn。\n"
             "    execute_code 沙箱也可发起网络请求。用户要求查官网文件/最新政策时，\n"
             "    先尝试 web_fetch 实际抓取；禁止声称'没有联网权限'——除非抓取本身失败。\n"
         )
