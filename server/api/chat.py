@@ -36,23 +36,44 @@ class ChatResponse(BaseModel):
     ttft_ms: int = Field(default=0, description="首 token 耗时（毫秒）")
 
 
+def _load_codex_skill_rules() -> str:
+    """加载 eco-codex skill 的检索规则（SKILL.md 全文注入系统提示词）。"""
+    from pathlib import Path
+
+    skill_md = (Path(__file__).resolve().parent.parent.parent
+                / "ecoskills" / "eco-codex" / "SKILL.md")
+    try:
+        return skill_md.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
 def _build_messages(message: str, history: list[dict]) -> list[dict]:
-    """系统提示词（SOUL 驱动）+ 截断历史 + 当前消息。"""
+    """系统提示词（SOUL 驱动）+ 法典 skill 规则 + 截断历史 + 当前消息。"""
+    from datetime import date
+
     from agent_core.prompt_engine import get_prompt_engine
 
     eng = get_prompt_engine()
     system = eng.build_system_prompt()
-    # 法典知识注入：2026-08-15 后法典已施行，纠正通用模型的过时基线
-    from datetime import date
 
+    # 法典知识注入：2026-08-15 后法典已施行，纠正通用模型的过时基线
     codex_note = (
         f"【重要背景】今天是{date.today().isoformat()}。"
         "《中华人民共和国生态环境法典》已于2026年3月12日通过、"
         "2026年8月15日起施行（共1242条，五编：总则/污染防治/生态保护/绿色低碳发展/"
-        "法律责任和附则），《环境保护法》《环境影响评价法》等10部单行法同日废止。"
-        "涉及法条引用时，优先调用 statute_lookup/statute_search 工具查法典原文，"
-        "不要凭记忆回答法条内容。"
+        "法律责任和附则），《环境保护法》《环境影响评价法》等10部单行法同日废止。\n"
     )
+    skill_rules = _load_codex_skill_rules()
+    if skill_rules:
+        codex_note += (
+            "\n【工具使用纪律——必须遵守】\n"
+            "1. 涉及法条/条款/处罚幅度的问题，必须实际调用 statute_lookup 或 statute_search 工具获取原文，"
+            "拿到结果后再回答；禁止凭记忆说法条。\n"
+            "2. 禁止输出'正在调用工具''请稍候'之类的话——直接调用工具，不要预告。\n"
+            "3. 引用条文必须与工具返回的原文一致，条号以工具结果为准。\n"
+            "4. 工具返回的结果就是最终依据，不要编造工具没返回的内容。\n"
+        )
     system = system + "\n" + codex_note
     messages: list[dict] = [{"role": "system", "content": system}]
     for h in history[-20:]:
@@ -137,11 +158,17 @@ async def chat(req: ChatRequest) -> ChatResponse:
 
 async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
                                 max_rounds: int = 3) -> str:
-    """法典工具循环：LLM 决定查条 → 执行检索 → 结果回填 → 综合回答。"""
+    """法典工具循环：LLM 决定查条 → 执行检索 → 结果回填 → 综合回答。
+
+    兜底：模型输出"正在调用工具"之类空话但未真正调用时，追加纠偏消息
+    强制其实际调用工具（空话绝不作为最终回复返回）。
+    """
     import asyncio
     import json
+    import re
 
     tools = _codex_tools()
+    empty_talk_re = re.compile(r"正在(调用|查询|检索)|请稍候|马上(为您)?(查询|检索)|我先(查|检索)")
     for _ in range(max_rounds):
         loop = asyncio.get_event_loop()
         msg, err = await loop.run_in_executor(
@@ -151,7 +178,18 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
             return f"[eco-server] LLM 调用失败: {err}"
         tool_calls = msg.get("tool_calls")
         if not tool_calls:
-            return str(msg.get("content") or "")
+            content = str(msg.get("content") or "")
+            # 空话检测：提及调用工具但未真调用 → 纠偏重试
+            if empty_talk_re.search(content):
+                messages.append({"role": "assistant", "content": content})
+                messages.append({
+                    "role": "user",
+                    "content": "你刚才没有实际调用工具，只输出了预告文字。"
+                               "请直接调用 statute_lookup 或 statute_search 获取条文原文，"
+                               "基于工具返回的真实结果回答，不要再输出预告。",
+                })
+                continue
+            return content
         messages.append({"role": "assistant", "content": msg.get("content") or None,
                          "tool_calls": tool_calls})
         for tc in tool_calls:
