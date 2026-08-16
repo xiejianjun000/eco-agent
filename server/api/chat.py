@@ -81,6 +81,9 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
             "7. 【generate_pptx 已在本轮工具列表中】用户说'生成PPT/做课件/出演示文稿'时，\n"
             "   立即调用 generate_pptx(slides=[{\"title\":\"页标题\",\"bullets\":[\"要点\"]}], title=名称)，\n"
             "   然后把工具返回的 path 文件路径告诉用户。不要先写文字大纲再问要不要文件。\n"
+            "8. 【你有联网能力】web_fetch 工具可抓取政务网站正文（mee.gov.cn 等白名单），\n"
+            "    execute_code 沙箱也可发起网络请求。用户要求查官网文件/最新政策时，\n"
+            "    先尝试 web_fetch 实际抓取；禁止声称'没有联网权限'——除非抓取本身失败。\n"
         )
     system = system + "\n" + codex_note
     messages: list[dict] = [{"role": "system", "content": system}]
@@ -162,6 +165,19 @@ def _codex_tools() -> list[dict]:
         {
             "type": "function",
             "function": {
+                "name": "web_fetch",
+                "description": "抓取网页正文（政务站点白名单：gov.cn/mee.gov.cn 等官方来源）。"
+                               "用于查生态环境部官网文件、政策通知原文。返回标题+正文纯文本。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"url": {"type": "string", "description": "完整 URL（http/https）"}},
+                    "required": ["url"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "generate_pptx",
                 "description": "生成 PowerPoint 演示文稿（.pptx 真实文件）——多页标题+要点，返回真实文件路径。"
                                "用于执法培训课件、案卷评查通报、督察汇报 PPT。",
@@ -187,6 +203,51 @@ def _codex_tools() -> list[dict]:
             },
         },
     ]
+
+
+# 政务站点白名单（等保视角：默认仅允许政务/官方站点，可环境变量扩展）
+_WEB_WHITELIST = (
+    ".gov.cn", ".mee.gov.cn", "cnemc.cn", "weather.com.cn", "open-meteo.com",
+    "epmap.org", "rmtc.org.cn", "nnsa.mee.gov.cn", "cloud.tencent.com",
+)
+
+
+def _web_fetch(url: str, max_chars: int = 3000) -> str:
+    """抓取网页正文（简化版 reader）：HTTP GET → 标题 + 正文纯文本。"""
+    import re
+    import ssl
+    import urllib.request
+
+    if not url.startswith(("http://", "https://")):
+        return json.dumps({"error": "URL 必须以 http(s):// 开头"}, ensure_ascii=False)
+    # 白名单检查（可用 ECO_WEB_ALLOW_ALL=1 放开）
+    import os
+    if os.environ.get("ECO_WEB_ALLOW_ALL", "0") != "1":
+        host = urllib.parse.urlparse(url).netloc.lower()
+        if not any(host.endswith(w) for w in _WEB_WHITELIST):
+            return json.dumps({
+                "error": f"域名 {host} 不在政务白名单（{', '.join(_WEB_WHITELIST[:6])}…）；"
+                         "如确需访问请由管理员放开 ECO_WEB_ALLOW_ALL"}, ensure_ascii=False)
+    try:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (eco-agent web_fetch)"})
+        with urllib.request.urlopen(req, context=ctx, timeout=20) as resp:
+            raw = resp.read().decode("utf-8", errors="replace")
+        title = re.search(r"<title[^>]*>([^<]*)</title>", raw, re.I)
+        # 去标签取正文
+        body = re.sub(r"<script[\s\S]*?</script>|<style[\s\S]*?</style>", "", raw)
+        text = re.sub(r"<[^>]+>", " ", body)
+        text = re.sub(r"\s+", " ", text).strip()
+        return json.dumps({
+            "title": title.group(1).strip() if title else "",
+            "text": text[:max_chars],
+            "truncated": len(text) > max_chars,
+            "chars": len(text),
+        }, ensure_ascii=False)
+    except Exception as e:  # noqa: BLE001
+        return json.dumps({"error": f"抓取失败: {e}"}, ensure_ascii=False)
 
 
 async def _run_tool(name: str, arguments: dict) -> str:
@@ -219,6 +280,8 @@ async def _run_tool(name: str, arguments: dict) -> str:
             "language": arguments.get("language", "python"),
         })
         return result[:2000]
+    if name == "web_fetch":
+        return _web_fetch(str(arguments.get("url", "")))
     if name == "generate_pptx":
         # PPT 真实文件生成（docgen 插件能力，L2 本地写入）
         # 惰性确保插件已加载（server 不预载插件；首次调用时注册 handler）
