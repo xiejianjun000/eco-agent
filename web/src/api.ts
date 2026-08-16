@@ -29,6 +29,13 @@ export interface ChatResp {
   trace?: TraceEvent[];
 }
 
+/** 会话级 token 计量（后端循环累加） */
+export interface ChatUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}
+
 export interface TraceEvent {
   type: 'think' | 'tool' | 'answer' | 'correction';
   round?: number;
@@ -88,14 +95,16 @@ export const api = {
   documentTools: () => get<{ count: number; tools: { name: string; desc: string }[] }>('/documents/tools'),
 };
 
-/** POST /api/v1/chat/stream 的 SSE 流式读取，逐块回调。
- * onDelta(text, meta) — meta 首块携带 {ttft_ms}；trace 事件携带 {trace}；
- * 结束事件 onDone({duration_ms})。 */
+/** POST /api/v1/chat/stream 的 SSE 流式读取，逐块回调（DSH 式实时事件流）。
+ * onDelta(text, meta) — meta 首块携带 {ttft_ms}；reset 时以该 delta 替换已追加内容；
+ * onEvent(ev) — think/tool/correction 轨迹事件边跑边推（实时过程块）；
+ * 结束事件 onDone({duration_ms, usage, ttft_ms, trace})。 */
 export async function streamChat(
   message: string,
   history: { role: string; content: string }[],
-  onDelta: (text: string, meta?: { ttft_ms?: number }) => void,
-  onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[] }) => void,
+  onDelta: (text: string, meta?: { ttft_ms?: number; reset?: boolean }) => void,
+  onEvent?: (ev: TraceEvent) => void,
+  onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[]; usage?: ChatUsage; ttft_ms?: number }) => void,
 ): Promise<void> {
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
@@ -121,23 +130,41 @@ export async function streamChat(
       try {
         const obj = JSON.parse(payload) as {
           delta?: string;
+          reset?: boolean;
           error?: string;
           done?: boolean;
           trace?: TraceEvent[];
+          trace_event?: TraceEvent;
           ttft_ms?: number;
           duration_ms?: number;
+          usage?: ChatUsage;
         };
         if (obj.error) throw new Error(obj.error);
         if (obj.done) {
-          onDone?.({ duration_ms: obj.duration_ms, trace: obj.trace ?? traceAcc });
+          onDone?.({
+            duration_ms: obj.duration_ms,
+            trace: obj.trace ?? traceAcc,
+            usage: obj.usage,
+            ttft_ms: obj.ttft_ms,
+          });
+          continue;
+        }
+        if (obj.trace_event) {
+          // 实时轨迹事件：缓存 + 即时回调（过程块边跑边渲染）
+          traceAcc = [...(traceAcc ?? []), obj.trace_event];
+          onEvent?.(obj.trace_event);
           continue;
         }
         if (obj.trace) {
-          // 轨迹事件先行（缓存，done 时统一回传）
           traceAcc = obj.trace;
           continue;
         }
-        if (obj.delta) onDelta(obj.delta, obj.ttft_ms !== undefined ? { ttft_ms: obj.ttft_ms } : undefined);
+        if (obj.delta) {
+          onDelta(obj.delta, {
+            ttft_ms: obj.ttft_ms,
+            reset: obj.reset,
+          });
+        }
       } catch (e) {
         if ((e as Error).message && payload.startsWith('{')) {
           const obj = JSON.parse(payload) as { error?: string };

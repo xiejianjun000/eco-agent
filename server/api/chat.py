@@ -70,7 +70,9 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
         codex_note += (
             "\n【工具使用纪律——必须遵守】\n"
             "1. 涉及法条/条款/处罚幅度的问题，必须实际调用 statute_lookup 或 statute_search 工具获取原文，"
-            "拿到结果后再回答；禁止凭记忆说法条。\n"
+            "拿到结果后再回答；禁止凭记忆说法条。statute_search 单次返回约12条且存在截断（truncated=true\n"
+            "   表示可能还有未返回的命中），不能保证目标条号排进结果；宽泛词检索只作定位辅助，\n"
+            "   精确条号以 statute_lookup 直查为准（如暗管偷排=第164/1108条，危废无证=第534/1178条）。\n"
             "2. 涉及案卷评查/执法实务/督察经验等问题，用 kb_search 或 kb_semantic_search 检索知识库。\n"
             "3. 工具调用只能通过 function calling 机制发出；禁止在文本里用 <invoke> 标签"
             "或任何文本形式模拟工具调用，禁止编造不存在的工具名（只有上述四个工具）。\n"
@@ -82,13 +84,23 @@ def _build_messages(message: str, history: list[dict]) -> list[dict]:
             "   立即调用 generate_pptx(slides=[{\"title\":\"页标题\",\"bullets\":[\"要点\"]}], title=名称)，\n"
             "   然后把工具返回的 path 文件路径告诉用户。不要先写文字大纲再问要不要文件。\n"
             "8. 【你有联网能力】web_fetch 工具可抓取政务网站正文（mee.gov.cn 等白名单），\n"
+            "   execute_code 沙箱也可发起网络请求。用户要求查官网文件/最新政策时，\n"
+            "   先尝试 web_fetch 实际抓取；禁止声称'没有联网权限'——除非抓取本身失败。\n"
             "9. 【督察资料检索路由——实测固化的官方渠道】\n"
             "   督察动态/典型案例: mee.gov.cn/ywgz/zysthjbhdc/（进驻dcjz/整改dczg/管理dcjl）；\n"
             "   六大区域督察局子站: hbdc/hddc/hndc/xbdc/xndc/dbdc.mee.gov.cn；\n"
             "   制度文件（《督察工作规定》《条例》等党内法规）: 中办国办印发，\n"
-            "   发布渠道是 gov.cn（中国政府网），不在生态环境部官网——先查 gov.cn。\n"
-            "    execute_code 沙箱也可发起网络请求。用户要求查官网文件/最新政策时，\n"
-            "    先尝试 web_fetch 实际抓取；禁止声称'没有联网权限'——除非抓取本身失败。\n"
+            "   《生态环境保护督察工作条例》2025-03-31 中央政治局会议审议批准、\n"
+            "   2025-04-28 中共中央、国务院发布（2025-05-12 新华社受权通稿）；\n"
+            "   gov.cn 政策库实测未收录（官方搜索返回无结果），原文以新华社通稿+\n"
+            "   政务站点转载为准，如首都之窗全文页\n"
+            "   beijing.gov.cn/ywdt/dzyjs/202505/t20250513_4087784.html（HTTP 200 实测可访问）；\n"
+            "   gov.cn 查不到时如实说明，禁止编造 gov.cn 链接。\n"
+            "10. 【法律适用层级——督察条例不是处罚依据】\n"
+            "   《生态环境保护督察工作条例》是党内法规，是督察工作的组织依据，\n"
+            "   不是行政处罚的实体/程序依据。涉及现场执法、裁量幅度、处罚决定时，\n"
+            "   必须用 statute_lookup 调取《生态环境法典》法律责任编等国家法律条文；\n"
+            "   督察条例只能作为督察制度背景引用，禁止拿它顶法律条款或作处罚依据。\n"
         )
     system = system + "\n" + codex_note
     # 历史教训注入（自愈闭环：此前踩过的坑自动带上，不用人工改提示词）
@@ -339,12 +351,12 @@ async def chat(req: ChatRequest) -> ChatResponse:
     messages = _build_messages(req.message, req.history)
     t0 = time.monotonic()
     try:
-        reply, trace = await _chat_with_codex_loop(client, messages, req.model)
+        reply, trace, usage, first_llm_ms, first_token_ms = await _chat_with_codex_loop(
+            client, messages, req.model)
     except Exception as e:  # noqa: BLE001 — API 边界兜底
         logger.exception("chat failed")
         return ChatResponse(reply=f"[eco-server] 对话失败: {e}", model=req.model or "default", usage={})
     duration_ms = int((time.monotonic() - t0) * 1000)
-    usage = client.get_stats() if hasattr(client, "get_stats") else {}
     # 轨迹审计入链（govmcp SM3，五要素）
     try:
         from agent_core.trace_audit import get_trace_audit
@@ -364,17 +376,25 @@ async def chat(req: ChatRequest) -> ChatResponse:
             logger.info("lesson 已沉淀: %s", lesson.get("lesson", "")[:80])
     except Exception as e:  # noqa: BLE001
         logger.warning("lesson extract failed: %s", e)
-    # 非流式：首 token 约等于总耗时（无中间增量）
+    # 会话级 token 计量 + 首个 LLM 响应耗时（非流式下为近似首响应，非逐 token 采样）
     return ChatResponse(reply=reply, model=req.model or "default", usage=usage,
-                        duration_ms=duration_ms, ttft_ms=duration_ms, trace=trace)
+                        duration_ms=duration_ms,
+                        ttft_ms=first_token_ms if first_token_ms is not None else first_llm_ms,
+                        trace=trace)
 
 
 async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
-                                max_rounds: int = 3) -> tuple[str, list[dict]]:
+                                max_rounds: int = 3, on_event=None,
+                                stream_answer: bool = False) -> tuple:
     """法典工具循环：LLM 决定查条 → 执行检索 → 结果回填 → 综合回答。
 
-    返回 (reply, trace)：trace 为 DSH 式执行轨迹（思考轮/工具调用/耗时），
-    供 Web UI 折叠展示与 trace_audit 审计入链。
+    返回 (reply, trace, usage, first_llm_ms, first_token_ms)：
+    trace 为 DSH 式执行轨迹（思考轮/工具调用/耗时），供 Web UI 折叠展示与 trace_audit 审计入链；
+    usage 为本轮对话累加的 token 计量（会话级，非全局）；first_llm_ms 为首个 LLM 响应耗时；
+    first_token_ms 为总结回答的首 token 精确采样（仅 stream_answer=True 时非 None）。
+
+    on_event: 可选同步回调（参数为轨迹事件 dict），每步事件实时推送（stream 端点用）；
+    stream_answer: True 时总结回答走真实 SSE 流式调用，delta 经 on_event({"type":"delta","text":...}) 推送。
 
     兜底：模型输出"正在调用工具"之类空话但未真正调用时，追加纠偏消息
     强制其实际调用工具（空话绝不作为最终回复返回）。
@@ -389,30 +409,95 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
     audit = get_trace_audit()
     tools = _codex_tools()
     trace: list[dict] = []
+    total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    first_llm_ms: int | None = None
+    first_token_ms: int | None = None
     empty_talk_re = re.compile(
         r"正在(调用|查询|检索|获取|调取)|请稍候|稍等|马上(为您)?(查询|检索)|我先(查|检索)"
         r"|待工具返回|待.*填入|（此处待|占位）|<invoke|invoke name|kb_get_document|让我直接"
     )
+
+    def _emit(ev: dict) -> None:
+        """轨迹事件入链 + 可选实时推送（stream 端点用）。"""
+        trace.append(ev)
+        if on_event is not None:
+            try:
+                on_event(ev)
+            except Exception:  # noqa: BLE001 — 推送失败不影响主流程
+                pass
+
+    def _push_delta(text: str, reset: bool = False) -> None:
+        """流式增量推送：只推不记 trace（避免轨迹被逐字块淹没）。"""
+        if on_event is not None:
+            try:
+                ev = {"type": "delta", "text": text}
+                if reset:
+                    ev["reset"] = True
+                on_event(ev)
+            except Exception:  # noqa: BLE001
+                pass
     round_idx = 0
     for _ in range(max_rounds):
         round_idx += 1
         loop = asyncio.get_event_loop()
         t_llm = time.monotonic()
-        msg, err = await loop.run_in_executor(
-            None, lambda: client._call_chat_with_tools(model or client._provider["default_model"],
-                                                       messages, tools))
+        round_content_parts: list[str] = []
+        if stream_answer:
+            # 每轮 LLM 调用走真实流式：content 增量实时推送。
+            # 若本轮最终带 tool_calls，已推文字是本轮思考 → 用 reset 撤销；
+            # 若本轮直接给出最终回答，delta 即最终答案（首 token 精确采样）。
+            def _chunk_round(text: str):
+                nonlocal first_token_ms
+                if first_token_ms is None:
+                    first_token_ms = int((time.monotonic() - t_llm) * 1000)
+                round_content_parts.append(text)
+                _push_delta(text)
+
+            msg, err = await loop.run_in_executor(
+                None, lambda: client._call_chat_with_tools_stream(
+                    model or client._provider["default_model"], messages, tools,
+                    on_chunk=_chunk_round))
+            if err is not None or msg is None:
+                # 流式失败回退非流式（统一走下方重试链）
+                msg, err = await loop.run_in_executor(
+                    None, lambda: client._call_chat_with_tools(
+                        model or client._provider["default_model"], messages, tools))
+        else:
+            msg, err = await loop.run_in_executor(
+                None, lambda: client._call_chat_with_tools(model or client._provider["default_model"],
+                                                           messages, tools))
+        if err or msg is None:
+            # 瞬时故障（read timeout 等）先重试一次（非流式）
+            _emit({"type": "correction", "round": round_idx, "note": f"LLM瞬时故障重试: {err}"})
+            await asyncio.sleep(1.5)
+            t_llm = time.monotonic()
+            msg, err = await loop.run_in_executor(
+                None, lambda: client._call_chat_with_tools(
+                    model or client._provider["default_model"], messages, tools))
         llm_ms = int((time.monotonic() - t_llm) * 1000)
         if err or msg is None:
-            return f"[eco-server] LLM 调用失败: {err}", trace
+            return f"[eco-server] LLM 调用失败: {err}", trace, total_usage, first_llm_ms, first_token_ms
+        if first_llm_ms is None:
+            first_llm_ms = llm_ms
+        if isinstance(msg, dict):
+            u = msg.pop("_usage", None)  # 会话级 token 计量（不下发模型）
+            if isinstance(u, dict):
+                for k in total_usage:
+                    total_usage[k] += int(u.get(k) or 0)
         audit.record_llm_call(model or client._provider["default_model"],
                               round_idx, llm_ms)
         tool_calls = msg.get("tool_calls")
+        if tool_calls and stream_answer and round_content_parts:
+            # 已实时推送的文字是本轮思考（非最终回答）→ reset 撤销
+            _push_delta("", reset=True)
         if not tool_calls:
             content = str(msg.get("content") or "")
             # 空话检测：提及调用工具但未真调用 → 纠偏重试
             if empty_talk_re.search(content):
-                trace.append({"type": "correction", "round": round_idx,
-                              "note": "空话纠偏", "cost_ms": llm_ms})
+                if stream_answer:
+                    _push_delta("", reset=True)  # 撤销已推的空话
+                _emit({"type": "correction", "round": round_idx,
+                       "note": "空话纠偏", "cost_ms": llm_ms})
                 messages.append({"role": "assistant", "content": content})
                 messages.append({
                     "role": "user",
@@ -421,12 +506,19 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
                                "基于工具返回的真实结果回答，不要再输出预告。",
                 })
                 continue
-            trace.append({"type": "answer", "round": round_idx, "cost_ms": llm_ms,
-                          "chars": len(content)})
-            return content, trace
-        trace.append({"type": "think", "round": round_idx, "cost_ms": llm_ms,
-                      "tools": [tc["function"]["name"] for tc in tool_calls],
-                      "thought": (str(msg.get("content") or "")[:100])})
+            _emit({"type": "answer", "round": round_idx, "cost_ms": llm_ms,
+                   "chars": len(content)})
+            if stream_answer and content and not round_content_parts:
+                # 流式失败回退非流式成功：切片回放
+                if first_token_ms is None:
+                    first_token_ms = llm_ms
+                for i in range(0, len(content), 6):
+                    _push_delta(content[i:i + 6])
+                    await asyncio.sleep(0.02)
+            return content, trace, total_usage, first_llm_ms, first_token_ms
+        _emit({"type": "think", "round": round_idx, "cost_ms": llm_ms,
+               "tools": [tc["function"]["name"] for tc in tool_calls],
+               "thought": (str(msg.get("content") or "")[:400])})
         messages.append({"role": "assistant", "content": msg.get("content") or None,
                          "tool_calls": tool_calls})
         # 并行执行同轮全部工具调用（4 个串行是 12s+ 延迟的主因）
@@ -448,11 +540,11 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
 
         results = await asyncio.gather(*[_exec_one(tc) for tc in tool_calls])
         for tool_call_id, name, args, result, tool_ms in results:
-            # 轨迹事件（UI 展示）
-            trace.append({"type": "tool", "round": round_idx, "name": name,
-                          "category": _tool_category(name),
-                          "args": args, "result_preview": str(result)[:200],
-                          "cost_ms": tool_ms})
+            # 轨迹事件（UI 展示，stream 模式下实时推送）
+            _emit({"type": "tool", "round": round_idx, "name": name,
+                   "category": _tool_category(name),
+                   "args": args, "result_preview": str(result)[:200],
+                   "cost_ms": tool_ms})
             # govmcp SM3 审计入链（五要素，等保）
             audit.record_tool_call(name, args, result, tool_ms,
                                    level=_tool_level(name), decision="allow")
@@ -465,15 +557,70 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
                    "直接给出最终回答（不要再调用工具，不要输出工具调用格式）。"
                    "如果结果不足以回答，就基于已有内容作答并标注局限。",
     })
-    msg, err = await loop.run_in_executor(
-        None, lambda: client._call_chat_with_tools(model or client._provider["default_model"],
-                                                   messages, []))
-    if err or msg is None:
-        return f"[eco-server] LLM 调用失败: {err}", trace
-    content = str(msg.get("content") or "")
+    t_llm = time.monotonic()
+    content = ""
+    stream_ok = False
+    if stream_answer:
+        # 总结回答走真实 SSE 流式：delta 即时推送（on_event 为线程安全队列，工作线程直接入队）
+        _delta_put_n = 0  # noqa: F841 — 占位防误删
+        content_parts: list[str] = []
+
+        def _chunk(text: str):
+            nonlocal first_token_ms
+            if first_token_ms is None:
+                first_token_ms = int((time.monotonic() - t_llm) * 1000)
+            content_parts.append(text)
+            # 工作线程直接入队（on_event 是线程安全队列）；delta 只推送不进 trace
+            _push_delta(text)
+
+        msg, err = await loop.run_in_executor(
+            None, lambda: client._call_chat_with_tools_stream(
+                model or client._provider["default_model"], messages, [], on_chunk=_chunk))
+        if err is None and msg is not None:
+            stream_ok = True
+            content = "".join(content_parts)
+        else:
+            _emit({"type": "correction", "round": round_idx,
+                   "note": f"流式总结失败回退非流式: {err}"})
+    if not stream_answer or not stream_ok:
+        # 非流式总结（含流式失败回退）
+        msg, err = await loop.run_in_executor(
+            None, lambda: client._call_chat_with_tools(model or client._provider["default_model"],
+                                                       messages, []))
+        if err or msg is None:
+            # 瞬时故障（read timeout 等）先重试一次
+            _emit({"type": "correction", "round": round_idx, "note": f"总结调用瞬时故障重试: {err}"})
+            await asyncio.sleep(1.5)
+            t_llm = time.monotonic()
+            msg, err = await loop.run_in_executor(
+                None, lambda: client._call_chat_with_tools(
+                    model or client._provider["default_model"], messages, []))
+        llm_ms = int((time.monotonic() - t_llm) * 1000)
+        if err or msg is None:
+            return f"[eco-server] LLM 调用失败: {err}", trace, total_usage, first_llm_ms, first_token_ms
+        if first_llm_ms is None:
+            first_llm_ms = llm_ms
+        if first_token_ms is None:
+            first_token_ms = llm_ms
+        if isinstance(msg, dict):
+            u = msg.pop("_usage", None)  # 会话级 token 计量（不下发模型）
+            if isinstance(u, dict):
+                for k in total_usage:
+                    total_usage[k] += int(u.get(k) or 0)
+        content = str(msg.get("content") or "")
+    else:
+        # 流式成功：usage 随消息带回
+        llm_ms = int((time.monotonic() - t_llm) * 1000)
+        if first_llm_ms is None:
+            first_llm_ms = llm_ms
+        if isinstance(msg, dict):
+            u = msg.pop("_usage", None)
+            if isinstance(u, dict):
+                for k in total_usage:
+                    total_usage[k] += int(u.get(k) or 0)
     # 幻觉兜底：仍输出工具调用格式（含全角变体）→ 最强约束重试一次
     if "tool_calls" in content or "invoke" in content:
-        trace.append({"type": "correction", "round": round_idx, "note": "幻觉格式纠偏"})
+        _emit({"type": "correction", "round": round_idx, "note": "幻觉格式纠偏"})
         messages.append({"role": "user",
                          "content": "禁止输出 tool_calls、invoke 等任何工具调用格式（含全角符号），"
                                     "现在只输出给用户的最终文字回答。"})
@@ -481,12 +628,25 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
             None, lambda: client._call_chat_with_tools(
                 model or client._provider["default_model"], messages, []))
         if err2 is None and msg2 is not None:
+            if isinstance(msg2, dict):
+                u2 = msg2.pop("_usage", None)
+                if isinstance(u2, dict):
+                    for k in total_usage:
+                        total_usage[k] += int(u2.get(k) or 0)
             content = str(msg2.get("content") or "")
+            if stream_answer and content:
+                # 流式模式下旧 delta 已推送：reset 重放正确内容
+                _push_delta(content, reset=True)
     # 末层兜底：贪婪剥离未闭合的工具调用残留（半角/全角通吃）
     content = re.sub(r"[<＜]tool_calls>[\s\S]*$", "", content).strip()
     content = re.sub(r"[<＜]invoke[\s\S]*$", "", content).strip()
-    trace.append({"type": "answer", "round": round_idx, "chars": len(content)})
-    return (content or "[eco-server] 模型未给出有效回答"), trace
+    if stream_answer and content and not stream_ok:
+        # 非流式回退/重试结果逐片回放（stream_ok 时 delta 已实时推过）
+        for i in range(0, len(content), 6):
+            _push_delta(content[i:i + 6])
+            await asyncio.sleep(0.02)
+    _emit({"type": "answer", "round": round_idx, "chars": len(content)})
+    return (content or "[eco-server] 模型未给出有效回答"), trace, total_usage, first_llm_ms, first_token_ms
 
 
 def _tool_level(name: str) -> str:
@@ -512,11 +672,14 @@ def _tool_category(name: str) -> str:
 
 @router.post("/chat/stream")
 async def chat_stream(req: ChatRequest) -> StreamingResponse:
-    """流式对话——与 /chat 相同的法典工具循环（保证真实查询），
-    循环完成后按小片 SSE 输出（保留逐字呈现体验）。
+    """流式对话（DSH 式实时事件流）：
 
-    ttft_ms 语义：模型+工具循环的准备耗时（首个可见字符出现时刻）。
+    - think/tool/correction 轨迹事件边跑边推（前端过程块实时渲染）；
+    - 总结回答走真实 SSE 流式调用，delta 即时推送，首 token 精确采样；
+    - 结束时发 done（会话级 usage / duration / ttft / 全量 trace）。
     """
+    import asyncio
+    import queue
     import time
 
     from agent_core.llm_client import get_default_client
@@ -524,29 +687,54 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
     client = get_default_client()
     messages = _build_messages(req.message, req.history)
     t0 = time.monotonic()
+    # 线程安全队列：工作线程（流式 chunk 回调）与事件循环（gen 消费）共用，
+    # 不依赖 call_soon_threadsafe（uvloop/macOS 下该机制有 8s+ 延迟 bug）
+    ev_q: queue.Queue = queue.Queue()
+
+    def on_event(ev: dict) -> None:
+        ev_q.put_nowait(ev)
 
     async def gen():
-        # 工具循环（与 /chat 相同逻辑：法典查询 + 空话兜底）
+        task = asyncio.create_task(
+            _chat_with_codex_loop(client, messages, req.model,
+                                  on_event=on_event, stream_answer=True))
+        streamed = False
+        first_delta_ms: int | None = None  # 首个可见输出距请求开始（DSH 首 token 语义）
+        while not task.done() or not ev_q.empty():
+            try:
+                ev = ev_q.get_nowait()
+            except queue.Empty:
+                await asyncio.sleep(0.05)  # 轮询间隔 50ms，实时性足够
+                continue
+            if ev.get("type") == "delta":
+                if not streamed:
+                    first_delta_ms = int((time.monotonic() - t0) * 1000)
+                streamed = True
+                payload = {"delta": ev.get("text", "")}
+                if ev.get("reset"):
+                    payload["reset"] = True
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                continue
+            # think/tool/correction 轨迹事件实时推送
+            yield f"data: {json.dumps({'trace_event': ev}, ensure_ascii=False)}\n\n"
+        # 循环结束：取结果收尾
         try:
-            reply, trace = await _chat_with_codex_loop(client, messages, req.model)
+            reply, trace, usage, first_llm_ms, first_token_ms = task.result()
         except Exception as e:  # noqa: BLE001
             logger.exception("chat_stream failed")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
             yield "data: [DONE]\n\n"
             return
-
-        prep_ms = int((time.monotonic() - t0) * 1000)
-        # 轨迹事件（前端折叠展示）
-        yield f"data: {json.dumps({'trace': trace}, ensure_ascii=False)}\n\n"
-        # 小片输出：6 字符/片 + 微小间隔，保留流式节奏
-        step = 6
-        for i in range(0, len(reply), step):
-            payload = {"delta": reply[i:i + step]}
-            if i == 0:
-                payload["ttft_ms"] = prep_ms
-            yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
-            await asyncio.sleep(0.02)
-        done_payload = json.dumps({"done": True, "duration_ms": int((time.monotonic() - t0) * 1000)})
+        if not streamed:
+            # 无流式输出（失败回复等）：整体回放
+            for i in range(0, len(reply), 6):
+                yield f"data: {json.dumps({'delta': reply[i:i + 6]}, ensure_ascii=False)}\n\n"
+                await asyncio.sleep(0.02)
+        ttft = first_delta_ms if first_delta_ms is not None else (
+            first_token_ms if first_token_ms is not None else first_llm_ms)
+        done_payload = json.dumps({"done": True, "usage": usage, "trace": trace,
+                                   "ttft_ms": ttft,
+                                   "duration_ms": int((time.monotonic() - t0) * 1000)})
         yield f"data: {done_payload}\n\n"
         yield "data: [DONE]\n\n"
 

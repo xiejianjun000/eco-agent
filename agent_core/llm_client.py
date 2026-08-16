@@ -461,8 +461,13 @@ class LLMClient:
                 self._record_usage(model, None, time.time() - t0, ok=False)
                 return None, f"HTTP {resp.status_code}"
             data = resp.json()
-            self._record_usage(model, data.get("usage"), time.time() - t0, ok=True)
-            return data.get("choices", [{}])[0].get("message", {}), None
+            usage = data.get("usage")
+            self._record_usage(model, usage, time.time() - t0, ok=True)
+            msg = data.get("choices", [{}])[0].get("message", {})
+            # 会话级 token 计量：usage 随消息带回（chat.py 循环累加后剥离，不下发模型）
+            if isinstance(msg, dict):
+                msg["_usage"] = usage
+            return msg, None
         except Exception as e:
             self._last_error = {"kind": "network", "status": None, "detail": f"{type(e).__name__} {e}"}
             self._record_usage(model, None, time.time() - t0, ok=False)
@@ -551,6 +556,7 @@ class LLMClient:
             if tool_calls_acc:
                 message["tool_calls"] = [tool_calls_acc[i] for i in sorted(tool_calls_acc)]
             self._record_usage(model, usage, time.time() - t0, ok=True)
+            message["_usage"] = usage
             return message, None
         except Exception as e:
             self._last_error = {"kind": "network", "status": None, "detail": f"{type(e).__name__} {e}"}

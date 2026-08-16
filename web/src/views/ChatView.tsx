@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { streamChat, type TraceEvent } from '../api';
+import { streamChat, type ChatUsage, type TraceEvent } from '../api';
 import { renderMarkdown, escapeHtml } from '../utils/markdown';
 
 interface Msg {
@@ -7,7 +7,8 @@ interface Msg {
   content: string;
   time?: string;        // 发送/完成时间
   durationMs?: number;  // 总耗时
-  ttftMs?: number;      // 首 token 耗时
+  ttftMs?: number;      // 首个 LLM 响应耗时
+  usage?: ChatUsage;    // 会话级 token 计量
   rating?: 'up' | 'down' | null;
   branchId?: string;    // 该消息所属分支（分支新对话后标记）
   trace?: TraceEvent[]; // 执行轨迹（DSH 式折叠展示）
@@ -50,6 +51,76 @@ function fmtMs(ms?: number): string {
   if (ms === undefined) return '';
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
+}
+
+/** 统计行：时间 · 用时 · 首响应 · token 速率（DSH 式计量） */
+function fmtStatRow(m: Msg): string {
+  const parts: string[] = [];
+  if (m.time) parts.push(m.time);
+  if (m.durationMs !== undefined) parts.push(`用时 ${fmtMs(m.durationMs)}`);
+  if (m.ttftMs !== undefined) parts.push(`首响应 ${fmtMs(m.ttftMs)}`);
+  const total = m.usage?.total_tokens;
+  const durS = (m.durationMs ?? 0) / 1000;
+  if (total && durS > 0) parts.push(`${total} tok · ${Math.round(total / durS)} tok/s`);
+  return parts.join(' · ');
+}
+
+/** 工具结果 JSON 摘要（截断显示 + 可展开） */
+function fmtArgs(args?: Record<string, unknown>): string {
+  try {
+    const s = JSON.stringify(args ?? {});
+    return s.length > 80 ? `${s.slice(0, 80)}…` : s;
+  } catch {
+    return '';
+  }
+}
+
+/** DSH 式过程块：按轮次渲染思考（完整 thought）+ 工具调用卡 */
+function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
+  if (!trace || trace.length === 0) return null;
+  const turns = groupTraceByRound(trace);
+  const hasProc = trace.some((t) => t.type === 'think' || t.type === 'tool');
+  if (!hasProc) return null;
+  return (
+    <div className="process-block">
+      {turns.map((turn) => (
+        <div key={turn.round} className="process-turn">
+          {turn.events.map((t, ti) => {
+            if (t.type === 'think' && t.thought) {
+              return (
+                <details key={ti} className="think-item" open={turn.round === 1}>
+                  <summary className="think-summary">
+                    <span className="think-badge">思考 · R{turn.round}</span>
+                    <span className="think-tools">拟调用 {t.tools?.join(', ') || '—'}</span>
+                    <span className="trace-cost">{fmtMs(t.cost_ms)}</span>
+                  </summary>
+                  <div className="think-body">{escapeHtml(t.thought)}</div>
+                </details>
+              );
+            }
+            if (t.type === 'tool') {
+              return (
+                <details key={ti} className="call-item">
+                  <summary className="call-summary">
+                    <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
+                      {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
+                    </span>
+                    <span className="call-name">{t.name}</span>
+                    <span className="call-args">{fmtArgs(t.args)}</span>
+                    <span className="trace-cost">{fmtMs(t.cost_ms)}</span>
+                  </summary>
+                  {t.result_preview && (
+                    <pre className="call-result">{escapeHtml(t.result_preview)}</pre>
+                  )}
+                </details>
+              );
+            }
+            return null;
+          })}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function ChatView(): React.ReactElement {
@@ -113,9 +184,17 @@ export default function ChatView(): React.ReactElement {
           const last = next[next.length - 1];
           next[next.length - 1] = {
             ...last,
-            content: last.content + delta,
+            content: meta?.reset ? delta : last.content + delta,
             ttftMs: meta?.ttft_ms ?? last.ttftMs,
           };
+          return next;
+        });
+      }, (ev) => {
+        // 实时轨迹事件：过程块边跑边渲染（DSH 式）
+        setMessages((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          next[next.length - 1] = { ...last, trace: [...(last.trace ?? []), ev] };
           return next;
         });
       }, (meta) => {
@@ -126,6 +205,8 @@ export default function ChatView(): React.ReactElement {
             ...last,
             durationMs: meta.duration_ms,
             trace: meta.trace ?? last.trace,
+            usage: meta.usage ?? last.usage,
+            ttftMs: meta.ttft_ms ?? last.ttftMs,
             time: fmtClock(),
           };
           return next;
@@ -184,12 +265,9 @@ export default function ChatView(): React.ReactElement {
             <div key={i} className={`msg ${m.role}`}>
               <div className="msg-meta">
                 <span className="msg-role">{m.role === 'user' ? '你' : 'ECO AGENT'}</span>
-                {m.time && <span className="msg-time">{m.time}</span>}
-                {m.role === 'assistant' && m.ttftMs !== undefined && (
-                  <span className="msg-stat">首token {fmtMs(m.ttftMs)}</span>
-                )}
+                {m.role === 'user' && m.time && <span className="msg-time">{m.time}</span>}
                 {m.role === 'assistant' && m.durationMs !== undefined && (
-                  <span className="msg-stat">用时 {fmtMs(m.durationMs)}</span>
+                  <span className="msg-stat">{fmtStatRow(m)}</span>
                 )}
               </div>
               <div
@@ -202,6 +280,7 @@ export default function ChatView(): React.ReactElement {
                     : (busy ? '<span class="thinking">正在思考<span class="dots">…</span></span>' : ''),
                 }}
               />
+              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderProcessBlock(m.trace!)}
               {m.role === 'assistant' && !busy && m.content && (
                 <div className="msg-toolbar">
                   <button className="tb-btn" title="复制" onClick={() => copyMsg(m)}>⧉ 复制</button>
@@ -345,7 +424,13 @@ export default function ChatView(): React.ReactElement {
                                   <span className="trace-cost">{t.cost_ms}ms</span>
                                 </div>
                                 {t.result_preview && (
-                                  <div className="trace-result">{t.result_preview.slice(0, 150)}</div>
+                                  <details className="trace-result-wrap">
+                                    <summary className="trace-result">
+                                      {t.result_preview.slice(0, 150)}
+                                      {t.result_preview.length > 150 ? ' …(展开全文)' : ''}
+                                    </summary>
+                                    <pre className="trace-result-full">{escapeHtml(t.result_preview)}</pre>
+                                  </details>
                                 )}
                               </div>
                             );

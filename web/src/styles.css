@@ -254,6 +254,46 @@ body {
 .trace-thought {
   display: block; color: var(--t-aux); font-size: 10px; margin-top: 1px;
 }
+
+/* DSH 式内嵌过程块：思考 + 工具调用卡（消息气泡下方） */
+.process-block {
+  margin: 6px 0 2px; border: 1px solid var(--line); border-radius: 10px;
+  background: #fbfaf7; overflow: hidden; max-width: 100%;
+}
+.process-turn { border-top: 1px dashed var(--line); }
+.process-turn:first-child { border-top: none; }
+.think-item, .call-item { border-top: 1px solid var(--line); }
+.process-turn .think-item:first-child, .process-turn .call-item:first-child { border-top: none; }
+.think-summary, .call-summary {
+  display: flex; align-items: center; gap: 6px; padding: 5px 10px;
+  cursor: pointer; font-size: 11px; user-select: none; flex-wrap: wrap;
+}
+.think-summary:hover, .call-summary:hover { background: #f6f2ea; }
+.think-badge {
+  flex-shrink: 0; padding: 0 6px; border-radius: 5px; font-size: 10px; font-weight: 600;
+  background: #f5e8dc; color: var(--terra-dark);
+}
+.think-tools { color: var(--t-sub); font-size: 10px; }
+.think-body {
+  padding: 6px 12px 8px; color: var(--t-aux); font-size: 11px; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word; border-left: 2px solid #e8d8c4; margin-left: 14px;
+}
+.call-name { font-weight: 600; color: var(--t-main); font-family: ui-monospace, monospace; font-size: 11px; }
+.call-args { color: var(--t-aux); font-size: 10px; font-family: ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+.call-result {
+  margin: 0 10px 8px; padding: 6px 10px; background: #f5f1ea; border-radius: 6px;
+  color: var(--t-sub); font-size: 10px; line-height: 1.5; white-space: pre-wrap;
+  word-break: break-all; max-height: 160px; overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+.trace-result-wrap summary { cursor: pointer; }
+.trace-result-full {
+  margin: 2px 0 4px; padding: 6px 10px; background: #f5f1ea; border-radius: 6px;
+  color: var(--t-sub); font-size: 10px; line-height: 1.5; white-space: pre-wrap;
+  word-break: break-all; max-height: 220px; overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
 .chat-input-row { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
 .chat-input-row textarea {
   flex: 1; resize: none; min-height: 44px; max-height: 160px; padding: 10px 14px;
