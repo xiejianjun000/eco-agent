@@ -89,6 +89,7 @@ class Context:
     def __init__(self, name: str = "root") -> None:
         self.name = name
         self._services: dict[str, Any] = {}
+        self._service_owners: dict[str, str | None] = {}
         self._plugins: dict[str, "_Fiber"] = {}
         self._handlers: dict[str, list[tuple[str | None, Callable, bool]]] = {}
         self._fiber: _Fiber | None = None  # 当前加载中的 fiber（插件 apply 内使用）
@@ -100,6 +101,8 @@ class Context:
         if name in self._services and not overwrite:
             raise RuntimeError(f"服务已存在且未允许覆盖: {name}")
         self._services[name] = value
+        # 服务属主 = 当前加载中的 fiber（DSH Impl 绑定 fiber，卸载自动注销）
+        self._service_owners[name] = self._fiber.plugin_id if self._fiber else "root"
         self._activate_pending()
         return value
 
@@ -295,6 +298,11 @@ class _Fiber:
         if self.status == "disposed":
             return
         self.status = "disposed"
+        # 注销本插件提供的服务（DSH fiber unload 自动注销语义）
+        for name in list(self.ctx._service_owners.keys()):  # noqa: SLF001
+            if self.ctx._service_owners[name] == self.plugin_id:  # noqa: SLF001
+                self.ctx._services.pop(name, None)  # noqa: SLF001
+                self.ctx._service_owners.pop(name, None)  # noqa: SLF001
         # 逆序回收（DSH DisposableList 语义）
         for d in reversed(self._disposables):
             try:
