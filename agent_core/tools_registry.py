@@ -12,6 +12,7 @@ import json
 import logging
 import asyncio
 import re
+import sys
 from collections.abc import Callable
 
 log = logging.getLogger("tools_registry")
@@ -2911,3 +2912,67 @@ def attach_mcp_tools() -> list[str]:
     if registered:
         log.info("[tools_registry] 并入 %d 个 MCP 工具: %s", len(registered), registered)
     return registered
+
+
+# ── 内置工具：生态环境法典检索（eco-codex skill 的工具化入口）──────────────
+# 知识在 ecoskills/eco-codex/kb/（五编全文 + 索引），本工具只做条级/词级检索，
+# L1 只读自动放行。法典 1242 条、2026-08-15 施行。
+
+def _ecocodex_article(article: str) -> str:
+    """按条号检索法典条文（支持 '1054' / '第一千零五十四条' / '第1054条'）。"""
+    import subprocess
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parent.parent / "ecoskills" / "eco-codex" / "scripts" / "lookup.py"
+    try:
+        r = subprocess.run([sys.executable, str(script), "article", article],
+                           capture_output=True, text=True, timeout=15)
+        return r.stdout.strip() or f"检索失败: {r.stderr.strip()[:200]}"
+    except (subprocess.SubprocessError, OSError) as e:
+        return f"法典检索不可用: {e}"
+
+
+def _ecocodex_search(keyword: str, limit: int = 5) -> str:
+    """关键词检索法典条文（返回命中条文全文）。"""
+    import subprocess
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parent.parent / "ecoskills" / "eco-codex" / "scripts" / "lookup.py"
+    try:
+        r = subprocess.run([sys.executable, str(script), "search", keyword],
+                           capture_output=True, text=True, timeout=20)
+        return r.stdout.strip() or f"检索失败: {r.stderr.strip()[:200]}"
+    except (subprocess.SubprocessError, OSError) as e:
+        return f"法典检索不可用: {e}"
+
+
+register_external_tool(
+    name="statute_lookup",
+    description="生态环境法典条文检索——按条号（如 1054 或 第一千零五十四条）精确查询条文原文，2026-08-15 施行的《中华人民共和国生态环境法典》1242 条全文",
+    parameters={
+        "type": "object",
+        "properties": {
+            "article": {"type": "string", "description": "条号：阿拉伯数字（1054）或中文数字（第一千零五十四条）或完整引用（第1054条）"},
+        },
+        "required": ["article"],
+    },
+    handler=_ecocodex_article,
+    risk_level="L1",
+    source="builtin-ecocodex",
+)
+
+register_external_tool(
+    name="statute_search",
+    description="生态环境法典关键词检索——按关键词（如 逃避监管、按日计罚、排污许可）检索全部条文原文",
+    parameters={
+        "type": "object",
+        "properties": {
+            "keyword": {"type": "string", "description": "检索关键词"},
+            "limit": {"type": "integer", "description": "最多返回条数（默认5）"},
+        },
+        "required": ["keyword"],
+    },
+    handler=_ecocodex_search,
+    risk_level="L1",
+    source="builtin-ecocodex",
+)

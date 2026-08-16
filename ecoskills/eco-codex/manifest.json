@@ -1,0 +1,19 @@
+{
+  "name": "eco-codex",
+  "version": "1.0.0",
+  "author": "eco-official",
+  "description": "生态环境法典专家——2026-08-15 施行的《中华人民共和国生态环境法典》全文知识库（1242条/五编）与条文检索",
+  "category": "法规查询",
+  "tags": [
+    "生态环境法典",
+    "法典",
+    "法条",
+    "双标注",
+    "处罚幅度"
+  ],
+  "trust_tier": "official",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}
