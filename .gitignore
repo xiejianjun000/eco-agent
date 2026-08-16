@@ -52,3 +52,6 @@ workspaces/
 # Web GUI
 web/node_modules/
 # web/dist 已提交（clone 后无需构建即可用 eco server 打开界面）；重新构建后由 CI/开发者提交
+
+# Playwright CLI 快照（测试产物）
+.playwright-cli/
