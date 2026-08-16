@@ -130,7 +130,9 @@ def _run_degraded(cmd: list[str], policy: SandboxPolicy,
                                (_RLIMIT_AS_BYTES, _RLIMIT_AS_BYTES))
             resource.setrlimit(resource.RLIMIT_NOFILE,
                                (_RLIMIT_NOFILE, _RLIMIT_NOFILE))
-        preexec = _limits
+        # preexec_fn 仅在 Linux 可靠（macOS 受限环境会抛 SubprocessError）
+        if is_linux():
+            preexec = _limits
     except ImportError:
         log.warning("resource module unavailable, rlimits skipped")
 
