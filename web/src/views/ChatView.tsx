@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { streamChat } from '../api';
+import { renderMarkdown, escapeHtml } from '../utils/markdown';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -61,7 +62,15 @@ export default function ChatView(): React.ReactElement {
         {messages.map((m, i) => (
           <div key={i} className={`msg ${m.role}`}>
             <div className="role">{m.role === 'user' ? '你' : 'ECO AGENT'}</div>
-            <div className="bubble">{m.content || (busy ? '…' : '')}</div>
+            <div
+              className="bubble"
+              // markdown 渲染器先转义后替换（防 XSS）
+              dangerouslySetInnerHTML={{
+                __html: m.role === 'assistant'
+                  ? renderMarkdown(m.content)
+                  : escapeHtml(m.content).replace(/\n/g, '<br/>'),
+              }}
+            />
           </div>
         ))}
       </div>

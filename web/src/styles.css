@@ -115,3 +115,42 @@ body {
 .muted { color: var(--t-aux); }
 .tag { display: inline-block; margin: 0 4px 4px 0; padding: 1px 8px; border-radius: 8px; background: var(--fill); font-size: 11px; color: var(--t-sub); }
 .empty { color: var(--t-aux); text-align: center; padding: 40px 0; }
+
+/* ── 气泡内 Markdown 排版 ── */
+.bubble .md-h1, .bubble .md-h2, .bubble .md-h3, .bubble .md-h4 {
+  margin: 12px 0 6px; line-height: 1.5; font-weight: 600;
+}
+.bubble .md-h1 { font-size: 17px; }
+.bubble .md-h2 { font-size: 15px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.bubble .md-h3 { font-size: 14px; }
+.bubble .md-h4 { font-size: 13px; color: var(--t-sub); }
+.bubble .md-p { margin: 6px 0; }
+.bubble .md-ul, .bubble .md-ol { margin: 6px 0; padding-left: 20px; }
+.bubble .md-ul li, .bubble .md-ol li { margin: 2px 0; }
+.bubble .md-inline {
+  font-family: var(--mono); font-size: 12px; background: var(--fill);
+  padding: 1px 5px; border-radius: 5px; color: var(--terra-dark);
+}
+.bubble .md-code {
+  font-family: var(--mono); font-size: 12px; background: #f5f1ea;
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+  margin: 8px 0; line-height: 1.6;
+}
+.bubble .md-quote {
+  border-left: 3px solid var(--terra); margin: 8px 0; padding: 4px 12px;
+  background: var(--fill); border-radius: 0 8px 8px 0; color: var(--t-sub);
+}
+.bubble .md-table {
+  border-collapse: collapse; margin: 8px 0; font-size: 12px; width: 100%;
+  display: block; overflow-x: auto;
+}
+.bubble .md-table th, .bubble .md-table td {
+  border: 1px solid var(--line); padding: 5px 9px; text-align: left;
+  white-space: nowrap;
+}
+.bubble .md-table th { background: var(--fill); font-weight: 600; }
+.bubble .md-table tr:nth-child(even) td { background: #faf7f1; }
+.bubble .md-hr { border: none; border-top: 1px solid var(--line); margin: 10px 0; }
+.bubble strong { font-weight: 600; }
+.bubble em { font-style: italic; color: var(--t-sub); }
