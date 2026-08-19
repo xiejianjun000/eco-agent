@@ -559,4 +559,4 @@ examples/           使用示例（sdk_demo.py）
 
 ## 开源协议
 
-MIT License © 2026 Eco Agent Team
+MIT License © 2026 eco Agent Team
