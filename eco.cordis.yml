@@ -8,3 +8,9 @@
 
 - plugin: agent_core.cordis_plugins.audit_panel
   inject: [slots, trace_audit]
+
+# 政务平台工具集：一切皆插件——工具注册也走组合装配（与 chat 幂等共存）
+- plugin: agent_core.cordis_plugins.govmcp_tools_loader
+
+# 内置能力工具集（法典检索/腾讯文档上云）：handler 注册进工具注册表
+- plugin: agent_core.cordis_plugins.builtin_tools

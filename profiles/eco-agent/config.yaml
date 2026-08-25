@@ -35,11 +35,13 @@ inference:
     # DeepSeek (国产备选)
     deepseek:
       api_mode: "chat_completions"
-      model: "deepseek-chat"
+      model: "deepseek-chat"          # 默认（一般对话）；Think 流可选 deepseek-v4-pro / deepseek-reasoner
       base_url: "https://api.deepseek.com"
       max_tokens: 8192
       temperature: 0.1
       api_key_env: "DEEPSEEK_API_KEY"
+      # 账户可用模型（2026-08 实测 API 返回）：deepseek-v4-pro（推理+工具，含 reasoning_content）、
+      # deepseek-v4-flash、deepseek-v4-flash-vision-exp、deepseek-chat、deepseek-reasoner
 
     # 通义千问 (国产备选)
     qwen:

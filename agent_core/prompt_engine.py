@@ -29,13 +29,16 @@ prompt_engine.py — 双层系统提示词 + 注入校验 + SM3 链式审计 + �
 import hashlib
 import json
 import logging
+import os
 import re
 from datetime import datetime
 from pathlib import Path
 
 logger = logging.getLogger("prompt_engine")
 
-ECO_DIR = Path.home() / ".eco"
+# ECO_DIR 环境变量可覆盖（与 observability/approvals 同口径），
+# 受限环境（沙箱无 ~/.eco 写权限）可指向可写目录，审计链照常落盘。
+ECO_DIR = Path(os.environ.get("ECO_DIR") or Path.home() / ".eco")
 AUDIT_FILE = ECO_DIR / "prompt_audit.jsonl"
 
 # ═══════════════════════════════════
@@ -753,9 +756,16 @@ class PromptAuditChain:
 # ═══════════════════════════════════
 
 class PromptEngine:
-    """双层系统提示词引擎：安全层硬编码 + 动态层追加式注入"""
+    """模块化系统提示词引擎（DSH 式组装）：
+    安全层（硬编码+SOUL硬边界）→ 人设 → 执法阶段 → 工具能力 → 动态片段
+    （规则/工具指南/上下文/技能/经验，按优先级插拔）→ 运行时注入（校验+审计）。
+
+    基础片段存于 PromptSectionRegistry（可被插件注册/替换），
+    content 为 callable 的片段每次组装实时求值（阶段切换、SOUL 重载自动生效）。"""
 
     def __init__(self, audit_chain: PromptAuditChain = None, soul=None):
+        from agent_core.prompt_sections import PRIORITY, PromptSectionRegistry
+
         self.audit = audit_chain or PromptAuditChain()
         if soul is None:
             from agent_core.soul import load_soul
@@ -763,6 +773,21 @@ class PromptEngine:
         self.soul = soul
         self._injections: list[dict] = []  # {"source","content","task_id","ts"}
         self._phase: str = "inspection"
+
+        # ── 基础提示词片段（默认四段，可被插件 register_section 覆盖/新增）──
+        self.sections = PromptSectionRegistry()
+        self.sections.register("safety", "安全准则", self.safety_layer,
+                               priority=PRIORITY["safety"], source="builtin")
+        self.sections.register("persona", "人设", self.persona_layer,
+                               priority=PRIORITY["persona"], source="profile")
+        self.sections.register("phase", "执法阶段", self._phase_text,
+                               priority=PRIORITY["phase"], source="builtin")
+        self.sections.register("tool_capability", "工具能力", self.tool_capability_layer,
+                               priority=PRIORITY["tool_guidance"], source="tools_registry")
+
+    def _phase_text(self) -> str:
+        """当前阶段预设文本（callable 片段，随状态机实时求值）。"""
+        return "\n".join(PHASE_PRESETS[self._phase])
 
     def reload_soul(self):
         """重新加载 SOUL.md（SOUL 文件变更后调用）"""
@@ -860,16 +885,72 @@ class PromptEngine:
                      "或'无法运行代码'——除非工具调用本身失败。")
         return "\n".join(lines)
 
-    def build_system_prompt(self, task_id: str = "", extra: str = "") -> str:
-        """安全层（硬编码+SOUL硬边界，首位不可动摇）+ 人格层（SOUL）+ 工具能力层
-        + 阶段预设 + 动态注入（尾部追加）"""
-        parts = [self.safety_layer(), self.persona_layer(), self.tool_capability_layer()]
-        parts.extend(PHASE_PRESETS[self._phase])
+    def build_system_prompt(self, task_id: str = "", extra: str = "",
+                            dynamic_sections: list[dict] | None = None) -> str:
+        """组装系统提示词（DSH 式插拔组装）：
+
+        基础片段（安全层首位不可动摇 + 人设 + 阶段 + 工具能力）
+        → dynamic_sections 按优先级插入
+        → 运行时注入（校验+审计后追加，尾部）
+        → extra 兜底追加。
+
+        dynamic_sections: [{section_id, title, content, priority?}, ...]
+        典型来源：chat.py 每请求注册的 规则/已挂载MCP指南/技能注入/历史经验/动态上下文。
+        """
+        # 基础片段按优先级组装（安全层必然第一；callable 片段每段只求值一次）
+        parts = []
+        for s in self.sections.list():
+            text = s.render()
+            if text:
+                parts.append(text)
+        # 动态片段：按 priority 排序插入
+        if dynamic_sections:
+            dyn = sorted(dynamic_sections, key=lambda d: (d.get("priority", 50), d.get("section_id", "")))
+            for d in dyn:
+                content = (d.get("content") or "").strip()
+                if content:
+                    parts.append(content)
+        # 运行时注入（人工/API 注入，校验+审计已发生在 inject()）
         for inj in self._injections:
             parts.append(f"[{inj['source']}] {inj['content']}")
         if extra:
             parts.append(extra)
-        return "\n\n".join(parts)
+        return "\n\n".join(p for p in parts if p)
+
+    # ── 模块化片段注册（DSH "一切皆插件"：任何插件/业务模块可贡献提示词片段）──
+    def register_section(self, section_id: str, title: str, content,
+                         priority: int = None, source: str = "plugin",
+                         enabled: bool = True):
+        """注册/覆盖一个提示词片段（content 可为 callable，组装时求值）。"""
+        from agent_core.prompt_sections import PRIORITY
+        return self.sections.register(section_id, title, content,
+                                      priority if priority is not None else PRIORITY["custom"],
+                                      source=source, enabled=enabled)
+
+    def unregister_section(self, section_id: str) -> bool:
+        return self.sections.unregister(section_id)
+
+    def list_sections(self, include_disabled: bool = False) -> list[dict]:
+        """结构化片段清单（API/审计展示用）。"""
+        return [
+            {"section_id": s.section_id, "title": s.title,
+             "priority": s.priority, "source": s.source, "enabled": s.enabled,
+             "content_preview": s.render()[:160]}
+            for s in self.sections.list(include_disabled=include_disabled)
+        ]
+
+    def overview(self) -> dict:
+        """提示词组装全景：阶段 + 基础片段 + 注入 + 组装预览（API 用）。"""
+        return {
+            "phase": self._phase,
+            "phase_name": PHASE_NAMES.get(self._phase, self._phase),
+            "phase_section": self._phase_text(),
+            "sections": self.list_sections(include_disabled=True),
+            "injections": len(self._injections),
+            "injection_sources": sorted({i["source"] for i in self._injections}),
+            "assembled_preview": self.build_system_prompt()[:600],
+            "assembled_len": len(self.build_system_prompt()),
+        }
 
 
 _engine: PromptEngine | None = None

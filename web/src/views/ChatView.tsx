@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { streamChat, api, type ChatUsage, type TraceEvent, type SubagentInfo } from '../api';
 import { renderMarkdown, escapeHtml } from '../utils/markdown';
+import { renderToolResult } from '../utils/toolResult';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -12,6 +13,8 @@ interface Msg {
   rating?: 'up' | 'down' | null;
   branchId?: string;    // 该消息所属分支（分支新对话后标记）
   trace?: TraceEvent[]; // 执行轨迹（DSH 式折叠展示）
+  suggestions?: string[]; // 后续提问建议（DSH suggest-prompt 对标，点击填入输入框）
+  attachments?: { name: string; path: string; size_kb: number }[]; // 用户消息附件（DSH 式 chips）
 }
 
 /** 从 Markdown 回复里提取代码块作为产物（artifact） */
@@ -41,6 +44,13 @@ function groupTraceByRound(trace: TraceEvent[]): { round: number; events: TraceE
       totalMs: events.reduce((s, e) => s + (e.cost_ms ?? 0), 0),
     }));
 }
+
+/** 新建会话欢迎主页的快捷提问（DSH hero 对标，点击填入输入框） */
+const HERO_SUGGESTIONS = [
+  '查冷水江市 2026 年执法数据',
+  '解读一条生态环境法规',
+  '起草一份现场检查笔录',
+];
 
 function fmtClock(): string {
   const d = new Date();
@@ -76,68 +86,127 @@ function fmtArgs(args?: Record<string, unknown>): string {
 }
 
 /** DSH 式过程块：按轮次渲染思考（完整 thought）+ 工具调用卡 */
-function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
-  if (!trace || trace.length === 0) return null;
-  const turns = groupTraceByRound(trace);
-  const hasProc = trace.some((t) => t.type === 'think' || t.type === 'tool');
-  if (!hasProc) return null;
+/** 交互图表卡片（DSH visualize 对标）：沙箱 iframe 渲染 ECharts HTML。
+ *  sandbox="allow-scripts"（不带 allow-same-origin）：卡片脚本可运行但不具备同源权限，
+ *  无法访问父页面/localStorage——模型生成的 HTML 在隔离沙箱内执行。 */
+function renderCards(trace: TraceEvent[]): React.ReactElement | null {
+  const cards = (trace ?? []).filter((t) => t.type === 'card' && t.html);
+  if (cards.length === 0) return null;
   return (
-    <div className="process-block">
-      {turns.map((turn) => (
-        <div key={turn.round} className="process-turn">
-          {turn.events.map((t, ti) => {
-            if (t.type === 'think' && t.thought) {
-              return (
-                <details key={ti} className="think-item" open={turn.round === 1}>
-                  <summary className="think-summary">
-                    <span className="think-badge">思考 · R{turn.round}</span>
-                    <span className="think-tools">拟调用 {t.tools?.join(', ') || '—'}</span>
-                    <span className="trace-cost">{fmtMs(t.cost_ms)}</span>
-                  </summary>
-                  <div className="think-body">{escapeHtml(t.thought)}</div>
-                </details>
-              );
-            }
-            if (t.type === 'tool') {
-              return (
-                <details key={ti} className="call-item">
-                  <summary className="call-summary">
-                    <svg className="call-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3.3a3.8 3.8 0 0 1-4.8 4.8l-5.1 5.1a1.6 1.6 0 1 1-2.3-2.3l5.1-5.1A3.8 3.8 0 0 1 11.7 1l-2.3 2.3 2.3 2.3L14 3.3Z" /></svg>
-                    <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
-                      {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
-                    </span>
-                    <span className="call-name">{t.name}</span>
-                    <span className="call-args">{fmtArgs(t.args)}</span>
-                    <span className="trace-cost">{fmtMs(t.cost_ms)}</span>
-                  </summary>
-                  {t.result_preview && (
-                    <pre className="call-result">{escapeHtml(t.result_preview)}</pre>
-                  )}
-                </details>
-              );
-            }
-            return null;
-          })}
-        </div>
+    <div className="card-stack">
+      {cards.map((c, i) => (
+        <details key={i} className="card-item" open>
+          <summary className="card-summary">
+            <span className="card-title">📊 {c.title || '图表'}</span>
+            <span className="card-hint">可交互 · 沙箱隔离渲染</span>
+          </summary>
+          <iframe
+            className="card-frame"
+            sandbox="allow-scripts"
+            srcDoc={c.html}
+            title={c.title || '图表卡片'}
+          />
+        </details>
       ))}
     </div>
   );
 }
 
-export default function ChatView(): React.ReactElement {
+function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
+  if (!trace || trace.length === 0) return null;
+  const turns = groupTraceByRound(trace);
+  const hasProc = trace.some((t) => t.type === 'think' || t.type === 'think_delta' || t.type === 'tool' || t.type === 'tool_start');
+  if (!hasProc) return null;
+  return (
+    <div className="process-block">
+      {turns.map((turn) => {
+        // 实时思考流（DSH Think 流）：think_delta 分片按序累积；
+        // think 事件（服务端清洗后的权威版）覆盖累积值
+        const rounds: number[] = [];
+        const seen = new Set<number>();
+        const live: Record<number, string> = {};
+        const thinkEv: Record<number, TraceEvent | undefined> = {};
+        for (const ev of turn.events) {
+          const r = ev.round ?? turn.round;
+          if (!seen.has(r)) { seen.add(r); rounds.push(r); }
+          if (ev.type === 'think_delta' && ev.text) live[r] = (live[r] ?? '') + ev.text;
+          if (ev.type === 'think') { thinkEv[r] = ev; if (ev.thought) live[r] = ev.thought; }
+        }
+        return (
+          <div key={turn.round} className="process-turn">
+            {rounds.map((r) => {
+              const te = thinkEv[r];
+              const toolStarts = turn.events.filter(
+                (t) => t.type === 'tool_start' && (t.round ?? turn.round) === r);
+              const toolEvts = turn.events.filter(
+                (t) => t.type === 'tool' && (t.round ?? turn.round) === r);
+              return (
+                <div key={`r${r}`} className="pt-round">
+                  {(live[r] || te) && (
+                    <details className={`think-item${!te ? ' running' : ''}`} open={!te}>
+                      <summary className="think-summary">
+                        <span className="pt-caret">▸</span>
+                        <span className="think-label">思考 · R{r}</span>
+                        {!te && <span className="live-dot" title="正在实时思考" />}
+                        {te && te.tools && te.tools.length > 0 && (
+                          <span className="think-tools">· {te.tools.join('、')}</span>
+                        )}
+                        {te && <span className="trace-cost">{fmtMs(te.cost_ms)}</span>}
+                      </summary>
+                      <div className="think-body">
+                        {live[r] ? escapeHtml(live[r]) : '（思考内容未返回）'}
+                      </div>
+                    </details>
+                  )}
+                  {toolStarts.map((ts, ti) => {
+                    const done = toolEvts.find((t) => t.name === ts.name);
+                    const running = !done;
+                    return (
+                      <details key={ti} className={`call-item${running ? ' running' : ''}`}>
+                        <summary className="call-summary">
+                          <span className="pt-caret">▸</span>
+                          <span className="call-name">{ts.name}</span>
+                          <span className="call-args">{fmtArgs(ts.args)}</span>
+                          {running && <span className="live-dot" title="执行中" />}
+                          {done && <span className="trace-cost">{fmtMs(done.cost_ms)}</span>}
+                        </summary>
+                        {done && done.result_preview && (
+                          <pre className="call-result"
+                               dangerouslySetInnerHTML={{ __html: renderToolResult(done.result_preview) }} />
+                        )}
+                      </details>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function ChatView({ sessionId = 'default', onActivity }: { sessionId?: string; onActivity?: () => void }): React.ReactElement {
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: 'assistant',
-      content: '你好，我是 ECO AGENT。生态环境执法领域的 AI 同事——可以问我法规、案卷、裁量、督察相关的问题。',
+      content: '你好，我是 eco Agent——生态环境系统全要素 AI 同事。大气/水/土壤/固废/噪声/辐射/生态/碳全要素，法规、监测、环评、排污许可、执法、督察、应急都能帮上忙。',
       time: fmtClock(),
     },
   ]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [model, setModel] = useState('');
   const [branchTag, setBranchTag] = useState<string | null>(null);
-  const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc' | 'task' | 'slot'>('trace');
+  const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc' | 'task' | 'slot' | 'preview'>('trace');
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
   const [docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
+  // 右侧预览面板：文档生成/上传后自动内嵌打开 docs.qq.com（不弹系统浏览器）
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState<string>('');
+  const sawDocEventRef = useRef(false);
+  const contentRef = useRef('');
   // 子代理任务面板（对标 DSH subagent/jobs）
   const [taskAgents, setTaskAgents] = useState<SubagentInfo[]>([]);
   const [taskInput, setTaskInput] = useState('');
@@ -150,12 +219,124 @@ export default function ChatView(): React.ReactElement {
   const [activeSlot, setActiveSlot] = useState<string | null>(null);
   const [slotData, setSlotData] = useState<Record<string, unknown> | null>(null);
 
+  // ── DSH 式右栏：输出产物可收缩 + 左右拖拽调宽 ────────────
+  const [panelOpen, setPanelOpen] = useState<boolean>(() => window.localStorage.getItem('eco-panel-open') !== '0');
+  const [panelW, setPanelW] = useState<number>(() => {
+    const saved = Number(window.localStorage.getItem('eco-panel-w'));
+    return Number.isFinite(saved) && saved >= 260 && saved <= 900 ? saved : 340;
+  });
+
+  const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = panelW;
+    let w = startW;
+    const onMove = (ev: PointerEvent) => {
+      // 拖拽条向左 → 面板变宽（面板在右侧，宽度 = 起始 + 左移距离）
+      w = Math.min(900, Math.max(260, startW + (startX - ev.clientX)));
+      setPanelW(w);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    };
+    const onUp = () => {
+      window.localStorage.setItem('eco-panel-w', String(w));
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  // ── 输入栏附件 / 语音（DSH 式）────────────────────────────
+  const [attachments, setAttachments] = useState<{ name: string; path: string; size_kb: number }[]>([]);
+  const [voice, setVoice] = useState<'idle' | 'recording' | 'transcribing'>('idle');
+  const [voiceSec, setVoiceSec] = useState(0);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const voiceChunksRef = useRef<Blob[]>([]);
+  const voiceTimerRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadFiles = async (files: FileList | File[]) => {
+    const list = Array.from(files);
+    for (const f of list) {
+      try {
+        const data = await api.uploadFile(f);
+        if (!data.ok || !data.path) throw new Error(data.ok === false ? '上传失败' : '上传失败');
+        setAttachments((prev) => [...prev, { name: f.name, path: data.path, size_kb: data.size_kb ?? 0 }]);
+      } catch (err) {
+        window.alert(`文件上传失败: ${(err as Error).message}`);
+      }
+    }
+  };
+
+  const toggleVoice = async () => {
+    if (voice === 'recording') {
+      stopRecording();
+      return;
+    }
+    if (voice === 'transcribing') return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      window.alert('当前浏览器不支持麦克风录音（需 localhost/HTTPS 环境）');
+      return;
+    }
+    setVoiceError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
+      const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      recorderRef.current = rec;
+      voiceChunksRef.current = [];
+      rec.ondataavailable = (ev) => { if (ev.data.size > 0) voiceChunksRef.current.push(ev.data); };
+      rec.onstop = () => { stream.getTracks().forEach((t) => t.stop()); void finishVoice(); };
+      rec.start();
+      setVoice('recording');
+      setVoiceSec(0);
+      voiceTimerRef.current = window.setInterval(() => setVoiceSec((s) => s + 1), 1000);
+    } catch (err) {
+      window.alert(`无法访问麦克风: ${(err as Error).message}`);
+    }
+  };
+
+  const stopRecording = () => {
+    if (voiceTimerRef.current !== null) {
+      window.clearInterval(voiceTimerRef.current);
+      voiceTimerRef.current = null;
+    }
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') recorderRef.current.stop();
+  };
+
+  const finishVoice = async () => {
+    const chunks = voiceChunksRef.current;
+    voiceChunksRef.current = [];
+    if (chunks.length === 0) {
+      setVoice('idle');
+      return;
+    }
+    const blob = new Blob(chunks, { type: chunks[0].type || 'audio/webm' });
+    setVoice('transcribing');
+    try {
+      const data = await api.transcribeVoice(blob, `voice-${Date.now()}.webm`);
+      if (data.ok && data.text) {
+        setInput((prev) => (prev ? `${prev}\n${data.text!}` : data.text!));
+      } else {
+        setVoiceError(data.error || '转写失败（音频已保留在工作区 uploads/）');
+      }
+    } catch (err) {
+      setVoiceError((err as Error).message);
+    } finally {
+      setVoice('idle');
+    }
+  };
+
   React.useEffect(() => {
     import('../api').then(({ api }) => {
       api.documents().then((r) => setDocFiles(r.files)).catch(() => {});
       api.documentTools().then((r) => setDocTools(r.tools)).catch(() => {});
-      // 会话恢复：重启后从 session_log 重放历史
-      api.sessionMessages('default').then((r) => {
+      // 会话恢复：按当前会话（工作区点击的真实 session_id）重放历史
+      api.sessionMessages(sessionId).then((r) => {
         if (r.count > 0) {
           const restored = r.messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content, time: fmtClock() }));
           setMessages((prev) => [...prev, ...restored]);
@@ -164,10 +345,11 @@ export default function ChatView(): React.ReactElement {
       // Slot 面板动态加载
       api.slots().then((r) => setSlotPanels(r.slots)).catch(() => {});
     });
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
   const [selectedTrace, setSelectedTrace] = useState<number | null>(null);
-  const [turnsOpen, setTurnsOpen] = useState(true);
-  const [callsOpen, setCallsOpen] = useState(true);
+  const [turnsOpen, setTurnsOpen] = useState(false);
+  const [callsOpen, setCallsOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
   // 最新一条带轨迹的 assistant 消息自动选中
@@ -187,6 +369,9 @@ export default function ChatView(): React.ReactElement {
   const artifacts = messages
     .filter((m) => m.role === 'assistant')
     .flatMap((m) => extractArtifacts(m.content));
+
+  /** 新会话欢迎态：还没有任何用户消息时显示居中的 hero 主页（DSH 对标） */
+  const fresh = messages.length === 1;
 
   // ── 子代理任务面板逻辑 ─────────────────────────────
   // 选中任务轮询（running/pending 时每 2.5s 刷新，done 后停止）
@@ -244,20 +429,35 @@ export default function ChatView(): React.ReactElement {
     void api.subagentList().then((l) => setTaskAgents(l.agents)).catch(() => {});
   };
 
-  const send = async () => {
-    const text = input.trim();
-    if (!text || busy) return;
+  const send = async (preset?: string) => {
+    const attach = attachments;
+    let text = (preset ?? input).trim();
+    if (busy) return;
+    if (!text && attach.length > 0) text = '请阅读并分析这些附件';
+    if (!text) return;
     setInput('');
+    setAttachments([]);
+    // 附件信息以工作指令形式一并交给模型：模型用 file_read 读取服务器路径分析
+    const withAttach =
+      attach.length > 0
+        ? `${text}\n\n【附件】以下文件已上传到本机服务器（工作区 uploads/ 目录）：\n${attach
+            .map((a) => `- ${a.name} → ${a.path}`)
+            .join('\n')}\n请先用 file_read 读取附件内容，再结合我的问题分析回答。`
+        : text;
     const history = messages.map((m) => ({ role: m.role, content: m.content }));
     const sentAt = fmtClock();
     setMessages((prev) => [
       ...prev,
-      { role: 'user', content: text, time: sentAt },
+      { role: 'user', content: text, time: sentAt, attachments: attach },
       { role: 'assistant', content: '', time: sentAt },
     ]);
     setBusy(true);
+    // 新一轮对话：重置文档事件标记与流式内容累积
+    sawDocEventRef.current = false;
+    contentRef.current = '';
     try {
-      await streamChat(text, history, 'default', (delta, meta) => {
+      await streamChat(withAttach, history, sessionId, model, (delta, meta) => {
+        contentRef.current = meta?.reset ? delta : contentRef.current + delta;
         setMessages((prev) => {
           const next = [...prev];
           const last = next[next.length - 1];
@@ -276,7 +476,27 @@ export default function ChatView(): React.ReactElement {
           next[next.length - 1] = { ...last, trace: [...(last.trace ?? []), ev] };
           return next;
         });
+        // document 事件：文档生成/上传完成 → 自动在右侧预览面板打开
+        if (ev.type === 'document' && ev.url) {
+          sawDocEventRef.current = true;
+          setPreviewUrl(ev.url);
+          setPreviewTitle(ev.source && ev.source !== 'final_answer'
+            ? `由 ${ev.source} 生成` : '在线文档预览');
+          setPanelOpen(true);
+          setSideTab('preview');
+        }
       }, (meta) => {
+        // 兜底：链接只出现在最终回答文本时，从内容里提取 docs.qq.com 链接自动打开
+        if (!sawDocEventRef.current) {
+          const m = contentRef.current.match(/https:\/\/docs\.qq\.com\/[^\s"'<>()[\]]+/);
+          if (m) {
+            sawDocEventRef.current = true;
+            setPreviewUrl(m[0]);
+            setPreviewTitle('在线文档预览');
+            setPanelOpen(true);
+            setSideTab('preview');
+          }
+        }
         setMessages((prev) => {
           const next = [...prev];
           const last = next[next.length - 1];
@@ -286,10 +506,13 @@ export default function ChatView(): React.ReactElement {
             trace: meta.trace ?? last.trace,
             usage: meta.usage ?? last.usage,
             ttftMs: meta.ttft_ms ?? last.ttftMs,
+            suggestions: meta.suggestions ?? last.suggestions,
             time: fmtClock(),
           };
           return next;
         });
+        // 一轮对话完成 → 通知侧栏刷新会话列表（计数/时间/排序）
+        onActivity?.();
       });
     } catch (e) {
       setMessages((prev) => {
@@ -317,8 +540,14 @@ export default function ChatView(): React.ReactElement {
     void navigator.clipboard.writeText(m.content);
   };
 
-  /** 消息日志区点击委托：代码块横幅「复制」按钮（DSH code-block banner 行为） */
+  /** 消息日志区点击委托：代码块横幅「复制」按钮 + 选项提问按钮（DSH user-questions 行为） */
   const onLogClick = (e: React.MouseEvent) => {
+    const opt = (e.target as HTMLElement).closest('.md-option') as HTMLButtonElement | null;
+    if (opt) {
+      const v = opt.getAttribute('data-opt');
+      if (v) setInput(v);
+      return;
+    }
     const btn = (e.target as HTMLElement).closest('.md-code-copy') as HTMLButtonElement | null;
     if (!btn) return;
     const code = btn.closest('.md-codeblock')?.querySelector('code')?.textContent ?? '';
@@ -353,18 +582,46 @@ export default function ChatView(): React.ReactElement {
     <div className="chat-wrap">
       <div className="chat-box" style={{ height: 'calc(100vh - 120px)' }}>
         {branchTag && <div className="branch-tag">{branchTag}</div>}
-        <div className="chat-log" ref={logRef} onClick={onLogClick}>
-          {messages.map((m, i) => (
+        <div className={`chat-log${fresh ? ' hero-mode' : ''}`} ref={logRef} onClick={onLogClick}>
+          {fresh ? (
+            /* 新建会话欢迎主页（DSH hero 对标）：矢量 logo + Agent 横向居中，下面欢迎语 */
+            <div className="hero">
+              <div className="hero-head">
+                <img className="hero-logo" src="/eco-logo.svg" alt="eco Agent" />
+                <span className="hero-title">Agent</span>
+              </div>
+              <div className="hero-sub">
+                最懂生态环境垂直领域的<span className="sub-accent">AI Agent</span>
+              </div>
+              <div className="hero-chips">
+                {HERO_SUGGESTIONS.map((s, i) => (
+                  <button key={i} className="suggest-chip" onClick={() => setInput(s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            messages.map((m, i) => (
             <div key={i} className={`msg ${m.role}`}>
               <div className="msg-meta">
-                <span className="msg-role">{m.role === 'user' ? '你' : 'ECO AGENT'}</span>
+                <span className="msg-role">{m.role === 'user' ? '你' : 'eco Agent'}</span>
                 {m.role === 'user' && m.time && <span className="msg-time">{m.time}</span>}
                 {m.role === 'assistant' && m.durationMs !== undefined && (
                   <span className="msg-stat">{fmtStatRow(m)}</span>
                 )}
               </div>
+              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderProcessBlock(m.trace!)}
+              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderCards(m.trace!)}
+              {m.role === 'assistant' && (m.trace ?? []).some((t) => t.type === 'answer' && t.truncated) && !busy && (
+                <button
+                  className="tb-btn detail-btn"
+                  title="此回答为要点版，点击取完整版（原稿兑现，不重新生成）"
+                  onClick={() => void send('详细版')}
+                >📄 详细版</button>
+              )}
               <div
-                className="bubble"
+                className={`bubble${m.role === 'assistant' && !m.content ? ' streaming' : ''}`}
                 dangerouslySetInnerHTML={{
                   __html: m.content
                     ? m.role === 'assistant'
@@ -373,7 +630,30 @@ export default function ChatView(): React.ReactElement {
                     : (busy ? '<span class="thinking">正在思考<span class="dots">…</span></span>' : ''),
                 }}
               />
-              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderProcessBlock(m.trace!)}
+              {m.role === 'user' && (m.attachments?.length ?? 0) > 0 && (
+                <div className="attach-chips">
+                  {m.attachments!.map((a, ai) => (
+                    <span key={ai} className="attach-chip" title={a.path}>
+                      📎 {a.name}
+                      {a.size_kb > 0 ? ` · ${a.size_kb}KB` : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {m.role === 'assistant' && !busy && (m.suggestions?.length ?? 0) > 0 && (
+                <div className="suggest-row">
+                  {m.suggestions!.map((s, si) => (
+                    <button
+                      key={si}
+                      className="suggest-chip"
+                      title="点击填入输入框"
+                      onClick={() => { setInput(s); }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
               {m.role === 'assistant' && !busy && m.content && (
                 <div className="msg-toolbar">
                   <button className="tb-btn" title="复制" onClick={() => copyMsg(m)}>⧉ 复制</button>
@@ -404,9 +684,48 @@ export default function ChatView(): React.ReactElement {
                 </div>
               )}
             </div>
-          ))}
+            ))
+          )}
         </div>
+        {attachments.length > 0 && (
+          <div className="attach-row">
+            {attachments.map((a, ai) => (
+              <span key={ai} className="attach-chip" title={a.path}>
+                📎 {a.name}
+                <button
+                  className="attach-x"
+                  title="移除附件"
+                  onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== ai))}
+                >✕</button>
+              </span>
+            ))}
+          </div>
+        )}
         <div className="chat-input-row">
+          <div className="input-tools">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              onChange={(e) => {
+                if (e.target.files) void uploadFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
+            <button
+              className="input-tool-btn"
+              title="上传文件——保存到工作区 uploads/，模型会用 file_read 读取分析"
+              onClick={() => fileInputRef.current?.click()}
+            >📎</button>
+            <button
+              className={`input-tool-btn${voice === 'recording' ? ' recording' : ''}`}
+              title={voice === 'recording' ? '停止录音并转写' : '语音输入——录音后经飞书妙记转写成文字'}
+              onClick={() => void toggleVoice()}
+            >
+              {voice === 'recording' ? '⏹' : '🎤'}
+            </button>
+          </div>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -414,14 +733,59 @@ export default function ChatView(): React.ReactElement {
             placeholder="输入问题，Enter 发送，Shift+Enter 换行"
             rows={2}
           />
-          <button className="btn" onClick={() => void send()} disabled={busy || !input.trim()}>
+          <select
+            className="model-select"
+            title="选择模型（DSH ui-model-selection）"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          >
+            <option value="">默认（deepseek-v4-pro）</option>
+            <option value="deepseek-chat">deepseek-chat</option>
+            <option value="deepseek-v4-pro">deepseek-v4-pro（含Think流·推荐）</option>
+            <option value="deepseek-reasoner">deepseek-reasoner（含Think流）</option>
+            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+            <option value="qwen-max">qwen-max</option>
+            <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
+          </select>
+          <button
+            className="btn"
+            onClick={() => void send()}
+            disabled={busy || (!input.trim() && attachments.length === 0)}
+          >
             {busy ? '生成中' : '发送'}
           </button>
         </div>
+        {voice === 'recording' && (
+          <div className="voice-status">🔴 录音中 {voiceSec}s——再点 🎤 停止并转写</div>
+        )}
+        {voice === 'transcribing' && (
+          <div className="voice-status">⏳ 转写中——飞书妙记正在生成逐字稿（约 20–60 秒）…</div>
+        )}
+        {voiceError && <div className="voice-status error">{voiceError}</div>}
       </div>
 
-      {/* 右侧标签页面板：轨迹 / 产物 */}
-      <aside className="side-panel">
+      {/* 右侧「输出产物」面板（DSH Details 栏对标）：可收缩 + 拖拽调宽 */}
+      {!panelOpen ? (
+        <div className="side-collapsed" title="展开输出产物栏">
+          <button className="side-collapsed-btn" onClick={() => setPanelOpen(true)}>◀</button>
+          <span className="side-collapsed-label">产物</span>
+        </div>
+      ) : (
+        <>
+          <div className="side-resizer" onPointerDown={startResize} title="按住左右拖拽调整宽度" />
+          <aside
+            className={`side-panel${sideTab === 'preview' ? ' preview-wide' : ''}`}
+            style={sideTab === 'preview' ? undefined : { width: panelW }}
+          >
+            <div className="side-head">
+              <span className="side-head-title">输出产物</span>
+              <span className="side-head-spacer" />
+              <button
+                className="side-collapse"
+                title="收起输出产物栏"
+                onClick={() => setPanelOpen(false)}
+              >✕</button>
+            </div>
         <div className="side-tabs">
           <button
             className={`side-tab${sideTab === 'trace' ? ' active' : ''}`}
@@ -440,6 +804,13 @@ export default function ChatView(): React.ReactElement {
             onClick={() => setSideTab('doc')}
           >
             文档{docFiles.length > 0 ? ` (${docFiles.length})` : ''}
+          </button>
+          <button
+            className={`side-tab${sideTab === 'preview' ? ' active' : ''}${previewUrl ? ' has-dot' : ''}`}
+            title="文档生成后自动在此内嵌打开（docs.qq.com）"
+            onClick={() => setSideTab('preview')}
+          >
+            预览
           </button>
           <button
             className={`side-tab${sideTab === 'task' ? ' active' : ''}`}
@@ -637,6 +1008,37 @@ export default function ChatView(): React.ReactElement {
           </div>
         )}
 
+        {sideTab === 'preview' && (
+          <div className="preview-panel">
+            {previewUrl ? (
+              <>
+                <div className="preview-toolbar">
+                  <span className="preview-title" title={previewUrl}>{previewTitle || '在线文档'}</span>
+                  <span className="preview-spacer" />
+                  <a className="tb-btn" href={previewUrl} target="_blank" rel="noreferrer"
+                     title="若面板内无法显示，在新标签页打开">↗ 新标签页</a>
+                  <button className="tb-btn" title="关闭预览"
+                          onClick={() => setPreviewUrl(null)}>✕ 关闭</button>
+                </div>
+                <iframe
+                  className="preview-frame"
+                  src={previewUrl}
+                  title="在线文档预览"
+                  allow="clipboard-read; clipboard-write"
+                />
+                <div className="preview-hint">
+                  面板内无法正常显示时点「↗ 新标签页」；文档链接已保留在左侧回复中。
+                </div>
+              </>
+            ) : (
+              <div className="empty" style={{ padding: 24 }}>
+                暂无预览——让模型「生成分析报告并上传腾讯文档」，
+                或对已有文档说「打开 XXX」，完成后会自动在此内嵌打开。
+              </div>
+            )}
+          </div>
+        )}
+
         {sideTab === 'artifact' && (
           <div className="side-artifacts">
             {artifacts.length === 0 ? (
@@ -672,6 +1074,39 @@ export default function ChatView(): React.ReactElement {
             <div className="side-doc-section">{slotPanels.find((p) => p.id === activeSlot)?.title ?? activeSlot}</div>
             {slotData === null ? (
               <div className="empty" style={{ padding: 16 }}>加载中…</div>
+            ) : (slotData as { chain?: Record<string, unknown> })?.chain ? (
+              /* 审计链面板（govmcp SM3）：结构化渲染（DSH provider 视图语义） */
+              <div className="audit-card">
+                <div className="row">
+                  <span className="title">链完整性</span>
+                  <span className={`badge ${(slotData as any).chain.ok ? 'olive' : 'red'}`}>
+                    {(slotData as any).chain.ok ? '✅ 完整' : '❌ 断裂'}
+                  </span>
+                </div>
+                <div className="row">
+                  <span className="title">链条目</span>
+                  <span className="mono">{(slotData as any).chain.entries ?? 0}</span>
+                </div>
+                <div className="row">
+                  <span className="title">尾哈希</span>
+                  <span className="mono audit-hash">{String((slotData as any).chain.last_hash ?? '').slice(0, 16)}…</span>
+                </div>
+                {(slotData as any).stats?.by_operation && (
+                  <div className="audit-ops">
+                    {Object.entries((slotData as any).stats.by_operation).map(([op, n]) => (
+                      <div key={op} className="row">
+                        <span className="title">{op}</span>
+                        <span className="mono">{String(n)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {(slotData as any).stats?.size_bytes !== undefined && (
+                  <div className="muted">
+                    体积 {Math.round((slotData as any).stats.size_bytes / 1024)} KB
+                  </div>
+                )}
+              </div>
             ) : (
               <pre className="artifact-code" style={{ whiteSpace: 'pre-wrap' }}>
                 {JSON.stringify(slotData, null, 2)}
@@ -750,6 +1185,8 @@ export default function ChatView(): React.ReactElement {
           </div>
         )}
       </aside>
+        </>
+      )}
     </div>
   );
 }

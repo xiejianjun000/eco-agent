@@ -42,11 +42,18 @@ def check_session_logs() -> dict:
 
 
 def check_evolution_report() -> dict:
-    if not REPORT_FILE.is_file():
-        return {"exists": False, "chars": 0, "pass": False, "note": "evolution_report.md 不存在（未触发过进化）"}
-    text = REPORT_FILE.read_text(encoding="utf-8", errors="replace")
+    # 口径统一：优先查版本化报告 evolution_report_v{N}.md（meta_evolution 实际产出），
+    # 回退未版本化的 evolution_report.md（历史口径）。
+    versioned = sorted(ROOT.glob("evolution_report_v*.md"), key=lambda p: p.name)
+    target = versioned[-1] if versioned else None
+    if target is None and REPORT_FILE.is_file():
+        target = REPORT_FILE
+    if target is None:
+        return {"exists": False, "chars": 0, "pass": False, "note": "evolution_report 不存在（未触发过进化）"}
+    text = target.read_text(encoding="utf-8", errors="replace")
     return {"exists": True, "chars": len(text), "pass": len(text) >= 500,
-            "note": "I-01 口径: 每次进化 ≥500 字" if len(text) >= 500 else "篇幅不足 500 字"}
+            "note": ("I-01 口径: 每次进化 ≥500 字" if len(text) >= 500 else "篇幅不足 500 字"),
+            "report_file": str(target)}
 
 
 def check_memory_tree() -> dict:

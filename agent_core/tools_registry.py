@@ -32,15 +32,28 @@ _KNOWN_SLUGS: dict[str, str] = {}
 
 
 def _slugify(name: str) -> str:
-    """将非法工具名转换为合法 slug：优先固定表，否则剥离非法字符，兜底哈希。"""
+    """将非法工具名转换为合法 slug：优先固定表，否则剥离非法字符，兜底哈希。
+
+    mcp__ 命名空间特殊处理：保留 mcp__<server>__ 前缀（含 server/tool
+    边界双下划线），只对工具名部分清洗——否则 MCP 工具名与聊天白名单/
+    权限覆盖表对不上（曾致腾讯文档带点工具名全部漏挂）。"""
     if name in _KNOWN_SLUGS:
         return _KNOWN_SLUGS[name]
+    prefix = ""
+    if name.startswith("mcp__"):
+        parts = name.split("__", 2)
+        if len(parts) == 3:
+            prefix = parts[0] + "__" + parts[1] + "__"
+            name = parts[2]
+        else:
+            prefix = "mcp__"
+            name = name[len(prefix):]
     slug = re.sub(r"[^a-zA-Z0-9_-]", "_", name)
     slug = re.sub(r"_+", "_", slug).strip("_")
     if not slug or not re.search(r"[a-zA-Z0-9]", slug):
         import hashlib
         slug = "tool_" + hashlib.md5(name.encode("utf-8")).hexdigest()[:8]
-    return slug[:64]
+    return (prefix + slug)[:64]
 
 
 def normalize_tool_name(name: str) -> str:
@@ -2794,9 +2807,19 @@ _CATEGORY_BY_PREFIX = [
 ]
 
 # 核心工具参数说明（按参数名通用映射 + 工具级覆盖）
+@tool("execute_code")
+async def _h_execute_code(code: str, language: str = "python"):
+    """沙箱代码执行：Docker → OS 级隔离(bwrap/rlimit) → 本地受限降级，30s 超时。
+    权限闸门按「沙箱即边界」自动放行（见 permissions.gate_tool_call），全程 SM3 审计。"""
+    from agent_core.sandbox import execute_code as _sandbox_exec
+    try:
+        return json.loads(await _sandbox_exec(code, language))
+    except Exception as e:  # noqa: BLE001 — 沙箱异常如实回传，不让主流程崩
+        return {"success": False, "stdout": "", "stderr": str(e), "sandbox": "error"}
+
+
 _PARAM_DESC = {
-    "city": "城市名称（如 北京、赣州），用于定位监测站点数据",
-    "station": "可选，监测站点名称，缺省取城市全部国控站点",
+    "city": "城市名称（如 北京、赣州），用于定位监测站点数据",    "station": "可选，监测站点名称，缺省取城市全部国控站点",
     "keyword": "检索关键词（法规名、污染物、行业等），支持中文",
     "law_name": "可选，限定法规名称以缩小检索范围",
     "standard_code": "排放标准编号（如 GB 29620-2013）",
@@ -3053,12 +3076,16 @@ def attach_mcp_tools() -> list[str]:
     registered = []
     for t in _MCP_MGR.all_tools():
         full = f"mcp__{t['server']}__{t['name']}"
-        if full in _HANDLERS:
+        # 规范化：远程工具名可能含点号等非法字符（如腾讯文档 manage.create_file），
+        # 必须 slug 化进 OpenAI 函数名（DeepSeek 对非法名整批 400），
+        # slug↔原名映射由 normalize_tool_name 维护，call 时反查无碍。
+        slug = normalize_tool_name(full)
+        if slug in _HANDLERS or full in _HANDLERS:
             continue
         schema = t.get("inputSchema") or {"type": "object", "properties": {}}
         ALL_TOOL_DEFS.append({
             "type": "function",
-            "function": {"name": full,
+            "function": {"name": slug,
                          "description": f"[MCP:{t['server']}] {t.get('description', '')}",
                          "parameters": schema},
         })
@@ -3067,8 +3094,10 @@ def attach_mcp_tools() -> list[str]:
             def _h(**kwargs):
                 return _MCP_MGR.call_tool(srv, tool, kwargs)
             return _h
-        _HANDLERS[full] = _make()
-        registered.append(full)
+        _HANDLERS[slug] = _make()
+        if full != slug:
+            _HANDLERS[full] = _make()  # 原名也可直达（execute_tool 反查兜底）
+        registered.append(slug)
     if registered:
         log.info("[tools_registry] 并入 %d 个 MCP 工具: %s", len(registered), registered)
     return registered

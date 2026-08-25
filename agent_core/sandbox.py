@@ -43,13 +43,25 @@ class DockerSandbox:
         return self._available
 
     async def execute(self, code: str, language: str = "python") -> dict:
-        """在 Docker 沙箱中执行代码（无 Docker 时优先 OS 级沙箱）"""
-        if not self._available:
-            os_result = await self._os_sandbox_execute(code, language)
-            if os_result is not None:
-                return os_result
-            return await self._local_fallback(code, language)
+        """三级降级执行：Docker → OS 级(bwrap/rlimit) → 本地受限。"""
+        if self._available:
+            result = await self._run_docker(code, language)
+            # Docker 守护进程掉线/连接失败：标记不可用并降级，后续调用跳过 docker
+            if not result.get("success") and any(
+                k in str(result.get("stderr", "")).lower()
+                for k in ("daemon", "connect", "socket", "no such file")
+            ):
+                log.warning("docker daemon unavailable → os/local sandbox 降级: %s",
+                            str(result.get("stderr"))[:120])
+                self._available = False
+            else:
+                return result
+        os_result = await self._os_sandbox_execute(code, language)
+        if os_result is not None:
+            return os_result
+        return await self._local_fallback(code, language)
 
+    async def _run_docker(self, code: str, language: str = "python") -> dict:
         ext = {"python": ".py", "shell": ".sh", "node": ".js"}.get(language, ".py")
         work_dir = Path(tempfile.mkdtemp(prefix="eco_sandbox_"))
         script_path = work_dir / f"script{ext}"

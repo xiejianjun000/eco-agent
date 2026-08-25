@@ -11,6 +11,7 @@ Reads config from ~/.eco/.env:
   DEEPSEEK_API_KEY=sk-...
 """
 import os
+import sys
 import time
 import logging
 import json
@@ -52,7 +53,8 @@ STATS_FILE = Path.home() / ".eco" / "stats.jsonl"
 def record_llm_stat(provider: str, model: str, latency_ms: float,
                     prompt_tokens=None, completion_tokens=None,
                     path: str = "", ok: bool = True):
-    """每次 LLM 调用追加一条结构化统计到 ~/.eco/stats.jsonl（供 eco doctor 查看）"""
+    """每次 LLM 调用追加一条结构化统计到 ~/.eco/stats.jsonl（供 eco doctor 查看）。
+    写入失败静默降级（沙箱/权限受限环境不得影响 LLM 调用主链路）。"""
     import datetime as _dt
     rec = {
         "ts": _dt.datetime.now().isoformat(timespec="seconds"),
@@ -62,9 +64,12 @@ def record_llm_stat(provider: str, model: str, latency_ms: float,
         "completion_tokens": completion_tokens,
         "ok": ok,
     }
-    STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with STATS_FILE.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    try:
+        STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with STATS_FILE.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except OSError:
+        pass  # 统计属于观测辅助，落盘失败不影响主链路
 
 
 def summarize_llm_stats(limit: int = 0, stats_file=None) -> dict:
@@ -106,13 +111,26 @@ def summarize_llm_stats(limit: int = 0, stats_file=None) -> dict:
 
 class LLMClient:
     def __init__(self):
+        # 自举环境：无论谁在何时构造本客户端（含早于 create_app/envboot 的
+        # 导入期路径、子代理进程、独立脚本），先把 .env 合入 os.environ——
+        # 根治"no api key (provider not configured)"时序类缺陷。
+        # envboot 幂等且测试进程内自动跳过，重复调用无副作用。
+        try:
+            from agent_core.envboot import load_env_into_process
+
+            load_env_into_process()
+        except Exception:  # noqa: BLE001 — 自举失败由 _refresh_key 诊断兜底
+            pass
         env = {}
-        env_file = Path.home() / ".eco" / ".env"
-        if env_file.exists():
-            for l in env_file.read_text().splitlines():
-                if "=" in l:
-                    k, v = l.split("=", 1)
-                    env[k.strip()] = v.strip()
+        try:
+            env_file = Path.home() / ".eco" / ".env"
+            if env_file.exists():
+                for l in env_file.read_text().splitlines():
+                    if "=" in l:
+                        k, v = l.split("=", 1)
+                        env[k.strip()] = v.strip()
+        except OSError:
+            pass  # 读取受限（沙箱等）时降级为纯 os.environ 模式
         self._env = env
         self._provider_name = (os.environ.get("ECO_PROVIDER") or os.environ.get("ECO_LLM_PROVIDER")
                                or env.get("ECO_PROVIDER") or env.get("ECO_LLM_PROVIDER") or "deepseek")
@@ -136,7 +154,48 @@ class LLMClient:
             logger.warning("httpx not installed")
 
     def available(self) -> bool:
-        return not self._disabled and self._httpx is not None and bool(self._api_key)
+        return not self._disabled and self._httpx is not None and bool(self._refresh_key())
+
+    def _refresh_key(self) -> str:
+        """惰性刷新 API Key（自愈机制）。
+
+        LLMClient 是进程级单例，构造时可能早于 envboot 注入环境变量
+        （如模块导入期/cordis 装配期被首次引用），导致 _api_key 永久为空、
+        所有调用报 "no api key (provider not configured)"。每次调用前兜底
+        重读 os.environ 与 ~/.eco/.env，一旦拿到有效 Key 即自愈。
+        """
+        if self._api_key:
+            return self._api_key
+        env: dict = {}
+        try:
+            # 兜底链：~/.eco/.env 之后并入仓库 .env（后者非空值优先），
+            # 与 envboot 语义一致（真实环境 > 仓库 .env > ~/.eco/.env）
+            from agent_core.envboot import _parse_env_file
+
+            user_file = Path.home() / ".eco" / ".env"
+            repo_file = Path(__file__).resolve().parent.parent / ".env"
+            env = _parse_env_file(user_file)
+            for k, v in _parse_env_file(repo_file).items():
+                if v.strip():  # 仓库 .env 的空值不覆盖用户级非空值
+                    env[k] = v
+        except OSError:
+            pass
+        key = os.environ.get(self._provider["api_key_env"]) or env.get(
+            self._provider["api_key_env"], ""
+        )
+        if key:
+            self._api_key = key
+            logger.info("[llm_client] api key 惰性刷新成功: %s", self._provider["api_key_env"])
+        else:
+            # 自诊断：下一次复发时这行日志直接定位缺的是哪一环
+            logger.error(
+                "[llm_client] api key 缺失诊断: provider=%s env_key=%s "
+                "os_environ_has_key=%s eco_env_file_has_key=%s cwd=%s python=%s",
+                self._provider_name, self._provider["api_key_env"],
+                bool(os.environ.get(self._provider["api_key_env"])),
+                bool(env.get(self._provider["api_key_env"])),
+                os.getcwd(), sys.executable if hasattr(sys, "executable") else "?")
+        return self._api_key
 
     def complete(self, prompt: str, system: str = "", max_tokens: int = 512,
                  timeout: float = 90.0) -> str:
@@ -436,6 +495,13 @@ class LLMClient:
         失败返回 (None, err) 并把细节写入 self._last_error。
         温度统一经 _resolve_temperature 收口（kimi-k2.x 强制 1）。"""
         self._last_error = None
+        # 空密钥守卫：provider 未配置 Key 时直接短路返回，绝不构造
+        # "Bearer " 空头（httpx 会抛 Illegal header value 炸掉调用链）。
+        # 先惰性刷新（单例构造早于 envboot 时自愈），仍为空才短路。
+        if not self._refresh_key():
+            self._last_error = {"kind": "auth", "status": None,
+                                "detail": "no api key (provider not configured)"}
+            return None, "no api key (provider not configured)"
         body = {
             "model": model,
             "messages": messages,
@@ -467,6 +533,10 @@ class LLMClient:
             # 会话级 token 计量：usage 随消息带回（chat.py 循环累加后剥离，不下发模型）
             if isinstance(msg, dict):
                 msg["_usage"] = usage
+                # 推理模型（deepseek-reasoner/v4 系列）返回 reasoning_content ——
+                # 采集进 _reasoning，chat.py 转为 think 事件推给前端（DSH Think 流）
+                if msg.get("reasoning_content"):
+                    msg["_reasoning"] = msg["reasoning_content"]
             return msg, None
         except Exception as e:
             self._last_error = {"kind": "network", "status": None, "detail": f"{type(e).__name__} {e}"}
@@ -474,7 +544,7 @@ class LLMClient:
             return None, str(e)
 
     def _call_chat_with_tools_stream(self, model: str, messages: list, tools: list,
-                                     on_chunk=None):
+                                     on_chunk=None, on_reasoning=None):
         """真实 SSE 流式 chat_with_tools 调用（stream=True）。
 
         - content delta 即时通过 on_chunk 回调给上层（真流式，非整块切片回放）
@@ -484,6 +554,11 @@ class LLMClient:
           429/配额类错误交由上层做 provider 流式降级重试。
         """
         self._last_error = None
+        # 空密钥守卫（同 _call_chat_with_tools，先惰性刷新自愈）
+        if not self._refresh_key():
+            self._last_error = {"kind": "auth", "status": None,
+                                "detail": "no api key (provider not configured)"}
+            return None, "no api key (provider not configured)"
         body = {
             "model": model,
             "messages": messages,
@@ -495,6 +570,7 @@ class LLMClient:
             body["tool_choice"] = "auto"
         t0 = time.time()
         content_parts: list[str] = []
+        reasoning_parts: list[str] = []
         tool_calls_acc: dict[int, dict] = {}
         usage = None
         try:
@@ -540,6 +616,11 @@ class LLMClient:
                         content_parts.append(chunk)
                         if on_chunk:
                             on_chunk(chunk)
+                    rchunk = delta.get("reasoning_content")
+                    if rchunk:
+                        reasoning_parts.append(rchunk)
+                        if on_reasoning:
+                            on_reasoning(rchunk)
                     for tc in delta.get("tool_calls") or []:
                         idx = tc.get("index", 0)
                         acc = tool_calls_acc.setdefault(
@@ -553,6 +634,8 @@ class LLMClient:
                         if fn.get("arguments"):
                             acc["function"]["arguments"] += fn["arguments"]
             message = {"role": "assistant", "content": "".join(content_parts) or None}
+            if reasoning_parts:
+                message["_reasoning"] = "".join(reasoning_parts)
             if tool_calls_acc:
                 message["tool_calls"] = [tool_calls_acc[i] for i in sorted(tool_calls_acc)]
             self._record_usage(model, usage, time.time() - t0, ok=True)

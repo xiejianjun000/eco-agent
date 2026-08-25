@@ -18,6 +18,31 @@ export default function SystemView(): React.ReactElement {
   const [categories, setCategories] = useState<Record<string, number>>({});
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    const saved = window.localStorage.getItem('eco-theme');
+    return saved === 'dark' || saved === 'light' ? saved : 'system';
+  });
+  const [gate, setGate] = useState<boolean | null>(null);
+  const [presets, setPresets] = useState<{ id: string; role: string; name: string; files: string[] }[]>([]);
+
+  const applyTheme = (t: 'light' | 'dark' | 'system') => {
+    setTheme(t);
+    const resolved = t === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : t;
+    window.localStorage.setItem('eco-theme', t);
+    document.documentElement.dataset.theme = resolved;
+    window.dispatchEvent(new CustomEvent('eco-theme-changed', { detail: resolved }));
+  };
+
+  const toggleGate = async (enabled: boolean) => {
+    try {
+      const r = await api.permissionGate(enabled);
+      setGate(r.enabled);
+    } catch (e) {
+      window.alert(`切换失败: ${(e as Error).message}`);
+    }
+  };
 
   const load = async () => {
     try {
@@ -26,6 +51,9 @@ export default function SystemView(): React.ReactElement {
       setMetrics(met);
       setTools(t.tools);
       setCategories(t.categories);
+      const pg = (sys.components as Record<string, { enabled?: boolean }>).permission_gate;
+      setGate(pg?.enabled ?? null);
+      api.presets().then((r) => setPresets(r.presets ?? [])).catch(() => {});
       setError('');
     } catch (e) {
       setError((e as Error).message);
@@ -58,6 +86,62 @@ export default function SystemView(): React.ReactElement {
         <div className="card">
           <div className="stat">{comps.soul?.loaded ? '已加载' : '未加载'}</div>
           <div className="stat-label">SOUL 人格配置</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>设置</h2>
+        <div className="setting-row">
+          <span className="setting-label">外观</span>
+          <div className="seg">
+            {(['light', 'dark', 'system'] as const).map((t) => (
+              <button
+                key={t}
+                className={`seg-btn${theme === t ? ' active' : ''}`}
+                onClick={() => applyTheme(t)}
+              >
+                {t === 'light' ? '亮色' : t === 'dark' ? '暗色' : '跟随系统'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="setting-row">
+          <span className="setting-label">权限闸门（L1-L4）</span>
+          <div className="seg">
+            <button
+              className={`seg-btn${gate === true ? ' active' : ''}`}
+              onClick={() => void toggleGate(true)}
+            >
+              启用
+            </button>
+            <button
+              className={`seg-btn${gate === false ? ' active' : ''}`}
+              onClick={() => void toggleGate(false)}
+            >
+              停用
+            </button>
+          </div>
+          {gate === null && <span className="muted">加载中…</span>}
+        </div>
+        <div className="setting-row">
+          <span className="setting-label">LLM 提供商</span>
+          <span className="badge blue">{comps.llm?.provider ?? 'unknown'}</span>
+          <span className="muted">（模型与密钥经 .env 环境变量配置，此处只读）</span>
+        </div>
+        <div className="setting-row">
+          <span className="setting-label">Agent 预设</span>
+          <div className="preset-list">
+            {presets.length === 0 ? (
+              <span className="muted">加载中…</span>
+            ) : (
+              presets.map((p) => (
+                <span key={p.id} className={`badge ${p.role === 'main' ? 'terra' : 'blue'}`} title={p.files.join(', ')}>
+                  {p.name}
+                </span>
+              ))
+            )}
+          </div>
+          <span className="muted">（profiles/ 目录清单，主预设 + {presets.length - 1} 个角色人格）</span>
         </div>
       </div>
 

@@ -283,14 +283,14 @@ _default_steps: PulseSteps | None = None
 
 
 def default_steps() -> PulseSteps:
-    """生产默认实例：监控 memory-tree 与（存在的）Obsidian vault、~/.eco SQLite"""
+    """生产默认实例：监控 memory-tree 与（存在的）Obsidian vault、ECO_DIR SQLite"""
     global _default_steps
     if _default_steps is None:
         watch = [ROOT / "memory-tree"]
         vault = os.environ.get("OBSIDIAN_VAULT", "")
         if vault and Path(vault).is_dir():
             watch.append(Path(vault))
-        eco_dir = Path.home() / ".eco"
+        eco_dir = Path(os.environ.get("ECO_DIR", str(Path.home() / ".eco")))
         dbs = [eco_dir / "hybrid_vectors.db"] if (eco_dir / "hybrid_vectors.db").exists() else []
         _default_steps = PulseSteps(watch_dirs=watch, db_paths=dbs)
     return _default_steps

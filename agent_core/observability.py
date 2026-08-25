@@ -21,7 +21,23 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-TRACES_DIR = Path.home() / ".eco" / "traces"
+logger = logging.getLogger("eco.observability")
+
+
+def _eco_home() -> Path:
+    """ECO_DIR 环境变量优先（沙箱/home 只读时可重定向），默认 ~/.eco。"""
+    env = os.environ.get("ECO_DIR", "").strip()
+    return Path(env).expanduser() if env else Path.home() / ".eco"
+
+
+TRACES_DIR = _eco_home() / "traces"
+
+
+def _default_traces_dir() -> Path:
+    """落盘目录：运行时动态读 ECO_DIR，未设置时回退 TRACES_DIR（兼容测试注入）。"""
+    env = os.environ.get("ECO_DIR", "").strip()
+    return Path(env).expanduser() / "traces" if env else TRACES_DIR
+
 
 DEFAULT_OTLP_ENDPOINT = "http://localhost:4318"
 
@@ -114,18 +130,22 @@ class SpanTree:
     def to_dict(self) -> dict:
         return {"session_id": self.session_id, "meta": self.meta, "spans": self.spans}
 
-    def save(self, directory: Path | None = None) -> Path:
-        d = Path(directory) if directory else TRACES_DIR
-        d.mkdir(parents=True, exist_ok=True)
-        path = d / f"{self.session_id}.json"
-        path.write_text(json.dumps(self.to_dict(), ensure_ascii=False, indent=1),
-                        encoding="utf-8")
-        return path
+    def save(self, directory: Path | None = None) -> Path | None:
+        d = Path(directory) if directory else _default_traces_dir()
+        try:
+            d.mkdir(parents=True, exist_ok=True)
+            path = d / f"{self.session_id}.json"
+            path.write_text(json.dumps(self.to_dict(), ensure_ascii=False, indent=1),
+                            encoding="utf-8")
+            return path
+        except Exception as e:  # noqa: BLE001 — 落盘失败绝不抛错，仅降级告警
+            logger.warning("span tree 落盘失败（%s）: %s", d, e)
+            return None
 
     @staticmethod
     def load(session: str, directory: Path | None = None) -> SpanTree:
         """按 session_id 或文件名加载（支持不带 .json 后缀）"""
-        d = Path(directory) if directory else TRACES_DIR
+        d = Path(directory) if directory else _default_traces_dir()
         path = Path(session)
         if not path.exists():
             path = d / (session if session.endswith(".json") else f"{session}.json")
@@ -136,7 +156,7 @@ class SpanTree:
 
     @staticmethod
     def list_sessions(directory: Path | None = None) -> list[str]:
-        d = Path(directory) if directory else TRACES_DIR
+        d = Path(directory) if directory else _default_traces_dir()
         if not d.is_dir():
             return []
         return sorted(p.stem for p in d.glob("*.json"))
@@ -245,7 +265,7 @@ class OTLPExporter:
         ep = endpoint or os.environ.get("ECO_OTLP_ENDPOINT") or DEFAULT_OTLP_ENDPOINT
         self.endpoint = ep.rstrip("/")
         self.timeout = timeout
-        self.fallback_dir = Path(fallback_dir) if fallback_dir else TRACES_DIR
+        self.fallback_dir = Path(fallback_dir) if fallback_dir else _default_traces_dir()
 
     @property
     def traces_url(self) -> str:

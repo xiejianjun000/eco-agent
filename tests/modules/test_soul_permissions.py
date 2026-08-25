@@ -10,9 +10,14 @@ from agent_core import soul as soul_mod
 
 @pytest.fixture(autouse=True)
 def _isolate(tmp_path, monkeypatch):
-    """审计链与 SOUL 缓存隔离到 tmp；profiles 指向仓内真实 profiles"""
+    """审计链与 SOUL 缓存隔离到 tmp；profiles 指向仓内真实 profiles；
+    审批栈单例隔离到 tmp（避免写 ~/.eco）"""
     monkeypatch.setenv("ECO_PERMISSION_GATE", "1")
     monkeypatch.setenv("ECO_NONINTERACTIVE", "1")
+    from agent_core import approval as approval_mod
+    monkeypatch.setattr(approval_mod, "_service",
+                        approval_mod.ApprovalService(policy="ask", answerers=["tester"],
+                                                     path=tmp_path / "approvals.jsonl"))
     soul_mod._reset_for_test()
     _reset_engine_for_test()
     yield
@@ -123,16 +128,20 @@ class TestPermissions:
         assert entries[0]["accepted"] is True
         assert "query_air_quality" in entries[0]["content"]
 
-    def test_l4_denied_noninteractive_and_audited(self, tmp_path, monkeypatch):
+    def test_l4_noninteractive_submits_pending_and_audited(self, tmp_path, monkeypatch):
+        """L4 无 grant 且非交互：登记审批栈 pending（不再是单纯 deny），审计对落链"""
         eng = _engine(tmp_path)
         monkeypatch.setattr("agent_core.prompt_engine._engine", eng)
         from agent_core.permissions import gate_tool_call
         ok, level, reason = gate_tool_call("apply_invoice", {"company": "X"})
         assert not ok and level == "L4"
-        assert "非交互" in reason
-        entries = eng.audit.tail(1)
-        assert entries[0]["source"] == "permission"
-        assert entries[0]["accepted"] is False
+        assert "审批请求" in reason and "pending:" in reason
+        # asked（approval）+ 闸门决策（permission，pending 未放行）
+        entries = eng.audit.tail(2)
+        srcs = [e["source"] for e in entries]
+        assert srcs == ["approval", "permission"]
+        perm_entry = entries[-1]
+        assert perm_entry["accepted"] is False
 
     def test_l4_interactive_confirm_paths(self, tmp_path, monkeypatch):
         """交互模式：y 放行 / n 拒绝 两条路径"""

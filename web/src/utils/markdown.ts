@@ -70,6 +70,22 @@ export function renderMarkdown(text: string): string {
   let listType: 'ul' | 'ol' | null = null;
   let inCodeBlock = false;
   let codeBuffer: string[] = [];
+  let codeLang = '';
+
+  /** 代码块收口：DSH 式横幅（语言标签 + 复制按钮）+ 代码体 */
+  const closeCodeBlock = () => {
+    if (!inCodeBlock) return;
+    const lang = codeLang.replace(/[^\w+#.-]/g, '').slice(0, 24) || 'code';
+    out.push(
+      `<div class="md-codeblock"><div class="md-code-banner">` +
+        `<span class="md-code-lang">${lang}</span>` +
+        `<button type="button" class="md-code-copy">复制</button>` +
+        `</div><pre class="md-code"><code>${codeBuffer.join('\n')}</code></pre></div>`,
+    );
+    codeBuffer = [];
+    codeLang = '';
+    inCodeBlock = false;
+  };
 
   const closeList = () => {
     if (listType) {
@@ -86,12 +102,29 @@ export function renderMarkdown(text: string): string {
     // 代码块 ```...```
     if (trimmed.startsWith('```')) {
       if (inCodeBlock) {
-        out.push(`<pre class="md-code"><code>${codeBuffer.join('\n')}</code></pre>`);
+        // options 标签：DSH 式选项提问（渲染为可点击按钮，点击回填输入框）
+        if (codeLang.toLowerCase() === 'options') {
+          const opts = codeBuffer
+            .map((l) => l.trim())
+            .filter((l) => l.length > 0 && !l.startsWith('- '))
+            .map((l) => l.replace(/^[-*]\s+/, ''));
+          if (opts.length > 0) {
+            out.push(
+              `<div class="md-options">${opts
+                .map((o) => `<button type="button" class="md-option" data-opt="${o}">${o}</button>`)
+                .join('')}</div>`,
+            );
+          }
+        } else {
+          closeCodeBlock();
+        }
         codeBuffer = [];
+        codeLang = '';
         inCodeBlock = false;
       } else {
         closeList();
         inCodeBlock = true;
+        codeLang = trimmed.slice(3).trim();
       }
       i += 1;
       continue;
@@ -177,9 +210,7 @@ export function renderMarkdown(text: string): string {
     i += 1;
   }
 
-  if (inCodeBlock) {
-    out.push(`<pre class="md-code"><code>${codeBuffer.join('\n')}</code></pre>`);
-  }
+  if (inCodeBlock) closeCodeBlock();
   closeList();
   return out.join('\n');
 }

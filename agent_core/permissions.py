@@ -19,7 +19,8 @@ permissions.py — L1-L4 风险权限模型 + 工具执行闸门（PERMISSION.md
 执行闸门 gate_tool_call()：
   - 每次判定写 prompt_engine SM3 审计链（source=permission）
   - 交互模式（stdin 是 tty 且未设 ECO_NONINTERACTIVE）：CLI y/n 确认
-  - 非交互模式：L3 白名单放行，L3 非白名单与 L4 一律拒绝并记日志
+  - 非交互模式：L3 白名单放行，L3 非白名单拒绝；L4 无 grant 时登记审批栈
+    pending 请求（policy=ask）或维持原拒绝（policy=never），见 agent_core.approval
 """
 
 import logging
@@ -88,13 +89,19 @@ _OVERRIDE_RE = re.compile(
 
 
 def load_overrides() -> dict[str, str]:
-    """从 PERMISSION.md 的 tool_risk_overrides 块解析逐工具覆盖（无 PyYAML 依赖）"""
+    """从 PERMISSION.md 的 tool_risk_overrides 块解析逐工具覆盖（无 PyYAML 依赖）。
+
+    用块切片法（取 tool_risk_overrides: 到代码围栏 ``` 之间的全部文本），
+    容忍条目间的注释行/空行——正则整体匹配曾被注释行截断，
+    导致注释后新增的条目全部漏解析（如三平台 L1 批量条目）。"""
     text = _load_permission_md()
     overrides: dict[str, str] = {}
-    m = _OVERRIDE_RE.search(text)
-    if not m:
+    i = text.find("tool_risk_overrides:")
+    if i < 0:
         return overrides
-    block = m.group(1)
+    tail = text[i:]
+    fence = tail.find("```", tail.find("\n") + 1)
+    block = tail[:fence] if fence >= 0 else tail
     for tm in re.finditer(r"-\s*tool:\s*([A-Za-z0-9_]+)\s*\n\s*level:\s*(L[1-4])", block):
         overrides[tm.group(1)] = tm.group(2)
     if overrides:
@@ -182,6 +189,13 @@ def gate_tool_call(tool_name: str, args: dict | None = None,
         return True, level, "自动放行"
 
     if level == "L3":
+        # execute_code 携带 code 参数时经 agent_core.sandbox 三层隔离执行
+        # （Docker → bwrap/rlimit → 本地受限+超时+环境变量清洗），沙箱即安全边界，
+        # 自动放行并审计——对齐 DSH 沙箱代码执行语义。无 code 的调用（command 形态）
+        # 仍走下方白名单/确认路径。
+        if tool_name == "execute_code" and (args or {}).get("code"):
+            _audit_decision(tool_name, level, "allow", "沙箱隔离自动放行（code 经 sandbox 执行）")
+            return True, level, "沙箱隔离自动放行"
         cmd = str((args or {}).get("command", "") or (args or {}).get("code", ""))
         whitelist = load_l3_whitelist()
         if cmd and any(cmd.startswith(w.strip()) for w in whitelist if w.strip()):
@@ -217,5 +231,18 @@ def gate_tool_call(tool_name: str, args: dict | None = None,
         reason = "人工审批放行" if ok else "人工审批拒绝"
         _audit_decision(tool_name, level, decision, reason)
         return ok, level, reason
-    _audit_decision(tool_name, level, "deny", "非交互模式拒绝（L4 必须人工确认）")
-    return False, level, "非交互模式拒绝（L4 必须人工确认）"
+    # 非交互 L4 无 grant：交给审批栈（ask 登记 pending / never 维持原 deny 语义）
+    try:
+        from agent_core.approval import get_approval_service
+        svc = get_approval_service()
+        if svc.policy == "never":
+            _audit_decision(tool_name, level, "deny", "非交互模式拒绝（L4 必须人工确认）")
+            return False, level, "非交互模式拒绝（L4 必须人工确认）"
+        req = svc.request(scope=tool_name, detail=args or {})
+        reason = f"已提交审批请求 pending:{req.get('id')}，等待 answerer 决定"
+        _audit_decision(tool_name, level, "pending", reason)
+        return False, level, reason
+    except Exception as e:  # noqa: BLE001 — 审批栈异常绝不越权放行，回落原 deny
+        logger.warning(f"[permissions] 审批栈登记失败，回落 deny: {e}")
+        _audit_decision(tool_name, level, "deny", "非交互模式拒绝（L4 必须人工确认）")
+        return False, level, "非交互模式拒绝（L4 必须人工确认）"

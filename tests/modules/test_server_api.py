@@ -131,11 +131,19 @@ def test_metrics(client):
 
 
 def test_execute_code_gated_in_chat(monkeypatch):
-    """execute_code 挂入对话循环后：L3 非白名单执行被闸门拦截并返回拒绝原因。"""
+    """execute_code 挂入对话循环后：code 形态经沙箱自动放行并真实执行；
+    command 形态的非白名单调用仍被闸门拦截。"""
     import asyncio
+    import json
 
     from agent_core.tools_registry import execute_tool
 
     monkeypatch.setenv("ECO_PERMISSION_GATE", "1")
+    # code 形态：沙箱即边界 → 自动放行 + 真实执行
     result = asyncio.run(execute_tool("execute_code", {"code": "print(1+1)", "language": "python"}))
-    assert "permission denied" in result
+    assert "permission denied" not in result
+    payload = json.loads(result)
+    assert payload.get("success") is True or "sandbox" in payload
+    # command 形态非白名单：仍拒绝
+    denied = asyncio.run(execute_tool("execute_code", {"command": "rm -rf /"}))
+    assert "permission denied" in denied

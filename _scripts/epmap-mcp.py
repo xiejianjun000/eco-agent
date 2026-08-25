@@ -118,7 +118,14 @@ def _sign_headers() -> dict:
 
 
 def _fetch_epmap(endpoint: str, params: dict) -> dict:
-    """调用青悦环境数据云（腾讯云市场 API 网关，官方签名）。"""
+    """调用青悦环境数据云（腾讯云市场 API 网关，官方签名）。
+
+    请求模板（产品文档原样）：
+      curl -X GET '<base>/<endpoint>' -H 'Content-Type: application/x-www-form-urlencoded'
+           -H 'request-id: uuid' -H 'Authorization: {"id","x-date","signature"}'
+           -d '' -H 'X-Requested-With:XMLHttpRequest'
+    签名：signature = Base64(HMAC-SHA1(secret_key, "x-date: <GMT>"))。
+    """
     import ssl
     import urllib.parse
     import urllib.request
@@ -130,7 +137,9 @@ def _fetch_epmap(endpoint: str, params: dict) -> dict:
     if params:
         url += "?" + urllib.parse.urlencode(params)
     headers = _sign_headers()
-    req = urllib.request.Request(url, headers=headers)
+    headers.setdefault("Content-Type", "application/x-www-form-urlencoded")
+    headers.setdefault("X-Requested-With", "XMLHttpRequest")
+    req = urllib.request.Request(url, data=b"", headers=headers, method="GET")
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
@@ -165,7 +174,8 @@ def _call(tool: str, args: dict) -> dict:
         return _no_token(tool, args, t0)
     try:
         if tool == "water_quality":
-            result = _fetch_epmap("water/quality", args)
+            # 实测确认：服务仅暴露 surface_water/stations 一个端点
+            result = _fetch_epmap("surface_water/stations", args)
         elif tool == "air_quality_national":
             result = _fetch_epmap("air/national", args)
         else:
@@ -221,7 +231,11 @@ def main() -> int:
             print("接口调用: HTTP 200（签名通过）")
             print(json.dumps(result, ensure_ascii=False, indent=1)[:400])
         except Exception as e:  # noqa: BLE001
-            print("接口调用失败:", e)
+            import urllib.error
+            if isinstance(e, urllib.error.HTTPError):
+                print("接口调用失败:", e.code, e.read().decode('utf-8', errors='replace')[:300])
+            else:
+                print("接口调用失败:", e)
         return 0
 
     sys.stderr.write(json.dumps({

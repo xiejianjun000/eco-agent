@@ -11,10 +11,14 @@ L4_TOOL = "submit_report"  # submit_ 前缀 → L4/EXTERNAL
 
 @pytest.fixture()
 def grants_env(tmp_path, monkeypatch):
-    """隔离授权目录与签名密钥到 tmp_path"""
+    """隔离授权目录与签名密钥到 tmp_path；审批栈单例也隔离到 tmp（避免写 ~/.eco）"""
     gdir = tmp_path / "grants"
     monkeypatch.setattr(grants_mod, "GRANTS_DIR", gdir)
     monkeypatch.setattr(grants_mod, "SECRET_FILE", tmp_path / "grant_secret")
+    from agent_core import approval as approval_mod
+    monkeypatch.setattr(approval_mod, "_service",
+                        approval_mod.ApprovalService(policy="ask", answerers=["tester"],
+                                                     path=tmp_path / "approvals.jsonl"))
     monkeypatch.setenv("ECO_NONINTERACTIVE", "1")  # 强制非交互（无 tty 也能走 grant 通道）
     monkeypatch.delenv("ECO_PERMISSION_GATE", raising=False)
     return gdir
@@ -38,7 +42,8 @@ class TestAuthGrants:
     def test_no_grant_blocks_l4(self, grants_env):
         ok, level, reason = gate_tool_call(L4_TOOL, {})
         assert not ok and level == "L4"
-        assert "拒绝" in reason
+        # 无 grant 且非交互：不再单纯 deny，而是登记审批栈 pending 请求
+        assert "审批请求" in reason and "pending:" in reason
 
     def test_grant_allows_and_audits(self, grants_env):
         g = grants_mod.grant(level="L4", ttl=3600, scope="*")
@@ -54,7 +59,7 @@ class TestAuthGrants:
         grants_mod.grant(level="L4", ttl=-10, scope="*")  # 立即过期
         ok, _level, reason = gate_tool_call(L4_TOOL, {})
         assert not ok
-        assert "拒绝" in reason
+        assert "审批请求" in reason
 
     def test_tampered_grant_denied(self, grants_env):
         g = grants_mod.grant(level="L4", ttl=3600, scope="*")

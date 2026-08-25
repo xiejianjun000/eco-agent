@@ -251,3 +251,76 @@ class TestManager(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestHttpTransportConfig(unittest.TestCase):
+    """Streamable HTTP 传输（腾讯文档官方 MCP 等）配置解析"""
+
+    def test_http_transport_from_dict(self):
+        cfg = MCPServerConfig.from_dict({
+            "name": "tencent_docs",
+            "transport": "http",
+            "url": "https://docs.qq.com/openapi/mcp",
+            "headers": {"Authorization": "tk-123"},
+        })
+        self.assertEqual(cfg.transport, "http")
+        self.assertEqual(cfg.url, "https://docs.qq.com/openapi/mcp")
+        self.assertEqual(cfg.headers["Authorization"], "tk-123")
+
+    def test_http_transport_in_env_config(self):
+        payload = ('[{"name":"tencent_docs","transport":"http",'
+                   '"url":"https://docs.qq.com/openapi/mcp",'
+                   '"headers":{"Authorization":"tk-456"}}]')
+        with mock.patch.dict(os.environ, {"ECO_MCP_SERVERS": payload}):
+            cfgs = load_configs_from_env()
+        self.assertEqual(len(cfgs), 1)
+        self.assertEqual(cfgs[0].transport, "http")
+        self.assertEqual(cfgs[0].headers.get("Authorization"), "tk-456")
+
+
+class TestTencentDocsSetupScript(unittest.TestCase):
+    """腾讯文档 Token 自助配置脚本（_scripts/setup_tencent_docs.py）"""
+
+    def _load_script(self, env_path):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "setup_tencent_docs",
+            str(Path(__file__).resolve().parent.parent.parent
+                / "_scripts" / "setup_tencent_docs.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        mod.set_token(env_path, "tk_abc123")  # 复用脚本写入路径
+        return mod
+
+    def test_set_check_clear_roundtrip(self):
+        import json
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as td:
+            env_path = Path(td) / ".env"
+            env_path.write_text(
+                'ECO_MCP_SERVERS=[{"name":"eia","transport":"stdio","command":["node","x.js"]}]',
+                encoding="utf-8")
+
+            mod = self._load_script(env_path)
+            # set：追加 tencent_docs 条目并写入 token
+            result = mod.set_token(env_path, "tk_abc123")
+            self.assertTrue(result["ok"])
+            self.assertNotIn("abc123", result["masked"])  # 脱敏，不泄漏明文
+
+            # 复读校验
+            status = mod.check(env_path)
+            self.assertTrue(status["ready"])
+            self.assertEqual(status["transport"], "http")
+            self.assertEqual(status["url"], "https://docs.qq.com/openapi/mcp")
+
+            # 其他条目不受影响
+            line = [l for l in env_path.read_text(encoding="utf-8").splitlines()
+                    if l.startswith("ECO_MCP_SERVERS=")][0]
+            servers = json.loads(line.split("=", 1)[1])
+            self.assertEqual([s["name"] for s in servers], ["eia", "tencent_docs"])
+
+            # clear：移除条目
+            self.assertTrue(mod.clear_token(env_path)["removed"])
+            self.assertFalse(mod.check(env_path)["configured"])

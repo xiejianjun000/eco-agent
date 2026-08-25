@@ -20,6 +20,7 @@ import hashlib
 import hmac
 import json
 import logging
+import os
 import re
 import secrets as _secrets
 import shutil
@@ -31,8 +32,9 @@ from pathlib import Path
 logger = logging.getLogger("ecoskills")
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_HOME = Path.home() / ".eco" / "ecoskills"
-SECRET_FILE = Path.home() / ".eco" / "ecoskills_secret"
+_ECO_DIR = Path(os.environ.get("ECO_DIR", str(Path.home() / ".eco")))
+DEFAULT_HOME = _ECO_DIR / "ecoskills"
+SECRET_FILE = _ECO_DIR / "ecoskills_secret"
 
 # ═══════════════════════════════════
 # 信任分级
@@ -244,8 +246,11 @@ class SkillRegistry:
 
     def __init__(self, home: str | Path | None = None):
         self._home = Path(home) if home else DEFAULT_HOME
-        self._home.mkdir(parents=True, exist_ok=True)
-        (self._home / "skills").mkdir(exist_ok=True)
+        try:
+            self._home.mkdir(parents=True, exist_ok=True)
+            (self._home / "skills").mkdir(exist_ok=True)
+        except OSError as e:  # 只读/受限环境：内存态运行，不阻断 API（优雅降级）
+            logger.warning("EcoSkills 目录创建失败，内存态运行: %s", e)
         self._index_path = self._home / "index.json"
         self._index: dict[str, dict] = {}
         self._load()
@@ -258,8 +263,11 @@ class SkillRegistry:
                 logger.warning(f"EcoSkills 索引加载失败: {e}")
 
     def _save(self):
-        self._index_path.write_text(json.dumps(self._index, ensure_ascii=False, indent=2),
-                                    encoding="utf-8")
+        try:
+            self._index_path.write_text(json.dumps(self._index, ensure_ascii=False, indent=2),
+                                        encoding="utf-8")
+        except OSError as e:  # 只读/受限环境：索引仅内存态
+            logger.warning("EcoSkills 索引落盘失败（内存态运行）: %s", e)
 
     # ---------- 安装 ----------
 

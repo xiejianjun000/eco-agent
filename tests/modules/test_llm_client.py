@@ -332,3 +332,32 @@ class TestRealStreaming:
         assert rec["prompt_tokens"] == 11
         assert rec["completion_tokens"] == 7
         assert rec["ok"] is True
+
+
+def test_lazy_api_key_refresh_self_heals():
+    """单例构造早于环境变量注入时，后续调用惰性重读 Key 自愈
+    （修复 'no api key (provider not configured)' 瞬时故障类）。"""
+    import os
+
+    from agent_core.llm_client import LLMClient
+
+    saved = os.environ.pop("DEEPSEEK_API_KEY", None)
+    try:
+        c = LLMClient()  # 无 Key 构造（模拟 envboot 之前的导入期构造）
+        assert c._api_key == ""
+        os.environ["DEEPSEEK_API_KEY"] = "sk-lazy-test"
+        try:
+            assert c._refresh_key() == "sk-lazy-test"
+            assert c._api_key == "sk-lazy-test"
+            # conftest 强制 ECO_LLM_DISABLE=1，只验证 key 自愈本身
+            saved_disabled = c._disabled
+            c._disabled = False
+            try:
+                assert c.available() is True
+            finally:
+                c._disabled = saved_disabled
+        finally:
+            del os.environ["DEEPSEEK_API_KEY"]
+    finally:
+        if saved is not None:
+            os.environ["DEEPSEEK_API_KEY"] = saved

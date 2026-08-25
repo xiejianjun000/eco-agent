@@ -159,4 +159,154 @@ tool_risk_overrides:
     level: L1
   - tool: mcp__eco_kb__eco_list_statutes
     level: L1
+  - tool: mcp__eia__kb_search
+    level: L1
+  - tool: mcp__eia__kb_verify
+    level: L1
+  - tool: mcp__eia__kb_calculate
+    level: L1
+  - tool: mcp__eia__kb_industry_info
+    level: L1
+  - tool: mcp__github__search_repositories
+    level: L1
+  - tool: mcp__github__get_file_contents
+    level: L1
+  - tool: mcp__github__list_commits
+    level: L1
+  - tool: mcp__github__list_issues
+    level: L1
+  - tool: mcp__github__get_issue
+    level: L1
+  - tool: mcp__github__search_code
+    level: L1
+  - tool: mcp__github__search_issues
+    level: L1
+  - tool: mcp__github__search_users
+    level: L1
+  - tool: mcp__github__get_me
+    level: L1
+  - tool: mcp__github__list_branches
+    level: L1
+  - tool: hunan_case_list
+    level: L2
+  # 政务平台-污染源在线监测（govmcp 只读，L1 自动放行；本机直连 218.77.102.213）
+  - tool: wryzxjc_list_regions
+    level: L1
+  - tool: wryzxjc_list_pollution_sources
+    level: L4
+  - tool: wryzxjc_get_pollution_source
+    level: L4
+  - tool: wryzxjc_list_alarms
+    level: L4
+  - tool: wryzxjc_list_devices
+    level: L4
+  - tool: wryzxjc_list_realtime_data
+    level: L4
+  - tool: wryzxjc_list_jcd_tree
+    level: L4
+  - tool: wryzxjc_list_history_data
+    level: L4
+  # 政务平台-国家四平台（govmcp 只读，L1 自动放行；CAS sthjzf.lem.org.cn）
+  - tool: sthjzf_query_view
+    level: L1
+  - tool: sthjzf_get_menu
+    level: L1
+  - tool: sthjzf_get_view_config
+    level: L1
+  - tool: sthjzf_query_cases
+    level: L4
+  - tool: sthjzf_list_depts
+    level: L1
+  - tool: sthjzf_query_case_detail
+    level: L4
+  - tool: sthjzf_query_case_statistics
+    level: L4
+  - tool: sthjzf_water_current_user
+    level: L4
+  - tool: sthjzf_water_task_statistics
+    level: L4
+  - tool: sthjzf_water_task_list
+    level: L4
+  - tool: sthjzf_water_supervise_statistics
+    level: L4
+  # 政务平台-排污许可管理（govmcp 只读，L1 自动放行；内网 PERMIT_BASE）
+  - tool: permit_menu
+    level: L1
+  - tool: permit_license_list
+    level: L4
+  - tool: permit_enterprise_list
+    level: L4
+  - tool: permit_jgzf_menu
+    level: L4
+  - tool: permit_jgzf_license_execution
+    level: L4
+  - tool: permit_jgzf_stop_production
+    level: L4
+  - tool: permit_jgzf_enterprise_archive
+    level: L4
+  - tool: permit_area_list
+    level: L1
+  - tool: permit_industry_list
+    level: L1
+  # 写入类工具：审批闸门 + confirm 双保险（不进聊天工具表）
+  - tool: sthjzf_water_clue_verify
+    level: L4
+  - tool: sthjzf_water_clue_confirm
+    level: L4
+  # 执法阶段人设切换（提示词状态机，可逆 + SM3 审计）
+  - tool: switch_persona
+    level: L1
+  # 本机浏览器打开（用户可见可关可逆，白名单域名）
+  - tool: open_url
+    level: L2
+  # SM3 审计链回溯（只读自证）
+  - tool: audit_tail
+    level: L1
+  # 事件溯源会话日志回溯（只读自证）
+  - tool: session_log_tail
+    level: L1
+  # 执行层（结构性差距补齐：shell 白名单 / 文件精确编辑 / 搜索 / 长任务目标）
+  - tool: shell_run
+    level: L3
+  - tool: file_read
+    level: L1
+  - tool: file_write
+    level: L2
+  - tool: file_edit
+    level: L2
+  - tool: web_search
+    level: L1
+  - tool: spawn_goal
+    level: L2
+  - tool: goal_status
+    level: L1
+  # 挂载自闭环：改 .env 后热重载（重读环境+重连 MCP，免重启进程）
+  - tool: system_reload
+    level: L2
+  - tool: statute_related
+    level: L1
+  - tool: water_station_realtime
+    level: L1
+  - tool: air_forecast
+    level: L1
+  - tool: hunan_env_monthly_report
+    level: L1
+  # 腾讯文档官方 MCP（读 L1 自动放行；建文档 L2 自动放行；删除/权限类默认 L3+ 不豁免）
+  - tool: mcp__tencent_docs__get_content
+    level: L1
+  - tool: mcp__tencent_docs__manage_search_file
+    level: L1
+  - tool: mcp__tencent_docs__query_space_list
+    level: L1
+  - tool: mcp__tencent_docs__manage_create_file
+    level: L2
+  - tool: mcp__tencent_docs__doc_create_with_markdown
+    level: L2
+  - tool: mcp__tencent_docs__create_space_node
+    level: L2
+  - tool: mcp__tencent_docs__create_space
+    level: L2
+  # 腾讯文档 HTML 一键上云（aipage 打包 + COS 上传 + 导入管线，L2 本地写入自动放行）
+  - tool: tdocs_upload_html
+    level: L2
 ```

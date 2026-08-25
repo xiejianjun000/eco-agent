@@ -32,7 +32,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from fastapi import FastAPI
+from fastapi import Request, FastAPI
 
 logger = logging.getLogger("eco.server")
 
@@ -44,6 +44,11 @@ def get_version() -> str:
 
 
 def create_app() -> FastAPI:
+    # 进程级环境引导：仓库 .env + ~/.eco/.env 合入 os.environ（MCP 连接器等依赖）
+    from agent_core.envboot import load_env_into_process
+
+    load_env_into_process()
+
     app = FastAPI(
         title="ECO AGENT API",
         description="ECO AGENT 管理 API — 面向应用与 Web GUI 的 REST/SSE 接口",
@@ -58,21 +63,24 @@ def create_app() -> FastAPI:
     except Exception:  # noqa: BLE001 — 装配失败不阻断 API
         pass
 
-    from server.api import chat, documents, dynamic_plugins, goals, inspect, memory, plugins, sessions, skills, slots, subagents, system, tools, workflow
+    from server.api import approvals, chat, documents, dynamic_plugins, files, goals, inspect, memory, plugins, prompt, sessions, skills, slots, subagents, system, tools, workflow
 
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
+    app.include_router(files.router, prefix="/api/v1", tags=["files"])
     app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
     app.include_router(sessions.router, prefix="/api/v1", tags=["sessions"])
     app.include_router(memory.router, prefix="/api/v1", tags=["memory"])
     app.include_router(skills.router, prefix="/api/v1", tags=["skills"])
     app.include_router(tools.router, prefix="/api/v1", tags=["tools"])
     app.include_router(plugins.router, prefix="/api/v1", tags=["plugins"])
+    app.include_router(prompt.router, prefix="/api/v1", tags=["prompt"])
     app.include_router(subagents.router, prefix="/api/v1/subagents", tags=["subagents"])
     app.include_router(goals.router, prefix="/api/v1", tags=["goals"])
     app.include_router(inspect.router, prefix="/api/v1", tags=["inspect"])
     app.include_router(workflow.router, prefix="/api/v1", tags=["workflow"])
     app.include_router(dynamic_plugins.router, prefix="/api/v1", tags=["dynamic-plugins"])
     app.include_router(slots.router, prefix="/api/v1", tags=["slots"])
+    app.include_router(approvals.router, prefix="/api/v1", tags=["approvals"])
     app.include_router(system.router, prefix="/api/v1", tags=["system"])
 
     @app.get("/healthz", tags=["system"])
@@ -93,6 +101,16 @@ def _mount_web_gui(app: FastAPI) -> None:
 
     # 整个 dist 作为静态根（含 public/ 拷贝产物：favicon.svg、eco-logo.svg 等）。
     # 注册在所有 API 路由之后：/api/v1、/healthz 等由路由优先处理，其余路径回退 SPA 静态文件。
+    # index.html 禁缓存（改版后刷新即取新 bundle）；哈希资产文件名自带版本，可长缓存
+    from fastapi.responses import FileResponse
+    from starlette.responses import Response
+
+    async def _no_cache_index(request: Request):
+        return FileResponse(web_dist / "index.html", headers={
+            "Cache-Control": "no-store"})
+
+    app.mount("/assets", StaticFiles(directory=str(web_dist / "assets")), name="web-assets")
+    app.add_api_route("/", _no_cache_index, methods=["GET"])
     app.mount("/", StaticFiles(directory=str(web_dist), html=True), name="web-gui")
 
 

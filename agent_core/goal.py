@@ -191,6 +191,20 @@ class GoalStore:
         return {"ok": True, "goal_id": goal_id, "subagent_id": snap["id"],
                 "round": goal["rounds"] + 1}
 
+    def _notify_event(self, goal_id: str, event: str, detail: str) -> None:
+        """目标事件通知落盘（ECO_DIR/goal_notifications.jsonl）——
+        Web 端 /api/v1/goals/events 轮询展示，后台任务完成可自动可见。"""
+        try:
+            base = Path(os.environ.get("ECO_DIR") or Path.home() / ".eco")
+            path = base / "goal_notifications.jsonl"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps({"ts": time.time(), "goal_id": goal_id,
+                                    "event": event, "detail": detail[:500]},
+                                   ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
     def _on_round_done(self, goal_id: str, agent) -> None:
         result = (agent.result or agent.error or "")[:2000]
         goal = self.get(goal_id)
@@ -220,6 +234,11 @@ class GoalStore:
                 g["blocked_reason"] = f"round {rounds} failed: {agent.error or agent.status}"
         self._update(goal_id, m)
         goal = self.get(goal_id)
+        if goal:
+            self._notify_event(
+                goal_id,
+                "blocked" if goal["status"] == "blocked" else "round_done",
+                f"第{rounds}轮 {goal['status']}: {result[:200]}")
         if goal and goal["armed"] and goal["status"] == "active":
             logger.info("goal %s 第 %s 轮完成，自动发起下一轮", goal_id, rounds)
             self.run_next_round(goal_id)

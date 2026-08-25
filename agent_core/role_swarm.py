@@ -63,7 +63,12 @@ ROLE_ORDER = ["patrol", "law", "doc"]
 SYNTH_BRIEF = (
     "你是执法任务总管。三位专家（巡查/法规/文书）已分别给出产出。"
     "请仲裁合成最终输出：去重、纠偏（以法规核验为准）、补漏，"
-    "最后给出一份可执行的完整检查清单。引用法条保留具体条款号。用中文，结构清晰。"
+    "给出一份可执行的检查清单。引用法条保留具体条款号。"
+    "格式硬要求：结论先行、要点式，除条文原文引用外总长不超过 300 字，"
+    "能用表格/列表绝不用段落，禁止输出编排头（如'三角色协作/贡献段'）。"
+    "禁止在最终输出中出现编排内部词汇——'三方/三角色/三位专家/各角色/"
+    "巡查Agent/法规Agent/文书Agent/仲裁'一律不得出现，以单人视角直接陈述结论。"
+    "用中文，结构清晰。"
 )
 
 # ── 复杂度判断（简单问答不启用协作）──
@@ -174,6 +179,33 @@ class RoleSwarm:
             t.start()
         for t in threads:
             t.join(timeout=180)
+
+        # ── 法规产出自动法条核验（P2-1：law 角色产出带工具校验，反幻觉）──
+        try:
+            import json as _json
+            import subprocess as _sp
+            import sys as _sys
+            from pathlib import Path as _Path
+
+            lookup = (_Path(__file__).resolve().parent.parent
+                      / "ecoskills" / "eco-codex" / "scripts" / "lookup.py")
+            cited = sorted({int(x) for x in
+                            re.findall(r"第\s*(\d{1,4})\s*条", contributions.get("law", ""))
+                            if x.isdigit() and 1 <= int(x) <= 1242})[:10]
+            checks = []
+            for n in cited:
+                r = _sp.run([_sys.executable, str(lookup), "article", str(n)],
+                            capture_output=True, text=True, timeout=15)
+                ok = r.stdout.strip().startswith("{")
+                head = (_json.loads(r.stdout).get("text", "")[:60]
+                        if ok else "")
+                checks.append(f"- 第{n}条: {'✓ 存在' if ok else '✗ 查无'}"
+                              + (f"（{head}…）" if ok else ""))
+            if checks:
+                contributions["law"] = (contributions.get("law") or "") + \
+                    "\n\n【法条核验】（自动工具校验）\n" + "\n".join(checks)
+        except Exception:  # noqa: BLE001 — 核验失败不阻断协作
+            pass
 
         # ── 第二层：doc 依赖 patrol + law ──
         doc_ctx = "\n\n".join(

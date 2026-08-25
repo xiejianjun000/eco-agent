@@ -1,6 +1,8 @@
 ---
 name: gongwen-draft
-description: Draft, revise, polish, review, lint, and export Chinese党政机关公文 and政务材料 with authority-first guardrails, policy-research/citation checking, material dossier/fact-ledger intake, language polishing, controlled Markdown/JSON specs, offline prompt-pack generation, strict official-document font checks, and optional Word .docx generation with generic red-head draft headers when authorized values are supplied. Use when the user asks for gongwen-draft, 公文, 公文写作, 公文起草, 机关文稿, 政务写作, 政策检索, 政策依据, 引用核验, 领导讲话, 会议精神, 素材收集, 素材整理, 事实台账, 语言润色, 通知, 请示, 报告, 函, 纪要, 通报, 批复, 意见, 决定, 公告, 通告, 工作总结, 工作方案, 调研报告, 汇报材料, 简报, 情况专报, 讲话稿, 回复函, 材料改写, 公文润色, 格式审核, Word公文导出, 离线提示词, JSON公文规格, 红头版头, 发文机关标志, 发文字号, 签发人, or to turn notes into formal official-style Chinese documents.
+description: Draft, revise, polish, review, lint, and export Chinese党政机关公文 and政务材料 with authority-first guardrails, policy-research/citation checking, material dossier/fact-ledger intake, language polishing, controlled Markdown/JSON specs, offline prompt-pack generation, strict official-document font checks, and optional Word .docx generation with generic red-head draft headers when authorized values are supplied. Use when the user asks for gongwen-draft, 公文, 公文写作, 公文起草, 机关文稿, 政务写作, 政策检索, 政策依据, 引用核验, 领导讲话, 会议精神, 素材收集, 素材整理, 事实台账, 语言润色, 通知, 请示, 报告, 函, 纪要, 通报, 批复, 意见, 决定, 公告, 通告, 工作总结, 工作方案, 调研报告, 汇报材料, 简报, 情况专报, 讲话稿, 回复函, 材料改写, 公文润色, 格式审核, Word公文导出, 离线提示词, JSON公文规格, 红头版头, 发文机关标志, 发文字号, 签发人, or to turn notes into formal official-style Chinese documents. 触发词：公文、公文写作、公文起草、机关文稿、政务写作、政策检索、引用核验、领导讲话、会议精神、通知、请示、报告、函、纪要、通报、批复、意见、决定、工作总结、工作方案、调研报告、讲话稿、公文润色、格式审核、Word公文导出。
+risk_level: high
+version: 1.0.0
 ---
 
 # Gongwen Draft
@@ -104,3 +106,41 @@ When exporting, provide:
 - Do not confuse near-synonyms common in公文: `制定/制订`, `截至/截止`, `权利/权力`, `受权/授权`, `决定/决议`, `公告/通告`, `批复/复函`. When in doubt, check `review-checklist.md` Section F or the governing regulation.
 - Do not use abbreviated or informal names for行政区域, institutions, or official positions without the full formal name being established first in the same document.
 - Do not remove community citations merely because a rule has been rewritten locally; provenance should remain visible.
+
+## 工作流程（eco-agent 精简）
+
+```
+Step 1: 判定任务类型（draft/revise/review/format/template/extract/export）
+Step 2: 四维路由——文种 → 行文方向 → 格式/交付 → 语言口径
+Step 3: 政策敏感任务先查先核——官方来源检索 → citation ledger → 引用核验（scripts/check_citations.py）
+Step 4: 素材整理——scripts/prepare_dossier.py 建事实台账（已确认/待核实/建议措辞）
+Step 5: 起草正文——目的 → 文种 → 核源 → 结构 → 正文 → 自审
+Step 6: lint/导出——scripts/check_sections.py + scripts/check_language.py + scripts/generate_docx.py
+```
+
+## 决策表（行文方向路由）
+
+| 行文方向 | 常用文种 | 说明 |
+|---------|---------|------|
+| 上行 | 请示/报告 | 请示一事一请，不得混同报告 |
+| 下行 | 通知/通报/批复/意见/决定 | 明确执行要求与责任 |
+| 平行 | 函 | 不相隶属机关商洽 |
+
+## 输出格式
+
+```
+【成品】正式中文公文正文（Markdown 或 .docx）
+【说明】假设与占位符清单（[发文机关]、[日期] 等）
+【待确认】仍需人工核实的事实、文号与政策依据
+```
+
+## 引用纪律
+
+- 政策依据、法律法规、领导讲话、会议精神、官方数据一律以官方来源原文为准，引用前用 scripts/check_citations.py 核验。
+- 无法确认的政策表述与数据标注 [待确认] 或使用占位符，禁止编造来源。
+
+## 禁用领域
+
+- ⚠️ 不得冒充真实机关、签发人、印章或审批状态。
+- ⚠️ 不得编造法律依据、政策原文、统计数据、会议结论或文号。
+- ⚠️ 涉密/敏感内容仅以脱敏占位符起草，不得外传。

@@ -60,6 +60,41 @@ def register_all(reg: ToolRegistry = None):
     except ImportError:
         pass
 
+    # 执法平台-污染源在线监测（娄底市重点污染源自动监控，博安达平台）(11)
+    try:
+        from govmcp_tools.wryzxjc import register_wryzxjc
+        register_wryzxjc(target)
+    except ImportError:
+        pass
+
+    # 执法平台-国家四平台（综合执法监管：规范涉企检查/行政处罚/水环境）(17)
+    try:
+        from govmcp_tools.sthjzf import register_sthjzf
+        register_sthjzf(target)
+    except ImportError:
+        pass
+
+    # 环境公开数据源（地表水自动站/空气质量预报，实测端点）(2)
+    try:
+        from govmcp_tools.env_open_data import register_env_open_data
+        register_env_open_data(target)
+    except ImportError:
+        pass
+
+    # 湖南省厅环境质量月报（静态HTML全文解析，实测路线）(1)
+    try:
+        from govmcp_tools.hunan_env import register_hunan_env
+        register_hunan_env(target)
+    except ImportError:
+        pass
+
+    # 执法平台-排污许可管理（全国排污许可证管理信息平台-管理端，只读）(11)
+    try:
+        from govmcp_tools.permit_management import register_permit
+        register_permit(target)
+    except ImportError:
+        pass
+
     return target
 
 

@@ -10,8 +10,9 @@ POST   /api/v1/goals/{id}/{action}  操作: pause/resume/complete/block/run
 from __future__ import annotations
 
 import logging
+import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from agent_core.goal import get_goal_store
@@ -45,6 +46,25 @@ async def list_goals() -> dict:
     return {"goals": store.list(), "stats": store.stats()}
 
 
+@router.get("/goals/events")
+async def goal_events(limit: int = Query(default=20, ge=1, le=200)) -> dict:
+    """后台目标事件流（轮次完成/阻塞通知，Web 端轮询展示自动汇报）。"""
+    import json as _json
+    from pathlib import Path
+
+    p = Path(os.environ.get("ECO_DIR") or Path.home() / ".eco") / "goal_notifications.jsonl"
+    events: list[dict] = []
+    if p.exists():
+        for line in p.read_text(encoding="utf-8").splitlines()[-limit:]:
+            line = line.strip()
+            if line:
+                try:
+                    events.append(_json.loads(line))
+                except _json.JSONDecodeError:
+                    pass
+    return {"count": len(events), "events": events}
+
+
 @router.get("/goals/{goal_id}")
 async def get_goal(goal_id: str) -> dict:
     store = get_goal_store()
@@ -72,3 +92,5 @@ async def goal_action(goal_id: str, action: str, body: GoalAction) -> dict:
         if isinstance(result, dict) and result.get("error") and "不存在" not in result["error"]:
             raise HTTPException(status_code=409, detail=result["error"])
     return result or {}
+
+

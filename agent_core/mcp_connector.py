@@ -7,7 +7,7 @@ mcp_connector.py — Eco Agent MCP client 连接器（官方 mcp Python SDK）
 MCP 协议的工具发现与调用。
 
 特性：
-  - 支持 SSE 与 stdio 两种传输（官方 mcp SDK ClientSession）
+  - 支持 SSE / stdio / Streamable HTTP(http) 三种传输（官方 mcp SDK ClientSession）
   - 配置驱动：.env / 环境变量 ECO_MCP_SERVERS（JSON 数组）或代码注入
   - 连接 → list_tools → 动态注册进 ReActPlusPlus 工具体系 → call_tool
   - 统一错误处理与超时（默认 30s）
@@ -17,7 +17,9 @@ MCP 协议的工具发现与调用。
 配置示例（.env，单行 JSON）：
   ECO_MCP_SERVERS=[
     {"name":"ehs_kb","transport":"sse","url":"http://111.230.89.107:8000/sse/"},
-    {"name":"govmcp","transport":"stdio","command":["python","/path/to/run_mcp_stdio.py"]}
+    {"name":"govmcp","transport":"stdio","command":["python","/path/to/run_mcp_stdio.py"]},
+    {"name":"tencent_docs","transport":"http","url":"https://docs.qq.com/openapi/mcp",
+     "headers":{"Authorization":"<个人Token>"}}
   ]
 """
 
@@ -41,6 +43,7 @@ try:
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.sse import sse_client
     from mcp.client.stdio import stdio_client
+    from mcp.client.streamable_http import streamablehttp_client
     MCP_AVAILABLE = True
 except Exception:  # pragma: no cover - mcp 未安装时优雅降级
     MCP_AVAILABLE = False
@@ -54,11 +57,11 @@ except Exception:  # pragma: no cover - mcp 未安装时优雅降级
 class MCPServerConfig:
     """MCP server 声明"""
     name: str
-    transport: str                      # "sse" | "stdio"
-    url: str = ""                       # sse 传输必填
+    transport: str                      # "sse" | "stdio" | "http"(Streamable HTTP)
+    url: str = ""                       # sse/http 传输必填
     command: list[str] = field(default_factory=list)  # stdio 传输必填
     env: dict[str, str] = field(default_factory=dict)
-    headers: dict[str, str] = field(default_factory=dict)  # SSE 自定义请求头（如 X-API-Key 鉴权）
+    headers: dict[str, str] = field(default_factory=dict)  # SSE/HTTP 自定义请求头（如 X-API-Key / Authorization 鉴权）
     timeout: float = DEFAULT_TIMEOUT
 
     @classmethod
@@ -122,6 +125,9 @@ class MCPServerConnection:
         cfg = self.config
         if cfg.transport == "sse":
             cm = sse_client(cfg.url, headers=cfg.headers or None)
+        elif cfg.transport == "http":
+            # Streamable HTTP（MCP 官方传输，如腾讯文档 openapi/mcp 端点）
+            cm = streamablehttp_client(cfg.url, headers=cfg.headers or None)
         elif cfg.transport == "stdio":
             env = dict(os.environ)
             env.update(cfg.env)
@@ -131,10 +137,29 @@ class MCPServerConnection:
         else:
             raise ValueError(f"不支持的传输类型: {cfg.transport}")
 
-        read, write = await cm.__aenter__()
+        entered = await cm.__aenter__()
+        if isinstance(entered, tuple) and len(entered) == 3:
+            # Streamable HTTP 传输返回 (read, write, get_session_id)
+            read, write, _get_session = entered
+        else:
+            read, write = entered
         self._cm_stack.append(cm)
         session = ClientSession(read, write)
         await session.__aenter__()
+        # 输出校验降级：远程服务的输出 schema 与真实返回常不一致
+        # （如腾讯文档 manage.search_file 声明 modify_time 为 integer 实返字符串），
+        # mcp SDK 客户端强校验会 RuntimeError 拒收真实数据。
+        # 校验仅具格式严格性价值、不承载安全边界——改为告警不阻断。
+        if hasattr(session, "_validate_tool_result"):
+            _orig_validate = ClientSession._validate_tool_result
+
+            async def _lenient_validate(name, result):
+                try:
+                    await _orig_validate(session, name, result)
+                except Exception as e:  # noqa: BLE001 — 格式不严 ≠ 数据不可用
+                    logger.warning("[mcp_connector] %s 输出校验未通过（降级放行）: %s",
+                                   name, str(e)[:140])
+            session._validate_tool_result = _lenient_validate
         self._cm_stack.append(session)
         await asyncio.wait_for(session.initialize(), timeout=cfg.timeout)
         result = await asyncio.wait_for(session.list_tools(), timeout=cfg.timeout)

@@ -87,6 +87,15 @@ def _build_parser():
     return parser
 
 def main(argv=None):
+    # 进程首行：先把 .env 合入 os.environ（在导入任何业务模块之前），
+    # 根治"单例构造早于环境注入"类时序缺陷（如 LLMClient 曾因构造过早
+    # 拿不到 DEEPSEEK_API_KEY 而报 no api key）。
+    try:
+        from agent_core.envboot import load_env_into_process
+
+        load_env_into_process()
+    except Exception:  # noqa: BLE001 — envboot 失败不阻断 CLI（create_app 内还有兜底）
+        pass
     parser = _build_parser()
     args = parser.parse_args(argv)
     if args.command is None:

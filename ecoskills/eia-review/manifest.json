@@ -1,0 +1,13 @@
+{
+  "name": "eia-review",
+  "version": "1.0.0",
+  "author": "xiejianjun000/dsh-eia-review-plugin",
+  "description": "全国通用环评审查与排污许可证技术审查——20条国家通用规则 + 76件部委文件库 + 行业标准数据 + EHS知识库MCP增强",
+  "category": "环评审查",
+  "tags": ["环评", "排污许可", "技术审查", "EHS知识库", "报告书", "登记表"],
+  "trust_tier": "official",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}

@@ -14,6 +14,7 @@ meta_evolution.py — Eco Agent L4 元认知进化循环 (Evolve Loop)
 
 import time
 import logging
+import re
 import shutil
 from pathlib import Path
 from datetime import datetime
@@ -200,8 +201,12 @@ class MetaEvolution:
         if soul_src.exists():
             shutil.copy2(soul_src, snapshot_dir / "SOUL.md")
 
-        # 清理旧版本，保留最近3个
-        versions = sorted([d for d in VERSIONS_DIR.iterdir() if d.is_dir()])
+        # 清理旧版本，保留最近3个（按版本号数值排序，v251 > v88，禁止字典序）
+        def _ver_num(d: Path) -> tuple[int, int]:
+            m = re.match(r"v(\d+)", d.name)
+            return (int(m.group(1)), 0) if m else (0, 0)
+
+        versions = sorted([d for d in VERSIONS_DIR.iterdir() if d.is_dir()], key=_ver_num)
         while len(versions) > 3:
             shutil.rmtree(versions[0], ignore_errors=True)
             versions.pop(0)

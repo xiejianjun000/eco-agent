@@ -17,6 +17,7 @@ workspace.py — 项目工作区（Phase B1）
 
 import json
 import logging
+import os
 import re
 import time
 from datetime import datetime
@@ -24,8 +25,8 @@ from pathlib import Path
 
 logger = logging.getLogger("workspace")
 
-ECO_DIR = Path.home() / ".eco"
-WS_ROOT = ECO_DIR / "workspaces"
+ECO_DIR = Path(os.environ.get("ECO_DIR", str(Path.home() / ".eco")))
+WS_ROOT = Path(os.environ.get("ECO_WORKSPACE_DIR", str(ECO_DIR / "workspaces")))
 ACTIVE_FILE = WS_ROOT / ".active"
 WS_SOURCE_PREFIX = "workspace"  # prompt_engine 注入来源前缀
 

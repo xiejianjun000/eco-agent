@@ -36,3 +36,13 @@ ECO_EVAL=1 python -m evals.runner --baseline evals/reports/baseline.json --thres
 - `0`：成功（或未开启 ECO_EVAL 而跳过 / 对比无回归）
 - `1`：baseline 对比存在回归
 - `2`：参数/文件错误（如 baseline 不存在）
+
+## 2026-08-23 增补：三层评测结构
+
+| 层 | 文件 | 用途 |
+|----|------|------|
+| 机械门禁（零 LLM） | `*.md` 套件 + `_scripts/run_evals.py --mechanical` | 引用真实性：每条 article=N 直查法典库，虚构法条必挂（CI 硬门禁） |
+| 技能自测 | `*-cases.md`（meta-test 自动生成） | 技能知识/流程/引用用例，黄金要点供判定 |
+| LLM 实测 | `dataset.jsonl` + `runner.py` | 45 题基线（法规依据/裁量计算/案卷摘要/监测数据解读/注入抗性），回答存档人工评 |
+
+套件清单：case-review.md（案卷评查 8 题）/ statute-application.md（法条适用 5 题）/ document-drafting.md（文书规范 5 题）+ 场景技能自测用例（scene-*-cases.md）。

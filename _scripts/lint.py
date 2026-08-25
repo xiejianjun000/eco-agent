@@ -17,7 +17,6 @@ lint.py — ECO AGENT 项目健康检查工具
   python _scripts/lint.py --verbose    # 详细输出
 """
 
-import os
 import re
 import argparse
 from pathlib import Path
@@ -25,6 +24,26 @@ from datetime import datetime
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# 扫描时跳过的目录（依赖/构建产物/生成垃圾，不属于项目健康检查对象）
+SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__",
+             ".playwright-cli", ".pytest_cache", ".ruff_cache", "worktrees", ".libs"}
+
+
+def _iter_md():
+    """遍历项目内应检查的 Markdown 文件"""
+    for f in PROJECT_ROOT.rglob("*.md"):
+        if any(part in SKIP_DIRS for part in f.parts):
+            continue
+        yield f
+
+
+def _is_knowledge(f: Path) -> bool:
+    """知识层文件判定：memory-tree/skills/ecoskills/任意 kb 目录。
+    原文指针与 frontmatter 检查只对知识层文件生效，不套用工程文档。"""
+    rel = f.relative_to(PROJECT_ROOT).as_posix()
+    return (rel.startswith("memory-tree/") or rel.startswith("skills/")
+            or rel.startswith("ecoskills/") or "/kb/" in rel)
 
 
 def check_file_integrity():
@@ -50,13 +69,10 @@ def check_broken_links():
     """检测所有 .md 文件中的悬空 wikilink"""
     broken = []
     all_stems = set()
-    for f in PROJECT_ROOT.rglob("*.md"):
-        if ".git" not in str(f):
-            all_stems.add(f.stem)
+    for f in _iter_md():
+        all_stems.add(f.stem)
 
-    for f in sorted(PROJECT_ROOT.rglob("*.md")):
-        if ".git" in str(f):
-            continue
+    for f in sorted(_iter_md()):
         content = f.read_text(encoding="utf-8", errors="ignore")
         links = re.findall(r'\[\[([^\]|#]+?)(?:[|#][^\]]*)?\]\]', content)
         for link in links:
@@ -70,8 +86,8 @@ def check_broken_links():
 def check_source_pointers():
     """检查 ## 原文指针 段落存在性"""
     missing_pointer = []
-    for f in sorted(PROJECT_ROOT.rglob("*.md")):
-        if ".git" in str(f) or f.name == "README.md":
+    for f in sorted(_iter_md()):
+        if f.name == "README.md" or not _is_knowledge(f):
             continue
         content = f.read_text(encoding="utf-8", errors="ignore")
         if not re.search(r'##\s*原文指针', content):
@@ -84,8 +100,9 @@ def check_frontmatter():
     """检查 YAML frontmatter"""
     missing = []
     bad_format = []
-    for f in sorted(PROJECT_ROOT.rglob("*.md")):
-        if ".git" in str(f) or f.name == "README.md":
+    for f in sorted(_iter_md()):
+        if f.name == "README.md" or not _is_knowledge(f):
+            # 根级工程文档（CLAUDE/CHANGELOG/SCHEMA 等）不要求知识类 frontmatter
             continue
         content = f.read_text(encoding="utf-8", errors="ignore")
         if not content.startswith("---"):
@@ -101,8 +118,11 @@ def check_large_files():
     """检测大文件> 500KB"""
     large = []
     for f in PROJECT_ROOT.rglob("*"):
-        if ".git" in str(f) or not f.is_file():
+        if any(part in SKIP_DIRS for part in f.parts) or not f.is_file():
             continue
+        rel = f.relative_to(PROJECT_ROOT).as_posix()
+        if "/assets/" in rel or rel.startswith("memory-tree/data/"):
+            continue  # 合法资产（字体/图片）与运行时审计数据，不计入大文件告警
         size = f.stat().st_size
         if size > 500 * 1024:
             large.append((str(f.relative_to(PROJECT_ROOT).as_posix()), size))
@@ -111,9 +131,14 @@ def check_large_files():
 
 def check_git_status():
     """检查 Git 未提交文件"""
-    status = os.popen(f"cd /d \"{PROJECT_ROOT}\" && git status --short 2>nul").read().strip()
-    if not status:
-        status = os.popen(f"git -C \"{PROJECT_ROOT}\" status --short 2>/dev/null").read().strip()
+    import subprocess
+    try:
+        status = subprocess.run(
+            ["git", "-C", str(PROJECT_ROOT), "status", "--short"],
+            capture_output=True, text=True, timeout=10,
+        ).stdout.strip()
+    except Exception:
+        status = ""
     untracked = []
     modified = []
     for line in status.split("\n"):
