@@ -67,6 +67,7 @@ class SkillRegistry:
 
     def __init__(self):
         self._skills: dict[str, Skill] = {}
+        self._name_index: dict[str, Skill] = {}  # 名称索引：精确名称 O(1) 命中
         self._db_path = DATA_DIR / "skill_registry.json"
         self._load()
 
@@ -75,7 +76,9 @@ class SkillRegistry:
             try:
                 data = json.loads(self._db_path.read_text("utf-8", errors="replace"))
                 for sid, sdata in data.items():
-                    self._skills[sid] = Skill(**sdata)
+                    skill = Skill(**sdata)
+                    self._skills[sid] = skill
+                    self._name_index[skill.name.lower()] = skill
             except Exception as e:
                 logger.warning(f"技能注册表加载失败: {e}")
 
@@ -86,6 +89,7 @@ class SkillRegistry:
     def register(self, skill: Skill) -> str:
         """注册技能"""
         self._skills[skill.id] = skill
+        self._name_index[skill.name.lower()] = skill
         self._save()
         self._sync_to_file(skill)
         logger.info(f"[Skill] 注册: {skill.name} v{skill.version}")
@@ -95,8 +99,11 @@ class SkillRegistry:
         return self._skills.get(skill_id)
 
     def find(self, query: str) -> list[Skill]:
-        """按关键词查找技能"""
+        """按关键词查找技能（精确名称 O(1)，模糊匹配回退线性扫描）"""
         q = query.lower()
+        exact = self._name_index.get(q)
+        if exact is not None and exact.status == "active":
+            return [exact]
         results = []
         for s in self._skills.values():
             if s.status != "active":
@@ -253,8 +260,24 @@ class CrossSessionMemory:
     def _save(self):
         self._db_path.write_text(json.dumps(self._memory, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    def _prune_working(self):
+        """惰性清理过期的工作记忆（TTL），防止过期条目无限堆积"""
+        now = datetime.now()
+        kept = []
+        for e in self._memory["working"]:
+            try:
+                expires = datetime.fromisoformat(e.get("expires_at", ""))
+                if now < expires:
+                    kept.append(e)
+            except Exception:
+                kept.append(e)  # 日期解析失败视为未过期，保守保留
+        if len(kept) != len(self._memory["working"]):
+            self._memory["working"] = kept
+            self._save()
+
     def store_working(self, key: str, value: Any, ttl_minutes: int = 60):
-        """工作记忆——短时"""
+        """工作记忆——短时（先清理过期项再写入）"""
+        self._prune_working()
         self._memory["working"] = [e for e in self._memory["working"] if e["key"] != key]
         self._memory["working"].append({
             "key": key, "value": str(value)[:500],
@@ -285,7 +308,8 @@ class CrossSessionMemory:
         self._save()
 
     def recall_working(self, key: str) -> Any | None:
-        """回忆工作记忆"""
+        """回忆工作记忆（先清理过期项）"""
+        self._prune_working()
         now = datetime.now()
         for e in self._memory["working"]:
             try:
@@ -306,6 +330,7 @@ class CrossSessionMemory:
         return self._memory["semantic"].get(key, {}).get("value")
 
     def get_stats(self) -> dict:
+        self._prune_working()
         return {
             "working_items": len(self._memory["working"]),
             "episodic_events": len(self._memory["episodic"]),

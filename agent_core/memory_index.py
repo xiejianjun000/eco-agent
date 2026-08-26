@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import re
 import threading
 import time
@@ -32,7 +33,8 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "memory-tree" / "data"
 MEMORY_FILE = DATA_DIR / "memory.jsonl"
 DIM = 4096
 NGRAM = 3
-_MAX_RECORDS = 2000  # 记忆库上限（超出淘汰最旧）
+# 记忆库上限（超出淘汰最旧），可通过环境变量覆盖
+_MAX_RECORDS = int(os.environ.get("ECO_MEMORY_MAX_RECORDS", "2000"))
 
 
 def _ngram_vec(text: str) -> Counter[int]:
@@ -63,11 +65,16 @@ def _cosine(a: Counter[int], b: Counter[int]) -> float:
 
 
 class MemoryIndex:
-    """进程级单例：记忆记录 + 语义检索。"""
+    """进程级单例：记忆记录 + 语义检索。
+    检索优化：
+      1) 预计算并缓存每条记录的 n-gram 向量（避免每次查询重算 md5）；
+      2) 倒排索引（特征哈希 -> 记录下标）只对与查询共享特征的候选做余弦打分。"""
 
     def __init__(self, path: Path | None = None):
         self._path = path or MEMORY_FILE
         self._records: list[dict] = []
+        self._vecs: list[Counter[int]] = []  # 与 _records 平行的缓存向量
+        self._inv: dict[int, set[int]] = {}  # 特征哈希 -> 记录下标集合
         self._lock = threading.Lock()
         self._load()
 
@@ -84,6 +91,19 @@ class MemoryIndex:
         except OSError:  # pragma: no cover
             pass
         self._records = self._records[-_MAX_RECORDS:]
+        self._rebuild_index()
+
+    def _rebuild_index(self) -> None:
+        """根据当前记录重建向量缓存 + 倒排索引"""
+        vecs: list[Counter[int]] = []
+        inv: dict[int, set[int]] = {}
+        for i, rec in enumerate(self._records):
+            v = _ngram_vec(rec.get("content", ""))
+            vecs.append(v)
+            for h in v:
+                inv.setdefault(h, set()).add(i)
+        self._vecs = vecs
+        self._inv = inv
 
     def record(self, role: str, content: str, session_id: str = "default") -> None:
         """写入一条记忆（去噪：空/过短/纯符号跳过）。"""
@@ -103,7 +123,15 @@ class MemoryIndex:
                 return
             self._records.append(rec)
             if len(self._records) > _MAX_RECORDS:
+                # 淘汰最旧后下标整体左移，重建索引保证一致
                 self._records = self._records[-_MAX_RECORDS:]
+                self._rebuild_index()
+            else:
+                new_idx = len(self._records) - 1
+                v = _ngram_vec(rec.get("content", ""))
+                self._vecs.append(v)
+                for h in v:
+                    self._inv.setdefault(h, set()).add(new_idx)
             try:
                 self._path.parent.mkdir(parents=True, exist_ok=True)
                 with open(self._path, "a", encoding="utf-8") as f:
@@ -114,7 +142,8 @@ class MemoryIndex:
     def search(self, query: str, k: int = 5,
                exclude_recent: int = 0) -> list[dict]:
         """语义检索 top-k 条记忆（余弦相似度），返回 [{role, content, score}]。
-        exclude_recent：跳过最近 N 条（避免把"当前正在进行的对话"当回忆）。"""
+        exclude_recent：跳过最近 N 条（避免把"当前正在进行的对话"当回忆）。
+        优化：经倒排索引先取与查询共享特征的候选集，再做余弦打分，避免全量扫描。"""
         q = (query or "").strip()
         if not q:
             return []
@@ -122,10 +151,22 @@ class MemoryIndex:
         scored: list[tuple[float, dict]] = []
         with self._lock:
             items = self._records[:-exclude_recent] if exclude_recent else self._records
-            for rec in items:
-                s = _cosine(qvec, _ngram_vec(rec.get("content", "")))
-                if s > 0.08:
-                    scored.append((s, rec))
+            if self._inv:
+                cand: set[int] = set()
+                for h in qvec:
+                    cand |= self._inv.get(h, set())
+                for i in cand:
+                    if i >= len(items):
+                        continue  # 落在 exclude_recent 区间的跳过
+                    rec = self._records[i]
+                    s = _cosine(qvec, self._vecs[i])  # 用缓存向量，避免重算
+                    if s > 0.08:
+                        scored.append((s, rec))
+            else:  # pragma: no cover — 索引为空时回退全量扫描
+                for rec in items:
+                    s = _cosine(qvec, _ngram_vec(rec.get("content", "")))
+                    if s > 0.08:
+                        scored.append((s, rec))
         scored.sort(key=lambda x: -x[0])
         return [{"role": r.get("role", ""), "content": r.get("content", ""),
                  "score": round(s, 3)} for s, r in scored[:k]]

@@ -7,6 +7,7 @@ Eco Agent 独创——竞品均未系统化实现。
 
 异常分类：瞬时故障 / 持久故障 / 逻辑死锁
 处理策略：指数退避重试 / 降级备用 / 强制中断回滚
+线程安全：熔断器状态与计数器由 threading.Lock 保护（并发修复）
 
 用法：
   from agent_core.self_healing import SelfHealer
@@ -15,9 +16,11 @@ Eco Agent 独创——竞品均未系统化实现。
 """
 
 import json
+import os
 import time
 import uuid
 import logging
+import threading
 from pathlib import Path
 from datetime import datetime
 from collections.abc import Callable
@@ -30,12 +33,13 @@ HEAL_LOG.parent.mkdir(parents=True, exist_ok=True)
 
 
 class SelfHealer:
-    """L5 韧性自愈循环——异常检测/分类/处理/恢复"""
+    """L5 韧性自愈循环——异常检测/分类/处理/恢复（线程安全）"""
 
     def __init__(self):
         self._heal_count = 0
         self._fail_count = 0
         self._circuit_breakers: dict[str, dict] = {}
+        self._lock = threading.Lock()  # 保护熔断器状态与计数器（并发安全）
 
     def protect(self, operation: Callable, context: str = "",
                 fallback: Callable | None = None,
@@ -44,25 +48,32 @@ class SelfHealer:
         start = time.time()
         operation_name = context or getattr(operation, '__name__', str(operation))
 
-        # 检查熔断器
-        cb = self._circuit_breakers.get(operation_name)
-        if cb and cb["state"] == "open":
-            if time.time() - cb["opened_at"] < cb["cooldown"]:
-                logger.warning(f"[Heal] 熔断: {operation_name} (剩余{int(cb['cooldown'] - (time.time() - cb['opened_at']))}s)")
-                return self._apply_fallback(operation_name, fallback, "熔断器开启")
-            cb["state"] = "half-open"
+        # 检查熔断器（锁内读；半开状态放行单次探测请求）
+        half_open_probe = False
+        with self._lock:
+            cb = self._circuit_breakers.get(operation_name)
+            if cb and cb["state"] == "open":
+                if time.time() - cb["opened_at"] < cb["cooldown"]:
+                    remaining = int(cb["cooldown"] - (time.time() - cb["opened_at"]))
+                    logger.warning(f"[Heal] 熔断: {operation_name} (剩余{remaining}s)")
+                    return self._apply_fallback(operation_name, fallback, "熔断器开启")
+                cb["state"] = "half-open"
+                half_open_probe = True
+
+        # 半开状态：只放行一次探测（失败立即重新熔断，不再进入完整重试序列）
+        effective_retries = 1 if half_open_probe else max_retries
 
         last_error = ""
-        for attempt in range(1, max_retries + 1):
+        for attempt in range(1, effective_retries + 1):
             try:
                 result = operation()
                 elapsed = (time.time() - start) * 1000
-                self._heal_count += 1
-
-                # 关闭熔断器
-                if operation_name in self._circuit_breakers:
-                    self._circuit_breakers[operation_name]["state"] = "closed"
-                    self._circuit_breakers[operation_name]["failures"] = 0
+                with self._lock:
+                    self._heal_count += 1
+                    cb2 = self._circuit_breakers.get(operation_name)
+                    if cb2:
+                        cb2["state"] = "closed"
+                        cb2["failures"] = 0
 
                 return {"success": True, "result": result, "attempts": attempt,
                         "elapsed_ms": round(elapsed, 1)}
@@ -71,24 +82,34 @@ class SelfHealer:
                 last_error = str(e)
                 error_type = self._classify(e)
 
-                if attempt < max_retries:
+                if attempt < effective_retries:
                     delay = self._calc_backoff(attempt, error_type)
                     logger.warning(f"[Heal] {operation_name}: 第{attempt}次失败 ({error_type}), "
                                   f"{delay}ms后重试")
                     time.sleep(delay / 1000)
 
-        # 全部重试失败——记录熔断
+        # 全部重试失败——记录熔断（锁内更新；冷却指数增长）
         elapsed = (time.time() - start) * 1000
-        self._fail_count += 1
-
-        self._circuit_breakers[operation_name] = {
-            "state": "open", "opened_at": time.time(),
-            "cooldown": min(300, 5 * (max_retries ** 2)),  # 指数增长冷却
-            "failures": self._circuit_breakers.get(operation_name, {}).get("failures", 0) + 1,
-        }
+        with self._lock:
+            self._fail_count += 1
+            prev = self._circuit_breakers.get(operation_name, {})
+            failures = prev.get("failures", 0) + 1
+            self._circuit_breakers[operation_name] = {
+                "state": "open", "opened_at": time.time(),
+                "cooldown": self._cooldown_for(failures),
+                "failures": failures,
+            }
 
         self._log_healing_event(operation_name, last_error, elapsed)
         return self._apply_fallback(operation_name, fallback, last_error)
+
+    def _cooldown_for(self, failures: int) -> int:
+        """熔断冷却时间（秒）：可用环境变量 ECO_CIRCUIT_COOLDOWN 固定覆盖；
+        默认按失败次数指数增长：30s * 2^(failures-1)，封顶 300s。"""
+        env = os.environ.get("ECO_CIRCUIT_COOLDOWN", "").strip()
+        if env.isdigit():
+            return max(1, int(env))
+        return min(300, 30 * (2 ** (failures - 1)))
 
     def _classify(self, error: Exception) -> str:
         """异常分类"""
@@ -124,26 +145,30 @@ class SelfHealer:
         return {"success": False, "error": reason, "fallback": False}
 
     def _log_healing_event(self, operation: str, error: str, elapsed_ms: float):
-        """写入韧性日志"""
+        """写入韧性日志（落盘失败仅告警，不影响自愈主流程）"""
         event = {
             "timestamp": datetime.now().isoformat(),
             "operation": operation, "error": error[:200],
             "elapsed_ms": round(elapsed_ms, 1),
         }
-        HEAL_LOG.parent.mkdir(parents=True, exist_ok=True)
-        with open(HEAL_LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+        try:
+            HEAL_LOG.parent.mkdir(parents=True, exist_ok=True)
+            with open(HEAL_LOG, "a", encoding="utf-8") as f:
+                f.write(json.dumps(event, ensure_ascii=False) + "\n")
+        except OSError as e:  # 日志写失败不得让 protect() 抛异常
+            logger.warning(f"[Heal] 韧性日志写入失败（不影响自愈）: {e}")
 
     def get_stats(self) -> dict:
-        return {
-            "healed": self._heal_count,
-            "failed": self._fail_count,
-            "circuit_breakers": {
-                k: {"state": v["state"], "failures": v["failures"]}
-                for k, v in self._circuit_breakers.items()
-            },
-            "heal_rate": f"{self._heal_count / max(self._heal_count + self._fail_count, 1) * 100:.0f}%",
-        }
+        with self._lock:
+            return {
+                "healed": self._heal_count,
+                "failed": self._fail_count,
+                "circuit_breakers": {
+                    k: {"state": v["state"], "failures": v["failures"]}
+                    for k, v in self._circuit_breakers.items()
+                },
+                "heal_rate": f"{self._heal_count / max(self._heal_count + self._fail_count, 1) * 100:.0f}%",
+            }
 
 
 # ===== 检查点快照系统 =====
