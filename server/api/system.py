@@ -79,7 +79,8 @@ async def system_status() -> dict:
         client = get_default_client()
         out["components"]["llm"] = {
             "available": client.available(),
-            "provider": getattr(client, "_provider", {}).get("name", "unknown"),
+            # 注意：provider 名称在 client._provider_name（_provider 为 dict，无 "name" 键）
+            "provider": getattr(client, "_provider_name", "unknown"),
             "stats": client.get_stats() if hasattr(client, "get_stats") else {},
         }
     except Exception as e:  # noqa: BLE001
