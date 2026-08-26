@@ -1046,3 +1046,18 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
 .composer-send:hover:not(:disabled) { background: var(--terra-dark); }
 .composer-send.stopping { background: #e05b5b; }
 .composer-send:disabled { opacity: 0.4; cursor: default; }
+
+/* 模型配置表单 */
+.cfg-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--t-main);
+  font: inherit;
+  font-size: 13px;
+}
+.cfg-input:focus { outline: none; border-color: var(--terra); box-shadow: 0 0 0 3px var(--terra-soft); }
+.cfg-err { color: #d33; }

@@ -163,6 +163,16 @@ export const api = {
   skillsSearch: (q: string) => get<{ skills: Skill[] }>(`/skills/search?q=${encodeURIComponent(q)}`),
   tools: () => get<{ tools: ToolEntry[]; categories: Record<string, number> }>('/tools'),
   system: () => get<Record<string, unknown>>('/system'),
+  configModel: () => get<{
+    provider: string;
+    model: string;
+    base_url: string;
+    api_key_masked: string;
+    api_key_env: string;
+    providers: { name: string; display: string; base_url: string; default_model: string; models: string[]; has_key: boolean; env_key: string }[];
+  }>('/config/model'),
+  saveConfigModel: (body: { provider: string; model: string; api_key: string; base_url: string }) =>
+    post<{ ok: boolean; applied: Record<string, string>; note: string; persist_warning?: string; error?: string }>('/config/model', body),
   permissionGate: (enabled: boolean) => post<{ enabled: boolean; note: string }>('/system/permission-gate', { enabled }),
   presets: () => get<{ presets: { id: string; role: string; name: string; files: string[] }[]; count: number }>('/system/presets'),
   metrics: () => get<Record<string, unknown>>('/metrics'),

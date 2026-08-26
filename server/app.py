@@ -63,7 +63,7 @@ def create_app() -> FastAPI:
     except Exception:  # noqa: BLE001 — 装配失败不阻断 API
         pass
 
-    from server.api import approvals, chat, documents, dynamic_plugins, files, goals, inspect, memory, plugins, prompt, sessions, skills, slots, subagents, system, tools, workflow
+    from server.api import approvals, chat, config, documents, dynamic_plugins, files, goals, inspect, memory, plugins, prompt, sessions, skills, slots, subagents, system, tools, workflow
 
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
     app.include_router(files.router, prefix="/api/v1", tags=["files"])
@@ -81,6 +81,7 @@ def create_app() -> FastAPI:
     app.include_router(dynamic_plugins.router, prefix="/api/v1", tags=["dynamic-plugins"])
     app.include_router(slots.router, prefix="/api/v1", tags=["slots"])
     app.include_router(approvals.router, prefix="/api/v1", tags=["approvals"])
+    app.include_router(config.router, prefix="/api/v1", tags=["config"])
     app.include_router(system.router, prefix="/api/v1", tags=["system"])
 
     @app.get("/healthz", tags=["system"])

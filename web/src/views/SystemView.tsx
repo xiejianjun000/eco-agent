@@ -24,6 +24,20 @@ export default function SystemView(): React.ReactElement {
   });
   const [gate, setGate] = useState<boolean | null>(null);
   const [presets, setPresets] = useState<{ id: string; role: string; name: string; files: string[] }[]>([]);
+  // 模型配置（DSH settings-models 对标）
+  const [modelCfg, setModelCfg] = useState<{
+    provider?: string;
+    model?: string;
+    base_url?: string;
+    api_key_masked?: string;
+    providers?: { name: string; display: string; base_url: string; default_model: string; models: string[]; has_key: boolean; env_key: string }[];
+  } | null>(null);
+  const [cfgProvider, setCfgProvider] = useState('deepseek');
+  const [cfgModel, setCfgModel] = useState('');
+  const [cfgApiKey, setCfgApiKey] = useState('');
+  const [cfgBaseUrl, setCfgBaseUrl] = useState('');
+  const [cfgSaving, setCfgSaving] = useState(false);
+  const [cfgMsg, setCfgMsg] = useState('');
 
   const applyTheme = (t: 'light' | 'dark' | 'system') => {
     setTheme(t);
@@ -44,6 +58,32 @@ export default function SystemView(): React.ReactElement {
     }
   };
 
+  const saveModelCfg = async () => {
+    setCfgSaving(true);
+    setCfgMsg('');
+    try {
+      const r = await api.saveConfigModel({
+        provider: cfgProvider,
+        model: cfgModel,
+        api_key: cfgApiKey,
+        base_url: cfgBaseUrl,
+      });
+      if (r.ok) {
+        setCfgApiKey('');
+        const applied = Object.entries(r.applied).map(([k, v]) => `${k}=${v}`).join('，');
+        setCfgMsg(`✅ 已保存并热生效：${applied}${r.persist_warning ? `（${r.persist_warning}）` : ''}`);
+        const cfg = await api.configModel();
+        setModelCfg(cfg);
+        setCfgBaseUrl(cfg.base_url || '');
+      } else {
+        setCfgMsg(`❌ ${r.error || '保存失败'}`);
+      }
+    } catch (e) {
+      setCfgMsg(`❌ ${(e as Error).message}`);
+    }
+    setCfgSaving(false);
+  };
+
   const load = async () => {
     try {
       const [sys, met, t] = await Promise.all([api.system(), api.metrics(), api.tools()]);
@@ -54,6 +94,11 @@ export default function SystemView(): React.ReactElement {
       const pg = (sys.components as Record<string, { enabled?: boolean }>).permission_gate;
       setGate(pg?.enabled ?? null);
       api.presets().then((r) => setPresets(r.presets ?? [])).catch(() => {});
+      const cfg = await api.configModel();
+      setModelCfg(cfg);
+      setCfgProvider(cfg.provider || 'deepseek');
+      setCfgModel(cfg.model || '');
+      setCfgBaseUrl(cfg.base_url || '');
       setError('');
     } catch (e) {
       setError((e as Error).message);
@@ -143,6 +188,63 @@ export default function SystemView(): React.ReactElement {
           </div>
           <span className="muted">（profiles/ 目录清单，主预设 + {presets.length - 1} 个角色人格）</span>
         </div>
+      </div>
+
+      <div className="card">
+        <h2>模型配置</h2>
+        {modelCfg ? (
+          <>
+            <div className="setting-row">
+              <span className="setting-label">提供商</span>
+              <select
+                className="model-select"
+                value={cfgProvider}
+                onChange={(e) => { setCfgProvider(e.target.value); setCfgModel(''); }}
+              >
+                {(modelCfg.providers ?? []).map((p) => (
+                  <option key={p.name} value={p.name}>{p.display}{p.has_key ? ' ✅' : ''}</option>
+                ))}
+              </select>
+              <span className="muted">（key 已配置显示 ✅）</span>
+            </div>
+            <div className="setting-row">
+              <span className="setting-label">模型</span>
+              <select className="model-select" value={cfgModel} onChange={(e) => setCfgModel(e.target.value)}>
+                <option value="">默认（{modelCfg.providers?.find((p) => p.name === cfgProvider)?.default_model ?? ''}）</option>
+                {(modelCfg.providers?.find((p) => p.name === cfgProvider)?.models ?? []).map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div className="setting-row">
+              <span className="setting-label">API Key</span>
+              <input
+                type="password"
+                className="cfg-input"
+                value={cfgApiKey}
+                placeholder={modelCfg.api_key_masked ? `已配置 ${modelCfg.api_key_masked}，留空保持不变` : 'sk-…（留空保持不变）'}
+                onChange={(e) => setCfgApiKey(e.target.value)}
+              />
+            </div>
+            <div className="setting-row">
+              <span className="setting-label">Base URL</span>
+              <input
+                className="cfg-input"
+                value={cfgBaseUrl}
+                placeholder="https://api.deepseek.com/v1"
+                onChange={(e) => setCfgBaseUrl(e.target.value)}
+              />
+            </div>
+            <div className="setting-row">
+              <button className="btn" onClick={() => void saveModelCfg()} disabled={cfgSaving}>
+                {cfgSaving ? '保存中…' : '保存并生效'}
+              </button>
+              {cfgMsg && <span className={`muted${cfgMsg.startsWith('❌') ? ' cfg-err' : ''}`}>{cfgMsg}</span>}
+            </div>
+          </>
+        ) : (
+          <span className="muted">加载中…</span>
+        )}
       </div>
 
       <div className="card">
