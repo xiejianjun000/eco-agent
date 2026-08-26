@@ -230,20 +230,23 @@ export async function streamChat(
   onDelta: (text: string, meta?: { ttft_ms?: number; reset?: boolean }) => void,
   onEvent?: (ev: TraceEvent) => void,
   onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[]; usage?: ChatUsage; ttft_ms?: number; suggestions?: string[] }) => void,
+  signal?: AbortSignal,  // DSH 对标：运行中可中止（Stop 按钮）
 ): Promise<void> {
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-ECO-CLIENT': 'web' },
     body: JSON.stringify({ message, history, session_id: sessionId, model }),
+    signal,
   });
   if (!res.body) throw new Error('stream body unavailable');
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   let traceAcc: TraceEvent[] | undefined;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
     buffer = lines.pop() ?? '';
@@ -299,5 +302,10 @@ export async function streamChat(
         }
       }
     }
+    }
+  } catch (e) {
+    // DSH 对标：用户点「停止」中止流（AbortError 静默返回，不算错误）
+    if (e instanceof DOMException && e.name === 'AbortError') return;
+    throw e;
   }
 }

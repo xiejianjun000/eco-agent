@@ -207,6 +207,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const [previewTitle, setPreviewTitle] = useState<string>('');
   const sawDocEventRef = useRef(false);
   const contentRef = useRef('');
+  const abortRef = useRef<AbortController | null>(null); // DSH 对标：Stop 中止流
   // 子代理任务面板（对标 DSH subagent/jobs）
   const [taskAgents, setTaskAgents] = useState<SubagentInfo[]>([]);
   const [taskInput, setTaskInput] = useState('');
@@ -452,6 +453,9 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
       { role: 'assistant', content: '', time: sentAt },
     ]);
     setBusy(true);
+    // DSH 对标：新一轮对话持有 AbortController，供「停止」按钮中止
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     // 新一轮对话：重置文档事件标记与流式内容累积
     sawDocEventRef.current = false;
     contentRef.current = '';
@@ -513,27 +517,39 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
         });
         // 一轮对话完成 → 通知侧栏刷新会话列表（计数/时间/排序）
         onActivity?.();
-      });
+      }, ctrl.signal);
     } catch (e) {
+      const aborted = e instanceof DOMException && e.name === 'AbortError';
       setMessages((prev) => {
         const next = [...prev];
+        const last = next[next.length - 1];
         next[next.length - 1] = {
-          ...next[next.length - 1],
-          content: `[连接失败] ${(e as Error).message}\n请确认已启动: eco server`,
+          ...last,
+          content: aborted ? `${last.content || ''}\n\n_（已停止）_` : `[连接失败] ${(e as Error).message}\n请确认已启动: eco server`,
           time: fmtClock(),
         };
         return next;
       });
     } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
       setBusy(false);
     }
   };
 
+  /** DSH 对标：运行中「停止」——中止当前流式响应 */
+  const stop = () => {
+    abortRef.current?.abort();
+  };
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      void send();
-    }
+    if (e.key !== 'Enter') return;
+    // DSH 对标：IME 组合中不发送（中文输入法选词回车）；Shift+Enter 换行；长按防连发
+    const composing = e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229;
+    if (composing) return;
+    if (e.shiftKey) return;
+    if (e.repeat) return;
+    e.preventDefault();
+    void send();
   };
 
   const copyMsg = (m: Msg) => {
@@ -701,59 +717,78 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             ))}
           </div>
         )}
-        <div className="chat-input-row">
-          <div className="input-tools">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              hidden
-              onChange={(e) => {
-                if (e.target.files) void uploadFiles(e.target.files);
-                e.target.value = '';
-              }}
-            />
-            <button
-              className="input-tool-btn"
-              title="上传文件——保存到工作区 uploads/，模型会用 file_read 读取分析"
-              onClick={() => fileInputRef.current?.click()}
-            >📎</button>
-            <button
-              className={`input-tool-btn${voice === 'recording' ? ' recording' : ''}`}
-              title={voice === 'recording' ? '停止录音并转写' : '语音输入——录音后经飞书妙记转写成文字'}
-              onClick={() => void toggleVoice()}
-            >
-              {voice === 'recording' ? '⏹' : '🎤'}
-            </button>
-          </div>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="输入问题，Enter 发送，Shift+Enter 换行"
-            rows={2}
+        <div className="composer">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(e) => {
+              if (e.target.files) void uploadFiles(e.target.files);
+              e.target.value = '';
+            }}
           />
-          <select
-            className="model-select"
-            title="选择模型（DSH ui-model-selection）"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-          >
-            <option value="">默认（deepseek-v4-pro）</option>
-            <option value="deepseek-chat">deepseek-chat</option>
-            <option value="deepseek-v4-pro">deepseek-v4-pro（含Think流·推荐）</option>
-            <option value="deepseek-reasoner">deepseek-reasoner（含Think流）</option>
-            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
-            <option value="qwen-max">qwen-max</option>
-            <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
-          </select>
-          <button
-            className="btn"
-            onClick={() => void send()}
-            disabled={busy || (!input.trim() && attachments.length === 0)}
-          >
-            {busy ? '生成中' : '发送'}
-          </button>
+          <textarea
+            className="composer-input"
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              // DSH 对标：镜像自动增高（回车换行时高度随内容增长，封顶）
+              e.target.style.height = 'auto';
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 280)}px`;
+            }}
+            onKeyDown={onKeyDown}
+            placeholder="输入问题，Enter 发送 · Shift+Enter 换行 · 支持中文输入法"
+            rows={1}
+          />
+          <div className="composer-row">
+            <div className="composer-left">
+              <button
+                className="composer-icon"
+                title="上传文件——保存到工作区 uploads/，模型会用 file_read 读取分析"
+                onClick={() => fileInputRef.current?.click()}
+              >📎</button>
+              <button
+                className={`composer-icon${voice === 'recording' ? ' recording' : ''}`}
+                title={voice === 'recording' ? '停止录音并转写' : '语音输入——录音后经飞书妙记转写成文字'}
+                onClick={() => void toggleVoice()}
+              >
+                {voice === 'recording' ? '⏹' : '🎤'}
+              </button>
+            </div>
+            <div className="composer-right">
+              <select
+                className="model-select"
+                title="选择模型（DSH ui-model-selection 对标）"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              >
+                <option value="">默认（deepseek-v4-flash）</option>
+                <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+                <option value="deepseek-v4-pro">deepseek-v4-pro（含Think流·推荐）</option>
+                <option value="deepseek-chat">deepseek-chat</option>
+                <option value="deepseek-reasoner">deepseek-reasoner（含Think流）</option>
+                <option value="qwen-max">qwen-max</option>
+                <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
+              </select>
+              <button
+                className={`composer-send${busy ? ' stopping' : ''}`}
+                title={busy ? '停止生成' : '发送'}
+                disabled={!busy && !input.trim() && attachments.length === 0}
+                onClick={() => { if (busy) stop(); else void send(); }}
+              >
+                {busy ? (
+                  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
+                    <rect x="3" y="3" width="10" height="10" rx="3" fill="currentColor" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
+                    <path d="M8.31 1 13.7 6.4 12.3 7.8 8.75 4.25V15h-1.5V4.25L3.7 7.8 2.3 6.4 7.7 1a1.4 1.4 0 0 1 .61 0Z" fill="currentColor" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
         {voice === 'recording' && (
           <div className="voice-status">🔴 录音中 {voiceSec}s——再点 🎤 停止并转写</div>

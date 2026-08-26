@@ -953,3 +953,96 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
   display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px;
 }
 .hero-chips .suggest-chip { font-size: 12.5px; padding: 6px 14px; }
+
+/* ══ DSH 对标：输入框（capsule composer） ══ */
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin: 0 0 12px;
+}
+.composer-input {
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--t-main);
+  font: inherit;
+  font-size: 15px;
+  line-height: 24px;
+  padding: 4px 6px;
+  min-height: 24px;
+  max-height: 280px; /* DSH 14 行封顶 */
+  overflow-y: auto;
+}
+.composer-input::placeholder { color: var(--t-sub); opacity: 0.7; }
+.composer-input:focus { outline: none; }
+.composer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 2px 2px;
+  min-width: 0;
+}
+.composer-left, .composer-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.composer-right { margin-left: auto; }
+.composer-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--t-sub);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.composer-icon:hover:not(:disabled) { background: var(--terra-soft); color: var(--terra-dark); }
+.composer-icon.recording { background: #fde3e3; color: #d33; animation: eco-rec-pulse 1s ease-in-out infinite alternate; }
+@keyframes eco-rec-pulse { from { opacity: 0.6; } to { opacity: 1; } }
+.composer .model-select {
+  height: 28px;
+  max-width: 220px;
+  padding: 0 22px 0 10px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--fill);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2381858C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 12px 12px;
+  color: var(--t-sub);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  appearance: none;
+  white-space: nowrap;
+}
+.composer .model-select:hover { background-color: var(--terra-soft); color: var(--terra-dark); }
+.composer-send {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background: var(--terra);
+  color: #fff;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.composer-send:hover:not(:disabled) { background: var(--terra-dark); }
+.composer-send.stopping { background: #e05b5b; }
+.composer-send:disabled { opacity: 0.4; cursor: default; }
