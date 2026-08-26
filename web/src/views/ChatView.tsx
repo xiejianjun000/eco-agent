@@ -198,6 +198,10 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [model, setModel] = useState('');
+  // DSH 对标：输入框旁直接切换 provider/模型（动态加载自 /api/v1/config/model）
+  const [providers, setProviders] = useState<{ name: string; display: string; default_model: string; models: string[]; has_key: boolean }[]>([]);
+  const [activeProvider, setActiveProvider] = useState('deepseek');
+  const [switchMsg, setSwitchMsg] = useState('');
   const [branchTag, setBranchTag] = useState<string | null>(null);
   const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc' | 'task' | 'slot' | 'preview'>('trace');
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
@@ -366,6 +370,38 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  // DSH 对标：挂载时加载模型配置（provider 清单 + 当前默认模型），输入框旁可切换
+  useEffect(() => {
+    let alive = true;
+    api.configModel()
+      .then((cfg) => {
+        if (!alive) return;
+        setProviders(cfg.providers ?? []);
+        setActiveProvider(cfg.provider || 'deepseek');
+        if (!model && cfg.model) setModel(cfg.model);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** DSH 对标：输入框切换 provider/模型 → 立即热生效（config API 持久化 + 刷新 LLM 客户端） */
+  const onSwitchModel = async (val: string) => {
+    const [provider, mdl] = val.split('::');
+    if (!provider || !mdl) return;
+    setModel(mdl);
+    setActiveProvider(provider);
+    setSwitchMsg(`切换 ${provider} / ${mdl}…`);
+    try {
+      const r = await api.saveConfigModel({ provider, model: mdl, api_key: '', base_url: '' });
+      setSwitchMsg(r.ok
+        ? `✅ ${provider} / ${mdl}${r.client_note ? `（${r.client_note}）` : ''}`
+        : `❌ ${r.error || '切换失败'}`);
+    } catch (e) {
+      setSwitchMsg(`❌ ${(e as Error).message}`);
+    }
+  };
 
   const artifacts = messages
     .filter((m) => m.role === 'assistant')
@@ -759,18 +795,26 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             <div className="composer-right">
               <select
                 className="model-select"
-                title="选择模型（DSH ui-model-selection 对标）"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
+                title="切换模型（DSH ui-model-selection 对标）：选中即热生效并持久化"
+                value={model ? `${activeProvider}::${model}` : ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v.includes('::')) void onSwitchModel(v);
+                  else setModel('');
+                }}
               >
-                <option value="">默认（deepseek-v4-flash）</option>
-                <option value="deepseek-v4-flash">deepseek-v4-flash</option>
-                <option value="deepseek-v4-pro">deepseek-v4-pro（含Think流·推荐）</option>
-                <option value="deepseek-chat">deepseek-chat</option>
-                <option value="deepseek-reasoner">deepseek-reasoner（含Think流）</option>
-                <option value="qwen-max">qwen-max</option>
-                <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
+                <option value="">默认（{providers.find((p) => p.name === activeProvider)?.default_model ?? '…'}）</option>
+                {providers
+                  .filter((p) => p.models.length > 0)
+                  .map((p) => (
+                    <optgroup key={p.name} label={`${p.display}${p.has_key ? ' ✅' : '（未配 key）'}`} disabled={!p.has_key}>
+                      {p.models.map((m) => (
+                        <option key={`${p.name}::${m}`} value={`${p.name}::${m}`}>{m}</option>
+                      ))}
+                    </optgroup>
+                  ))}
               </select>
+              {switchMsg && <span className="composer-switch-msg">{switchMsg}</span>}
               <button
                 className={`composer-send${busy ? ' stopping' : ''}`}
                 title={busy ? '停止生成' : '发送'}

@@ -1061,3 +1061,14 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
 }
 .cfg-input:focus { outline: none; border-color: var(--terra); box-shadow: 0 0 0 3px var(--terra-soft); }
 .cfg-err { color: #d33; }
+
+/* 输入框模型切换提示 */
+.composer-switch-msg {
+  font-size: 12px;
+  color: var(--t-sub);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer .model-select { max-width: 240px; }

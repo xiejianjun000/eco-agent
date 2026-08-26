@@ -135,6 +135,29 @@ async def save_model_config(body: ModelConfigBody) -> dict:
     for k, v in changes.items():
         os.environ[k] = v
 
+    # 1.5) 刷新默认 LLM 客户端：provider/模型切换即时生效（无需重启）。
+    #      切换失败（无可用密钥）时还原 ECO_PROVIDER 且不持久化，避免配置漂移。
+    client_note = ""
+    try:
+        from agent_core.llm_client import get_default_client
+        client = get_default_client()
+        if body.provider and getattr(client, "_provider_name", "") != body.provider:
+            if client.switch_provider(body.provider):
+                client_note = f"LLM 客户端已切换至 {body.provider}"
+            else:
+                client_note = (f"切换 {body.provider} 失败（无可用密钥），当前仍为 "
+                               f"{getattr(client, '_provider_name', 'unknown')}")
+                # 目标 provider 未就绪：provider 与模型都不落盘/不应用，避免模型漂移到当前客户端
+                os.environ.pop("ECO_PROVIDER", None)
+                os.environ.pop("ECO_MODEL", None)
+                changes.pop("ECO_PROVIDER", None)
+                changes.pop("ECO_MODEL", None)
+        elif body.model and isinstance(getattr(client, "_provider", None), dict):
+            # provider 未变（或已切换成功）：仅应用模型覆盖
+            client._provider = dict(client._provider, default_model=body.model)
+    except Exception as e:  # noqa: BLE001
+        client_note = f"客户端刷新失败: {e}"
+
     # 2) 持久化到 ~/.eco/.env（尽力而为：环境写保护等失败时仅告警，不阻断热生效）
     persist_error = ""
     try:
@@ -147,5 +170,6 @@ async def save_model_config(body: ModelConfigBody) -> dict:
         "ok": True,
         "applied": {k: (_mask(v) if "KEY" in k or "SECRET" in k else v) for k, v in changes.items()},
         "note": "已热生效" + ("；" + persist_error if persist_error else ""),
+        "client_note": client_note or "",
         "persist_warning": persist_error or "",
     }
