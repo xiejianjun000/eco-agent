@@ -93,7 +93,7 @@ class TestLLMClientIntegration:
     def test_legacy_providers_dict_backward_compat(self):
         from agent_core.llm_client import PROVIDERS as LEGACY
         assert LEGACY["deepseek"]["base_url"] == "https://api.deepseek.com/v1"
-        assert LEGACY["deepseek"]["default_model"] == "deepseek-chat"
+        assert LEGACY["deepseek"]["default_model"] == "deepseek-v4-pro"
         assert LEGACY["kimi"]["base_url"] == "https://api.moonshot.cn/v1"
         assert LEGACY["kimi"]["api_key_env"] == "KIMI_API_KEY"
         assert LEGACY["kimi"]["default_model"] == "kimi-k2.5"

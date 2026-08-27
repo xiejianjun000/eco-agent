@@ -314,7 +314,7 @@ class TestRealStreaming:
         assert "moonshot.cn" in calls[0]["url"]
         assert "deepseek.com" in calls[1]["url"]
         assert calls[1]["json"]["stream"] is True
-        assert calls[1]["json"]["model"] == "deepseek-chat"
+        assert calls[1]["json"]["model"] == "deepseek-v4-pro"
 
     def test_stream_usage_recorded(self, client, mock_stream, tmp_path, monkeypatch):
         """流式路径同样记录 usage 统计"""

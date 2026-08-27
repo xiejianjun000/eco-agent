@@ -179,7 +179,7 @@ class TestTemperatureEnforcement:
                                           on_chunk=chunks.append)
         assert out == "降级成功"
         assert "deepseek" in calls[1]["url"]
-        assert calls[1]["json"]["model"] == "deepseek-chat"
+        assert calls[1]["json"]["model"] == "deepseek-v4-pro"
         assert any("备用模型" in c for c in chunks)
 
     def test_friendly_error_when_all_fail(self, kimi_client, mock_post):

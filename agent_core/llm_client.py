@@ -508,6 +508,10 @@ class LLMClient:
             "temperature": self._resolve_temperature(model, 0.7),
             "stream": False,
         }
+        # v4 推理档位（可选）：ECO_REASONING_EFFORT=high/max 控制思考深度与首字延迟
+        _effort = os.environ.get("ECO_REASONING_EFFORT", "").strip()
+        if _effort and model.startswith("deepseek-v4"):
+            body["reasoning_effort"] = _effort
         if tools:
             body["tools"] = tools
             body["tool_choice"] = "auto"
