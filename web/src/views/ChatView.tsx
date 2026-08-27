@@ -3,6 +3,44 @@ import { streamChat, api, type ChatUsage, type TraceEvent, type SubagentInfo } f
 import { renderMarkdown, escapeHtml } from '../utils/markdown';
 import { renderToolResult } from '../utils/toolResult';
 
+/** 解析 think 文本为结构化步骤（WorkBuddy 风格） */
+function parseThinkSteps(text: string): Array<{ num: string; text: string; isAction: boolean }> {
+  if (!text) return [];
+  // 匹配 "1. xxx" 或 "1) xxx" 或 "① xxx" 格式的步骤
+  const stepRegex = /(?:^|\n)\s*(\d+[.)、]\s*|[①②③④⑤⑥⑦⑧⑨⑩]\s*)([^\n]+)/g;
+  const steps: Array<{ num: string; text: string; isAction: boolean }> = [];
+  let m;
+  while ((m = stepRegex.exec(text)) !== null) {
+    const num = m[1].trim();
+    const content = m[2].trim();
+    // 判断是否为行动项（包含执行、检查、操作等动词）
+    const isAction = /(?:检查|执行|操作|更新|打开|关闭|创建|删除|修改|fetch|pull|push|clone|install|start|stop)/.test(content);
+    steps.push({ num, text: content, isAction });
+  }
+  // 如果没有匹配到步骤格式，返回整段文本
+  if (steps.length === 0 && text.trim()) {
+    return [{ num: '', text: text.trim(), isAction: false }];
+  }
+  return steps;
+}
+
+/** 格式化 think 文本中的关键信息 */
+function formatThinkText(text: string): string {
+  if (!text) return '';
+  let html = escapeHtml(text);
+  // 代码格式：`xxx` → <code>xxx</code>
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // 状态标记：✅ ⚠️ ❌ → 带颜色的 span
+  html = html.replace(/✅/g, '<span style="color:#2E7D32">✅</span>');
+  html = html.replace(/⚠️/g, '<span style="color:#F9A825">⚠️</span>');
+  html = html.replace(/❌/g, '<span style="color:#C62828">❌</span>');
+  // 文件路径：xxx.yaml, xxx.json → <code>xxx.yaml</code>
+  html = html.replace(/([\w-]+\.(?:yaml|yml|json|py|ts|js|md|txt))/g, '<code>$1</code>');
+  // commit hash：141eb6f → <code>141eb6f</code>
+  html = html.replace(/\b([a-f0-9]{7,8})\b/g, '<code>$1</code>');
+  return html;
+}
+
 interface Msg {
   role: 'user' | 'assistant';
   content: string;
@@ -152,7 +190,24 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
                         {te && <span className="trace-cost">{fmtMs(te.cost_ms)}</span>}
                       </summary>
                       <div className="think-body">
-                        {live[r] ? escapeHtml(live[r]) : '（思考内容未返回）'}
+                        {(() => {
+                          const text = live[r] || '';
+                          // 解析结构化步骤（WorkBuddy风格）
+                          const steps = parseThinkSteps(text);
+                          if (steps.length > 1) {
+                            return (
+                              <div className="think-steps">
+                                {steps.map((step, si) => (
+                                  <div key={si} className={`think-step${step.isAction ? ' action' : ''}`}>
+                                    <span className="ts-num">{step.num}</span>
+                                    <span className="ts-text" dangerouslySetInnerHTML={{ __html: formatThinkText(step.text) }} />
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          }
+                          return <div dangerouslySetInnerHTML={{ __html: formatThinkText(text) }} />;
+                        })()}
                       </div>
                     </details>
                   )}
@@ -250,6 +305,8 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   // ── 输入栏附件 / 语音（DSH 式）────────────────────────────
   const [attachments, setAttachments] = useState<{ name: string; path: string; size_kb: number }[]>([]);
   const [voice, setVoice] = useState<'idle' | 'recording' | 'transcribing'>('idle');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [voiceSec, setVoiceSec] = useState(0);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -699,60 +756,134 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             ))}
           </div>
         )}
-        <div className="chat-input-row">
-          <div className="input-tools">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              hidden
-              onChange={(e) => {
-                if (e.target.files) void uploadFiles(e.target.files);
-                e.target.value = '';
+        {/* ===== WorkBuddy 风格输入栏 ===== */}
+        {/* 快捷技能卡片 */}
+        <div className="skill-bar">
+          {[
+            { icon: '📄', label: '环评分析' },
+            { icon: '📈', label: '碳足迹' },
+            { icon: '🌱', label: '生态修复' },
+            { icon: '🔬', label: '数据分析' },
+            { icon: '🗺️', label: '遥感解译' },
+            { icon: '⚖️', label: '标准查询' },
+            { icon: '🎓', label: '科普创作' },
+            { icon: '💰', label: '绿色金融' },
+          ].map((s) => (
+            <button
+              key={s.label}
+              className="skill-chip"
+              onClick={() => {
+                setInput(s.label);
+                inputRef.current?.focus();
               }}
-            />
-            <button
-              className="input-tool-btn"
-              title="上传文件——保存到工作区 uploads/，模型会用 file_read 读取分析"
-              onClick={() => fileInputRef.current?.click()}
-            >📎</button>
-            <button
-              className={`input-tool-btn${voice === 'recording' ? ' recording' : ''}`}
-              title={voice === 'recording' ? '停止录音并转写' : '语音输入——录音后经飞书妙记转写成文字'}
-              onClick={() => void toggleVoice()}
             >
-              {voice === 'recording' ? '⏹' : '🎤'}
+              <span>{s.icon}</span>
+              <span>{s.label}</span>
             </button>
-          </div>
+          ))}
+          <button className="skill-chip more" title="更多技能">›</button>
+        </div>
+
+        {/* 中央大输入框 */}
+        <div className="chat-input-box">
           <textarea
+            ref={inputRef}
+            className="chat-input-main"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="输入问题，Enter 发送，Shift+Enter 换行"
-            rows={2}
+            placeholder="引用对话文件，/ 调用技能与指令"
+            rows={3}
           />
-          <select
-            className="model-select"
-            title="选择模型（DSH ui-model-selection）"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-          >
-            <option value="">默认（deepseek-v4-pro）</option>
-            <option value="deepseek-chat">deepseek-chat</option>
-            <option value="deepseek-v4-pro">deepseek-v4-pro（含Think流·推荐）</option>
-            <option value="deepseek-reasoner">deepseek-reasoner（含Think流）</option>
-            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
-            <option value="qwen-max">qwen-max</option>
-            <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
-          </select>
-          <button
-            className="btn"
-            onClick={() => void send()}
-            disabled={busy || (!input.trim() && attachments.length === 0)}
-          >
-            {busy ? '生成中' : '发送'}
-          </button>
+
+          {/* 底部工具栏 */}
+          <div className="chat-input-toolbar">
+            {/* 左侧 + 菜单 */}
+            <div className="cit-left">
+              <div className="cit-menu-wrap">
+                <button
+                  className="cit-menu-btn"
+                  title="更多功能"
+                  onClick={() => setMenuOpen((v) => !v)}
+                >
+                  {menuOpen ? '✕' : '＋'}
+                </button>
+                {menuOpen && (
+                  <div className="cit-menu-dropdown">
+                    <div className="cit-menu-item" onClick={() => fileInputRef.current?.click()}>
+                      <span>📎</span> 添加文件
+                    </div>
+                    <div className="cit-menu-item">
+                      <span>🎨</span> 模式
+                    </div>
+                    <div className="cit-menu-item">
+                      <span>🧑‍🔬</span> 专家
+                    </div>
+                    <div className="cit-menu-item">
+                      <span>🛠️</span> 技能
+                    </div>
+                    <div className="cit-menu-item">
+                      <span>🔌</span> 连接器
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 右侧工具 */}
+            <div className="cit-right">
+              <select
+                className="cit-model"
+                title="选择模型"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              >
+                <option value="">🌿 eco-Default</option>
+                <option value="deepseek-v4-pro">🌿 DeepSeek-V4 Pro</option>
+                <option value="deepseek-reasoner">🌿 DeepSeek-Reasoner</option>
+                <option value="claude-sonnet-4">🌿 Claude-Sonnet-4</option>
+                <option value="qwen-max">🌿 Qwen-Max</option>
+              </select>
+              <button
+                className={`cit-voice${voice === 'recording' ? ' recording' : ''}`}
+                title={voice === 'recording' ? '停止录音' : '语音输入'}
+                onClick={() => void toggleVoice()}
+              >
+                {voice === 'recording' ? '⏹' : '🎤'}
+              </button>
+              <button
+                className="cit-send"
+                onClick={() => void send()}
+                disabled={busy || (!input.trim() && attachments.length === 0)}
+              >
+                {busy ? '⏳' : '➤'}
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* 底部工作空间 + 权限 */}
+        <div className="chat-input-footer">
+          <div className="cif-item">
+            <span>📁</span>
+            <select defaultValue="default">
+              <option value="default">选择工作空间</option>
+              <option value="hunan">湖南省</option>
+              <option value="changsha">长沙市</option>
+              <option value="xiangtan">湘潭市</option>
+            </select>
+          </div>
+          <div className="cif-item">
+            <span>🔒</span>
+            <select defaultValue="default">
+              <option value="default">默认权限</option>
+              <option value="public">公开</option>
+              <option value="internal">内部</option>
+              <option value="confidential">机密</option>
+            </select>
+          </div>
+        </div>
+
         {voice === 'recording' && (
           <div className="voice-status">🔴 录音中 {voiceSec}s——再点 🎤 停止并转写</div>
         )}
