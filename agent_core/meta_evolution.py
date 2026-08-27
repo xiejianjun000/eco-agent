@@ -122,12 +122,46 @@ class MetaEvolution:
         return {"gaps": gaps, "gap_count": len(gaps)}
 
     def _skill_generation(self, gap: dict) -> dict:
-        """阶段3：技能生成/优化"""
+        """阶段3：技能生成/优化——根据差距分析生成新技能并落盘"""
         generated = 0
         optimized = 0
+        skill_ids = []
         if gap.get("gap_count", 0) > 0:
-            optimized += 1
-        return {"generated": generated, "optimized": optimized}
+            # 根据差距生成技能建议
+            for i, g in enumerate(gap.get("gaps", [])):
+                skill_id = f"evo_{self._version}_{i:02d}"
+                # 落盘到 skills/ 目录
+                skill_path = ROOT / "skills" / f"{skill_id}.md"
+                skill_path.parent.mkdir(parents=True, exist_ok=True)
+                skill_content = f"""---
+name: 进化技能_{skill_id}
+version: 1
+description: 自动生成的技能——{g[:80]}
+category: evolved
+author: L4_MetaEvolution
+status: active
+source: auto-generated
+---
+
+# 进化技能 {skill_id}
+
+## 触发条件
+- 差距: {g}
+
+## 执行步骤
+1. 识别当前场景是否匹配差距描述
+2. 调用相关工具链处理
+3. 记录执行结果用于后续 A/B 测试
+
+## 元信息
+- 生成版本: v{self._version}
+- 生成时间: {datetime.now().isoformat()}
+"""
+                skill_path.write_text(skill_content, encoding="utf-8")
+                generated += 1
+                skill_ids.append(skill_id)
+                logger.info(f"[Evolve] 生成技能落盘: {skill_path}")
+        return {"generated": generated, "optimized": optimized, "skill_ids": skill_ids}
 
     # ── 反思循环：Generator → Reflector → Curator 三关 ──
     def _reflector_review(self, skill_gen: dict) -> dict:
@@ -184,8 +218,20 @@ class MetaEvolution:
                 "reflector": reflection, "curator": curation}
 
     def _memory_consolidation(self) -> dict:
-        """阶段4：记忆固化"""
-        return {"working_to_episodic": "consolidated", "semantic_updated": True}
+        """阶段4：记忆固化——将高频工作记忆蒸馏为语义记忆"""
+        from agent_core.skill_system import CrossSessionMemory
+        csm = CrossSessionMemory()
+        promoted = 0
+        working = csm._memory.get("working", [])
+        # 将高频访问的工作记忆项升级为语义记忆
+        for item in working:
+            access_count = item.get("access_count", 1)
+            if access_count >= 3:  # 访问3次以上视为高频
+                csm.store_semantic(item["key"], item["value"])
+                promoted += 1
+        # 同时清理过期的工作记忆
+        csm._cleanup_working()
+        return {"working_to_episodic": f"promoted {promoted} items", "semantic_updated": True, "cleaned": True}
 
     def _self_versioning(self) -> dict:
         """阶段5：自我版本迭代——保留最近3个版本"""

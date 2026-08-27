@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>DeepSeek Harness（dsh）插件精选列表 · Awesome DSH Plugin</title>
+  <id>https://beancookie.github.io/awesome-dsh-plugin/</id>
+  <link href="https://beancookie.github.io/awesome-dsh-plugin/"/>
+  <link rel="self" href="https://beancookie.github.io/awesome-dsh-plugin/feed.xml"/>
+  <updated>2026-08-18T00:00:00Z</updated>
+  <entry>
+    <title>dsh-custom-theme-import</title>
+    <id>https://github.com/Juryorca/dsh-custom-theme-import</id>
+    <link href="https://github.com/Juryorca/dsh-custom-theme-import"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>DSH Web 自定义主题导入插件：支持本地路径/GitHub 集合一键导入、主题预览与实时刷新、托管主题库；格式轻量，作者可直接改 CSS/DOM 文件热加载，适合个人主题开发与分享。</summary>
+  </entry>
+  <entry>
+    <title>Letter2025/dsh-task-worktree</title>
+    <id>https://github.com/Letter2025/dsh-task-worktree</id>
+    <link href="https://github.com/Letter2025/dsh-task-worktree"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>完整的任务级 git worktree：per-repo manifest 永久保存、worktree-&lt;name&gt; 分支、主目录带回（bring-back）与直接提交两种收尾、可携带主工作区未提交改动（参考 Qoder / Codex / Claude Code）。</summary>
+  </entry>
+  <entry>
+    <title>PolinniZhong/dsh-omi-voice</title>
+    <id>https://github.com/PolinniZhong/dsh-omi-voice</id>
+    <link href="https://github.com/PolinniZhong/dsh-omi-voice"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>豆包音质对话内朗读：每条 AI 回复 🔊 点读/自动朗读（默认关、状态持久化），音色由本地 Omi 引擎合成（豆包 seed-tts），BYOK（Key 只留在本机 Keychain，插件零 Key）。</summary>
+  </entry>
+  <entry>
+    <title>yanglaofish/dsh-skill-manager</title>
+    <id>https://github.com/yanglaofish/dsh-skill-manager</id>
+    <link href="https://github.com/yanglaofish/dsh-skill-manager"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>DSH 技能生命周期管理插件：全局 / 工作区 / 会话三层模型下查看、编辑、导入、启用/停用技能，设置页与对话页统一管理界面，支持跨层全文搜索与分页。</summary>
+  </entry>
+  <entry>
+    <title>odai-dsh-plugin</title>
+    <id>https://github.com/orziz/odai/tree/main/dsh/plugin</id>
+    <link href="https://github.com/orziz/odai/tree/main/dsh/plugin"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>面向整个 DSH profile 的治理与路由 bundle，提供可配置的压缩调用与本地作用域语义记忆；兼容 DSH 0.1.0-rc.6 与 0.1.0-rc.7。</summary>
+  </entry>
+  <entry>
+    <title>daetz-coder/dsh-multi-chat</title>
+    <id>https://github.com/daetz-coder/dsh-multi-chat</id>
+    <link href="https://github.com/daetz-coder/dsh-multi-chat"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>在 DSH Web 界面里并排运行、监控多个对话实例的插件：多窗口墙 + 自动发现 + 单窗控制，内置带口令认证的局域网网关，手机/平板也能看。</summary>
+  </entry>
+  <entry>
+    <title>stopchewing/dsh-mcp-view</title>
+    <id>https://github.com/stopchewing/dsh-mcp-view</id>
+    <link href="https://github.com/stopchewing/dsh-mcp-view"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>MCP 服务器与工具清单面板：侧边栏一键悬浮面板，按服务器分组展示全部 MCP 工具（传输方式、端点、JSON Schema、最近使用时间），默认折叠、支持搜索与实时刷新；最近使用时间来自真实会话日志。</summary>
+  </entry>
+  <entry>
+    <title>WFMinerva/dsh-turn-cost</title>
+    <id>https://github.com/WFMinerva/dsh-turn-cost</id>
+    <link href="https://github.com/WFMinerva/dsh-turn-cost"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>每条 AI 回复下方显示该轮真实花费：人民币、官方峰谷价、缓存读占比；纯本地读会话日志，零上报零密钥。</summary>
+  </entry>
+  <entry>
+    <title>xiaogu619520/dsh-plugin-task-panel</title>
+    <id>https://github.com/xiaogu619520/dsh-plugin-task-panel</id>
+    <link href="https://github.com/xiaogu619520/dsh-plugin-task-panel"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>任务摘要与上下文用量监控浮动面板（待办事项跟踪、文件与系统 Token 占用统计、8向缩放与快捷键）。</summary>
+  </entry>
+  <entry>
+    <title>yoli-mi/dsh-client-ui-custom</title>
+    <id>https://github.com/yoli-mi/dsh-client-ui-custom</id>
+    <link href="https://github.com/yoli-mi/dsh-client-ui-custom"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Web 外观主题定制（壁纸、毛玻璃、强调色、预设）、键盘快捷键、用量统计、插件市场、浮动历史条与用户消息 Markdown 渲染。</summary>
+  </entry>
+  <entry>
+    <title>zh667/TokenLedger</title>
+    <id>https://github.com/zh667/TokenLedger</id>
+    <link href="https://github.com/zh667/TokenLedger"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>按中转站点、项目和模型统计本地 DSH Token 用量，并显示账户余额与订阅额度周期。</summary>
+  </entry>
+  <entry>
+    <title>Braidy-Wu/dsh-conversation-minimap</title>
+    <id>https://github.com/Braidy-Wu/dsh-conversation-minimap</id>
+    <link href="https://github.com/Braidy-Wu/dsh-conversation-minimap"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>DSH Web GUI 对话迷你地图（复刻 ChatGPT 桌面端）：每轮 Prompt 一个等距胶囊锚点，鱼眼钟形悬停放大 + 完整 Prompt 预览，顶部/底部渐隐，蓝色高亮跟随当前 Prompt，点击跳转对应消息，自动拉取完整历史。</summary>
+  </entry>
+  <entry>
+    <title>dsh-odette-skin</title>
+    <id>https://github.com/lkdx0220/Genshin-odette-skin-dsh</id>
+    <link href="https://github.com/lkdx0220/Genshin-odette-skin-dsh"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>DSH 原神「奥黛塔」主题 UI 皮肤：深/浅双模式背景图 + 13 个主题 token 毛玻璃覆盖 + 侧栏 Q 版小兽皮肤开关，npm 即装即用。</summary>
+  </entry>
+  <entry>
+    <title>RevolutionLA/dsh-dream-skin</title>
+    <id>https://github.com/RevolutionLA/dsh-dream-skin</id>
+    <link href="https://github.com/RevolutionLA/dsh-dream-skin"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>DSH Web 一键换肤插件：8 套原创主题、背景壁纸（透明度/模糊/渐变/URL）、每用户强调色、主题包导入导出与分享链接、收藏与随机，纯原生 token 系统。</summary>
+  </entry>
+  <entry>
+    <title>chenproton/dsh-history</title>
+    <id>https://github.com/chenproton/dsh-history</id>
+    <link href="https://github.com/chenproton/dsh-history"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>会话历史消息查看：列出当前会话全部你发送的消息，支持排序、搜索、一键复制与点击跳转定位（目标未加载时自动加载更早历史）。</summary>
+  </entry>
+  <entry>
+    <title>session-titler</title>
+    <id>https://github.com/JohnXu22786/session-titler</id>
+    <link href="https://github.com/JohnXu22786/session-titler"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>双阶段会话标题生成：忙碌时即时关键词标题，空闲时由经济模型精修。</summary>
+  </entry>
+  <entry>
+    <title>sjh9714/dsh-what-changed</title>
+    <id>https://github.com/sjh9714/dsh-what-changed</id>
+    <link href="https://github.com/sjh9714/dsh-what-changed"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>整会话改动审阅。会话顶栏列出本次 Agent 写过的每个文件与逐处改动，被权限拒绝的写入单独计数不算改动，数据来自 session projection。</summary>
+  </entry>
+  <entry>
+    <title>Breeze136/dsh-kb-rag</title>
+    <id>https://github.com/Breeze136/dsh-kb-rag</id>
+    <link href="https://github.com/Breeze136/dsh-kb-rag"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>本地文献知识库 RAG：8 个工具（PDF/文件夹/Zotero 入库、BM25+向量+重排混合检索、DOI 可点击溯源问答、范围/严格模式、去重/清空/统计），全本地 bge 嵌入 + 单文件 SQLite，实测 242 篇 86s 入库、2 万块亚秒热查询。</summary>
+  </entry>
+  <entry>
+    <title>memory-vault</title>
+    <id>https://github.com/JohnXu22786/memory-vault</id>
+    <link href="https://github.com/JohnXu22786/memory-vault"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>跨会话持久记忆插件：SQLite 本地存储 + 关键词/语义混合检索 + Web/MCP 界面，供编码代理存取经验与决策。</summary>
+  </entry>
+  <entry>
+    <title>dsh-verify</title>
+    <id>https://github.com/263311487-ux/dsh-verify</id>
+    <link href="https://github.com/263311487-ux/dsh-verify"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>独立浏览器验收测试：JSON 清单驱动真实 Chromium，断言计算样式与像素差异，输出 HTML 报告 + 0/1 退出码；提供 npm CLI、GitHub Action 与 MCP Server。</summary>
+  </entry>
+  <entry>
+    <title>AlloyPlane/dsh-eye-vision</title>
+    <id>https://github.com/AlloyPlane/dsh-eye-vision</id>
+    <link href="https://github.com/AlloyPlane/dsh-eye-vision"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>纯文本模型识图桥接：通过任意 OpenAI 兼容多模态 API 提供 image_understand 工具（识图/OCR/UI 分析），支持允许目录白名单。</summary>
+  </entry>
+  <entry>
+    <title>IWAIBAOLI/dsh-with-pencil</title>
+    <id>https://github.com/IWAIBAOLI/dsh-with-pencil</id>
+    <link href="https://github.com/IWAIBAOLI/dsh-with-pencil"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>将官方 pen.dev Pencil 设计能力接入 DeepSeek Harness：桥接官方 CLI，Agent 可在会话中编辑 .pen 文件，并针对 DeepSeek 纯文本模型做了专门优化。</summary>
+  </entry>
+  <entry>
+    <title>adversarial-review</title>
+    <id>https://github.com/JohnXu22786/adversarial-review</id>
+    <link href="https://github.com/JohnXu22786/adversarial-review"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>gavel-review：对抗式多视角代码审查——并行攻击视角、确定性静态哨兵、严重度定级与审查历史。</summary>
+  </entry>
+  <entry>
+    <title>browser-automation</title>
+    <id>https://github.com/JohnXu22786/browser-automation</id>
+    <link href="https://github.com/JohnXu22786/browser-automation"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Web Bridge：面向 dsh 的浏览器自动化 MCP 服务器——真实浏览器导航、点击、填表、截图、JS 执行，无障碍快照驱动。</summary>
+  </entry>
+  <entry>
+    <title>codegraph</title>
+    <id>https://github.com/JohnXu22786/codegraph</id>
+    <link href="https://github.com/JohnXu22786/codegraph"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>代码知识图谱：把符号、调用点与导入索引进 SQLite，回答调用/依赖问题。</summary>
+  </entry>
+  <entry>
+    <title>command-scout</title>
+    <id>https://github.com/JohnXu22786/command-scout</id>
+    <link href="https://github.com/JohnXu22786/command-scout"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>扫描项目声明的构建命令（Makefile、package.json scripts、justfile、deno tasks）并作为 agent 工具暴露。</summary>
+  </entry>
+  <entry>
+    <title>computer-control</title>
+    <id>https://github.com/JohnXu22786/computer-control</id>
+    <link href="https://github.com/JohnXu22786/computer-control"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>桌面控制：屏幕捕获、指针/键盘注入、无障碍树操作、确认流程与紧急停止。</summary>
+  </entry>
+  <entry>
+    <title>context-pruner</title>
+    <id>https://github.com/JohnXu22786/context-pruner</id>
+    <link href="https://github.com/JohnXu22786/context-pruner"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>会话上下文整理插件：修剪过期、重复、失败与过大的上下文以节省 token 预算。</summary>
+  </entry>
+  <entry>
+    <title>docs-retriever</title>
+    <id>https://github.com/JohnXu22786/docs-retriever</id>
+    <link href="https://github.com/JohnXu22786/docs-retriever"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>doctrove：版本化库文档检索 MCP 服务器，零运行时依赖，可作 dsh 插件 bundle 安装。</summary>
+  </entry>
+  <entry>
+    <title>fs-mcp</title>
+    <id>https://github.com/JohnXu22786/fs-mcp</id>
+    <link href="https://github.com/JohnXu22786/fs-mcp"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>paddock：受限本地文件系统 MCP 服务器——文件访问限定在可配置区域，零运行时依赖。</summary>
+  </entry>
+</feed>

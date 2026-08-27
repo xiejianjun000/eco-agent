@@ -1,0 +1,103 @@
+id: "49"
+name: "行政处罚事先（听证）告知书（按日连续处罚）"
+category: "行政处罚-按日连续处罚"
+complexity: "medium"
+template: "49_行政处罚事先告知书_按日.md"
+description: "按日连续处罚程序中告知当事人拟作出行政处罚事项的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "责令改正决定书编号"
+    key: "{{责令改正决定书编号}}"
+    type: "string"
+    source: "案件数据.责令改正.决定书编号"
+    required: true
+
+  - id: "复查日期"
+    key: "{{复查日期}}"
+    type: "date"
+    source: "案件数据.复查.日期"
+    required: true
+
+  - id: "按日连续处罚起算日期"
+    key: "{{按日连续处罚起算日期}}"
+    type: "date"
+    source: "系统数据.计算日期.按日处罚起始日"
+    required: true
+
+  - id: "按日连续处罚终止日期"
+    key: "{{按日连续处罚终止日期}}"
+    type: "date"
+    source: "系统数据.计算日期.按日处罚终止日"
+    required: true
+
+  - id: "计罚天数"
+    key: "{{计罚天数}}"
+    type: "string"
+    source: "系统数据.计算.按日处罚天数"
+    required: true
+
+  - id: "每日罚款数额"
+    key: "{{每日罚款数额}}"
+    type: "string"
+    source: "案件数据.处罚.每日罚款额"
+    required: true
+
+  - id: "合计罚款金额"
+    key: "{{合计罚款金额}}"
+    type: "string"
+    source: "系统数据.计算.合计罚款"
+    required: true
+
+  - id: "陈述申辩期限"
+    key: "{{陈述申辩期限}}"
+    type: "date"
+    source: "系统数据.计算日期.陈述申辩截止日"
+    required: true
+
+  - id: "听证申请期限"
+    key: "{{听证申请期限}}"
+    type: "date"
+    source: "系统数据.计算日期.听证申请截止日"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

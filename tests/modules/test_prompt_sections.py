@@ -222,7 +222,7 @@ def test_suggest_hybrid_rules_only_by_default(monkeypatch):
     from agent_core.suggest import build_suggestions_hybrid
 
     monkeypatch.setenv("ECO_SUGGEST_LLM", "0")
-    out = build_suggestions_hybrid("你好", "你好，我是 ECO AGENT。", [],
+    out = build_suggestions_hybrid("你好", "你好，我是 eco Agent。", [],
                                    phase="inspection")
     assert 1 <= len(out) <= 3
     assert isinstance(out[0], str)

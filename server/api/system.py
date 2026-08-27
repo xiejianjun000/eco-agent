@@ -57,7 +57,7 @@ async def list_presets() -> dict:
     main_dir = root / "eco-agent"
     if main_dir.is_dir():
         presets.append({"id": "eco-agent", "role": "main",
-                        "name": "ECO AGENT（主预设）",
+                        "name": "eco Agent（主预设）",
                         "files": sorted(p.name for p in main_dir.glob("*.md")) + ["config.yaml"]})
     agents_dir = root / "agents"
     if agents_dir.is_dir():

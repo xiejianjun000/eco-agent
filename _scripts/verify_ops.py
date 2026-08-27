@@ -125,7 +125,7 @@ def main() -> int:
         return 0
 
     print("═" * 60)
-    print("ECO AGENT 7×24 运维体检")
+    print("eco Agent 7×24 运维体检")
     print(f"  时间: {report['checked_at']}")
     sl = report["session_logs"]
     print(f"\n[会话日志] {sl['sessions']} 个会话 / {sl['events_total']} 事件 / "

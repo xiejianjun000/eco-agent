@@ -1,0 +1,33 @@
+---
+name: 执法督察评查专家团
+version: 1.0.0
+description: 生态环境执法案件评查、法典衔接分析、大气监督帮扶跟踪等专家系统
+category: 专家系统
+author: xiejianjun000
+status: active
+source: https://github.com/xiejianjun000/enforcement-review-expert-team
+---
+
+# 执法督察评查专家团
+
+## Meta
+- ID: xjj-enforcement-review-expert-team
+- 版本: 1.0.0
+- 使用次数: 0
+- 平均评分: 0.00
+
+## Triggers
+- 评查
+- 督察
+- 专家
+- 案件评查
+- 法典衔接
+
+## Steps
+- 解析用户需求
+- 加载Skill资源
+- 执行对应操作
+- 返回结果
+
+## Examples
+

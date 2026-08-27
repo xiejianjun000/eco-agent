@@ -1,0 +1,110 @@
+id: "40"
+name: "送达回证"
+category: "行政处罚-送达"
+complexity: "low"
+template: "40_送达回证.md"
+description: "证明法律文书已送达当事人或相关人员的回执凭证，是程序合法性的重要证明"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "送达文书名称"
+    key: "{{送达文书名称}}"
+    type: "string"
+    source: "案件数据.送达.文书名称"
+    required: true
+
+  - id: "送达文书文号"
+    key: "{{送达文书文号}}"
+    type: "string"
+    source: "案件数据.送达.文书文号"
+    required: true
+
+  - id: "受送达人名称或姓名"
+    key: "{{受送达人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+    description: "受送达人为法人或其他组织的使用全称，与送达文书保持一致"
+
+  - id: "送达地点"
+    key: "{{送达地点}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "送达日期"
+    key: "{{送达日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "送达方式"
+    key: "{{送达方式}}"
+    type: "enum"
+    source: "用户输入"
+    required: true
+    options:
+      - "直接送达"
+      - "留置送达"
+      - "委托送达"
+      - "邮寄送达"
+      - "电子送达"
+    description: "委托送达、留置送达的应在备注中注明情况；邮寄送达可将挂号信回执粘贴于备注中"
+
+  - id: "收件人签字或盖章"
+    key: "{{收件人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "收件人与受送达人关系"
+    key: "{{收件人与受送达人关系}}"
+    type: "string"
+    source: "用户输入"
+    required: false
+    description: "非当事人本人签收时填写，如代收人注明与受送达人的关系"
+
+  - id: "收件日期"
+    key: "{{收件日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "送达人一签字"
+    key: "{{送达人一签字}}"
+    type: "string"
+    source: "系统数据.执法人员1"
+    required: true
+
+  - id: "送达人二签字"
+    key: "{{送达人二签字}}"
+    type: "string"
+    source: "系统数据.执法人员2"
+    required: true
+
+  - id: "送达人日期"
+    key: "{{送达人日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "备注"
+    key: "{{备注}}"
+    type: "text"
+    source: "用户输入"
+    required: false
+    description: "受托送达、留置送达的情况说明；受送达人拒收的注明拒收理由并请见证人签字"
+
+branches:
+  - id: "拒收段"
+    field: "{{拒收说明段}}"
+    conditions:
+      - if: "送达方式=留置送达"
+        select: "branch_refuse_to_accept"
+      - if: "送达方式!=留置送达"
+        select: "branch_normal"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""llm_client.py - Unified LLM client for ECO AGENT
+"""llm_client.py - Unified LLM client for eco Agent
 
 Architecture:
   eco chat/serve -> EcoLoops -> ReAct++ -> LLMClient -> Direct LLM API (OpenAI compat)
@@ -525,7 +525,12 @@ class LLMClient:
                     "auth" if resp.status_code in (401, 403) else "http")
                 self._last_error = {"kind": kind, "status": resp.status_code, "detail": detail}
                 self._record_usage(model, None, time.time() - t0, ok=False)
-                return None, f"HTTP {resp.status_code}"
+                # 附带平台错误详情（如 Arrearage 欠费/Invalid model），
+                # 让 _llm_error_reply 能向用户展示具体原因而非裸 HTTP 码
+                err = f"HTTP {resp.status_code}"
+                if detail:
+                    err += f": {detail[:200]}"
+                return None, err
             data = resp.json()
             usage = data.get("usage")
             self._record_usage(model, usage, time.time() - t0, ok=True)
@@ -591,7 +596,10 @@ class LLMClient:
                         "auth" if resp.status_code in (401, 403) else "http")
                     self._last_error = {"kind": kind, "status": resp.status_code, "detail": detail}
                     self._record_usage(model, None, time.time() - t0, ok=False)
-                    return None, f"HTTP {resp.status_code}"
+                    err = f"HTTP {resp.status_code}"
+                    if detail:
+                        err += f": {detail[:200]}"
+                    return None, err
                 for line in resp.iter_lines():
                     if not line:
                         continue

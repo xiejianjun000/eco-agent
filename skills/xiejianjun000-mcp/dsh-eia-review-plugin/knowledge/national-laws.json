@@ -1,0 +1,87 @@
+{
+  "version": "2026.1",
+  "description": "国家环评与排污许可法规知识库索引",
+  "lastUpdated": "2026-08-18",
+  "categories": {
+    "laws": {
+      "name": "法律",
+      "count": 4,
+      "items": [
+        { "id": "LAW-001", "name": "中华人民共和国生态环境法典", "effectiveDate": "2026-03-12", "status": "active" },
+        { "id": "LAW-002", "name": "中华人民共和国环境保护法", "effectiveDate": "2015-01-01", "status": "active" },
+        { "id": "LAW-003", "name": "中华人民共和国环境影响评价法", "effectiveDate": "2018-12-29", "status": "active" },
+        { "id": "LAW-004", "name": "中华人民共和国固体废物污染环境防治法", "effectiveDate": "2020-09-01", "status": "active" }
+      ]
+    },
+    "regulations": {
+      "name": "行政法规",
+      "count": 9,
+      "items": [
+        { "id": "REG-001", "name": "建设项目环境保护管理条例", "number": "国务院令第253号", "effectiveDate": "1998-11-29", "status": "active" },
+        { "id": "REG-002", "name": "规划环境影响评价条例", "number": "国务院令第559号", "effectiveDate": "2009-10-01", "status": "active" },
+        { "id": "REG-003", "name": "排污许可管理条例", "number": "国务院令第736号", "effectiveDate": "2021-03-01", "status": "active" },
+        { "id": "REG-004", "name": "古树名木保护条例", "number": "国务院令第800号", "effectiveDate": "2025-01-01", "status": "active" },
+        { "id": "REG-005", "name": "行政执法监督条例", "number": "国务院令第825号", "effectiveDate": "2025-01-01", "status": "active" },
+        { "id": "REG-006", "name": "风景名胜区条例", "number": "国务院令第474号", "effectiveDate": "2006-12-01", "status": "active" },
+        { "id": "REG-007", "name": "自然保护区条例", "number": "国务院令第830号", "effectiveDate": "2025-01-01", "status": "active" },
+        { "id": "REG-008", "name": "供水条例", "number": "国务院令第831号", "effectiveDate": "2025-01-01", "status": "active" }
+      ]
+    },
+    "department_rules": {
+      "name": "部门规章",
+      "count": 9,
+      "items": [
+        { "id": "DR-001", "name": "建设项目环境影响后评价管理办法（试行）", "number": "环境保护部令第37号", "effectiveDate": "2016-01-01", "status": "active" },
+        { "id": "DR-002", "name": "环境影响评价公众参与办法", "number": "生态环境部令第4号", "effectiveDate": "2019-01-01", "status": "active" },
+        { "id": "DR-003", "name": "建设项目环境影响报告书（表）编制监督管理办法", "number": "生态环境部令2019年第9号", "effectiveDate": "2019-11-01", "status": "active" },
+        { "id": "DR-004", "name": "固定污染源排污许可分类管理名录", "number": "生态环境部令2019年第11号", "effectiveDate": "2019-12-20", "status": "active" },
+        { "id": "DR-005", "name": "建设项目环境影响评价分类管理名录（2021年版）", "number": "生态环境部令2020年第16号", "effectiveDate": "2021-01-01", "status": "active" },
+        { "id": "DR-006", "name": "重点管控新污染物清单（2023年版）", "number": "生态环境部令第29号", "effectiveDate": "2023-03-01", "status": "active" },
+        { "id": "DR-007", "name": "排污许可管理办法", "number": "生态环境部令第32号", "effectiveDate": "2024-07-01", "status": "active" },
+        { "id": "DR-008", "name": "入河排污口监督管理办法", "number": "生态环境部令2024年第35号", "effectiveDate": "2025-01-01", "status": "active" },
+        { "id": "DR-009", "name": "国家危险废物名录（2025年版）", "number": "生态环境部令等五部门2025年第36号", "effectiveDate": "2025-01-01", "status": "active" }
+      ]
+    },
+    "important_documents": {
+      "name": "国务院/国家部委重要文件",
+      "count": 54,
+      "items": [
+        { "id": "ID-001", "name": "生态环境部审批环境影响评价文件的建设项目目录（2019年本）", "number": "公告2019年第8号", "effectiveDate": "2019-02-27", "status": "active" },
+        { "id": "ID-002", "name": "关于进一步加强产业园区规划环境影响评价工作的意见", "number": "环环评〔2020〕65号", "effectiveDate": "2020-11-13", "status": "active" },
+        { "id": "ID-003", "name": "污染影响类建设项目重大变动清单（试行）", "number": "环办环评函〔2020〕688号", "effectiveDate": "2020-12-13", "status": "active" },
+        { "id": "ID-004", "name": "长江经济带发展负面清单指南（试行，2022年版）", "number": "长江办〔2022〕7号", "effectiveDate": "2022-01-19", "status": "active" },
+        { "id": "ID-005", "name": ""十四五"环境影响评价与排污许可工作实施方案", "number": "环环评〔2022〕26号", "effectiveDate": "2022-04-02", "status": "active" },
+        { "id": "ID-006", "name": "钢铁/焦化、现代煤化工、石化、火电四个行业环评文件审批原则", "number": "环办环评〔2022〕31号", "effectiveDate": "2022-12-05", "status": "active" },
+        { "id": "ID-007", "name": "关于加强生态保护红线管理的通知（试行）", "number": "自然资发〔2022〕142号", "effectiveDate": "2022-08-16", "status": "active" },
+        { "id": "ID-008", "name": "火电行业建设项目温室气体排放环境影响评价技术指南（试行）", "number": "环办环评函〔2024〕200号", "effectiveDate": "2024-05-23", "status": "active" },
+        { "id": "ID-009", "name": "全面实行排污许可制实施方案", "number": "环环评〔2024〕79号", "effectiveDate": "2024-11-04", "status": "active" },
+        { "id": "ID-010", "name": "关于加强重点行业涉新污染物建设项目环境影响评价工作的意见", "number": "环环评〔2025〕28号", "effectiveDate": "2025-04-10", "status": "active" },
+        { "id": "ID-011", "name": "排污许可证质量提升工程方案", "number": "环办环评函〔2025〕332号", "effectiveDate": "2025-09-08", "status": "active" }
+      ]
+    }
+  },
+  "standards": {
+    "air": {
+      "name": "大气污染物排放标准",
+      "items": [
+        { "code": "GB 16297-1996", "name": "大气污染物综合排放标准", "status": "superseded", "supersededBy": "各行业排放标准" },
+        { "code": "GB 13271-2023", "name": "锅炉大气污染物排放标准", "status": "active", "effectiveDate": "2023-01-01" },
+        { "code": "GB 13223-2011", "name": "火电厂大气污染物排放标准", "status": "active", "effectiveDate": "2012-01-01" },
+        { "code": "GB 4915-2013", "name": "水泥工业大气污染物排放标准", "status": "active", "effectiveDate": "2014-03-01" },
+        { "code": "GB 28663-2012", "name": "钢铁烧结、球团工业大气污染物排放标准", "status": "active", "effectiveDate": "2012-10-01" },
+        { "code": "GB 31571-2015", "name": "石油化学工业污染物排放标准", "status": "active", "effectiveDate": "2015-07-01" },
+        { "code": "GB 37822-2019", "name": "挥发性有机物无组织排放控制标准", "status": "active", "effectiveDate": "2020-07-01" }
+      ]
+    },
+    "water": {
+      "name": "水污染物排放标准",
+      "items": [
+        { "code": "GB 8978-1996", "name": "污水综合排放标准", "status": "superseded", "supersededBy": "各行业排放标准" },
+        { "code": "GB 18918-2002", "name": "城镇污水处理厂污染物排放标准", "status": "active", "effectiveDate": "2003-07-01" },
+        { "code": "GB 3544-2008", "name": "制浆造纸工业水污染物排放标准", "status": "active", "effectiveDate": "2008-08-01" },
+        { "code": "GB 4287-2012", "name": "纺织染整工业水污染物排放标准", "status": "active", "effectiveDate": "2013-01-01" },
+        { "code": "GB 21903-2008", "name": "发酵类制药工业水污染物排放标准", "status": "active", "effectiveDate": "2008-08-01" }
+      ]
+    }
+  }
+}

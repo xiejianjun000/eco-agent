@@ -1,0 +1,79 @@
+id: "57"
+name: "责令限制生产告知书"
+category: "行政处罚-责令限制生产停产整治"
+complexity: "medium"
+template: "57_责令限制生产告知书.md"
+description: "生态环境主管部门告知当事人拟作出责令限制生产决定的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "违法事实"
+    key: "{{违法事实}}"
+    type: "text"
+    source: "AI生成.从调查记录生成"
+    required: true
+
+  - id: "违反法律条款"
+    key: "{{违反法律条款}}"
+    type: "text"
+    source: "AI生成.从案件事实匹配法律条款"
+    required: true
+
+  - id: "限制生产依据"
+    key: "{{限制生产依据}}"
+    type: "text"
+    source: "AI生成.生成法律依据"
+    required: true
+
+  - id: "限制生产方案"
+    key: "{{限制生产方案}}"
+    type: "text"
+    source: "AI生成.从案件情况生成限制方案"
+    required: true
+
+  - id: "陈述申辩期限"
+    key: "{{陈述申辩期限}}"
+    type: "date"
+    source: "系统数据.计算日期.陈述申辩截止日"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

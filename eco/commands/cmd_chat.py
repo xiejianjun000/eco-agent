@@ -30,6 +30,9 @@ LOGO = r"""
    ██╔══╝  ██║     ██║   ██║   ██╔══██║██║   ██║██╔══╝  ██║╚████║   ██║
    ███████╗╚██████╗╚██████╔╝   ██║  ██║╚██████╔╝███████╗██║ ╚███║   ██║
    ╚══════╝ ╚═════╝ ╚═════╝    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝
+
+  eco Agent  --  da qi dai lv shi  --  Environmental Regulation AI
+  /exit  /new  /help  |  eco Agent v5.0.0a2
 """
 
 def _build_messages(history, question, system_extra=""):
@@ -233,6 +236,16 @@ def _stream_answer(messages, tracer=None):
         result = "[生成被用户取消]"
     tree.end(root_span)
     tree.close_all()
+    # L4 进化：任务完成钩子（静默失败不影响主流程）
+    try:
+        from agent_core.eco_loops_integration import EcoLoopsIntegration
+        EcoLoopsIntegration().on_task_complete({
+            "success": result != "[生成被用户取消]",
+            "task": "chat",
+            "duration_ms": int((time.time() - start) * 1000) if 'start' in dir() else 0,
+        })
+    except Exception:
+        pass
     try:
         path = tree.save()
         if tracer is not None and getattr(tracer, "enabled", False):
@@ -311,7 +324,7 @@ def _banner_summary() -> str:
 
 
 def _self_system_extra() -> str:
-    """ECO AGENT 自述信息（当前模型与切换方式），随动态层注入系统提示词：
+    """eco Agent 自述信息（当前模型与切换方式），随动态层注入系统提示词：
     用户问"如何切换模型/怎么配置/有哪些命令"等关于本产品的元问题时，
     模型照此事实直接作答，而不是用"不在能力范围"套话拒绝。"""
     try:
@@ -321,14 +334,14 @@ def _self_system_extra() -> str:
     except Exception:
         llm = "未知"
     return (
-        "【ECO AGENT 自述信息】\n"
+        "【eco Agent 自述信息】\n"
         f"- 当前底层模型: {llm}\n"
         "- 切换模型: 对话内输入 /model 查看可选 provider 并切换（本次会话生效）；"
         "持久化默认模型用 `eco config model use <名称>`，清单见 `eco config model list`"
         "（支持 deepseek/moonshot/qwen/zhipu/doubao 等 15 家），"
         "连通验证用 `eco config model test <名称>`\n"
         "- 其它入口: eco setup（配置向导）、eco doctor（健康检查）、/help（对话内命令）\n"
-        "用户询问 ECO AGENT 自身的使用方法、配置或模型切换属于本产品的正常使用范畴，"
+        "用户询问 eco Agent 自身的使用方法、配置或模型切换属于本产品的正常使用范畴，"
         "依据以上事实简要、直接回答，不要拒绝。"
     )
 
@@ -503,7 +516,8 @@ def _repl(history=None):
         from rich.text import Text
         _console.print()
         _console.print(Text(LOGO, style="dark_green"))
-        _console.print(Text(f"  ECO AGENT v{__version__}  --  Environmental Regulation AI", style="dark_green bold"))
+        # 版本信息已嵌入 LOGO，跳过单独打印
+        # _console.print(Text(f"  eco Agent v{__version__}  --  Environmental Regulation AI", style="dark_green bold"))
         _console.print(Text(_banner_summary(), style="dark_green"))
         _console.print()
         tips = (
@@ -523,9 +537,11 @@ def _repl(history=None):
         _console.print()
     else:
         print(LOGO)
-        print(f"  ECO AGENT v{__version__}  --  Environmental Regulation AI")
+        # 版本信息已嵌入 LOGO，跳过单独打印
+        # print(f"  eco Agent v{__version__}  --  Environmental Regulation AI")
         print(_banner_summary())
-        print("  /help 命令帮助 | /new 新会话 | /verbose 轨迹模式 | /exit 退出")
+        # 命令提示已嵌入 LOGO，跳过单独打印
+        # print("  /help 命令帮助 | /new 新会话 | /verbose 轨迹模式 | /exit 退出")
         print()
 
     from agent_core.workspace import get_workspace_manager

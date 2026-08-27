@@ -1,0 +1,67 @@
+id: "70"
+name: "查封/扣押延期决定书"
+category: "行政强制"
+complexity: "medium"
+template: "70_查封扣押延期决定书.md"
+description: "生态环境主管部门决定延长查封或扣押期限的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "原查封扣押决定书编号"
+    key: "{{原查封扣押决定书编号}}"
+    type: "string"
+    source: "案件数据.查封扣押.决定书编号"
+    required: true
+
+  - id: "原查封扣押日期"
+    key: "{{原查封扣押日期}}"
+    type: "date"
+    source: "案件数据.查封扣押.日期"
+    required: true
+
+  - id: "延期理由"
+    key: "{{延期理由}}"
+    type: "text"
+    source: "AI生成.从案件情况生成延期理由"
+    required: true
+
+  - id: "延期起始日期"
+    key: "{{延期起始日期}}"
+    type: "date"
+    source: "系统数据.计算日期.延期起始日"
+    required: true
+
+  - id: "延期截止日期"
+    key: "{{延期截止日期}}"
+    type: "date"
+    source: "系统数据.计算日期.延期截止日"
+    required: true
+
+  - id: "法律依据"
+    key: "{{法律依据}}"
+    type: "text"
+    source: "AI生成.生成延期法律依据"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

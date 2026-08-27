@@ -1,0 +1,9 @@
+{
+  "name": "github-ops",
+  "version": "1.0.0",
+  "description": "GitHub 仓库全生命周期运维管理技能",
+  "author": "Junge",
+  "license": "MIT",
+  "keywords": ["github", "devops", "repository-management", "open-source", "developer-growth"],
+  "requires": ["GITHUB_TOKEN"]
+}

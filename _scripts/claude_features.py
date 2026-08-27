@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-claude_features.py — ECO AGENT CLAUDE(FlowWiki) 对标补全
+claude_features.py — eco Agent CLAUDE(FlowWiki) 对标补全
 
 三项能力：
   1. ACEPipeline — 全自动审查流水线 (generator→reflector→curator)
@@ -206,7 +206,7 @@ class SkillUpgrader:
 name: {safe_name}-skill
 version: 0.1.0
 description: 自动升级自: {prompt['text'][:40]}
-author: ECO AGENT (SkillUpgrader)
+author: eco Agent (SkillUpgrader)
 type: skill
 ---
 

@@ -1,0 +1,41 @@
+{
+  "name": "@eco-dsh/eco-audit-chain",
+  "version": "0.3.0",
+  "description": "dsh plugin: SM3 tamper-evident execution audit chain (port of eco-agent trace_audit.py)",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "audit",
+    "sm3",
+    "hash-chain",
+    "tamper-evident",
+    "eco-agent"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.0",
+    "@deepseek-ai/dsh-tools": "^0.0.1-rc.1",
+    "@deepseek-ai/schemastery": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

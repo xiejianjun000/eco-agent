@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#0F172A"/>
+  <!-- Shield body -->
+  <path d="M32 6 L48 14 L48 28 C48 40 36 56 32 58 C28 56 16 40 16 28 L16 14 Z"
+        fill="#14B8A6" opacity="0.9"/>
+  <!-- Leaf cutout inside shield -->
+  <path d="M26 22 C26 22 22 26 24 32 C26 38 30 40 32 42 C34 40 38 38 40 32 C42 26 38 22 38 22 C36 26 32 28 32 28 C32 28 28 26 26 22 Z"
+        fill="#0F172A"/>
+</svg>

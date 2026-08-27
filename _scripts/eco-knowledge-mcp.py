@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""eco-knowledge-mcp — ECO AGENT 法规知识库 MCP 服务
+"""eco-knowledge-mcp — eco Agent 法规知识库 MCP 服务
 
 MCP 协议（JSON-RPC 2.0 over stdio）实现。
 桥接 FlowWiki Obsidian Vault，提供法规检索、溯源、图谱查询功能。

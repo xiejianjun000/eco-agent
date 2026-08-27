@@ -1,0 +1,50 @@
+{
+  "atmosphere": {
+    "name": "大气监督帮扶平台",
+    "url": "http://114.251.10.199:8080/zfpt_zf/redirect.jsp",
+    "probeUrl": "http://114.251.10.199:8080/zfpt_zf/index.jsp",
+    "probeMarker": "退出",
+    "loginSelectors": {
+      "username": "input[name=\"username\"], [placeholder*=\"登录账户\"]",
+      "password": "input[name=\"password\"], [placeholder*=\"密码\"]",
+      "captchaInput": "input[name=\"valicode\"], [placeholder*=\"验证码\"]",
+      "captchaImg": "img[src*=\"code\"]",
+      "submit": "input.btn, input[type=\"button\"], a:has-text(\"登录\")"
+    },
+    "errorSelectors": [
+      ".error", ".errorMsg", "[ref=\"e27\"]", ".el-message--error"
+    ],
+    "errorPatterns": {
+      "captcha": ["验证码", "code"],
+      "credential": ["密码", "帐号", "账户", "用户"],
+      "locked": ["锁定", "禁用", "冻结"]
+    },
+    "successMarkers": ["main", "home", "index"],
+    "credentialKey": "atmosphere",
+    "maxLoginAttempts": 3,
+    "sessionTtlHours": 24
+  },
+  "water": {
+    "name": "水环境非现场执法平台",
+    "url": "https://sthjzf.lem.org.cn:8090/cas/login",
+    "probeUrl": "https://sthjzf.lem.org.cn:8090/cas/login",
+    "probeMarker": null,
+    "loginSelectors": {
+      "username": "#username",
+      "password": "#password",
+      "submit": "input[type=\"submit\"], button[type=\"submit\"]"
+    },
+    "errorSelectors": [
+      ".error", ".msg", "#msg"
+    ],
+    "errorPatterns": {
+      "captcha": [],
+      "credential": ["密码", "帐号", "用户"],
+      "locked": ["锁定", "禁用"]
+    },
+    "successMarkers": ["main", "home"],
+    "credentialKey": "water",
+    "maxLoginAttempts": 3,
+    "sessionTtlHours": 24
+  }
+}

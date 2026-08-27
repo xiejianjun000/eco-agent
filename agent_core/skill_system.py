@@ -12,6 +12,7 @@ Phase 2 核心交付：
 """
 
 import json
+import threading
 import uuid
 import logging
 import re
@@ -63,11 +64,12 @@ class Skill:
 
 
 class SkillRegistry:
-    """技能注册表——注册/发现/版本/持久化"""
+    """技能注册表——注册/发现/版本/持久化（带名称索引和分类索引）"""
 
     def __init__(self):
         self._skills: dict[str, Skill] = {}
-        self._name_index: dict[str, Skill] = {}  # 名称索引：精确名称 O(1) 命中
+        self._name_index: dict[str, str] = {}  # name -> skill_id
+        self._category_index: dict[str, list[str]] = {}  # category -> [skill_ids]
         self._db_path = DATA_DIR / "skill_registry.json"
         self._load()
 
@@ -76,11 +78,18 @@ class SkillRegistry:
             try:
                 data = json.loads(self._db_path.read_text("utf-8", errors="replace"))
                 for sid, sdata in data.items():
-                    skill = Skill(**sdata)
-                    self._skills[sid] = skill
-                    self._name_index[skill.name.lower()] = skill
+                    self._skills[sid] = Skill(**sdata)
             except Exception as e:
                 logger.warning(f"技能注册表加载失败: {e}")
+        self._rebuild_index()
+
+    def _rebuild_index(self):
+        """重建名称索引和分类索引"""
+        self._name_index.clear()
+        self._category_index.clear()
+        for sid, s in self._skills.items():
+            self._name_index[s.name] = sid
+            self._category_index.setdefault(s.category, []).append(sid)
 
     def _save(self):
         data = {sid: asdict(s) for sid, s in self._skills.items()}
@@ -89,7 +98,8 @@ class SkillRegistry:
     def register(self, skill: Skill) -> str:
         """注册技能"""
         self._skills[skill.id] = skill
-        self._name_index[skill.name.lower()] = skill
+        self._name_index[skill.name] = skill.id
+        self._category_index.setdefault(skill.category, []).append(skill.id)
         self._save()
         self._sync_to_file(skill)
         logger.info(f"[Skill] 注册: {skill.name} v{skill.version}")
@@ -99,11 +109,17 @@ class SkillRegistry:
         return self._skills.get(skill_id)
 
     def find(self, query: str) -> list[Skill]:
-        """按关键词查找技能（精确名称 O(1)，模糊匹配回退线性扫描）"""
-        q = query.lower()
-        exact = self._name_index.get(q)
-        if exact is not None and exact.status == "active":
-            return [exact]
+        """按关键词查找技能（O(1) 名称精确匹配 + O(k) 模糊匹配）"""
+        q = query.lower().strip()
+        if not q:
+            return []
+        # O(1) 精确名称匹配
+        if q in self._name_index:
+            sid = self._name_index[q]
+            s = self._skills.get(sid)
+            if s and s.status == "active":
+                return [s]
+        # O(k) 部分匹配（名称/描述/触发词）
         results = []
         for s in self._skills.values():
             if s.status != "active":
@@ -113,7 +129,9 @@ class SkillRegistry:
         return sorted(results, key=lambda s: s.usage_count, reverse=True)[:10]
 
     def list_by_category(self, category: str) -> list[Skill]:
-        return [s for s in self._skills.values() if s.category == category and s.status == "active"]
+        """O(1) 分类索引查找"""
+        sids = self._category_index.get(category, [])
+        return [self._skills[sid] for sid in sids if self._skills.get(sid) and self._skills[sid].status == "active"]
 
     def record_usage(self, skill_id: str, score: float = 0.0):
         """记录技能使用"""
@@ -139,6 +157,7 @@ class SkillRegistry:
             except Exception: pass
         if archived:
             self._save()
+            self._rebuild_index()
             logger.info(f"[Skill] 归档 {archived} 个低效技能")
 
     def _sync_to_file(self, skill: Skill):
@@ -245,11 +264,12 @@ class AutoLearnEngine:
 # ═══════════════════════════════════
 
 class CrossSessionMemory:
-    """跨会话记忆——四层认知记忆结构"""
+    """跨会话记忆——四层认知记忆结构（TTL 惰性清理 + 容量上限）"""
 
     def __init__(self):
         self._db_path = DATA_DIR / "cross_session_memory.json"
         self._memory = self._load()
+        self._lock = threading.Lock()  # 保护并发读写
 
     def _load(self) -> dict:
         if self._db_path.exists():
@@ -260,65 +280,66 @@ class CrossSessionMemory:
     def _save(self):
         self._db_path.write_text(json.dumps(self._memory, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def _prune_working(self):
-        """惰性清理过期的工作记忆（TTL），防止过期条目无限堆积"""
+    def _cleanup_working(self):
+        """惰性清理过期的工作记忆"""
         now = datetime.now()
-        kept = []
-        for e in self._memory["working"]:
-            try:
-                expires = datetime.fromisoformat(e.get("expires_at", ""))
-                if now < expires:
-                    kept.append(e)
-            except Exception:
-                kept.append(e)  # 日期解析失败视为未过期，保守保留
-        if len(kept) != len(self._memory["working"]):
-            self._memory["working"] = kept
-            self._save()
+        before = len(self._memory["working"])
+        self._memory["working"] = [
+            e for e in self._memory["working"]
+            if datetime.fromisoformat(e.get("expires_at", "1970-01-01")) > now
+        ]
+        removed = before - len(self._memory["working"])
+        if removed > 0:
+            logger.debug("[CrossSessionMemory] 清理 %d 条过期 working 记忆", removed)
 
     def store_working(self, key: str, value: Any, ttl_minutes: int = 60):
-        """工作记忆——短时（先清理过期项再写入）"""
-        self._prune_working()
-        self._memory["working"] = [e for e in self._memory["working"] if e["key"] != key]
-        self._memory["working"].append({
-            "key": key, "value": str(value)[:500],
-            "expires_at": (datetime.now() + timedelta(minutes=ttl_minutes)).isoformat()
-        })
-        self._save()
+        """工作记忆——短时（自动清理过期项 + 容量上限 1000）"""
+        with self._lock:
+            self._cleanup_working()
+            # 去重：移除同名 key
+            self._memory["working"] = [e for e in self._memory["working"] if e["key"] != key]
+            self._memory["working"].append({
+                "key": key, "value": str(value)[:500],
+                "expires_at": (datetime.now() + timedelta(minutes=ttl_minutes)).isoformat()
+            })
+            # 容量上限：保留最新的 1000 条
+            if len(self._memory["working"]) > 1000:
+                self._memory["working"] = self._memory["working"][-1000:]
+            self._save()
 
     def store_episodic(self, event: str, context: dict):
         """情景记忆——历史事件"""
-        self._memory["episodic"].append({
-            "event": event, "context": context,
-            "timestamp": datetime.now().isoformat(),
-        })
-        if len(self._memory["episodic"]) > 1000:
-            self._memory["episodic"] = self._memory["episodic"][-1000:]
-        self._save()
+        with self._lock:
+            self._memory["episodic"].append({
+                "event": event, "context": context,
+                "timestamp": datetime.now().isoformat(),
+            })
+            if len(self._memory["episodic"]) > 1000:
+                self._memory["episodic"] = self._memory["episodic"][-1000:]
+            self._save()
 
     def store_semantic(self, key: str, fact: Any):
         """语义记忆——知识图谱事实"""
-        self._memory["semantic"][key] = {
-            "value": str(fact)[:500], "updated_at": datetime.now().isoformat()
-        }
-        self._save()
+        with self._lock:
+            self._memory["semantic"][key] = {
+                "value": str(fact)[:500], "updated_at": datetime.now().isoformat()
+            }
+            self._save()
 
     def store_procedural(self, skill_id: str, steps: list[str]):
         """程序记忆——技能/工作流"""
-        self._memory["procedural"][skill_id] = steps
-        self._save()
+        with self._lock:
+            self._memory["procedural"][skill_id] = steps
+            self._save()
 
     def recall_working(self, key: str) -> Any | None:
-        """回忆工作记忆（先清理过期项）"""
-        self._prune_working()
-        now = datetime.now()
-        for e in self._memory["working"]:
-            try:
+        """回忆工作记忆（自动清理过期项）"""
+        with self._lock:
+            self._cleanup_working()
+            for e in self._memory["working"]:
                 if e["key"] == key:
-                    expires = datetime.fromisoformat(e["expires_at"])
-                    if now < expires:
-                        return e["value"]
-            except Exception: pass
-        return None
+                    return e["value"]
+            return None
 
     def recall_episodic(self, query: str, limit: int = 5) -> list[dict]:
         """回忆情景记忆"""
@@ -330,7 +351,6 @@ class CrossSessionMemory:
         return self._memory["semantic"].get(key, {}).get("value")
 
     def get_stats(self) -> dict:
-        self._prune_working()
         return {
             "working_items": len(self._memory["working"]),
             "episodic_events": len(self._memory["episodic"]),
@@ -381,3 +401,52 @@ def test():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     test()
+
+
+# ═══════════════════════════════════════════════════════════════
+# 技能 A/B 测试框架
+# ═══════════════════════════════════════════════════════════════
+
+class SkillABTest:
+    """技能 A/B 测试——对比两个技能变体的成功率
+    
+    用法：
+        test = SkillABTest("check_permit", variant_a, variant_b)
+        test.record_result("A", success=True, duration=12.5)
+        winner = test.evaluate()  # 返回 "A" / "B" / None
+    """
+
+    def __init__(self, skill_id: str, variant_a: Skill, variant_b: Skill):
+        self.skill_id = skill_id
+        self.variants = {"A": variant_a, "B": variant_b}
+        self.results: dict[str, list[dict]] = {"A": [], "B": []}
+
+    def record_result(self, variant: str, success: bool, duration: float) -> None:
+        """记录一次执行结果"""
+        if variant in self.results:
+            self.results[variant].append({"success": success, "duration": duration})
+
+    def evaluate(self) -> str | None:
+        """返回优胜变体，或 None 若统计不显著（样本不足）"""
+        from statistics import mean
+        a_rate = mean([1 if r["success"] else 0 for r in self.results["A"]]) if self.results["A"] else 0
+        b_rate = mean([1 if r["success"] else 0 for r in self.results["B"]]) if self.results["B"] else 0
+        min_samples = 10
+        if len(self.results["A"]) < min_samples or len(self.results["B"]) < min_samples:
+            return None
+        return "A" if a_rate > b_rate else "B"
+
+    def get_stats(self) -> dict:
+        """获取 A/B 测试统计"""
+        a_total = len(self.results["A"])
+        b_total = len(self.results["B"])
+        a_ok = sum(1 for r in self.results["A"] if r["success"])
+        b_ok = sum(1 for r in self.results["B"] if r["success"])
+        return {
+            "skill_id": self.skill_id,
+            "variant_a_samples": a_total,
+            "variant_b_samples": b_total,
+            "a_success_rate": round(a_ok / max(a_total, 1), 3),
+            "b_success_rate": round(b_ok / max(b_total, 1), 3),
+            "winner": self.evaluate(),
+        }

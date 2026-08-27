@@ -1,0 +1,15 @@
+#!/bin/bash
+# EcoAegis pre-commit hook: 扫描暂存区中的凭据泄漏
+# 命中 hndc@ / pass= / password= / token= 等模式即阻断
+
+FORBIDDEN=$(git diff --cached --name-only | grep -v '^.hooks/' | xargs grep -lE 'hndc@[0-9]|pass=.{6,}["'"'"']|password=.{6,}["'"'"']|JSESSIONID=|token=[A-Za-z0-9+/=]{20,}' 2>/dev/null)
+if [ -n "$FORBIDDEN" ]; then
+  echo ""
+  echo "🔴 凭据泄漏阻断！以下暂存文件中检测到疑似密码/Token:"
+  echo "$FORBIDDEN"
+  echo ""
+  echo "凭据应存放于 macOS Keychain (security find-generic-password)，不进入代码仓库。"
+  echo "如确认为误报，用 SKIP_CREDENTIAL_SCAN=1 git commit ... 跳过本次扫描。"
+  exit 1
+fi
+exit 0

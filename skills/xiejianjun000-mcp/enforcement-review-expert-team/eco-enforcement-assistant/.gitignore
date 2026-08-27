@@ -1,0 +1,62 @@
+# ================================================
+# 敏感凭证 — 绝对禁止上传
+# ================================================
+冷水江账号.pdf
+*password*.png
+*password*.jpg
+cas_login*.png
+cas_login_result*.png
+cas_login_browser.png
+cas_cap*.png
+captcha*.png
+dqbf_cap*.png
+slider_captcha.png
+bind_form.png
+system_error.png
+water_platform_loggedin.png
+jinfuyuan_detail*.png
+sso_apps.png
+
+# ================================================
+# 大文件（单文件超100MB GitHub限制；目录超1GB不现实）
+# ================================================
+金竹山PDFs/
+case_images/
+guangdong_enforcement_guide.pdf
+案卷全文.txt
+案卷全文_赢湖矿产品_ocr.txt
+案卷全文_冷水江.txt
+案卷全文_冷水江_ocr.txt
+
+# ================================================
+# 临时/缓存/依赖（无需版本控制）
+# ================================================
+node_modules/
+skills-54/
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# ================================================
+# Git LFS 追踪（大文件如需保留可迁移至LFS）
+# ================================================
+# *.pdf filter=lfs diff=lfs merge=lfs -f
+# *.png filter=lfs diff=lfs merge=lfs -f
+# *.jpg filter=lfs diff=lfs merge=lfs -f
+
+# 补充：Python缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 补充：验证码截图
+cas_yzm_cap*.png
+captcha_*.png
+
+# 补充：嵌套git repo
+eco-enforcement-skill/.git_bak
+
+# 补充：会话语料（体积大且含敏感上下文）
+memory/.dreams/
+_dreams/

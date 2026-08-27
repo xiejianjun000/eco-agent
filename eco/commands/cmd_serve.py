@@ -27,7 +27,7 @@ def run(args):
         log.error("Missing dependencies. Run: pip install eco-agent[serve]")
         return 1
     app = _build_app(api_key)
-    log.info("\n  ECO AGENT API Server")
+    log.info("\n  eco Agent API Server")
     log.info(f"  POST http://{host}:{port}/v1/chat/completions")
     log.info(f"  GET  http://{host}:{port}/v1/models")
     log.info(f"  {'API Key auth enabled' if api_key else 'No auth (local only)'}\n")
@@ -40,7 +40,7 @@ def _build_app(api_key):
     from pydantic import BaseModel
 
     from eco import __version__
-    app = FastAPI(title="ECO AGENT API", version=__version__)
+    app = FastAPI(title="eco Agent API", version=__version__)
 
     if api_key:
         @app.middleware("http")

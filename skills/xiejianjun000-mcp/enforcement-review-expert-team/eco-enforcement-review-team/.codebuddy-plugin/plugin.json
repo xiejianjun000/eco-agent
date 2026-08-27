@@ -1,0 +1,161 @@
+{
+  "name": "eco-enforcement-review-team",
+  "version": "1.0.0",
+  "description": "Ecological environment law enforcement inspection and case review expert team with 8 specialized agents, 25+ domain skills, 25-item veto engine, automated platform patrol, and multi-format document generation",
+  "author": {
+    "name": "军哥",
+    "email": ""
+  },
+  "agents": [
+    "./agents/enforcement-review-lead.md",
+    "./agents/case-reviewer.md",
+    "./agents/field-enforcer.md",
+    "./agents/inspection-advisor.md",
+    "./agents/legal-compliance.md",
+    "./agents/doc-generator.md",
+    "./agents/data-analyst.md",
+    "./agents/kb-manager.md",
+    "./agents/platform-patrol.md"
+  ],
+  "skills": [
+    "./skills/case-review-25veto",
+    "./skills/case-review-6category",
+    "./skills/case-review-scoring",
+    "./skills/field-water",
+    "./skills/field-air",
+    "./skills/field-waste",
+    "./skills/field-noise",
+    "./skills/field-sampling",
+    "./skills/field-equipment",
+    "./skills/inspection-scenario",
+    "./skills/inspection-battle",
+    "./skills/inspection-signal",
+    "./skills/legal-search",
+    "./skills/legal-transition",
+    "./skills/legal-prosecution",
+    "./skills/doc-verification",
+    "./skills/doc-checklist",
+    "./skills/doc-report",
+    "./skills/data-cems",
+    "./skills/data-statistics",
+    "./skills/kb-ingest",
+    "./skills/kb-search",
+    "./skills/patrol-water",
+    "./skills/patrol-supervise",
+    "./skills/field-map",
+    "./skills/field-diagram",
+    "./skills/legal-discretion",
+    "./skills/doc-panel"
+  ],
+
+  "expertType": "team",
+  "agentName": "enforcement-review-lead",
+  "teamInfo": {
+    "leadAgent": "enforcement-review-lead",
+    "memberAgents": [
+      "case-reviewer",
+      "field-enforcer",
+      "inspection-advisor",
+      "legal-compliance",
+      "doc-generator",
+      "data-analyst",
+      "kb-manager",
+      "platform-patrol"
+    ]
+  },
+
+  "displayName": {
+    "en": "Eco-Enforcement Review Expert Team",
+    "zh": "执法督察评查专家团"
+  },
+  "profession": {
+    "en": "Eco-Enforcement Review Expert Team",
+    "zh": "执法督察评查专家团"
+  },
+  "displayDescription": {
+    "en": "9-agent eco-enforcement review team: case review, field inspection, compliance audit, legal research, document generation, data analysis, and platform patrol. 25-item veto engine, code transition dual-annotation, multi-format output.",
+    "zh": "9人执法督察专家团，覆盖案卷评查、督察实战与法律合规，25项否决引擎保障办案零败诉。"
+  },
+  "avatar": "avatars/team.png",
+  "categoryId": "11-SecurityCompliance",
+  "defaultInitPrompt": {
+    "zh": "请对该案卷进行全面评查：冷水江市赢湖矿产品有限公司超标排放案，并生成评查报告和法律依据链。",
+    "en": "Review case: Lengshuijiang Yinghu Mineral Products excessive emission case, generate review report with full legal citation chain."
+  },
+  "plugin": "eco-enforcement-review-team",
+  "tags": [
+    { "en": "Environmental Enforcement", "zh": "生态环境执法" },
+    { "en": "Case Review", "zh": "案卷评查" },
+    { "en": "Legal Compliance", "zh": "法律合规" }
+  ],
+  "quickPrompts": [
+    { "en": "Perform comprehensive case review: Lengshuijiang Yinghu Mineral Products excessive emission case, generate review report with full legal citation chain.", "zh": "请对该案卷进行全面评查：冷水江市赢湖矿产品有限公司超标排放案，并生成评查报告和法律依据链。" },
+    { "en": "Generate on-site verification checklist for cement rotary kiln desulfurization facility", "zh": "生成水泥回转窑脱硫设施现场核查清单" },
+    { "en": "Simulate inspection: Yunnan 5 counties", "zh": "模拟督察：云南省5县市区下沉督察" }
+  ],
+  "members": [
+    {
+      "id": "enforcement-review-lead",
+      "name": { "en": "Fa Yan", "zh": "法眼通" },
+      "profession": { "en": "Enforcement Review Coordinator", "zh": "执法评查调度官" },
+      "avatar": "avatars/enforcement-review-lead.png",
+      "role": "lead"
+    },
+    {
+      "id": "case-reviewer",
+      "name": { "en": "Juan Cha", "zh": "卷查清" },
+      "profession": { "en": "Case Review Specialist", "zh": "案卷评查专家" },
+      "avatar": "avatars/case-reviewer.png",
+      "role": "member"
+    },
+    {
+      "id": "field-enforcer",
+      "name": { "en": "Zhi Fa Zhun", "zh": "执法准" },
+      "profession": { "en": "Field Enforcement Specialist", "zh": "现场执法专家" },
+      "avatar": "avatars/field-enforcer.png",
+      "role": "member"
+    },
+    {
+      "id": "inspection-advisor",
+      "name": { "en": "Du Cha Jing", "zh": "督察精" },
+      "profession": { "en": "Inspection Combat Advisor", "zh": "督察实战顾问" },
+      "avatar": "avatars/inspection-advisor.png",
+      "role": "member"
+    },
+    {
+      "id": "legal-compliance",
+      "name": { "en": "Fa Tiao Tong", "zh": "法条通" },
+      "profession": { "en": "Legal Compliance Specialist", "zh": "法律合规专家" },
+      "avatar": "avatars/legal-compliance.png",
+      "role": "member"
+    },
+    {
+      "id": "doc-generator",
+      "name": { "en": "Wen Shu Cheng", "zh": "文书成" },
+      "profession": { "en": "Document Generation Specialist", "zh": "文书生成专家" },
+      "avatar": "avatars/doc-generator.png",
+      "role": "member"
+    },
+    {
+      "id": "data-analyst",
+      "name": { "en": "Shu Ju Xin", "zh": "数据芯" },
+      "profession": { "en": "Data Analysis Specialist", "zh": "数据分析专家" },
+      "avatar": "avatars/data-analyst.png",
+      "role": "member"
+    },
+    {
+      "id": "kb-manager",
+      "name": { "en": "Zhi Shi Ku", "zh": "知识库" },
+      "profession": { "en": "Knowledge Base Manager", "zh": "知识库管理专家" },
+      "avatar": "avatars/kb-manager.png",
+      "role": "member"
+    },
+    {
+      "id": "platform-patrol",
+      "name": { "en": "Xun Jian Yuan", "zh": "巡检员" },
+      "profession": { "en": "Platform Patrol Specialist", "zh": "平台巡检专家" },
+      "avatar": "avatars/platform-patrol.png",
+      "role": "member"
+    }
+  ]
+}

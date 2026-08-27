@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import RightPanel from './components/RightPanel';
 import ChatView from './views/ChatView';
 import MemoryView from './views/MemoryView';
 import SkillsView from './views/SkillsView';
@@ -9,26 +10,28 @@ import PluginsView from './views/PluginsView';
 import WorkflowView from './views/WorkflowView';
 import { api, type SessionOut } from './api';
 
-type PageId = 'chat' | 'memory' | 'skills' | 'agents' | 'goals' | 'workflow' | 'plugins' | 'system';
+type PageId = 'chat' | 'memory' | 'skills' | 'agents' | 'goals' | 'workflow' | 'plugins' | 'system' | 'starmap';
 
 const NAV: { id: PageId; label: string; desc: string }[] = [
-  { id: 'memory', label: '记忆树', desc: '长期记忆浏览与检索' },
-  { id: 'skills', label: '技能', desc: '技能库与孵化' },
-  { id: 'agents', label: '子代理', desc: '后台子代理目录与任务输出（DSH subagent/jobs）' },
-  { id: 'goals', label: '目标', desc: '跨轮目标与自动推进（DSH goal）' },
-  { id: 'workflow', label: '编排', desc: 'Workflow 编排与执法计划（DSH workflow/plan）' },
-  { id: 'plugins', label: '插件', desc: '插件清单 / 动态插件 / 插槽（DSH plugins/slots）' },
-  { id: 'system', label: '系统', desc: '组件状态与指标' },
+  { id: 'memory', label: '生态空间', desc: '生态环境空间数据与长期记忆检索' },
+  { id: 'skills', label: '生态技能', desc: '生态环境技能库与智能体孵化' },
+  { id: 'agents', label: '生态助手', desc: '后台生态助手目录与任务输出' },
+  { id: 'goals', label: '生态目标', desc: '跨轮生态目标与自动推进' },
+  { id: 'workflow', label: '生态编排', desc: '生态环境工作流编排与计划' },
+  { id: 'plugins', label: '生态插件', desc: '生态环境插件清单与MCP连接器' },
+  { id: 'starmap', label: '旅行地图', desc: 'StarMap 3D 旅行足迹地图（独立应用内嵌）' },
+  { id: 'system', label: '系统', desc: '组件状态与生态指标' },
 ];
 
 const TITLES: Record<PageId, string> = {
-  chat: '会话',
-  memory: '记忆树',
-  skills: '技能库',
-  agents: '子代理',
-  goals: '目标',
-  workflow: '编排',
-  plugins: '插件',
+  chat: '生态助手',
+  memory: '生态空间',
+  skills: '生态技能库',
+  agents: '生态助手',
+  goals: '生态目标',
+  workflow: '生态编排',
+  plugins: '生态插件',
+  starmap: '旅行地图',
   system: '系统状态',
 };
 
@@ -55,6 +58,7 @@ export default function App(): React.ReactElement {
   const [page, setPage] = useState<PageId>('chat');
   const [version, setVersion] = useState<string>('');
   const [collapsed, setCollapsed] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionOut[]>([]);
   const [query, setQuery] = useState('');
@@ -221,149 +225,96 @@ export default function App(): React.ReactElement {
           </div>
           {!collapsed && (
             <span className="sub">
-              生态环境垂直领域<span className="sub-accent">AI Agent</span>
+              最懂生态环境的<span className="sub-accent">AI 伙伴</span>
             </span>
           )}
         </div>
 
         <button
           className={`new-session-btn${collapsed ? ' icon-only' : ''}`}
-          title="新建会话"
+          title="新建生态任务"
           onClick={() => void newSession()}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
                strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
             <path d="M8 3v10M3 8h10" />
           </svg>
-          {!collapsed && <span>新建会话</span>}
+          {!collapsed && <span>新建生态任务</span>}
         </button>
 
-        {!collapsed && (
-          /* 工作区（真实会话列表）——弹性中区，占满顶部入口与底部设置之间的空间 */
-          <div className="nav-workspace">
-            <div className="nav-section-title">
-              工作区{sessions.length > 0 ? ` · ${sessions.length}` : ''}
+        {/* WorkBuddy 风格主导航 — 直接展示，不折叠 */}
+        <nav className="nav-menu">
+          {NAV.map((n) => (
+            <div
+              key={n.id}
+              className={`nav-item${page === n.id ? ' active' : ''}`}
+              title={n.desc}
+              onClick={() => setPage(n.id)}
+            >
+              <span className="nav-icon">{n.id === 'chat' ? '🌿' : n.id === 'memory' ? '🗺️' : n.id === 'skills' ? '🛠️' : n.id === 'agents' ? '🤖' : n.id === 'goals' ? '🎯' : n.id === 'workflow' ? '⚡' : n.id === 'plugins' ? '🔌' : n.id === 'starmap' ? '🌍' : '⚙️'}</span>
+              {!collapsed && <span className="nav-label">{n.label}</span>}
             </div>
-            <div className="nav-search">
-              <input
-                placeholder="搜索会话…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            <div className="session-list">
-              {filtered.length === 0 ? (
-                <div className="nav-empty">
-                  {sessions.length === 0 ? '暂无会话——点「新建会话」开始' : '无匹配会话'}
-                </div>
-              ) : (
-                filtered.map((s) => (
-                  <div
-                    key={s.session_id}
-                    className={`session-row${s.session_id === activeSessionId ? ' active' : ''}`}
-                    title={s.session_id}
-                    onClick={() => openSession(s.session_id)}
-                  >
-                    {editingId === s.session_id ? (
-                      <input
-                        className="session-rename-input"
-                        value={editName}
-                        autoFocus
-                        maxLength={60}
-                        onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') void saveRename(s.session_id);
-                          if (e.key === 'Escape') {
-                            renameRef.current = null;
-                            setEditingId(null);
-                          }
-                        }}
-                        onBlur={() => void saveRename(s.session_id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <span className="session-name">{sessionLabel(s)}</span>
-                    )}
-                    <span className="session-meta">
-                      {s.message_count} 条 · {relTime(s.updated_at)}
-                    </span>
-                    <div className="session-actions" onClick={(e) => e.stopPropagation()}>
-                      <button title="重命名" onClick={() => startRename(s)}>✎</button>
-                      <button title="分享会话内容（导出 Markdown 并复制）" onClick={() => void shareSession(s)}>⤴</button>
-                      <button className="danger" title="删除会话" onClick={() => void deleteSession(s)}>✕</button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
+          ))}
+        </nav>
 
-        {/* 设置区（最底端，DSH Settings 触发式）：默认收起，点击展开功能模块 */}
-        <div className="nav-settings">
-          <button
-            className={`settings-trigger${settingsOpen ? ' open' : ''}`}
-            title="设置：记忆树/技能/子代理/目标/编排/插件/系统"
-            onClick={() => {
-              if (collapsed) {
-                setCollapsed(false);
-                setSettingsOpen(true);
-              } else {
-                setSettingsOpen((v) => !v);
-              }
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                 strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="8" cy="8" r="2.4" />
-              <path d="M8 1.8v1.8M8 12.4v1.8M1.8 8h1.8M12.4 8h1.8M3.6 3.6l1.3 1.3M11.1 11.1l1.3 1.3M12.4 3.6l-1.3 1.3M4.9 11.1l-1.3 1.3" />
-            </svg>
-            {!collapsed && <span className="settings-label">设置</span>}
-            {!collapsed && <span className="settings-chevron">{settingsOpen ? '▾' : '▸'}</span>}
-          </button>
-          {!collapsed && settingsOpen && (
-            <div className="settings-menu">
-              {NAV.map((n) => (
-                <div
-                  key={n.id}
-                  className={`item set-item${page === n.id ? ' active' : ''}`}
-                  onClick={() => setPage(n.id)}
-                >
-                  {n.label}
-                </div>
-              ))}
+        {/* 底部区域 — WorkBuddy 风格 */}
+        {!collapsed && (
+          <div className="nav-bottom">
+            <div className="nb-section">
+              <span className="nb-item">📝 生态任务 ({sessions.length})</span>
+              <span className="nb-item">🗺️ 生态空间 (14)</span>
             </div>
-          )}
-          {!collapsed && (
-            <div className="foot">
+            <div className="nb-section">
+              <span className="nb-item">🟢 社区互动</span>
+              <span className="nb-item">🔔 通知</span>
+            </div>
+            <div className="nb-foot">
               <span className="foot-btn" title="切换主题" onClick={toggleTheme}>
-                {theme === 'dark' ? '☀ 亮色' : '🌙 暗色'}
+                {theme === 'dark' ? '☀' : '🌙'}
               </span>
               <span>v{version || '…'}</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </aside>
       <div className="main">
         <div className="topbar">
           <h1>{TITLES[page]}</h1>
           <span className="meta">{NAV.find((n) => n.id === page)?.desc ?? '与 eco Agent 对话'}</span>
         </div>
-        <div className="content">
-          {page === 'chat' && (
-            <ChatView
-              key={`${activeSessionId}:${chatNonce}`}
-              sessionId={activeSessionId}
-              onActivity={refreshSessions}
-            />
-          )}
-          {page === 'memory' && <MemoryView />}
-          {page === 'skills' && <SkillsView />}
-          {page === 'agents' && <AgentsView />}
-          {page === 'goals' && <GoalsView />}
-          {page === 'workflow' && <WorkflowView />}
-          {page === 'plugins' && <PluginsView />}
-          {page === 'system' && <SystemView />}
+        <div className="content-area">
+          <div className="content">
+            {page === 'chat' && (
+              <ChatView
+                key={`${activeSessionId}:${chatNonce}`}
+                sessionId={activeSessionId}
+                onActivity={refreshSessions}
+              />
+            )}
+            {page === 'memory' && <MemoryView />}
+            {page === 'skills' && <SkillsView />}
+            {page === 'agents' && <AgentsView />}
+            {page === 'goals' && <GoalsView />}
+            {page === 'workflow' && <WorkflowView />}
+            {page === 'plugins' && <PluginsView />}
+            {page === 'starmap' && (
+              <div className="starmap-frame">
+                <iframe
+                  src="http://127.0.0.1:5175/"
+                  title="StarMap 旅行足迹地图"
+                  style={{ width: '100%', height: '100%', border: 0 }}
+                  allow="geolocation; clipboard-write"
+                />
+              </div>
+            )}
+            {page === 'system' && <SystemView />}
+          </div>
+          <RightPanel
+            open={rightPanelOpen}
+            onToggle={() => setRightPanelOpen((v) => !v)}
+            sessionName={activeSessionId}
+            tags={["大气", "信访", "数据"]}
+          />
         </div>
       </div>
     </div>

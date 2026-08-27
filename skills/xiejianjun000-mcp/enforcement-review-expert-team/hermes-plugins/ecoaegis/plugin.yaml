@@ -1,0 +1,22 @@
+name: ecoaegis
+label: EcoAegis 环保执法平台
+kind: standalone
+version: 1.0.0
+description: >
+  EcoAegis 环境执法督察专家团的 AuthService 插件。
+  提供环保政务平台的自动登录、会话心跳检测、验证码识别、凭据管理能力。
+  由 hermes 后端统一调度执行，替代独立 shell 脚本。
+author: EcoAegis Team
+optional_env:
+  - name: ECOAEGIS_PLATFORM_URL_ATMOSPHERE
+    description: "大气监督帮扶平台地址"
+    prompt: "大气平台 URL"
+    password: false
+  - name: ECOAEGIS_PLATFORM_URL_WATER
+    description: "水环境管理平台地址"
+    prompt: "水环境平台 URL"
+    password: false
+  - name: ECOAEGIS_NOTIFY_CHANNEL
+    description: "告警投递目标（如 telegram/feishu 的 cron deliver 名称）"
+    prompt: "告警投递通道"
+    password: false

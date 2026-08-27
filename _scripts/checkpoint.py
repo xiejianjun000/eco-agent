@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-checkpoint.py — ECO AGENT Durable Checkpoint 断点续跑机制
+checkpoint.py — eco Agent Durable Checkpoint 断点续跑机制
 
 对标 OPENHUMAN 的持久化状态管理：
   执法多步流程（立案→调查→告知→决定→送达）

@@ -1,0 +1,32 @@
+---
+name: 生态环境执法检查
+version: 1.0.0
+description: 生态环境执法检查实战Skill，覆盖现场检查、违法行为认定、法律适用
+category: 执法
+author: xiejianjun000
+status: active
+source: https://github.com/xiejianjun000/eco-enforcement-skill
+---
+
+# 生态环境执法检查
+
+## Meta
+- ID: xjj-eco-enforcement-skill
+- 版本: 1.0.0
+- 使用次数: 0
+- 平均评分: 0.00
+
+## Triggers
+- 执法检查
+- 现场检查
+- 违法认定
+- 执法
+
+## Steps
+- 解析用户需求
+- 加载Skill资源
+- 执行对应操作
+- 返回结果
+
+## Examples
+

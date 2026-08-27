@@ -1,0 +1,33 @@
+---
+name: 生态环境法典
+version: 1.0.0
+description: 《生态环境法典》专业问答技能包：重点条文、处罚对照、新旧对比
+category: 法律知识
+author: xiejianjun000
+status: active
+source: https://github.com/xiejianjun000/eco-codex
+---
+
+# 生态环境法典
+
+## Meta
+- ID: xjj-eco-codex
+- 版本: 1.0.0
+- 使用次数: 0
+- 平均评分: 0.00
+
+## Triggers
+- 法典
+- 法律
+- 处罚
+- 生态环境法典
+- codex
+
+## Steps
+- 解析用户需求
+- 加载Skill资源
+- 执行对应操作
+- 返回结果
+
+## Examples
+

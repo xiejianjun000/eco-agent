@@ -115,8 +115,7 @@ function renderCards(trace: TraceEvent[]): React.ReactElement | null {
 function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
   if (!trace || trace.length === 0) return null;
   const turns = groupTraceByRound(trace);
-  const hasProc = trace.some((t) => t.type === 'think' || t.type === 'think_delta' || t.type === 'tool' || t.type === 'tool_start');
-  if (!hasProc) return null;
+
   return (
     <div className="process-block">
       {turns.map((turn) => {
@@ -146,7 +145,6 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
                     <details className={`think-item${!te ? ' running' : ''}`} open={!te}>
                       <summary className="think-summary">
                         <span className="pt-caret">▸</span>
-                        <span className="think-label">思考 · R{r}</span>
                         {!te && <span className="live-dot" title="正在实时思考" />}
                         {te && te.tools && te.tools.length > 0 && (
                           <span className="think-tools">· {te.tools.join('、')}</span>
@@ -198,10 +196,6 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [model, setModel] = useState('');
-  // DSH 对标：输入框旁直接切换 provider/模型（动态加载自 /api/v1/config/model）
-  const [providers, setProviders] = useState<{ name: string; display: string; default_model: string; models: string[]; has_key: boolean }[]>([]);
-  const [activeProvider, setActiveProvider] = useState('deepseek');
-  const [switchMsg, setSwitchMsg] = useState('');
   const [branchTag, setBranchTag] = useState<string | null>(null);
   const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc' | 'task' | 'slot' | 'preview'>('trace');
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
@@ -211,7 +205,6 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const [previewTitle, setPreviewTitle] = useState<string>('');
   const sawDocEventRef = useRef(false);
   const contentRef = useRef('');
-  const abortRef = useRef<AbortController | null>(null); // DSH 对标：Stop 中止流
   // 子代理任务面板（对标 DSH subagent/jobs）
   const [taskAgents, setTaskAgents] = useState<SubagentInfo[]>([]);
   const [taskInput, setTaskInput] = useState('');
@@ -371,38 +364,6 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
-  // DSH 对标：挂载时加载模型配置（provider 清单 + 当前默认模型），输入框旁可切换
-  useEffect(() => {
-    let alive = true;
-    api.configModel()
-      .then((cfg) => {
-        if (!alive) return;
-        setProviders(cfg.providers ?? []);
-        setActiveProvider(cfg.provider || 'deepseek');
-        if (!model && cfg.model) setModel(cfg.model);
-      })
-      .catch(() => {});
-    return () => { alive = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /** DSH 对标：输入框切换 provider/模型 → 立即热生效（config API 持久化 + 刷新 LLM 客户端） */
-  const onSwitchModel = async (val: string) => {
-    const [provider, mdl] = val.split('::');
-    if (!provider || !mdl) return;
-    setModel(mdl);
-    setActiveProvider(provider);
-    setSwitchMsg(`切换 ${provider} / ${mdl}…`);
-    try {
-      const r = await api.saveConfigModel({ provider, model: mdl, api_key: '', base_url: '' });
-      setSwitchMsg(r.ok
-        ? `✅ ${provider} / ${mdl}${r.client_note ? `（${r.client_note}）` : ''}`
-        : `❌ ${r.error || '切换失败'}`);
-    } catch (e) {
-      setSwitchMsg(`❌ ${(e as Error).message}`);
-    }
-  };
-
   const artifacts = messages
     .filter((m) => m.role === 'assistant')
     .flatMap((m) => extractArtifacts(m.content));
@@ -489,9 +450,6 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
       { role: 'assistant', content: '', time: sentAt },
     ]);
     setBusy(true);
-    // DSH 对标：新一轮对话持有 AbortController，供「停止」按钮中止
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
     // 新一轮对话：重置文档事件标记与流式内容累积
     sawDocEventRef.current = false;
     contentRef.current = '';
@@ -553,39 +511,27 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
         });
         // 一轮对话完成 → 通知侧栏刷新会话列表（计数/时间/排序）
         onActivity?.();
-      }, ctrl.signal);
+      });
     } catch (e) {
-      const aborted = e instanceof DOMException && e.name === 'AbortError';
       setMessages((prev) => {
         const next = [...prev];
-        const last = next[next.length - 1];
         next[next.length - 1] = {
-          ...last,
-          content: aborted ? `${last.content || ''}\n\n_（已停止）_` : `[连接失败] ${(e as Error).message}\n请确认已启动: eco server`,
+          ...next[next.length - 1],
+          content: `[连接失败] ${(e as Error).message}\n请确认已启动: eco server`,
           time: fmtClock(),
         };
         return next;
       });
     } finally {
-      if (abortRef.current === ctrl) abortRef.current = null;
       setBusy(false);
     }
   };
 
-  /** DSH 对标：运行中「停止」——中止当前流式响应 */
-  const stop = () => {
-    abortRef.current?.abort();
-  };
-
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key !== 'Enter') return;
-    // DSH 对标：IME 组合中不发送（中文输入法选词回车）；Shift+Enter 换行；长按防连发
-    const composing = e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229;
-    if (composing) return;
-    if (e.shiftKey) return;
-    if (e.repeat) return;
-    e.preventDefault();
-    void send();
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      void send();
+    }
   };
 
   const copyMsg = (m: Msg) => {
@@ -753,86 +699,59 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             ))}
           </div>
         )}
-        <div className="composer">
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            hidden
-            onChange={(e) => {
-              if (e.target.files) void uploadFiles(e.target.files);
-              e.target.value = '';
-            }}
-          />
-          <textarea
-            className="composer-input"
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              // DSH 对标：镜像自动增高（回车换行时高度随内容增长，封顶）
-              e.target.style.height = 'auto';
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 280)}px`;
-            }}
-            onKeyDown={onKeyDown}
-            placeholder="输入问题，Enter 发送 · Shift+Enter 换行 · 支持中文输入法"
-            rows={1}
-          />
-          <div className="composer-row">
-            <div className="composer-left">
-              <button
-                className="composer-icon"
-                title="上传文件——保存到工作区 uploads/，模型会用 file_read 读取分析"
-                onClick={() => fileInputRef.current?.click()}
-              >📎</button>
-              <button
-                className={`composer-icon${voice === 'recording' ? ' recording' : ''}`}
-                title={voice === 'recording' ? '停止录音并转写' : '语音输入——录音后经飞书妙记转写成文字'}
-                onClick={() => void toggleVoice()}
-              >
-                {voice === 'recording' ? '⏹' : '🎤'}
-              </button>
-            </div>
-            <div className="composer-right">
-              <select
-                className="model-select"
-                title="切换模型（DSH ui-model-selection 对标）：选中即热生效并持久化"
-                value={model ? `${activeProvider}::${model}` : ''}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v.includes('::')) void onSwitchModel(v);
-                  else setModel('');
-                }}
-              >
-                <option value="">默认（{providers.find((p) => p.name === activeProvider)?.default_model ?? '…'}）</option>
-                {providers
-                  .filter((p) => p.models.length > 0)
-                  .map((p) => (
-                    <optgroup key={p.name} label={`${p.display}${p.has_key ? ' ✅' : '（未配 key）'}`} disabled={!p.has_key}>
-                      {p.models.map((m) => (
-                        <option key={`${p.name}::${m}`} value={`${p.name}::${m}`}>{m}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-              </select>
-              {switchMsg && <span className="composer-switch-msg">{switchMsg}</span>}
-              <button
-                className={`composer-send${busy ? ' stopping' : ''}`}
-                title={busy ? '停止生成' : '发送'}
-                disabled={!busy && !input.trim() && attachments.length === 0}
-                onClick={() => { if (busy) stop(); else void send(); }}
-              >
-                {busy ? (
-                  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
-                    <rect x="3" y="3" width="10" height="10" rx="3" fill="currentColor" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
-                    <path d="M8.31 1 13.7 6.4 12.3 7.8 8.75 4.25V15h-1.5V4.25L3.7 7.8 2.3 6.4 7.7 1a1.4 1.4 0 0 1 .61 0Z" fill="currentColor" />
-                  </svg>
-                )}
-              </button>
-            </div>
+        <div className="chat-input-row">
+          <div className="input-tools">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              onChange={(e) => {
+                if (e.target.files) void uploadFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
+            <button
+              className="input-tool-btn"
+              title="上传文件——保存到工作区 uploads/，模型会用 file_read 读取分析"
+              onClick={() => fileInputRef.current?.click()}
+            >📎</button>
+            <button
+              className={`input-tool-btn${voice === 'recording' ? ' recording' : ''}`}
+              title={voice === 'recording' ? '停止录音并转写' : '语音输入——录音后经飞书妙记转写成文字'}
+              onClick={() => void toggleVoice()}
+            >
+              {voice === 'recording' ? '⏹' : '🎤'}
+            </button>
           </div>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="输入问题，Enter 发送，Shift+Enter 换行"
+            rows={2}
+          />
+          <select
+            className="model-select"
+            title="选择模型（DSH ui-model-selection）"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          >
+            <option value="">默认（deepseek-v4-pro）</option>
+            <option value="deepseek-chat">deepseek-chat</option>
+            <option value="deepseek-v4-pro">deepseek-v4-pro（含Think流·推荐）</option>
+            <option value="deepseek-reasoner">deepseek-reasoner（含Think流）</option>
+            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+            <option value="qwen-max">qwen-max</option>
+            <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
+          </select>
+          <button
+            className="btn"
+            onClick={() => void send()}
+            disabled={busy || (!input.trim() && attachments.length === 0)}
+          >
+            {busy ? '生成中' : '发送'}
+          </button>
         </div>
         {voice === 'recording' && (
           <div className="voice-status">🔴 录音中 {voiceSec}s——再点 🎤 停止并转写</div>

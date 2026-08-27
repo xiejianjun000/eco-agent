@@ -1,0 +1,111 @@
+id: "36"
+name: "案件法制审核表"
+category: "行政处罚-法制审核"
+complexity: "low"
+template: "36_案件法制审核表.md"
+description: "法制审核机构或法制审核人员对行政处罚案件进行合法性审核的内部审批文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "立案号"
+    key: "{{立案号}}"
+    type: "string"
+    source: "案件数据.立案号"
+    required: true
+
+  - id: "当事人名称或姓名"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人或负责人或经营者"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码或身份证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: false
+
+  - id: "地址或住址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: false
+
+  - id: "审核项目"
+    key: "{{审核项目}}"
+    type: "text"
+    source: "AI生成.标准审核项目列表"
+    required: true
+    constraints:
+      - "行政执法主体是否合法"
+      - "行政执法人员是否具备执法资格"
+      - "行政执法程序是否合法"
+      - "案件事实是否清楚，证据是否合法充分"
+      - "适用法律、法规、规章是否准确"
+      - "裁量基准运用是否适当"
+      - "执法文书是否完备、规范"
+      - "违法行为是否涉嫌犯罪需要移送司法机关"
+
+  - id: "审核意见"
+    key: "{{审核意见}}"
+    type: "text"
+    source: "AI生成.从案件材料初步审核"
+    required: true
+    description: "针对每项审核项目提出具体的审核意见"
+
+  - id: "法制审核人签字"
+    key: "{{法制审核人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "法制审核人日期"
+    key: "{{法制审核人日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "法制机构负责人审核意见"
+    key: "{{法制机构负责人审核意见}}"
+    type: "enum"
+    source: "用户输入"
+    required: true
+    options:
+      - "同意"
+      - "不同意"
+    description: "也可填写具体审核意见"
+
+  - id: "法制机构负责人签字或盖章"
+    key: "{{法制机构负责人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "法制机构负责人日期"
+    key: "{{法制机构负责人日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "备注"
+    key: "{{备注}}"
+    type: "text"
+    source: "用户输入"
+    required: false

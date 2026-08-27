@@ -1,0 +1,154 @@
+id: "65"
+name: "责令改正违法行为决定书"
+category: "行政命令-责令改正"
+complexity: "medium"
+template: "65_责令改正违法行为决定书.md"
+description: "生态环境主管部门单独作出责令改正决定的行政命令文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号年份"
+    key: "{{文号年份}}"
+    type: "string"
+    source: "案件数据.责令改正日期.年份"
+    required: true
+    validation: "^\\d{4}$"
+
+  - id: "文号序号"
+    key: "{{文号序号}}"
+    type: "string"
+    source: "系统生成.文号序号"
+    required: true
+
+  - id: "当事人名称或姓名"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人或负责人或经营者"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码或身份证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: true
+
+  - id: "地址或住址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: true
+
+  - id: "调查日期"
+    key: "{{调查日期}}"
+    type: "date"
+    source: "案件数据.调查日期"
+    required: true
+
+  - id: "违法事实陈述"
+    key: "{{违法事实陈述}}"
+    type: "text"
+    source: "AI生成.从案件事实和证据生成"
+    required: true
+    constraints:
+      - "包含违法行为发生的时间、地点、情节、动机、危害后果"
+      - "第一句格式：我厅（局）于X年X月X日对你（单位）进行了调查"
+
+  - id: "证据列表"
+    key: "{{证据列表}}"
+    type: "text"
+    source: "案件数据.证据"
+    required: true
+    constraints:
+      - "逐一列举证据名称、提取时间、提供单位、证明内容"
+
+  - id: "违反的法律规定"
+    key: "{{违反的法律规定}}"
+    type: "text"
+    source: "案件数据.法律依据.违法条款"
+    required: true
+    description: "法律、法规、规章名称用全称"
+
+  - id: "责令改正依据"
+    key: "{{责令改正依据}}"
+    type: "text"
+    source: "案件数据.法律依据.责令改正条款"
+    required: true
+    description: "注明依据行政处罚法第二十八条第一款和相关法律法规规章"
+
+  - id: "责令改正具体内容"
+    key: "{{责令改正具体内容}}"
+    type: "text"
+    source: "AI生成.结合违法行为生成具体改正措施"
+    required: true
+    constraints:
+      - "明确写明具体改正内容和要求"
+      - "不能笼统写为自行改正"
+      - "限期改正作为行政处罚前置条件的应明确告知逾期不改正的法律后果"
+
+  - id: "责令改正期限"
+    key: "{{责令改正期限}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+    description: "具体的改正期限"
+
+  - id: "改正情况监督说明"
+    key: "{{改正情况监督说明}}"
+    type: "text"
+    source: "系统配置.默认文本"
+    required: true
+    description: "告知将对改正情况进行监督或复查"
+
+  - id: "拒不改正法律后果"
+    key: "{{拒不改正法律后果}}"
+    type: "text"
+    source: "AI生成.结合违法行为和法律适用生成"
+    required: true
+    constraints:
+      - "符合环境保护法第六十三条的应载明移送公安机关行政拘留的法律后果"
+      - "无法律规定的载明依法处理"
+
+  - id: "是否告知救济途径"
+    key: "{{是否告知救济途径}}"
+    type: "boolean"
+    source: "系统配置.默认告知"
+    required: true
+    description: "告知不服行政命令的救济途径和期限"
+
+  - id: "行政复议机关"
+    key: "{{行政复议机关}}"
+    type: "string"
+    source: "系统配置.行政复议机关"
+    required: true
+
+  - id: "行政诉讼法院"
+    key: "{{行政诉讼法院}}"
+    type: "string"
+    source: "系统配置.行政诉讼法院"
+    required: true
+
+  - id: "作出日期"
+    key: "{{作出日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+branches:
+  - id: "移送行政拘留段"
+    field: "{{移送行政拘留段}}"
+    conditions:
+      - if: "违反的法律规定.是否涉及环保法63条=true"
+        select: "branch_include_detention_warning"
+      - if: "违反的法律规定.是否涉及环保法63条=false"
+        select: "branch_no_detention_warning"

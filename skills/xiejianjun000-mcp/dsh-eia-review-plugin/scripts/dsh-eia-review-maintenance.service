@@ -1,0 +1,11 @@
+[Unit]
+Description=DSH EIA Review Plugin Daily Maintenance
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/path/to/dsh-eia-review-plugin/scripts/maintenance.sh
+Environment=EHS_KB_API_KEY=your-api-key
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+StandardOutput=append:/var/log/dsh-eia-review-maintenance.log
+StandardError=append:/var/log/dsh-eia-review-maintenance.log

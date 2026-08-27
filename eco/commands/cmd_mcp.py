@@ -31,21 +31,21 @@ def _serve_stdio():
     _ensure_govmcp()
     from govmcp.protocol.server import GovMCPServer
     import asyncio
-    log.info("ECO AGENT MCP Server (stdio)")
+    log.info("eco Agent MCP Server (stdio)")
     asyncio.run(GovMCPServer().serve_stdio_forever())
     return 0
 
 def _serve_http(port):
     _ensure_govmcp()
     import asyncio
-    log.info(f"ECO AGENT MCP Server (HTTP) :{port}")
+    log.info(f"eco Agent MCP Server (HTTP) :{port}")
     asyncio.run(_run_mcp_server("http", port))
     return 0
 
 def _serve_ws(port):
     _ensure_govmcp()
     import asyncio
-    log.info(f"ECO AGENT MCP Server (WebSocket) :{port}")
+    log.info(f"eco Agent MCP Server (WebSocket) :{port}")
     asyncio.run(_run_mcp_server("ws", port))
     return 0
 

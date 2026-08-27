@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-orange)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-1000%2B%20passed-brightgreen)](TEST_LOG.md)
+[![Tests](https://img.shields.io/badge/tests-1237%20passed-brightgreen)](TEST_LOG.md)
 [![CI](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml)
 
 Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环，从毫秒级到天级，让 AI 在无人唤醒时也能思考，在无人纠正时也能进化。
@@ -182,18 +182,21 @@ G8 可追溯性    原文指针 + 操作日志
 git clone https://github.com/xiejianjun000/eco-agent.git
 cd eco-agent
 
-# 安装依赖
-pip install -r requirements.txt
+# 安装（推荐 editable 模式，以注册 eco CLI）
+pip install -e ".[dev]"
 
 # 配置环境变量（Kimi LLM + 加密主密钥）
 cp .env.example .env
 # 编辑 .env 填入 KIMI_API_KEY（https://platform.moonshot.cn 申请）与 ECO_MASTER_KEY
 
+# 系统自检（离线，不耗 API）
+eco doctor
+
 # 运行单元测试（离线规则降级模式，不耗 API 配额）
 pytest tests/
 
 # 真实 LLM 冒烟测试（需要有效 KIMI_API_KEY）
-python scripts/smoke_kimi.py
+python _scripts/smoke_test.py
 
 # 真实 e2e 全链路测试（默认跳过；chat → tool_calls(save_document) → 真实落盘）
 # 需要有效 KIMI_API_KEY（或已配置的备用 provider Key），会真实调用 LLM 并消耗少量配额

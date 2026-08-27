@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""runner.py - ECO AGENT 执法场景 eval 基准运行器
+"""runner.py - eco Agent 执法场景 eval 基准运行器
 
 用法：
     ECO_EVAL=1 python -m evals.runner [--dataset evals/dataset.jsonl]

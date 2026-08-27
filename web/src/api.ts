@@ -163,16 +163,6 @@ export const api = {
   skillsSearch: (q: string) => get<{ skills: Skill[] }>(`/skills/search?q=${encodeURIComponent(q)}`),
   tools: () => get<{ tools: ToolEntry[]; categories: Record<string, number> }>('/tools'),
   system: () => get<Record<string, unknown>>('/system'),
-  configModel: () => get<{
-    provider: string;
-    model: string;
-    base_url: string;
-    api_key_masked: string;
-    api_key_env: string;
-    providers: { name: string; display: string; base_url: string; default_model: string; models: string[]; has_key: boolean; env_key: string }[];
-  }>('/config/model'),
-  saveConfigModel: (body: { provider: string; model: string; api_key: string; base_url: string }) =>
-    post<{ ok: boolean; applied: Record<string, string>; note: string; client_note?: string; persist_warning?: string; error?: string }>('/config/model', body),
   permissionGate: (enabled: boolean) => post<{ enabled: boolean; note: string }>('/system/permission-gate', { enabled }),
   presets: () => get<{ presets: { id: string; role: string; name: string; files: string[] }[]; count: number }>('/system/presets'),
   metrics: () => get<Record<string, unknown>>('/metrics'),
@@ -240,23 +230,20 @@ export async function streamChat(
   onDelta: (text: string, meta?: { ttft_ms?: number; reset?: boolean }) => void,
   onEvent?: (ev: TraceEvent) => void,
   onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[]; usage?: ChatUsage; ttft_ms?: number; suggestions?: string[] }) => void,
-  signal?: AbortSignal,  // DSH 对标：运行中可中止（Stop 按钮）
 ): Promise<void> {
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-ECO-CLIENT': 'web' },
     body: JSON.stringify({ message, history, session_id: sessionId, model }),
-    signal,
   });
   if (!res.body) throw new Error('stream body unavailable');
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   let traceAcc: TraceEvent[] | undefined;
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
     buffer = lines.pop() ?? '';
@@ -312,10 +299,5 @@ export async function streamChat(
         }
       }
     }
-    }
-  } catch (e) {
-    // DSH 对标：用户点「停止」中止流（AbortError 静默返回，不算错误）
-    if (e instanceof DOMException && e.name === 'AbortError') return;
-    throw e;
   }
 }

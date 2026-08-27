@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-writer_agent.py — ECO AGENT 执法文书生成 Agent
+writer_agent.py — eco Agent 执法文书生成 Agent
 
 功能：
   1. 3 种执法文书模板（处罚决定书/听证通知书/现场检查记录）
@@ -131,7 +131,7 @@ class WriterAgent:
                 for k, v in self.DOC_TYPES.items()}
 
     def generate(self, doc_type: str, data: dict[str, Any],
-                 author: str = "ECO AGENT") -> dict[str, Any]:
+                 author: str = "eco Agent") -> dict[str, Any]:
         """生成执法文书"""
         if doc_type not in self.DOC_TYPES:
             return {"success": False, "error": f"不支持的文书类型: {doc_type}"}

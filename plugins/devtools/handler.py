@@ -2,7 +2,7 @@
 """
 plugins/devtools/handler.py — 通用开发执行工具集
 
-让 ECO AGENT 拥有与 DSH 同类的执行能力：
+让 eco Agent 拥有与 DSH 同类的执行能力：
   shell_run  沙箱执行命令（os_sandbox，L3）
   file_read  读文件（L1）
   file_write 写文件（L2）

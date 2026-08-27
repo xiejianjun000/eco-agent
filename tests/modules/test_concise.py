@@ -123,7 +123,7 @@ def test_url_preserved_after_truncation():
 def test_dangling_header_stripped():
     # 截断后末尾不得残留悬空标题行（用户实测缺陷：'**二、xxx**'下面空无一物）
     # 设计：预算恰好在标题行耗尽，其后内容不再纳入
-    text = ("我是 ECO AGENT。" + "细节" * 260 + "\n"
+    text = ("我是 eco Agent。" + "细节" * 260 + "\n"
             "**二、真实执行能力（本轮会话可直接调用）**\n- 查法条\n- 算数据")
     out, cut = _enforce_concise(text, cap=300)
     assert cut is True

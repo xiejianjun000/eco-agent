@@ -1,0 +1,62 @@
+{
+  "web_web-890f30a2": {
+    "session_id": "web_web-890f30a2",
+    "user_id": "web-890f30a2",
+    "platform": "web",
+    "channel_id": "web-890f30a2",
+    "created_at": "2026-08-17T10:58:45.228552",
+    "updated_at": "2026-08-17T10:58:45.228791",
+    "active": true,
+    "context": {},
+    "history": [],
+    "metadata": {}
+  },
+  "web_web-b153010f": {
+    "session_id": "web_web-b153010f",
+    "user_id": "web-b153010f",
+    "platform": "web",
+    "channel_id": "web-b153010f",
+    "created_at": "2026-08-17T10:59:45.956301",
+    "updated_at": "2026-08-17T10:59:45.956488",
+    "active": true,
+    "context": {},
+    "history": [],
+    "metadata": {}
+  },
+  "web_web-0ab7444c": {
+    "session_id": "web_web-0ab7444c",
+    "user_id": "web-0ab7444c",
+    "platform": "web",
+    "channel_id": "web-0ab7444c",
+    "created_at": "2026-08-17T11:00:13.361678",
+    "updated_at": "2026-08-17T11:00:13.361906",
+    "active": true,
+    "context": {},
+    "history": [],
+    "metadata": {}
+  },
+  "web_test-web-user": {
+    "session_id": "web_test-web-user",
+    "user_id": "test-web-user",
+    "platform": "web",
+    "channel_id": "test-web-user",
+    "created_at": "2026-08-17T11:02:59.452613",
+    "updated_at": "2026-08-17T11:02:59.452619",
+    "active": true,
+    "context": {},
+    "history": [],
+    "metadata": {}
+  },
+  "web_web-031e2780": {
+    "session_id": "web_web-031e2780",
+    "user_id": "web-031e2780",
+    "platform": "web",
+    "channel_id": "web-031e2780",
+    "created_at": "2026-08-17T11:03:07.400570",
+    "updated_at": "2026-08-17T11:03:07.400791",
+    "active": true,
+    "context": {},
+    "history": [],
+    "metadata": {}
+  }
+}

@@ -1,0 +1,118 @@
+id: "34"
+name: "听证笔录"
+category: "行政处罚-告知和听证"
+complexity: "high"
+template: "34_听证笔录.md"
+description: "记录行政处罚听证会全过程的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "听证时间起止"
+    key: "{{听证时间起止}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "听证地点"
+    key: "{{听证地点}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "听证主持人"
+    key: "{{听证主持人}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "听证员"
+    key: "{{听证员}}"
+    type: "string"
+    source: "用户输入"
+    required: false
+
+  - id: "记录人"
+    key: "{{记录人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "当事人及其代理人"
+    key: "{{当事人及其代理人}}"
+    type: "text"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案件调查人员"
+    key: "{{案件调查人员}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "听证公开情况"
+    key: "{{听证公开情况}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "公开听证"
+      - "不公开听证"
+
+  - id: "案件事实与调查经过"
+    key: "{{案件事实与调查经过}}"
+    type: "text"
+    source: "AI生成.从案件调查记录生成"
+    required: true
+
+  - id: "当事人陈述申辩意见"
+    key: "{{当事人陈述申辩意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "质证与辩论内容"
+    key: "{{质证与辩论内容}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "最后陈述意见"
+    key: "{{最后陈述意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "听证参加人确认意见"
+    key: "{{听证参加人确认意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "听证主持人签字"
+    key: "{{听证主持人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "记录人签字"
+    key: "{{记录人签字}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "听证日期"
+    key: "{{听证日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

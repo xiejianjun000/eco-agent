@@ -1,0 +1,58 @@
+[
+  {
+    "id": "water",
+    "name": "水环境非现场执法平台",
+    "keywords": ["水环境", "water", "shui", "非现场"],
+    "purpose": "查在线监测数据、看企业超标预警",
+    "fields": { "username": "执法账号", "password": "登录密码", "captcha": "图形验证码" },
+    "captchaAuto": true
+  },
+  {
+    "id": "air",
+    "name": "大气监督帮扶平台",
+    "keywords": ["大气", "air", "帮扶", "daqi"],
+    "purpose": "看帮扶任务、跟踪整改情况",
+    "fields": { "username": "帮扶账号", "password": "登录密码", "captcha": "图形验证码" },
+    "captchaAuto": true
+  },
+  {
+    "id": "enforce",
+    "name": "行政执法系统",
+    "keywords": ["行政执法", "enforce", "xingzheng", "执法系统"],
+    "purpose": "办理案件、同步案件进度",
+    "fields": { "username": "执法人员账号", "password": "登录密码", "captcha": "图形验证码" },
+    "captchaAuto": false
+  },
+  {
+    "id": "permit",
+    "name": "排污许可证管理端",
+    "keywords": ["排污", "paiwu", "permit", "许可证"],
+    "purpose": "管排污许可、企业证照",
+    "fields": { "username": "管理账号", "password": "登录密码", "captcha": "图形验证码" },
+    "captchaAuto": true
+  },
+  {
+    "id": "monitor",
+    "name": "在线监测系统管理端",
+    "keywords": ["在线监测", "监测", "monitor", "jiance"],
+    "purpose": "看在线监测数据、排口状态",
+    "fields": { "username": "监测账号", "password": "登录密码", "captcha": "图形验证码" },
+    "captchaAuto": true
+  },
+  {
+    "id": "electricity",
+    "name": "用电监控系统管理端",
+    "keywords": ["用电", "electric", "dian", "监控"],
+    "purpose": "看企业用电负荷、异常停产",
+    "fields": { "username": "监控账号", "password": "登录密码", "captcha": "图形验证码" },
+    "captchaAuto": false
+  },
+  {
+    "id": "hn-zfyth",
+    "name": "湖南生态环境智慧执法办案系统",
+    "keywords": ["执法办案", "zfyth", "pwq", "sthjt", "hunan"],
+    "purpose": "湖南省生态环境执法办案一体化平台，案卷台账、执法流程、文书生成",
+    "fields": { "username": "执法账号", "password": "登录密码", "captcha": "图形验证码" },
+    "captchaAuto": false
+  }
+]

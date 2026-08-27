@@ -1,0 +1,69 @@
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+venv/
+
+# Playwright / Browser artifacts
+.playwright-cli/
+*.png
+captcha_*
+!*.png.keep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# WorkBuddy internal
+.workbuddy/sessions/
+.workbuddy/memory/
+.workbuddy/automations/
+
+# DDL lessons (may contain operational data)
+ddl_lessons/
+
+# Agent memory (may contain operational data)
+eco-enforcement-assistant/memory/
+
+# Auth state & alerts (由 hermes 插件管理)
+auth/state/
+auth/alerts/
+auth/captcha_samples/
+auth/venv/
+
+# Hermes agent runtime (已内嵌为后端基座，不独立跟踪内部状态)
+hermes-agent/hermes_agent.egg-info/
+
+# Temp files
+*.tmp
+*.log
+captcha_b64.txt
+
+# Sensitive data (案卷评查报告、企业数据、巡检报告)
+eco-enforcement-assistant/raw/
+eco-enforcement-assistant/archive/
+eco-enforcement-assistant/memory/
+data/cases/
+data/config/
+output/
+评查报告_*.docx
+评查明细_*.xlsx
+*巡检报告*.md
+*帮扶跟踪报告*.md
+case_ocr_result.txt
+*.storageState.json
+auth/captcha_samples/
+auth/alerts/

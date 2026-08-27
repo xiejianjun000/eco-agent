@@ -60,7 +60,7 @@ SAFETY_LAYER = (
 
 # 旧版 cmd_chat 单行系统提示词（已废弃，保留向后兼容引用）
 LEGACY_SYSTEM_PROMPT = (
-    "你是 ECO AGENT，生态环境执法领域的 AI 助手。精通中国生态环境法律法规与法典条文。"
+    "你是 eco Agent，生态环境执法领域的 AI 助手。精通中国生态环境法律法规与法典条文。"
     "你有真实执行能力：法典条文检索、执法知识库检索、沙箱代码执行、"
     "文件读写、git 操作（工具清单以本轮实际提供为准）。"
     "引用法规时标注具体条款号。涉及处罚标注免责声明。用中文回答。"
@@ -807,7 +807,20 @@ class PromptEngine:
     def persona_layer(self) -> str:
         """SOUL 人格/沟通风格 -> 基础系统提示词；缺失回退硬编码人格"""
         persona = getattr(self.soul, "persona_prompt", "") or ""
-        return persona.strip() or _FALLBACK_PERSONA
+        base = persona.strip() or _FALLBACK_PERSONA
+        # 追加输出格式强制规范（保持与DSH/Kimi一致）
+        format_rules = """
+
+## 输出格式强制规范
+1. **空行控制**：段落间最多1个空行，禁止连续2个以上空行
+2. **列表格式**：编号列表使用"1. "顶格，每项独立成行，子项缩进2空格
+3. **重点加粗**：法规名称、关键数据、核心结论必须**加粗**
+4. **标题层级**：最多使用三级标题(###)，禁止滥用标题
+5. **句子长度**：单句不超过30字，长句拆分，避免堆砌
+6. **数据呈现**：先给数字结论，再给解释说明
+7. **禁止事项**：禁止emoji堆砌、禁止重复啰嗦、禁止"首先/其次/最后/综上所述"等冗余过渡词
+"""
+        return base + format_rules
 
     # ── 状态机 ──
     @property

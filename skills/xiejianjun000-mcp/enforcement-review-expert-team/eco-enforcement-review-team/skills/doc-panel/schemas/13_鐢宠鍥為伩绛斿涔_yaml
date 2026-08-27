@@ -1,0 +1,52 @@
+id: "13"
+name: "申请回避答复书"
+category: "行政处罚-调查取证"
+complexity: "low"
+template: "13_申请回避答复书.md"
+description: "生态环境主管部门对当事人申请回避的答复文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "申请日期"
+    key: "{{申请日期}}"
+    type: "date"
+    source: "案件数据.回避申请.日期"
+    required: true
+
+  - id: "回避申请对象"
+    key: "{{回避申请对象}}"
+    type: "string"
+    source: "案件数据.回避申请.回避对象"
+    required: true
+
+  - id: "回避决定"
+    key: "{{回避决定}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "予以回避"
+      - "不予回避"
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-memory_tree.py — ECO AGENT Memory Tree 核心引擎
+memory_tree.py — eco Agent Memory Tree 核心引擎
 
 评分制记忆树，实现 SQLite 持久化 + Obsidian 双向同步 + 混合检索。
 

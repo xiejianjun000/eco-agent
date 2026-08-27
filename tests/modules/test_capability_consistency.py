@@ -104,11 +104,22 @@ def test_mcp_tool_name_slug_preserves_namespace():
 
 
 def test_open_url_whitelist():
-    """open_url：白名单域名放行、非法域名/协议拒绝（不真正打开浏览器）。"""
+    """open_url：白名单域名放行、非法域名/协议拒绝；无浏览器环境优雅降级。"""
+    import shutil
     from server.api.chat import _open_browser
 
     ok = _open_browser("https://docs.qq.com/space/abc")
-    assert '"ok": true' in ok
+    # 无头/容器环境：检测是否有浏览器后端，无则断言降级行为
+    has_browser = platform.system() in ("Darwin", "Windows") or any(
+        shutil.which(b) for b in [
+            "www-browser", "firefox", "chromium", "chromium-browser",
+            "google-chrome", "microsoft-edge", "brave", "opera"
+        ]
+    )
+    if has_browser:
+        assert '"ok": true' in ok, f"有浏览器环境应成功打开: {ok}"
+    else:
+        assert '"ok": false' in ok and "无可用浏览器" in ok, f"无浏览器环境应降级: {ok}"
     bad_domain = _open_browser("https://evil.example.com/")
     assert '"ok": false' in bad_domain and "白名单" in bad_domain
     bad_scheme = _open_browser("file:///etc/passwd")

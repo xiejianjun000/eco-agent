@@ -1,0 +1,84 @@
+{
+  "problemCategories": [
+    {
+      "code": "A01",
+      "name": "粉尘无组织排放类",
+      "requiredMaterials": [
+        "整改前后对比照片",
+        "巡检管理制度",
+        "物料堆场覆盖证明"
+      ],
+      "inspectionMethod": "现场检查 + 材料审核",
+      "regulatoryBasis": "《大气污染防治法》第四十八条",
+      "writeOffCriteria": "完成整改并通过省级、部级审核"
+    },
+    {
+      "code": "A02",
+      "name": "治污设施安装与运行类",
+      "requiredMaterials": [
+        "整改前后对比照片",
+        "设备采购合同",
+        "安装施工合同",
+        "最新监测报告",
+        "设施运行记录"
+      ],
+      "inspectionMethod": "现场检查 + 监测报告审核",
+      "regulatoryBasis": "《大气污染防治法》第四十五条、第四十六条",
+      "writeOffCriteria": "设施正常运行，监测数据达标"
+    },
+    {
+      "code": "A03",
+      "name": "污染源自动监控类",
+      "requiredMaterials": [
+        "自动监测设备验收报告",
+        "比对监测合格报告",
+        "运维记录",
+        "台账记录",
+        "设备调试报告"
+      ],
+      "inspectionMethod": "设备验收报告审核 + 运维记录检查",
+      "regulatoryBasis": "《污染源自动监控管理办法》",
+      "writeOffCriteria": "设备验收合格，运维记录完整"
+    },
+    {
+      "code": "A04",
+      "name": "重污染应急类",
+      "requiredMaterials": [
+        "应急预案备案证明",
+        "应急管控措施落实证明",
+        "限产停产记录"
+      ],
+      "inspectionMethod": "应急预案审查 + 现场核查",
+      "regulatoryBasis": "《重污染天气应急预案》",
+      "writeOffCriteria": "应急措施落实到位"
+    },
+    {
+      "code": "A05",
+      "name": "VOCs无组织排放类",
+      "requiredMaterials": [
+        "整改前后对比照片",
+        "收集治理设施运行记录",
+        "监测报告"
+      ],
+      "inspectionMethod": "现场检查 + 监测数据审核",
+      "regulatoryBasis": "《挥发性有机物无组织排放控制标准》",
+      "writeOffCriteria": "VOCs收集治理设施正常运行"
+    },
+    {
+      "code": "A99",
+      "name": "其他环境管理问题",
+      "requiredMaterials": [
+        "整改情况说明",
+        "相关证明材料"
+      ],
+      "inspectionMethod": "材料审核 + 必要时现场检查",
+      "regulatoryBasis": "根据具体问题描述确定",
+      "writeOffCriteria": "问题得到有效解决"
+    }
+  ],
+  "notes": [
+    "材料要求基于《监督帮扶问题整改督办工作规程（试行）》附件2",
+    "实际审核时以最新规程要求为准",
+    "部分问题可能需要补充特殊材料"
+  ]
+}

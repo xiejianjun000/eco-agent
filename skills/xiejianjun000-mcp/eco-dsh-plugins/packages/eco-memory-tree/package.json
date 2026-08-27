@@ -1,0 +1,42 @@
+{
+  "name": "@eco-dsh/eco-memory-tree",
+  "version": "0.3.0",
+  "description": "dsh plugin: scored memory tree with BM25 search and Obsidian bidirectional sync (port of eco-agent memory_tree.py)",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "memory",
+    "memory-tree",
+    "bm25",
+    "obsidian",
+    "rag",
+    "eco-agent"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.0",
+    "@deepseek-ai/dsh-tools": "^0.0.1-rc.1",
+    "@deepseek-ai/schemastery": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

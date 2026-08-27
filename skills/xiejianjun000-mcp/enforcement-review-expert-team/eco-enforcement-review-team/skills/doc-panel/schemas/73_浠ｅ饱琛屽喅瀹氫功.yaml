@@ -1,0 +1,79 @@
+id: "73"
+name: "代履行决定书"
+category: "行政强制"
+complexity: "medium"
+template: "73_代履行决定书.md"
+description: "生态环境主管部门决定实施代履行的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "原行政决定编号"
+    key: "{{原行政决定编号}}"
+    type: "string"
+    source: "案件数据.行政决定.编号"
+    required: true
+
+  - id: "催告书编号"
+    key: "{{催告书编号}}"
+    type: "string"
+    source: "案件数据.代履行催告.文书编号"
+    required: true
+
+  - id: "未履行义务内容"
+    key: "{{未履行义务内容}}"
+    type: "text"
+    source: "AI生成.从行政决定和履行情况生成"
+    required: true
+
+  - id: "代履行方式"
+    key: "{{代履行方式}}"
+    type: "text"
+    source: "AI生成.生成代履行方式"
+    required: true
+
+  - id: "代履行时间"
+    key: "{{代履行时间}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "代履行费用预算"
+    key: "{{代履行费用预算}}"
+    type: "string"
+    source: "AI生成.生成费用预算"
+    required: true
+
+  - id: "代履行法律依据"
+    key: "{{代履行法律依据}}"
+    type: "text"
+    source: "AI生成.生成代履行法律依据"
+    required: true
+
+  - id: "救济途径告知"
+    key: "{{救济途径告知}}"
+    type: "text"
+    source: "AI生成.生成救济途径"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

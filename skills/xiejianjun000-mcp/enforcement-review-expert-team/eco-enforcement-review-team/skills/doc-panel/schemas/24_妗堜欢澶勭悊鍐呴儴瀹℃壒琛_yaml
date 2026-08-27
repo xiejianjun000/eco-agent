@@ -1,0 +1,106 @@
+id: "24"
+name: "案件处理内部审批表"
+category: "行政处罚-调查取证"
+complexity: "low"
+template: "24_案件处理内部审批表.md"
+description: "生态环境主管部门对案件处理进行内部审批的通用文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "审批事项"
+    key: "{{审批事项}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "先行登记保存"
+      - "查封扣押"
+      - "中止调查"
+      - "恢复调查"
+      - "终止调查"
+      - "移送"
+      - "延期"
+      - "其他"
+
+  - id: "案情及处理建议"
+    key: "{{案情及处理建议}}"
+    type: "text"
+    source: "AI生成.从案件信息生成处理建议"
+    required: true
+
+  - id: "承办人意见"
+    key: "{{承办人意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "承办人签字"
+    key: "{{承办人签字}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "承办人日期"
+    key: "{{承办人日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "承办机构意见"
+    key: "{{承办机构意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "承办机构负责人签字"
+    key: "{{承办机构负责人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "承办机构日期"
+    key: "{{承办机构日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "法制审核意见"
+    key: "{{法制审核意见}}"
+    type: "text"
+    source: "用户输入"
+    required: false
+
+  - id: "单位负责人审批意见"
+    key: "{{单位负责人审批意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "单位负责人签字"
+    key: "{{单位负责人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "单位负责人日期"
+    key: "{{单位负责人日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true

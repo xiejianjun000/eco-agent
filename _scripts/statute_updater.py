@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-statute_updater.py — ECO AGENT 法规自动更新管道
+statute_updater.py — eco Agent 法规自动更新管道
 
 数据源（118+ 个）：
   - 生态环境部官网

@@ -1,5 +1,5 @@
 """
-ECO AGENT OS-level sandbox — 对标 Codex bubblewrap / Claude Code Seatbelt
+eco Agent OS-level sandbox — 对标 Codex bubblewrap / Claude Code Seatbelt
 
 Linux 优先使用 bubblewrap(bwrap) 做内核级隔离：
   - unshare net/pid 命名空间

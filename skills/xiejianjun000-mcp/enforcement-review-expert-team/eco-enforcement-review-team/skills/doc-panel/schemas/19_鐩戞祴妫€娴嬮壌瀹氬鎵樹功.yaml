@@ -1,0 +1,77 @@
+id: "19"
+name: "监测/检测/鉴定委托书"
+category: "行政处罚-调查取证"
+complexity: "medium"
+template: "19_监测检测鉴定委托书.md"
+description: "生态环境主管部门委托专业机构进行监测、检测或鉴定的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "委托机构"
+    key: "{{委托机构}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "案件名称"
+    key: "{{案件名称}}"
+    type: "text"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "委托事项类型"
+    key: "{{委托事项类型}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "监测"
+      - "检测"
+      - "鉴定"
+
+  - id: "委托事项内容"
+    key: "{{委托事项内容}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "送检材料"
+    key: "{{送检材料}}"
+    type: "text"
+    source: "用户输入"
+    required: false
+
+  - id: "完成期限"
+    key: "{{完成期限}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

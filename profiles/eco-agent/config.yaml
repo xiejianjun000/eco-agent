@@ -32,15 +32,13 @@ inference:
       temperature: 0.1  # 执法场景需要低温度，保证一致性
       api_key_env: "ANTHROPIC_API_KEY"
 
-    # DeepSeek (国产备选；对标 DSH：默认 deepseek-v4-flash，thinking 开启、reasoningEffort=high)
+    # DeepSeek (国产备选)
     deepseek:
       api_mode: "chat_completions"
-      model: "deepseek-v4-flash"      # 对标 DSH 默认模型；Think 流可选 deepseek-v4-pro / deepseek-reasoner
+      model: "deepseek-chat"          # 默认（一般对话）；Think 流可选 deepseek-v4-pro / deepseek-reasoner
       base_url: "https://api.deepseek.com"
       max_tokens: 8192
       temperature: 0.1
-      reasoning_effort: "high"        # 对标 DSH reasoningEffort 默认 high
-      thinking: "enabled"             # 对标 DSH thinking 默认 enabled
       api_key_env: "DEEPSEEK_API_KEY"
       # 账户可用模型（2026-08 实测 API 返回）：deepseek-v4-pro（推理+工具，含 reasoning_content）、
       # deepseek-v4-flash、deepseek-v4-flash-vision-exp、deepseek-chat、deepseek-reasoner

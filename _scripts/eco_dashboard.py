@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-eco_dashboard.py — ECO AGENT 执法态势看板
+eco_dashboard.py — eco Agent 执法态势看板
 
 功能：
   1. 全模块数据聚合统计
@@ -135,7 +135,7 @@ class Dashboard:
             report = self.gather_all()
         r = report.get("modules", {})
         lines = [
-            "# ECO AGENT 执法态势报告",
+            "# eco Agent 执法态势报告",
             "",
             f"> 生成时间：{report.get('generated_at', '')}",
             "",
@@ -184,7 +184,7 @@ class Dashboard:
             lines.extend(["", "## 四、版本信息", "", f"| 版本 | {git.get('latest_tag', '')} |",
                           "|:-----|:----:|", f"| 累计提交 | {git.get('total_commits', 0)} |"])
 
-        lines.extend(["", "---", "", "*报告由 ECO AGENT Dashboard 自动生成*"])
+        lines.extend(["", "---", "", "*报告由 eco Agent Dashboard 自动生成*"])
         return "\n".join(lines)
 
     def generate_card_data(self, report: dict | None = None,
@@ -211,7 +211,7 @@ class Dashboard:
             lines.append(f"版本: {git['latest_tag']} | 提交: {git.get('total_commits', 0)}")
 
         content = "\n".join(lines)
-        title = f"ECO AGENT 执法态势 · {report.get('generated_at', '')}"
+        title = f"eco Agent 执法态势 · {report.get('generated_at', '')}"
 
         if platform == "feishu":
             return {
@@ -253,7 +253,7 @@ class Dashboard:
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="ECO AGENT 执法态势看板")
+    parser = argparse.ArgumentParser(description="eco Agent 执法态势看板")
     parser.add_argument("--card", choices=["feishu", "wecom", "dingtalk"], help="推送卡片")
     parser.add_argument("--save", action="store_true", default=True, help="保存报告")
     args = parser.parse_args()

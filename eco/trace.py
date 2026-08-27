@@ -1,5 +1,5 @@
 """
-trace.py - ECO AGENT CLI 可观测轨迹模式（-v/--verbose）
+trace.py - eco Agent CLI 可观测轨迹模式（-v/--verbose）
 
 每轮 Agent 循环显示：
     [轮次 N] 💭 思考摘要 → 🔧 调用工具(关键参数) → 👁 结果摘要 → 继续/结束

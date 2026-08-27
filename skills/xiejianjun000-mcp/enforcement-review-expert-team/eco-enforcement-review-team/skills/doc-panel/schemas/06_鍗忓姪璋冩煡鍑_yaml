@@ -1,0 +1,61 @@
+id: "06"
+name: "协助调查函"
+category: "行政处罚-调查取证"
+complexity: "low"
+template: "06_协助调查函.md"
+description: "生态环境主管部门请求其他行政机关协助调查的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "被请求单位"
+    key: "{{被请求单位}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "案件名称"
+    key: "{{案件名称}}"
+    type: "text"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "协助调查原因"
+    key: "{{协助调查原因}}"
+    type: "text"
+    source: "AI生成.从案件信息生成协助调查原因"
+    required: true
+
+  - id: "协助调查事项"
+    key: "{{协助调查事项}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

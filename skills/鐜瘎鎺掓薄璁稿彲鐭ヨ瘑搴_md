@@ -1,0 +1,33 @@
+---
+name: 环评排污许可知识库
+version: 1.0.0
+description: 环评与排污许可技术审查知识库：79行业技术指南、两证衔接、核发规范、执法案例
+category: 知识库
+author: xiejianjun000
+status: active
+source: https://github.com/xiejianjun000/eia-review-system
+---
+
+# 环评排污许可知识库
+
+## Meta
+- ID: xjj-eia-review-system
+- 版本: 1.0.0
+- 使用次数: 0
+- 平均评分: 0.00
+
+## Triggers
+- 环评
+- 排污许可
+- 技术指南
+- 两证衔接
+- 核发规范
+
+## Steps
+- 解析用户需求
+- 加载Skill资源
+- 执行对应操作
+- 返回结果
+
+## Examples
+

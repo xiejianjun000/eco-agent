@@ -1,0 +1,76 @@
+id: "54"
+name: "涉嫌环境犯罪案件移送审批表"
+category: "行政处罚-移送"
+complexity: "low"
+template: "54_涉嫌环境犯罪案件移送审批表.md"
+description: "生态环境主管部门对涉嫌环境犯罪案件移送的内部审批文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "涉嫌犯罪事实"
+    key: "{{涉嫌犯罪事实}}"
+    type: "text"
+    source: "AI生成.从调查记录生成"
+    required: true
+
+  - id: "涉嫌罪名"
+    key: "{{涉嫌罪名}}"
+    type: "text"
+    source: "AI生成.从案件事实匹配刑法条款"
+    required: true
+
+  - id: "承办人意见"
+    key: "{{承办人意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "承办人签字"
+    key: "{{承办人签字}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "承办人日期"
+    key: "{{承办人日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "审批人意见"
+    key: "{{审批人意见}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "同意移送公安机关"
+      - "不同意移送"
+
+  - id: "审批人签字"
+    key: "{{审批人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "审批日期"
+    key: "{{审批日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true

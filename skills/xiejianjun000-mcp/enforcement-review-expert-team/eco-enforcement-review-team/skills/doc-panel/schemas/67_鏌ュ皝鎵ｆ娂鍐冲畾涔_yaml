@@ -1,0 +1,168 @@
+id: "67"
+name: "查封（扣押）决定书"
+category: "行政强制-查封扣押"
+complexity: "medium"
+template: "67_查封扣押决定书.md"
+description: "生态环境主管部门依法对造成或可能造成严重污染的设施设备进行查封扣押的行政强制决定文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号年份"
+    key: "{{文号年份}}"
+    type: "string"
+    source: "案件数据.查封扣押日期.年份"
+    required: true
+    validation: "^\\d{4}$"
+
+  - id: "文号序号"
+    key: "{{文号序号}}"
+    type: "string"
+    source: "系统生成.文号序号"
+    required: true
+
+  - id: "当事人名称或姓名"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人或负责人或经营者"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码或身份证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: true
+
+  - id: "地址或住址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: true
+
+  - id: "违法事实陈述"
+    key: "{{违法事实陈述}}"
+    type: "text"
+    source: "AI生成.从案件事实和证据生成"
+    required: true
+    constraints:
+      - "说明造成或可能造成严重污染的具体情形"
+      - "包含违法行为发生的时间、地点、情节"
+
+  - id: "查封扣押法律依据"
+    key: "{{查封扣押法律依据}}"
+    type: "text"
+    source: "案件数据.法律依据.查封扣押条款"
+    required: true
+    description: "引用环境保护法第二十五条及相关法律法规具体条款"
+
+  - id: "查封扣押决定类型"
+    key: "{{查封扣押决定类型}}"
+    type: "enum"
+    source: "用户输入"
+    required: true
+    options:
+      - "查封"
+      - "扣押"
+      - "查封并扣押"
+
+  - id: "查封扣押设施设备清单"
+    key: "{{查封扣押设施设备清单}}"
+    type: "text"
+    source: "案件数据.查封扣押.物品清单"
+    required: true
+    constraints:
+      - "逐一列明查封扣押的设施、设备、物品名称、数量、型号规格"
+      - "注明存放地点和保管人"
+
+  - id: "查封扣押期限"
+    key: "{{查封扣押期限}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+    description: "查封扣押的具体期限，一般不超过30日"
+
+  - id: "查封扣押起始日期"
+    key: "{{查封扣押起始日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "查封扣押结束日期"
+    key: "{{查封扣押结束日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "保管人"
+    key: "{{保管人}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+    description: "查封扣押设施设备的保管人"
+
+  - id: "保管地点"
+    key: "{{保管地点}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "是否查封扣押期间允许使用"
+    key: "{{是否允许使用}}"
+    type: "boolean"
+    source: "用户输入"
+    required: true
+    description: "查封扣押期间是否可以继续使用设备，一般不允许"
+
+  - id: "救济途径告知"
+    key: "{{救济途径告知}}"
+    type: "text"
+    source: "系统配置.默认文本"
+    required: true
+    description: "告知申请行政复议或提起行政诉讼的途径和期限"
+
+  - id: "行政复议机关"
+    key: "{{行政复议机关}}"
+    type: "string"
+    source: "系统配置.行政复议机关"
+    required: true
+
+  - id: "行政诉讼法院"
+    key: "{{行政诉讼法院}}"
+    type: "string"
+    source: "系统配置.行政诉讼法院"
+    required: true
+
+  - id: "作出日期"
+    key: "{{作出日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+branches:
+  - id: "决定类型段"
+    field: "{{决定类型段}}"
+    conditions:
+      - if: "查封扣押决定类型=查封"
+        select: "branch_seal_only"
+      - if: "查封扣押决定类型=扣押"
+        select: "branch_seize_only"
+      - if: "查封扣押决定类型=查封并扣押"
+        select: "branch_seal_and_seize"
+
+  - id: "延期段"
+    field: "{{延期段}}"
+    conditions:
+      - if: "查封扣押期限>30日"
+        select: "branch_extended"
+      - if: "查封扣押期限<=30日"
+        select: "branch_normal_period"

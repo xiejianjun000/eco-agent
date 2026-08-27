@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-quality_audit.py — ECO AGENT 质量审计工具
+quality_audit.py — eco Agent 质量审计工具
 
-审计 ECO AGENT 项目自身的文件完整性、宪法合规性、质量标准达标情况。
+审计 eco Agent 项目自身的文件完整性、宪法合规性、质量标准达标情况。
 
-ECO AGENT 14 维质量评分卡ECO SCHEMA 2
+eco Agent 14 维质量评分卡ECO SCHEMA 2
 
   结构维度
     D1  法规溯源准确率  — 每条结论可追溯到原始法规
@@ -226,7 +226,7 @@ def audit_project_quality():
     start_time = datetime.now()
 
     print("=" * 60)
-    print("  ECO AGENT 质量审计报告")
+    print("  eco Agent 质量审计报告")
     print(f"  审计时间: {start_time.strftime('%Y-%m-%d %H:%M')}")
     print(f"  项目根目录: {PROJECT_ROOT}")
     print("=" * 60)
@@ -395,7 +395,7 @@ def audit_project_quality():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ECO AGENT 质量审计")
+    parser = argparse.ArgumentParser(description="eco Agent 质量审计")
     parser.add_argument("--json", action="store_true", help="JSON 格式输出")
     parser.add_argument("--summary", action="store_true", help="仅输出摘要")
     args = parser.parse_args()

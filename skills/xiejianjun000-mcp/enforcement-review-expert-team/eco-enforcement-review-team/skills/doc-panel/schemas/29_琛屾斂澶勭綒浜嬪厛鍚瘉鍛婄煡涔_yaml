@@ -1,0 +1,134 @@
+id: "29"
+name: "行政处罚事先（听证）告知书"
+category: "行政处罚-告知"
+complexity: "medium"
+template: "29_行政处罚事先听证告知书.md"
+description: "在作出行政处罚决定前，告知当事人拟作出的处罚内容、事实、理由、依据，并告知其陈述申辩权和听证权的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统生成.文号"
+    required: true
+    description: "格式：环罚告〔年份〕序号号"
+
+  - id: "当事人名称或姓名"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人或负责人或经营者"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码或身份证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: true
+
+  - id: "地址或住址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: true
+
+  - id: "调查日期"
+    key: "{{调查日期}}"
+    type: "date"
+    source: "案件数据.调查日期"
+    required: true
+
+  - id: "违法事实"
+    key: "{{违法事实}}"
+    type: "text"
+    source: "AI生成.从案件事实和证据生成"
+    required: true
+    constraints:
+      - "包含违法行为发生的时间、地点、情节、动机、危害后果"
+      - "第一句格式：我厅（局）于X年X月X日对你（单位）进行了调查"
+
+  - id: "证据描述"
+    key: "{{证据描述}}"
+    type: "text"
+    source: "案件数据.证据"
+    required: true
+    description: "列举证明违法事实的主要证据"
+
+  - id: "违反的法律规定"
+    key: "{{违反的法律规定}}"
+    type: "text"
+    source: "案件数据.法律依据.违法条款"
+    required: true
+
+  - id: "拟处罚依据"
+    key: "{{拟处罚依据}}"
+    type: "text"
+    source: "案件数据.法律依据.处罚条款"
+    required: true
+    description: "包括法律、法规、规章名称全称及具体条款"
+
+  - id: "拟处罚种类和幅度"
+    key: "{{拟处罚种类和幅度}}"
+    type: "text"
+    source: "AI生成.结合裁量基准生成"
+    required: true
+    constraints:
+      - "包含拟作出的行政处罚种类"
+      - "包含拟处罚的具体幅度（如罚款金额）"
+
+  - id: "是否告知听证权"
+    key: "{{是否有听证权}}"
+    type: "boolean"
+    source: "案件数据.听证权判定"
+    required: true
+    description: "拟罚款、没收金额或处罚种类是否达到听证标准"
+
+  - id: "联系地址"
+    key: "{{联系地址}}"
+    type: "string"
+    source: "系统配置.联系地址"
+    required: true
+
+  - id: "邮政编码"
+    key: "{{邮政编码}}"
+    type: "string"
+    source: "系统配置.邮政编码"
+    required: false
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.执法人员1"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统配置.联系电话"
+    required: true
+
+  - id: "作出日期"
+    key: "{{作出日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+branches:
+  - id: "听证权告知段"
+    field: "{{听证权告知段}}"
+    conditions:
+      - if: "是否有听证权=是"
+        select: "branch_with_hearing_rights"
+      - if: "是否有听证权=否"
+        select: "branch_without_hearing_rights"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-lint.py — ECO AGENT 项目健康检查工具
+lint.py — eco Agent 项目健康检查工具
 
 检查项
   1. 文件完整性 — 必备文件是否存在
@@ -169,14 +169,14 @@ def print_section(title, items, ok_msg="[OK] 全部通过"):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ECO AGENT 健康检查")
+    parser = argparse.ArgumentParser(description="eco Agent 健康检查")
     parser.add_argument("--fix", action="store_true", help="尝试修复")
     parser.add_argument("--verbose", action="store_true", help="详细输出")
     args = parser.parse_args()
 
     start = datetime.now()
     print("=" * 50)
-    print("  ECO AGENT 项目健康检查")
+    print("  eco Agent 项目健康检查")
     print(f"  时间: {start.strftime('%Y-%m-%d %H:%M')}")
     print("=" * 50)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-split_brain.py — ECO AGENT Split Brain 三重架构
+split_brain.py — eco Agent Split Brain 三重架构
 
 对标 OPENHUMAN 的三脑架构：
   Reflex (快速层)     → 秒级响应，常规执法问答/法规检索
@@ -70,7 +70,7 @@ class Reflex:
         responses = {
             "greeting": {
                 "type": "text",
-                "content": "你好！我是 ECO AGENT 执法助手。\n发送法规名称查条文\n发送违法事实获取裁量建议\n发送「帮助」看说明",
+                "content": "你好！我是 eco Agent 执法助手。\n发送法规名称查条文\n发送违法事实获取裁量建议\n发送「帮助」看说明",
                 "processing_time_ms": 5,
             },
             "help": {
@@ -80,7 +80,7 @@ class Reflex:
             },
             "status": {
                 "type": "text",
-                "content": f"ECO AGENT 运行中\n版本: v3.x\n脑层: Reflex/Reasoning/Subconscious\n时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                "content": f"eco Agent 运行中\n版本: v3.x\n脑层: Reflex/Reasoning/Subconscious\n时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
                 "processing_time_ms": 10,
             },
         }

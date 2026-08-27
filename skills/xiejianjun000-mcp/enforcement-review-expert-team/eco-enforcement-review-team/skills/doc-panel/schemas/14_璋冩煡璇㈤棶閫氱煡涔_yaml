@@ -1,0 +1,61 @@
+id: "14"
+name: "调查询问通知书"
+category: "行政处罚-调查取证"
+complexity: "low"
+template: "14_调查询问通知书.md"
+description: "生态环境主管部门通知当事人接受调查询问的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "调查时间"
+    key: "{{调查时间}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "调查地点"
+    key: "{{调查地点}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

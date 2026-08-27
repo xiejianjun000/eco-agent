@@ -1,0 +1,146 @@
+id: "04"
+name: "立案（不予立案）审批表"
+category: "行政处罚-立案"
+complexity: "low"
+template: "04_立案不予立案审批表.md"
+description: "生态环境主管部门对案件线索进行立案审查的内部审批文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案件来源"
+    key: "{{案件来源}}"
+    type: "enum"
+    source: "案件数据.来源"
+    required: true
+    options:
+      - "现场检查"
+      - "非现场检查"
+      - "投诉举报"
+      - "媒体披露"
+      - "上级交办"
+      - "有关部门移送"
+      - "其他"
+
+  - id: "立案号"
+    key: "{{立案号}}"
+    type: "string"
+    source: "案件数据.立案号"
+    required: false
+    description: "立案后生成的编号，未立案时为空"
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+    description: "书写形式为：涉嫌+违法行为类别+案"
+    constraints:
+      - "格式：涉嫌+违法行为类别+案"
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: false
+    description: "法人或其他组织使用全称，自然人使用姓名"
+
+  - id: "统一社会信用代码或身份证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: false
+
+  - id: "法定代表人"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "地址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: false
+
+  - id: "案情简介及立案理由"
+    key: "{{案情简介及立案理由}}"
+    type: "text"
+    source: "AI生成.从案件线索生成案情摘要及立案依据"
+    required: true
+    constraints:
+      - "包括违法行为发生的时间、地点、基本情况"
+      - "说明符合立案条件的理由和法律依据"
+
+  - id: "承办人意见"
+    key: "{{承办人意见}}"
+    type: "enum"
+    source: "用户输入"
+    required: true
+    options:
+      - "建议立案"
+      - "建议不予立案"
+
+  - id: "承办人签字"
+    key: "{{承办人签字}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "承办人日期"
+    key: "{{承办人日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "承办机构负责人意见"
+    key: "{{承办机构负责人意见}}"
+    type: "enum"
+    source: "用户输入"
+    required: true
+    options:
+      - "同意立案"
+      - "不同意立案"
+
+  - id: "承办机构负责人签字"
+    key: "{{承办机构负责人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "承办机构负责人日期"
+    key: "{{承办机构负责人日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "单位负责人审批意见"
+    key: "{{单位负责人审批意见}}"
+    type: "enum"
+    source: "用户输入"
+    required: true
+    options:
+      - "同意立案"
+      - "不同意立案"
+
+  - id: "单位负责人签字"
+    key: "{{单位负责人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "单位负责人日期"
+    key: "{{单位负责人日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "备注"
+    key: "{{备注}}"
+    type: "text"
+    source: "用户输入"
+    required: false

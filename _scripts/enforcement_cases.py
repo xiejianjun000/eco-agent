@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-enforcement_cases.py — ECO AGENT 执法案例模块
+enforcement_cases.py — eco Agent 执法案例模块
 
 功能：
   1. 执法案例库（入库/检索/相似匹配/评分）

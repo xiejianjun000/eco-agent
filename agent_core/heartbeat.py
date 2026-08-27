@@ -35,6 +35,7 @@ class PulseLoop:
         self._min_interval = 300   # 5分钟
         self._max_interval = 1200  # 20分钟
         self._load_aware = True
+        self._battery_mode = False  # 🚧 电池感知未实现，默认关闭
         self._listeners: dict[str, Callable] = {}
         self._pulse_log: list[dict] = []
 
@@ -94,6 +95,13 @@ class PulseLoop:
             self._interval = min(self._interval * 1.2, self._max_interval)
         elif elapsed_s < self._interval * 0.2:
             self._interval = max(self._interval * 0.8, self._min_interval)
+
+    def _battery_aware_adapt(self) -> bool:
+        """🚧 规划中：电池模式自动降频。
+        当前无电源/电池感知实现，仅记录日志并回退到 _adapt_interval 逻辑。
+        返回 False 表示电池模式未激活。"""
+        logger.info("[Pulse] 电池模式降频：规划中，当前按心跳耗时自适应调整")
+        return False
 
     # ── 内置心跳步骤（兼容旧接口，委托 PulseSteps 默认实例）──
 

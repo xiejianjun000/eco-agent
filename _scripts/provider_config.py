@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-provider_config.py — ECO AGENT 多模型提供者配置与验证
+provider_config.py — eco Agent 多模型提供者配置与验证
 
 支持模型
   - claude-sonnet-4 (主模型)
@@ -253,7 +253,7 @@ def verify_all():
     router = ProviderRouter()
     available = router.list_available()
     print("=" * 50)
-    print("  ECO AGENT 模型提供者配置验证")
+    print("  eco Agent 模型提供者配置验证")
     print("=" * 50)
 
     print(f"\n 注册模型: {len(PROVIDER_REGISTRY)} 个")

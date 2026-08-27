@@ -105,6 +105,42 @@ def _svc(name: str, fallback_fn):
         pass
     return fallback_fn()
 
+
+def _route_client_by_model(model: str):
+    """按请求模型路由 LLM 客户端（修复：GUI 选非当前 provider 模型时的 HTTP 400）。
+
+    模型属于当前 provider → 直接复用共享单例；
+    模型属于其他 provider（且该 provider 已配 key）→ 构造独立客户端（不污染共享单例，
+    避免并发请求互相切换 provider）；无归属/无 key → 回退共享单例（由上层错误兜底）。
+    """
+    from agent_core.llm_client import get_default_client
+
+    client = _svc("llm", get_default_client)
+    if not model:
+        return client
+    try:
+        from agent_core.llm_providers import get_provider, list_providers
+
+        cur = getattr(client, "_provider_name", "") or ""
+        cur_spec = get_provider(cur)
+        if model in (cur_spec.models or []):
+            return client
+        for spec in list_providers():
+            if model in (spec.models or []):
+                try:
+                    from agent_core.llm_client import LLMClient
+
+                    c = LLMClient.from_provider(spec.name)
+                    if getattr(c, "_api_key", ""):
+                        logger.warning("[chat] 模型 %s 路由到 provider %s", model, spec.name)
+                        return c
+                except Exception:  # noqa: BLE001 — 路由失败回退单例
+                    pass
+                break
+    except Exception:  # noqa: BLE001 — 路由逻辑异常绝不阻断请求
+        pass
+    return client
+
 def _load_codex_skill_rules() -> str:
     """加载 eco-codex skill 的检索规则（SKILL.md 全文注入系统提示词）。"""
     from pathlib import Path
@@ -990,6 +1026,7 @@ def _open_browser(url: str, prefer_panel: bool = False) -> str:
     打开的是用户自己屏幕上的浏览器窗口——用户可见、可关、可逆。
     prefer_panel=True 且为 docs.qq.com 时不开系统浏览器，返回右侧面板标记。"""
     import platform
+    import shutil
     import subprocess
     from urllib.parse import urlparse
 
@@ -1005,10 +1042,25 @@ def _open_browser(url: str, prefer_panel: bool = False) -> str:
         return json.dumps({"ok": True, "url": u, "opened": "side_panel",
                            "note": "已在页面右侧预览面板打开"},
                           ensure_ascii=False)
+
+    # ── 环境检测：无头/容器环境优雅降级 ──
+    system = platform.system()
+    if system == "Linux":
+        # 检查是否有可用的浏览器后端
+        has_browser_backend = any(shutil.which(b) for b in [
+            "www-browser", "firefox", "chromium", "chromium-browser",
+            "google-chrome", "microsoft-edge", "brave", "opera"
+        ])
+        if not has_browser_backend:
+            return json.dumps({
+                "ok": False,
+                "error": "当前环境无可用浏览器（无 www-browser/firefox/chromium 等），请在图形桌面环境使用"
+            }, ensure_ascii=False)
+
     try:
-        if platform.system() == "Darwin":
+        if system == "Darwin":
             subprocess.run(["open", u], check=True, timeout=15)
-        elif platform.system() == "Windows":
+        elif system == "Windows":
             subprocess.run(["cmd", "/c", "start", "", u], check=True, timeout=15)
         else:
             subprocess.run(["xdg-open", u], check=True, timeout=15)
@@ -1506,7 +1558,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
                             usage={}, duration_ms=0, ttft_ms=0, trace=[],
                             suggestions=[])
 
-    client = _svc("llm", get_default_client)
+    client = _route_client_by_model(req.model)
     messages = _build_messages(req.message, req.history, req.session_id or "default")
     t0 = time.monotonic()
     # 三角色协作（内置三智能体）：复杂执法任务走 RoleSwarm DAG
@@ -2528,7 +2580,7 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
 
     from agent_core.llm_client import get_default_client
 
-    client = _svc("llm", get_default_client)
+    client = _route_client_by_model(req.model)
     messages = _build_messages(req.message, req.history, req.session_id or "default")
     t0 = time.monotonic()
     # 线程安全队列：工作线程（流式 chunk 回调）与事件循环（gen 消费）共用，

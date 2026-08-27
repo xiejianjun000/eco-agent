@@ -46,11 +46,11 @@ if CACHE.exists():
 def ask(msg):
     m = msg.strip().lower()
     if m in ("niha","hi","hello","zaima"):
-        return "Welcome! I am ECO AGENT. Send law name for search, or describe violation for penalty advice."
+        return "Welcome! I am eco Agent. Send law name for search, or describe violation for penalty advice."
     if m in ("help","?","h") or "bangzhu" in m:
         return "Commands:\n- send law name (e.g. dqwrffz)\n- describe violation facts\n- case + keyword\n- status"
     if m in ("status",):
-        return "ECO AGENT running | events: online | knowledge base: ready"
+        return "eco Agent running | events: online | knowledge base: ready"
     try:
         spec = importlib.util.spec_from_file_location("m", str(ROOT/"_scripts"/"eco-knowledge-mcp.py"))
         mod = importlib.util.module_from_spec(spec)

@@ -1,0 +1,73 @@
+id: "68"
+name: "查封/扣押清单"
+category: "行政强制"
+complexity: "medium"
+template: "68_查封扣押清单.md"
+description: "生态环境主管部门对查封或扣押物品进行登记造册的清单文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "查封扣押决定书编号"
+    key: "{{查封扣押决定书编号}}"
+    type: "string"
+    source: "案件数据.查封扣押.决定书编号"
+    required: true
+
+  - id: "物品清单"
+    key: "{{物品清单}}"
+    type: "text"
+    source: "AI生成.从查封扣押记录生成清单"
+    required: true
+
+  - id: "物品存放地点"
+    key: "{{物品存放地点}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "当事人确认意见"
+    key: "{{当事人确认意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "当事人签字"
+    key: "{{当事人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "当事人签字日期"
+    key: "{{当事人签字日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "执法人员签字"
+    key: "{{执法人员签字}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "执法证号"
+    key: "{{执法证号}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "制作日期"
+    key: "{{制作日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

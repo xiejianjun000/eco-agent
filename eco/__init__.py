@@ -1,5 +1,5 @@
 """
-ECO AGENT — Five-layer loop driven autonomous AI agent system
+eco Agent — Five-layer loop driven autonomous AI agent system
 CLI entry: `eco [command] [options]`
 """
 

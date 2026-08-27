@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-server/app.py — ECO AGENT 管理 API 应用工厂
+server/app.py — eco Agent 管理 API 应用工厂
 
 端面一览：
   POST   /api/v1/chat              对话（非流式，含 system prompt 构建）
@@ -50,8 +50,8 @@ def create_app() -> FastAPI:
     load_env_into_process()
 
     app = FastAPI(
-        title="ECO AGENT API",
-        description="ECO AGENT 管理 API — 面向应用与 Web GUI 的 REST/SSE 接口",
+        title="eco Agent API",
+        description="eco Agent 管理 API — 面向应用与 Web GUI 的 REST/SSE 接口",
         version=get_version(),
     )
 
@@ -81,8 +81,8 @@ def create_app() -> FastAPI:
     app.include_router(dynamic_plugins.router, prefix="/api/v1", tags=["dynamic-plugins"])
     app.include_router(slots.router, prefix="/api/v1", tags=["slots"])
     app.include_router(approvals.router, prefix="/api/v1", tags=["approvals"])
-    app.include_router(config.router, prefix="/api/v1", tags=["config"])
     app.include_router(system.router, prefix="/api/v1", tags=["system"])
+    app.include_router(config.router, prefix="/api/v1", tags=["config"])
 
     @app.get("/healthz", tags=["system"])
     async def healthz() -> dict:

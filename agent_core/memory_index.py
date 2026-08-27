@@ -33,8 +33,10 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "memory-tree" / "data"
 MEMORY_FILE = DATA_DIR / "memory.jsonl"
 DIM = 4096
 NGRAM = 3
-# 记忆库上限（超出淘汰最旧），可通过环境变量覆盖
+# 记忆库上限（可通过环境变量配置，默认 2000）
 _MAX_RECORDS = int(os.environ.get("ECO_MEMORY_MAX_RECORDS", "2000"))
+# 检索时先粗筛再精排，粗筛候选数（默认 100）
+_SEARCH_PRESCREEN = int(os.environ.get("ECO_MEMORY_PRESCREEN", "100"))
 
 
 def _ngram_vec(text: str) -> Counter[int]:
@@ -65,17 +67,16 @@ def _cosine(a: Counter[int], b: Counter[int]) -> float:
 
 
 class MemoryIndex:
-    """进程级单例：记忆记录 + 语义检索。
-    检索优化：
-      1) 预计算并缓存每条记录的 n-gram 向量（避免每次查询重算 md5）；
-      2) 倒排索引（特征哈希 -> 记录下标）只对与查询共享特征的候选做余弦打分。"""
+    """进程级单例：记忆记录 + 语义检索（预计算向量 + 关键词粗筛索引）"""
 
     def __init__(self, path: Path | None = None):
         self._path = path or MEMORY_FILE
         self._records: list[dict] = []
-        self._vecs: list[Counter[int]] = []  # 与 _records 平行的缓存向量
-        self._inv: dict[int, set[int]] = {}  # 特征哈希 -> 记录下标集合
         self._lock = threading.Lock()
+        # 预计算向量缓存: hash -> Counter
+        self._vec_cache: dict[str, Counter] = {}
+        # 关键词倒排索引: word -> set(record_indices)
+        self._word_index: dict[str, set[int]] = {}
         self._load()
 
     def _load(self) -> None:
@@ -85,28 +86,32 @@ class MemoryIndex:
             with open(self._path, encoding="utf-8") as f:
                 for line in f.readlines():
                     try:
-                        self._records.append(json.loads(line))
+                        rec = json.loads(line)
+                        self._records.append(rec)
                     except json.JSONDecodeError:
                         continue
         except OSError:  # pragma: no cover
             pass
+        # 截断到上限并重建索引
         self._records = self._records[-_MAX_RECORDS:]
         self._rebuild_index()
 
-    def _rebuild_index(self) -> None:
-        """根据当前记录重建向量缓存 + 倒排索引"""
-        vecs: list[Counter[int]] = []
-        inv: dict[int, set[int]] = {}
-        for i, rec in enumerate(self._records):
-            v = _ngram_vec(rec.get("content", ""))
-            vecs.append(v)
-            for h in v:
-                inv.setdefault(h, set()).add(i)
-        self._vecs = vecs
-        self._inv = inv
+    def _rebuild_index(self):
+        """重建向量缓存和关键词索引"""
+        self._vec_cache.clear()
+        self._word_index.clear()
+        for idx, rec in enumerate(self._records):
+            h = rec.get("hash", "")
+            content = rec.get("content", "")
+            if h and content:
+                self._vec_cache[h] = _ngram_vec(content)
+            # 提取关键词建倒排索引（中文字符串 + 英文单词）
+            words = set(re.findall(r"[\u4e00-\u9fff]{2,}|[A-Za-z]{3,}", content))
+            for w in words:
+                self._word_index.setdefault(w, set()).add(idx)
 
     def record(self, role: str, content: str, session_id: str = "default") -> None:
-        """写入一条记忆（去噪：空/过短/纯符号跳过）。"""
+        """写入一条记忆（去噪：空/过短/纯符号跳过）"""
         c = (content or "").strip()
         if len(c) < 4 or not re.search(r"[\u4e00-\u9fffA-Za-z0-9]", c):
             return
@@ -122,16 +127,19 @@ class MemoryIndex:
             if self._records and self._records[-1].get("hash") == rec["hash"]:
                 return
             self._records.append(rec)
+            idx = len(self._records) - 1
+            # 预计算向量并缓存
+            self._vec_cache[rec["hash"]] = _ngram_vec(rec["content"])
+            # 更新关键词索引
+            words = set(re.findall(r"[\u4e00-\u9fff]{2,}|[A-Za-z]{3,}", rec["content"]))
+            for w in words:
+                self._word_index.setdefault(w, set()).add(idx)
+            # 容量控制
             if len(self._records) > _MAX_RECORDS:
-                # 淘汰最旧后下标整体左移，重建索引保证一致
+                removed = len(self._records) - _MAX_RECORDS
                 self._records = self._records[-_MAX_RECORDS:]
+                # 重建索引（简单方案：截断后全量重建）
                 self._rebuild_index()
-            else:
-                new_idx = len(self._records) - 1
-                v = _ngram_vec(rec.get("content", ""))
-                self._vecs.append(v)
-                for h in v:
-                    self._inv.setdefault(h, set()).add(new_idx)
             try:
                 self._path.parent.mkdir(parents=True, exist_ok=True)
                 with open(self._path, "a", encoding="utf-8") as f:
@@ -141,32 +149,43 @@ class MemoryIndex:
 
     def search(self, query: str, k: int = 5,
                exclude_recent: int = 0) -> list[dict]:
-        """语义检索 top-k 条记忆（余弦相似度），返回 [{role, content, score}]。
-        exclude_recent：跳过最近 N 条（避免把"当前正在进行的对话"当回忆）。
-        优化：经倒排索引先取与查询共享特征的候选集，再做余弦打分，避免全量扫描。"""
+        """语义检索 top-k 条记忆（两层检索：关键词粗筛 + 余弦精排）"""
         q = (query or "").strip()
         if not q:
             return []
         qvec = _ngram_vec(q)
+        # 提取查询关键词
+        qwords = set(re.findall(r"[\u4e00-\u9fff]{2,}|[A-Za-z]{3,}", q))
+
         scored: list[tuple[float, dict]] = []
         with self._lock:
             items = self._records[:-exclude_recent] if exclude_recent else self._records
-            if self._inv:
-                cand: set[int] = set()
-                for h in qvec:
-                    cand |= self._inv.get(h, set())
-                for i in cand:
-                    if i >= len(items):
-                        continue  # 落在 exclude_recent 区间的跳过
-                    rec = self._records[i]
-                    s = _cosine(qvec, self._vecs[i])  # 用缓存向量，避免重算
-                    if s > 0.08:
-                        scored.append((s, rec))
-            else:  # pragma: no cover — 索引为空时回退全量扫描
-                for rec in items:
-                    s = _cosine(qvec, _ngram_vec(rec.get("content", "")))
-                    if s > 0.08:
-                        scored.append((s, rec))
+
+            # 第一层：关键词粗筛（有索引时）
+            if qwords and self._word_index:
+                candidate_indices: set[int] = set()
+                for w in qwords:
+                    candidate_indices |= self._word_index.get(w, set())
+                # 若无关键词命中，回退到全量扫描（兜底）
+                if not candidate_indices:
+                    candidate_indices = set(range(len(items)))
+                # 限制粗筛候选数
+                candidate_indices = sorted(candidate_indices)[:_SEARCH_PRESCREEN]
+                candidates = [items[i] for i in candidate_indices if i < len(items)]
+            else:
+                candidates = items
+
+            # 第二层：余弦相似度精排（使用预计算向量）
+            for rec in candidates:
+                h = rec.get("hash", "")
+                rvec = self._vec_cache.get(h)
+                if rvec is None:
+                    rvec = _ngram_vec(rec.get("content", ""))
+                    if h:
+                        self._vec_cache[h] = rvec
+                s = _cosine(qvec, rvec)
+                if s > 0.08:
+                    scored.append((s, rec))
         scored.sort(key=lambda x: -x[0])
         return [{"role": r.get("role", ""), "content": r.get("content", ""),
                  "score": round(s, 3)} for s, r in scored[:k]]

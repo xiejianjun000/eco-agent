@@ -1,0 +1,79 @@
+id: "47"
+name: "强制执行申请书"
+category: "行政处罚-执行"
+complexity: "medium"
+template: "47_强制执行申请书.md"
+description: "生态环境主管部门向人民法院申请强制执行的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "申请执行法院"
+    key: "{{申请执行法院}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "被执行人名称"
+    key: "{{被执行人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "被执行人地址"
+    key: "{{被执行人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: true
+
+  - id: "法定代表人"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "处罚决定书编号"
+    key: "{{处罚决定书编号}}"
+    type: "string"
+    source: "案件数据.处罚决定书编号"
+    required: true
+
+  - id: "催告书编号"
+    key: "{{催告书编号}}"
+    type: "string"
+    source: "案件数据.催告.文书编号"
+    required: true
+
+  - id: "申请执行内容"
+    key: "{{申请执行内容}}"
+    type: "text"
+    source: "AI生成.从处罚决定生成执行内容"
+    required: true
+
+  - id: "申请执行依据"
+    key: "{{申请执行依据}}"
+    type: "text"
+    source: "AI生成.生成法律依据"
+    required: true
+
+  - id: "附件清单"
+    key: "{{附件清单}}"
+    type: "text"
+    source: "AI生成.从案件材料生成附件清单"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

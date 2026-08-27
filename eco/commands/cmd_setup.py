@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 def run(args) -> int:
     quick = args.quick
     print("\n" + "="*50)
-    print("  ECO AGENT Configuration Wizard")
+    print("  eco Agent Configuration Wizard")
     print("="*50 + "\n")
 
     provider, api_key = _step_provider(quick)
@@ -25,7 +25,7 @@ def run(args) -> int:
         _step_platforms()
 
     print("\n" + "="*50)
-    print("  ECO AGENT is ready!")
+    print("  eco Agent is ready!")
     print("="*50)
     print("\n  Quick start:")
     print("    eco chat              Interactive chat")

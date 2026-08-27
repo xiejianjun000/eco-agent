@@ -1,5 +1,5 @@
 """
-tools_registry.py - ECO AGENT Complete Tool Registry
+tools_registry.py - eco Agent Complete Tool Registry
 113 tools (GOVMCP 100 + Built-in 13)
 
 名称合规：OpenAI function calling 要求工具名匹配 ^[a-zA-Z0-9_-]{1,64}$，
@@ -2917,7 +2917,7 @@ def get_duplicate_tools() -> list[str]:
 
 def get_tools() -> list: return _sanitized_defs()
 def get_tool_names() -> list[str]: return [t["function"]["name"] for t in _sanitized_defs()]
-def get_tools_summary() -> str: return f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools"
+def get_tools_summary() -> str: return f"eco Agent: {len(ALL_TOOL_DEFS)} tools"
 
 # ── 外部工具注册（插件系统接入）──────────────────────────────
 # 插件（plugins/）通过 register_external_tool 把工具注册进 LLM 可见定义表，
@@ -3037,7 +3037,7 @@ async def execute_tool(name: str, args: dict) -> str:
     return json.dumps({"error": f"tool {name} not found"}, ensure_ascii=False)
 
 if __name__ == "__main__":
-    print(f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools")
+    print(f"eco Agent: {len(ALL_TOOL_DEFS)} tools")
 
 
 # ── MCP 远程工具并入（ECO_MCP_SERVERS 配置驱动，优雅降级）─────────────

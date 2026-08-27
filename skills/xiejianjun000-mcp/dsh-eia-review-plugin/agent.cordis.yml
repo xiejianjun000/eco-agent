@@ -1,0 +1,5 @@
+# 审查专用Agent配置
+- insert:
+    - id: eia-reviewer
+      name: 'dsh-eia-review-plugin'
+      inject: [tools, skills]

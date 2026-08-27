@@ -1,0 +1,73 @@
+id: "28"
+name: "案件审查表"
+category: "行政处罚-调查取证"
+complexity: "medium"
+template: "28_案件审查表.md"
+description: "生态环境主管部门对调查终结的案件进行审查的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "当事人证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: false
+
+  - id: "当事人地址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: false
+
+  - id: "违法事实"
+    key: "{{违法事实}}"
+    type: "text"
+    source: "AI生成.从调查记录生成违法事实"
+    required: true
+
+  - id: "证据材料"
+    key: "{{证据材料}}"
+    type: "text"
+    source: "AI生成.从证据清单生成证据摘要"
+    required: true
+
+  - id: "处罚建议"
+    key: "{{处罚建议}}"
+    type: "text"
+    source: "AI生成.从违法事实生成处罚建议"
+    required: true
+
+  - id: "审查人意见"
+    key: "{{审查人意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "审查人签字"
+    key: "{{审查人签字}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "审查日期"
+    key: "{{审查日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

@@ -1,0 +1,210 @@
+id: "41"
+name: "当场行政处罚决定书"
+category: "行政处罚-简易程序"
+complexity: "medium"
+template: "41_当场行政处罚决定书.md"
+description: "对违法事实确凿并有法定依据，适用简易程序当场作出的行政处罚决定文书，包含当事人联和存根联"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号年份"
+    key: "{{文号年份}}"
+    type: "string"
+    source: "案件数据.处罚日期.年份"
+    required: true
+    validation: "^\\d{4}$"
+
+  - id: "文号序号"
+    key: "{{文号序号}}"
+    type: "string"
+    source: "系统生成.文号序号"
+    required: true
+
+  - id: "当事人名称或姓名"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人或负责人或经营者"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码或身份证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: true
+
+  - id: "地址或住址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: true
+
+  - id: "违法行为日期"
+    key: "{{违法行为日期}}"
+    type: "date"
+    source: "案件数据.违法行为.日期"
+    required: true
+
+  - id: "违法地点"
+    key: "{{违法地点}}"
+    type: "string"
+    source: "案件数据.违法行为.地点"
+    required: true
+
+  - id: "违法行为方式"
+    key: "{{违法行为方式}}"
+    type: "text"
+    source: "案件数据.违法行为.方式"
+    required: true
+
+  - id: "违反的法律规定"
+    key: "{{违反的法律规定}}"
+    type: "text"
+    source: "案件数据.法律依据.违法条款"
+    required: true
+    description: "法律、法规、规章名称用全称"
+
+  - id: "是否进行陈述申辩"
+    key: "{{是否有陈述申辩}}"
+    type: "enum"
+    source: "案件数据.陈述申辩.状态"
+    required: true
+    options:
+      - "已进行"
+      - "未进行"
+
+  - id: "陈述申辩内容"
+    key: "{{陈述申辩内容}}"
+    type: "text"
+    source: "案件数据.陈述申辩.内容"
+    required: false
+
+  - id: "处罚依据"
+    key: "{{处罚依据}}"
+    type: "text"
+    source: "案件数据.法律依据.处罚条款"
+    required: true
+    description: "法律、法规、规章名称用全称"
+
+  - id: "行政处罚一"
+    key: "{{行政处罚一}}"
+    type: "text"
+    source: "案件数据.处罚决定.处罚一"
+    required: true
+    description: "第一个行政处罚种类及幅度"
+
+  - id: "行政处罚二"
+    key: "{{行政处罚二}}"
+    type: "text"
+    source: "案件数据.处罚决定.处罚二"
+    required: false
+    description: "第二个行政处罚种类及幅度，如无则留空"
+
+  - id: "罚款缴纳方式"
+    key: "{{罚款缴纳方式}}"
+    type: "enum"
+    source: "用户输入"
+    required: true
+    options:
+      - "当场收缴"
+      - "限期缴纳"
+    description: "符合行政处罚法第六十八条规定的可选择当场收缴"
+
+  - id: "当场收缴适用条款"
+    key: "{{当场收缴适用条款}}"
+    type: "string"
+    source: "案件数据.处罚决定.当场收缴法条"
+    required: false
+    description: "行政处罚法第六十八条适用情形条款项"
+
+  - id: "收款银行"
+    key: "{{收款银行}}"
+    type: "string"
+    source: "系统配置.收款银行"
+    required: false
+
+  - id: "收款户名"
+    key: "{{收款户名}}"
+    type: "string"
+    source: "系统配置.收款户名"
+    required: false
+
+  - id: "收款账号"
+    key: "{{收款账号}}"
+    type: "string"
+    source: "系统配置.收款账号"
+    required: false
+
+  - id: "行政复议机关"
+    key: "{{行政复议机关}}"
+    type: "string"
+    source: "系统配置.行政复议机关"
+    required: true
+
+  - id: "处罚地点"
+    key: "{{处罚地点}}"
+    type: "string"
+    source: "案件数据.违法行为.地点"
+    required: true
+
+  - id: "执法人员一姓名"
+    key: "{{执法人员一姓名}}"
+    type: "string"
+    source: "系统数据.执法人员1"
+    required: true
+
+  - id: "执法人员一执法证件号"
+    key: "{{执法人员一执法证件号}}"
+    type: "string"
+    source: "系统数据.执法人员1.执法证编号"
+    required: true
+
+  - id: "执法人员二姓名"
+    key: "{{执法人员二姓名}}"
+    type: "string"
+    source: "系统数据.执法人员2"
+    required: true
+
+  - id: "执法人员二执法证件号"
+    key: "{{执法人员二执法证件号}}"
+    type: "string"
+    source: "系统数据.执法人员2.执法证编号"
+    required: true
+
+  - id: "当事人确认及签收"
+    key: "{{当事人确认及签收}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+    description: "当事人签字确认，拒绝签字的注明情况"
+
+  - id: "签收时间"
+    key: "{{签收时间}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "作出日期"
+    key: "{{作出日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+branches:
+  - id: "罚款缴纳方式段"
+    field: "{{罚款缴纳方式段}}"
+    conditions:
+      - if: "罚款缴纳方式=当场收缴"
+        select: "branch_instant_collection"
+      - if: "罚款缴纳方式=限期缴纳"
+        select: "branch_deferred_payment"

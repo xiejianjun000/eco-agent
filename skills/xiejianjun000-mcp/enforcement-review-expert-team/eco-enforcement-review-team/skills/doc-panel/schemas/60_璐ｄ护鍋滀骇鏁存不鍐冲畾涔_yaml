@@ -1,0 +1,91 @@
+id: "60"
+name: "责令停产整治决定书"
+category: "行政处罚-责令限制生产停产整治"
+complexity: "medium"
+template: "60_责令停产整治决定书.md"
+description: "生态环境主管部门作出的责令当事人停产整治的决定文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "统一社会信用代码"
+    key: "{{统一社会信用代码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: false
+
+  - id: "法定代表人"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "当事人地址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: false
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "违法事实"
+    key: "{{违法事实}}"
+    type: "text"
+    source: "AI生成.从调查记录生成"
+    required: true
+
+  - id: "停产整治依据"
+    key: "{{停产整治依据}}"
+    type: "text"
+    source: "AI生成.生成法律依据"
+    required: true
+
+  - id: "停产整治方式"
+    key: "{{停产整治方式}}"
+    type: "text"
+    source: "AI生成.从案件情况生成整治方式"
+    required: true
+
+  - id: "停产整治期限"
+    key: "{{停产整治期限}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "恢复生产条件"
+    key: "{{恢复生产条件}}"
+    type: "text"
+    source: "AI生成.生成恢复生产条件"
+    required: true
+
+  - id: "救济途径告知"
+    key: "{{救济途径告知}}"
+    type: "text"
+    source: "AI生成.生成救济途径"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

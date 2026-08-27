@@ -90,7 +90,7 @@ class WechatBot:
         elif msg_type == "event":
             event = root.findtext("Event", "")
             if event == "subscribe":
-                reply = "欢迎关注 ECO AGENT 执法助手！\n发送法规名称查询法律条文。"
+                reply = "欢迎关注 eco Agent 执法助手！\n发送法规名称查询法律条文。"
             elif event == "CLICK":
                 reply = "请发送法规名称或描述违法事实。"
             else:
@@ -105,7 +105,7 @@ class WechatBot:
         content = content.strip()
         if content in ("帮助", "help", "h", "?"):
             return (
-                "ECO AGENT 执法助手\n\n"
+                "eco Agent 执法助手\n\n"
                 "📖 发送法规名称检索法律条文\n"
                 "⚖️ 描述违法事实获取裁量建议\n"
                 "📁 发送「案例」+关键词查案例\n"
