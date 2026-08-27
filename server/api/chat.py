@@ -223,6 +223,8 @@ def _codex_rules_section() -> str:
         "yAxis:{type:'value'},series:[{type:'line',data:[52,48,39,35,28,24]}]});</script>\n```\n"
         "数据趋势/对比/占比类问题，必须调用 chart_render 工具生成图表卡片（离线 SVG，\n"
         "折线/柱状/堆叠柱/饼图；工具一调完卡片自动渲染，正文只留结论+「📊 标题」引用）；\n"
+        "chart_render 已挂载在你的函数清单里（名字就叫 chart_render），找不到就再查一遍函数列表，\n"
+        "禁止声称'当前会话无 chart_render 工具/无图表工具'——那是错误结论，会误导用户。\n"
         "禁止手写 echarts/HTML 代码块（容易渲染空白），禁止用纯文字罗列趋势。\n"
         "【数据分析纪律】涉及多期数据对比/多断面统计时，必须先算统计量再下结论：\n"
         "①变化率/降幅（如'从52降至24，降幅53.8%'）；②占比（如'Ⅱ类占83%，降级断面占17%'）；\n"
@@ -284,6 +286,8 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default") -> 
         "禁止用 web_search 或抓官网首页绕路。\n"
         "2. 地表水自动站实时数据：water_station_realtime；空气质量预报：air_forecast。\n"
         "3. 污染源在线监控：wryzxjc_*；国家四平台执法数据：sthjzf_*；排污许可：permit_*。\n"
+        "4. 数据图表：chart_render（line/bar/stacked_bar/pie）——趋势曲线/因子对比/占比\n"
+        "必须调用它出卡片；函数清单里一定有这个工具，禁止声称'当前会话无 chart_render 工具'。\n"
         "这些工具是实测直连端点，调用即得真实数据；查不到时才说查不到，不要绕去搜网页。",
         "tool_guidance",
     )
@@ -1807,6 +1811,7 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                 stream_answer, _emit, _push_delta, _run_tool, time, json, re)
             # 规则19 确定性执行（直接作答早退路径同样生效；截断后 reset 重放同步界面）
             content = _strip_tool_format(content)
+            content = _strip_false_tool_claims(content)
             content = _normalize_markdown(content)
             # 交互图表卡片（早退路径同样生效；提取在截断之前）
             try:
@@ -1816,6 +1821,11 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                            "title": _c["title"], "html": _c["html"]})
                     if stream_answer:
                         _push_delta(content, reset=True)
+                # 确定性兜底：📊 引用无真实卡片 → 从答案表格自动生成图表
+                _existing = {t.get("title", "") for t in trace if t.get("type") == "card"}
+                for _c in _auto_chart_cards(content, _existing):
+                    _emit({"type": "card", "round": round_idx,
+                           "title": _c["title"], "html": _c["html"]})
             except Exception:  # noqa: BLE001
                 pass
             _full_before_cut_early = content
@@ -1940,6 +1950,8 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                    "格式要求（硬性）：结论先行、要点式；除法规条文原文引用外"
                    "总长不超过 300 字，能用表格/列表绝不用段落，"
                    "禁止复盘检索过程、禁止长篇分析。"
+                   "数据类问题（趋势/对比/占比）：若尚未生成图表，可再调用一次 chart_render "
+                   "生成图表卡片，正文用「📊 标题」引用；不要声称'无图表工具'。"
                    "如果结果不足以回答，就基于已有内容作答并标注局限。",
     })
     t_llm = time.monotonic()
@@ -2055,6 +2067,8 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
     # 终层净化：任何路径（含 enforce_save 追加轮、协作/重试轮）产出的
     # 工具调用格式残留一律剥离——先删平衡块，再删未闭合块，最后首现处截断
     content = _strip_tool_format(content)
+    # 消除模型的错误工具声明（chart_render 实际已挂载——不得向用户撒谎）
+    content = _strip_false_tool_claims(content)
     # Markdown 格式修整：修复 ** 与文字分行的断裂加粗（v4-pro 常见输出缺陷）
     content = _normalize_markdown(content)
     # 交互图表卡片：提取 ```card 块（必须在截断之前，防 card 被当叙述切碎）
@@ -2065,6 +2079,11 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                    "title": _c["title"], "html": _c["html"]})
             if stream_answer:
                 _push_delta(content, reset=True)
+        # 确定性兜底：📊 引用无真实卡片 → 从答案表格自动生成图表
+        _existing = {t.get("title", "") for t in trace if t.get("type") == "card"}
+        for _c in _auto_chart_cards(content, _existing):
+            _emit({"type": "card", "round": round_idx,
+                   "title": _c["title"], "html": _c["html"]})
     except Exception:  # noqa: BLE001 — 卡片提取失败不影响回答
         pass
     # 规则19 确定性执行：要点式回答硬上限（条文引用/表格豁免；截断后 reset 重放同步界面）
@@ -2274,6 +2293,87 @@ def _extract_cards(text: str) -> tuple[str, list[dict]]:
     return _out, cards
 
 
+def _parse_markdown_tables(content: str) -> list[dict]:
+    """解析 Markdown 表格 → [{"header": [...], "rows": [[...], ...]}]。"""
+    tables: list[dict] = []
+    pattern = re.compile(
+        r"(?:^|\n)([^\n]*\|[^\n]*)\n\|[\s:|-]+\|\n((?:\|[^\n]*\|\n?)+)")
+    for m in pattern.finditer(content or ""):
+        header = [c.strip() for c in m.group(1).strip().strip("|").split("|")]
+        rows = []
+        for line in m.group(2).strip().splitlines():
+            line = line.strip().strip("|")
+            rows.append([c.strip() for c in line.split("|")])
+        if header and rows:
+            tables.append({"header": header, "rows": rows})
+    return tables
+
+
+def _cell_num(cell: str) -> float | None:
+    m = re.search(r"-?\d+(?:\.\d+)?", cell or "")
+    if not m:
+        return None
+    try:
+        return float(m.group(0))
+    except ValueError:
+        return None
+
+
+def _auto_chart_cards(content: str, existing_titles: set[str]) -> list[dict]:
+    """确定性兜底：正文有「📊 标题」引用但没有对应真实卡片时（模型没调
+    chart_render / 没写 ```card），从答案里的 Markdown 表格自动生成图表卡片——
+    保证用户看到的每个 📊 引用背后都有真实渲染，模型撒不了谎。"""
+    refs = [m.strip() for m in re.findall(r"📊\s*([^\n|]+)", content or "") if m.strip()]
+    if not refs:
+        return []
+    tables = _parse_markdown_tables(content or "")
+    if not tables:
+        return []
+    out: list[dict] = []
+    for ref in refs:
+        if ref in existing_titles or not tables:
+            continue
+        table = tables.pop(0)
+        header, rows = table["header"], table["rows"]
+        if len(header) < 2 or not rows:
+            continue
+        # 数值列：整列可解析为数字 → series；第一个非数值列 → X 轴标签
+        numeric_cols = [i for i in range(len(header)) if all(_cell_num(r[i]) is not None for r in rows if i < len(r))]
+        if not numeric_cols:
+            continue
+        # 转置表（单行、多数值列）：表头 1..n 是 X 标签，行首格是系列名
+        if len(rows) == 1 and len(numeric_cols) >= 2:
+            x_labels = [h for h in header[1:]]
+            series = [{
+                "name": rows[0][0] or "数值",
+                "data": [_cell_num(c) for c in rows[0][1:]],
+            }]
+        else:
+            label_col = next((i for i in range(len(header)) if i not in numeric_cols), 0)
+            x_labels = [r[label_col] if label_col < len(r) else f"项{i + 1}" for i, r in enumerate(rows[:24])]
+            series = []
+            for ci in numeric_cols[:3]:
+                series.append({
+                    "name": header[ci] or f"系列{ci + 1}",
+                    "data": [_cell_num(r[ci]) if ci < len(r) else None for r in rows[:24]],
+                })
+        # 时间型标签 → 折线；否则 → 柱状
+        time_like = any(re.search(r"(月|日|年|周|时|hour|day|month|week|date|\d{1,2}[/\-.]\d{1,2})",
+                                  str(x), re.I) for x in x_labels[:4])
+        ctype = "line" if time_like else "bar"
+        try:
+            from agent_core.chart_gen import render_chart
+
+            html_chart = render_chart(type=ctype, title=ref, x_labels=x_labels, series=series)
+        except Exception:  # noqa: BLE001
+            continue
+        if "图表生成失败" in html_chart:
+            continue
+        out.append({"title": ref, "html": html_chart})
+        existing_titles.add(ref)
+    return out
+
+
 
 
 def _strip_tool_format(content: str) -> str:
@@ -2286,6 +2386,25 @@ def _strip_tool_format(content: str) -> str:
     t = re.sub(r"[<＜]\s*tool_calls\s*>[\s\S]*?[<＜]\s*/\s*tool_calls\s*>", "", t)
     t = re.sub(r"[<＜]\s*(tool_calls|invoke)[\s\S]*$", "", t)
     return t.strip()
+
+
+def _strip_false_tool_claims(content: str) -> str:
+    """消除模型的错误工具声明：chart_render 实际已挂载，模型找不到时
+    不得向用户撒谎'当前会话无 chart_render 工具'（v4-pro 推理幻觉实测出现）。
+    按行剔除：同时含（chart_render/图表/可视化）与（没有/无/未挂载/不可用/回可视化界面）
+    的整行视为错误声明——不影响其他行。"""
+    t = content or ""
+    out: list[str] = []
+    for line in t.splitlines():
+        s = line.strip()
+        if re.search(r"(chart_render|图表|可视化)", s) and re.search(
+                r"(没有|无\s|无图表|未挂载|未配置|不可用|请回可视化界面|未能渲染|不具备)", s):
+            continue
+        out.append(line)
+    res = "\n".join(out).strip()
+    # 剔除后可能残留句首标点（原句前半段被删）
+    res = re.sub(r"^[，,、；;：:。]+", "", res)
+    return res
 
 
 def _normalize_markdown(content: str) -> str:
