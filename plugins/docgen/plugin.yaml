@@ -1,0 +1,10 @@
+name: docgen
+version: 0.1.0
+description: 文档生成插件——PPT/Word/Excel 文件真实产出（纯标准库，无外部依赖）
+entry: handler
+tools:
+  - name: generate_pptx
+    description: 生成 PowerPoint 演示文稿文件（多页标题+要点），返回真实文件路径
+    risk_level: L2
+permissions:
+  generate_pptx: L2

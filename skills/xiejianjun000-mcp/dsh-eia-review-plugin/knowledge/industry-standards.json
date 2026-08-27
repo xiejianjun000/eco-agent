@@ -1,0 +1,36 @@
+{
+  "version": "2026.1",
+  "description": "行业环评与排污许可技术标准索引",
+  "lastUpdated": "2026-08-18",
+  "industries": {
+    "C26": {
+      "name": "化学原料和化学制品制造业",
+      "standards": [
+        { "code": "HJ 884-2018", "name": "污染源源强核算技术指南 准则", "type": "guideline" },
+        { "code": "HJ 971-2018", "name": "排污许可证申请与核发技术规范 石化工业", "type": "technical_specification" },
+        { "code": "HJ 1038-2019", "name": "排污许可证申请与核发技术规范 化学原料和化学制品制造业", "type": "technical_specification" },
+        { "code": "HJ 2.2-2018", "name": "环境影响评价技术导则 大气环境", "type": "guideline" },
+        { "code": "HJ 2.3-2018", "name": "环境影响评价技术导则 地表水环境", "type": "guideline" },
+        { "code": "HJ 610-2016", "name": "环境影响评价技术导则 地下水环境", "type": "guideline" },
+        { "code": "HJ 964-2018", "name": "环境影响评价技术导则 土壤环境", "type": "guideline" },
+        { "code": "HJ 169-2018", "name": "建设项目环境风险评价技术导则", "type": "guideline" }
+      ]
+    },
+    "C31": {
+      "name": "黑色金属冶炼和压延加工业",
+      "standards": [
+        { "code": "HJ 846-2017", "name": "排污许可证申请与核发技术规范 钢铁工业", "type": "technical_specification" },
+        { "code": "HJ 2.2-2018", "name": "环境影响评价技术导则 大气环境", "type": "guideline" },
+        { "code": "HJ 2.3-2018", "name": "环境影响评价技术导则 地表水环境", "type": "guideline" }
+      ]
+    },
+    "D44": {
+      "name": "电力、热力生产和供应业",
+      "standards": [
+        { "code": "HJ 863-2017", "name": "排污许可证申请与核发技术规范 火电", "type": "technical_specification" },
+        { "code": "HJ 2.2-2018", "name": "环境影响评价技术导则 大气环境", "type": "guideline" },
+        { "code": "环办环评函〔2024〕200号", "name": "火电行业建设项目温室气体排放环境影响评价技术指南（试行）", "type": "guideline" }
+      ]
+    }
+  }
+}

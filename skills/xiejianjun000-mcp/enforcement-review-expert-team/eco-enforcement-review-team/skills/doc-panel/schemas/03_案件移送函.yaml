@@ -1,0 +1,64 @@
+id: "03"
+name: "案件移送函"
+category: "行政处罚-实施主体与管辖"
+complexity: "low"
+template: "03_案件移送函.md"
+description: "生态环境主管部门将不属于本机关管辖的案件移送有管辖权的其他机关的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "被移送单位"
+    key: "{{被移送单位}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "案件名称"
+    key: "{{案件名称}}"
+    type: "text"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "移送法律依据"
+    key: "{{移送法律依据}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "第十六条第一款"
+      - "第十七条第一款"
+
+  - id: "附件材料"
+    key: "{{附件材料}}"
+    type: "text"
+    source: "用户输入"
+    required: false
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

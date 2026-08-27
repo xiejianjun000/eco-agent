@@ -1,0 +1,91 @@
+id: "48"
+name: "责令改正违法行为决定书（再次责令改正）"
+category: "行政处罚-按日连续处罚"
+complexity: "medium"
+template: "48_责令改正违法行为决定书_再次.md"
+description: "按日连续处罚程序中再次责令当事人改正违法行为的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "原责令改正决定书编号"
+    key: "{{原责令改正决定书编号}}"
+    type: "string"
+    source: "案件数据.责令改正.原决定书编号"
+    required: true
+
+  - id: "原责令改正日期"
+    key: "{{原责令改正日期}}"
+    type: "date"
+    source: "案件数据.责令改正.原决定日期"
+    required: true
+
+  - id: "复查情况"
+    key: "{{复查情况}}"
+    type: "text"
+    source: "AI生成.从复查记录生成"
+    required: true
+
+  - id: "复查日期"
+    key: "{{复查日期}}"
+    type: "date"
+    source: "案件数据.复查.日期"
+    required: true
+
+  - id: "违法行为持续情况"
+    key: "{{违法行为持续情况}}"
+    type: "text"
+    source: "AI生成.从复查记录生成"
+    required: true
+
+  - id: "改正要求"
+    key: "{{改正要求}}"
+    type: "text"
+    source: "AI生成.从违法行为生成改正要求"
+    required: true
+
+  - id: "改正期限"
+    key: "{{改正期限}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "法律依据"
+    key: "{{法律依据}}"
+    type: "text"
+    source: "AI生成.生成法律依据"
+    required: true
+
+  - id: "救济途径告知"
+    key: "{{救济途径告知}}"
+    type: "text"
+    source: "AI生成.生成救济途径"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

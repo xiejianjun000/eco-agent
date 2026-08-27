@@ -1,0 +1,65 @@
+id: "17"
+name: "送达地址及方式确认书"
+category: "行政处罚-调查取证"
+complexity: "low"
+template: "17_送达地址确认书.md"
+description: "当事人确认法律文书送达地址和方式的文书"
+
+fields:
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "送达地址"
+    key: "{{送达地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: true
+
+  - id: "邮政编码"
+    key: "{{邮政编码}}"
+    type: "string"
+    source: "用户输入"
+    required: false
+
+  - id: "收件人"
+    key: "{{收件人}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "案件数据.当事人.联系电话"
+    required: true
+
+  - id: "电子邮箱"
+    key: "{{电子邮箱}}"
+    type: "string"
+    source: "用户输入"
+    required: false
+
+  - id: "送达方式"
+    key: "{{送达方式}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "直接送达"
+      - "邮寄送达"
+      - "电子送达"
+
+  - id: "当事人确认签字"
+    key: "{{当事人确认签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "确认日期"
+    key: "{{确认日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

@@ -1,0 +1,16 @@
+# eco.cordis.yml — 组合装配（对标 DSH cordis.yml）
+# 每条目 = 一个插件：plugin 模块/类路径 + 可选 config/inject。
+# 加新能力 = 新插件文件 + 本文件一行，不动 server/chat.py。
+
+- plugin: agent_core.cordis_plugins.subagent_cleaner
+  config: { ttl_seconds: 1800, interval_seconds: 300 }
+  inject: [subagents]
+
+- plugin: agent_core.cordis_plugins.audit_panel
+  inject: [slots, trace_audit]
+
+# 政务平台工具集：一切皆插件——工具注册也走组合装配（与 chat 幂等共存）
+- plugin: agent_core.cordis_plugins.govmcp_tools_loader
+
+# 内置能力工具集（法典检索/腾讯文档上云）：handler 注册进工具注册表
+- plugin: agent_core.cordis_plugins.builtin_tools

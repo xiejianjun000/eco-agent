@@ -1,0 +1,172 @@
+id: "50"
+name: "按日连续处罚决定书"
+category: "行政处罚-按日连续处罚"
+complexity: "high"
+template: "50_按日连续处罚决定书.md"
+description: "生态环境主管部门对拒不改正违法行为的当事人作出的按日连续处罚决定文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "统一社会信用代码"
+    key: "{{统一社会信用代码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: false
+
+  - id: "法定代表人"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "当事人地址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: false
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "原处罚决定书编号"
+    key: "{{原处罚决定书编号}}"
+    type: "string"
+    source: "案件数据.处罚.原决定书编号"
+    required: true
+
+  - id: "原处罚日期"
+    key: "{{原处罚日期}}"
+    type: "date"
+    source: "案件数据.处罚.原决定日期"
+    required: true
+
+  - id: "责令改正决定书编号"
+    key: "{{责令改正决定书编号}}"
+    type: "string"
+    source: "案件数据.责令改正.决定书编号"
+    required: true
+
+  - id: "复查日期"
+    key: "{{复查日期}}"
+    type: "date"
+    source: "案件数据.复查.日期"
+    required: true
+
+  - id: "违法行为持续情况"
+    key: "{{违法行为持续情况}}"
+    type: "text"
+    source: "AI生成.从复查记录生成"
+    required: true
+
+  - id: "按日连续处罚起算日期"
+    key: "{{按日连续处罚起算日期}}"
+    type: "date"
+    source: "系统数据.计算日期.按日处罚起始日"
+    required: true
+
+  - id: "按日连续处罚终止日期"
+    key: "{{按日连续处罚终止日期}}"
+    type: "date"
+    source: "系统数据.计算日期.按日处罚终止日"
+    required: true
+
+  - id: "计罚天数"
+    key: "{{计罚天数}}"
+    type: "string"
+    source: "系统数据.计算.按日处罚天数"
+    required: true
+
+  - id: "每日罚款数额"
+    key: "{{每日罚款数额}}"
+    type: "string"
+    source: "案件数据.处罚.每日罚款额"
+    required: true
+
+  - id: "合计罚款金额"
+    key: "{{合计罚款金额}}"
+    type: "string"
+    source: "系统数据.计算.合计罚款"
+    required: true
+
+  - id: "缴纳方式"
+    key: "{{缴纳方式}}"
+    type: "text"
+    source: "AI生成.生成缴纳方式说明"
+    required: true
+
+  - id: "缴纳期限"
+    key: "{{缴纳期限}}"
+    type: "date"
+    source: "系统数据.计算日期.缴纳截止日"
+    required: true
+
+  - id: "救济途径告知"
+    key: "{{救济途径告知}}"
+    type: "text"
+    source: "AI生成.生成救济途径"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+branches:
+  - id: "陈述申辩"
+    field: "{{当事人是否陈述申辩}}"
+    conditions:
+      - value: true
+        description: "当事人提出陈述申辩"
+        fields:
+          - id: "陈述申辩日期"
+            key: "{{陈述申辩日期}}"
+            type: "date"
+            source: "案件数据.陈述申辩.日期"
+            required: false
+          - id: "陈述申辩意见"
+            key: "{{陈述申辩意见}}"
+            type: "text"
+            source: "AI生成.从陈述申辩笔录生成摘要"
+            required: false
+      - value: false
+        description: "当事人未提出陈述申辩"
+
+  - id: "听证"
+    field: "{{是否举行听证}}"
+    conditions:
+      - value: true
+        description: "已举行听证"
+        fields:
+          - id: "听证日期"
+            key: "{{听证日期}}"
+            type: "date"
+            source: "案件数据.听证.日期"
+            required: false
+          - id: "听证意见采纳情况"
+            key: "{{听证意见采纳情况}}"
+            type: "text"
+            source: "AI生成.从听证报告生成摘要"
+            required: false
+      - value: false
+        description: "未举行听证"

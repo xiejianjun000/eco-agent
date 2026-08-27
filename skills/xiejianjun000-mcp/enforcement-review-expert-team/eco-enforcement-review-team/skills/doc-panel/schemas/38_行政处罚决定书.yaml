@@ -1,0 +1,274 @@
+id: "38"
+name: "行政处罚决定书"
+category: "行政处罚-决定"
+complexity: "high"
+template: "38_行政处罚决定书.md"
+description: "对当事人作出行政处罚决定的正式文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号年份"
+    key: "{{文号年份}}"
+    type: "string"
+    source: "案件数据.立案日期.年份"
+    required: true
+    validation: "^\\d{4}$"
+
+  - id: "文号序号"
+    key: "{{文号序号}}"
+    type: "string"
+    source: "系统生成.文号序号"
+    required: true
+
+  - id: "当事人名称或姓名"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人或负责人或经营者"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码或身份证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: true
+
+  - id: "地址或住址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: true
+
+  - id: "调查日期"
+    key: "{{调查日期}}"
+    type: "date"
+    source: "案件数据.调查日期"
+    required: true
+
+  - id: "违法事实陈述"
+    key: "{{违法事实陈述}}"
+    type: "text"
+    source: "AI生成.从案件事实和证据生成"
+    required: true
+    constraints:
+      - "包含违法行为发生的时间、地点、情节、动机、危害后果"
+      - "第一句格式：我厅（局）于X年X月X日对你（单位）进行了调查"
+
+  - id: "证据列表"
+    key: "{{证据列表}}"
+    type: "text"
+    source: "案件数据.证据"
+    required: true
+    constraints:
+      - "逐一列举证据名称、提取时间、提供单位、证明内容"
+
+  - id: "违反的法律规定"
+    key: "{{违反的法律规定}}"
+    type: "text"
+    source: "案件数据.法律依据.违法条款"
+    required: true
+    description: "法律、法规、规章名称用全称"
+
+  - id: "是否举行听证"
+    key: "{{是否有听证权}}"
+    type: "boolean"
+    source: "案件数据.听证权判定"
+    required: true
+
+  - id: "是否申请听证"
+    key: "{{是否申请听证}}"
+    type: "enum"
+    source: "案件数据.听证.申请状态"
+    required: false
+    options:
+      - "已申请"
+      - "未申请"
+
+  - id: "是否进行陈述申辩"
+    key: "{{是否有陈述申辩}}"
+    type: "enum"
+    source: "案件数据.陈述申辩.状态"
+    required: false
+    options:
+      - "已进行"
+      - "未进行"
+
+  - id: "告知书文号年份"
+    key: "{{告知书文号年份}}"
+    type: "string"
+    source: "案件数据.告知书.文号年份"
+    required: true
+
+  - id: "告知书文号序号"
+    key: "{{告知书文号序号}}"
+    type: "string"
+    source: "案件数据.告知书.文号序号"
+    required: true
+
+  - id: "告知书送达日期"
+    key: "{{告知书送达日期}}"
+    type: "date"
+    source: "案件数据.告知书.送达日期"
+    required: true
+
+  - id: "陈述申辩内容"
+    key: "{{陈述申辩内容}}"
+    type: "text"
+    source: "案件数据.陈述申辩.内容"
+    required: false
+    description: "当事人提出的意见、理由及证据"
+
+  - id: "陈述申辩采纳情况"
+    key: "{{陈述申辩采纳情况}}"
+    type: "text"
+    source: "AI生成.从复核意见生成"
+    required: false
+    description: "全部采纳、部分采纳或不采纳的结论性意见及理由"
+
+  - id: "听证日期"
+    key: "{{听证日期}}"
+    type: "date"
+    source: "案件数据.听证.日期"
+    required: false
+
+  - id: "听证通知日期"
+    key: "{{听证通知日期}}"
+    type: "date"
+    source: "案件数据.听证.通知日期"
+    required: false
+
+  - id: "听证申辩和质证内容"
+    key: "{{听证申辩质证内容}}"
+    type: "text"
+    source: "案件数据.听证.当事人意见"
+    required: false
+
+  - id: "集体讨论意见"
+    key: "{{集体讨论意见}}"
+    type: "text"
+    source: "案件数据.集体讨论.结论性意见"
+    required: false
+
+  - id: "处罚依据"
+    key: "{{处罚依据}}"
+    type: "text"
+    source: "案件数据.法律依据.处罚条款"
+    required: true
+    description: "法律、法规、规章名称全称及具体条款"
+
+  - id: "裁量基准依据"
+    key: "{{裁量基准依据}}"
+    type: "text"
+    source: "AI生成.结合裁量因素生成"
+    required: true
+    constraints:
+      - "详细说明违法行为定性"
+      - "阐述裁量因素"
+      - "有减轻或其他有裁量幅度的说明理由和依据"
+
+  - id: "行政处罚种类"
+    key: "{{行政处罚种类}}"
+    type: "text"
+    source: "AI生成.从处罚决定生成"
+    required: true
+    constraints:
+      - "根据法律行政法规单选或多选"
+      - "包含行政处罚的种类和幅度"
+
+  - id: "罚款金额"
+    key: "{{罚款金额}}"
+    type: "string"
+    source: "案件数据.处罚决定.罚款金额"
+    required: false
+    description: "大写格式，如不适用罚款则留空"
+
+  - id: "没收违法所得金额"
+    key: "{{没收违法所得金额}}"
+    type: "string"
+    source: "案件数据.处罚决定.没收违法所得金额"
+    required: false
+    description: "大写格式，如不适用则留空"
+
+  - id: "没收非法财物"
+    key: "{{没收非法财物}}"
+    type: "text"
+    source: "案件数据.处罚决定.没收非法财物"
+    required: false
+
+  - id: "其他处罚种类"
+    key: "{{其他处罚种类}}"
+    type: "text"
+    source: "案件数据.处罚决定.其他处罚"
+    required: false
+    description: "如暂扣/吊销许可证、限制从业、责令限期拆除等"
+
+  - id: "收款银行"
+    key: "{{收款银行}}"
+    type: "string"
+    source: "系统配置.收款银行"
+    required: false
+
+  - id: "收款户名"
+    key: "{{收款户名}}"
+    type: "string"
+    source: "系统配置.收款户名"
+    required: false
+
+  - id: "收款账号"
+    key: "{{收款账号}}"
+    type: "string"
+    source: "系统配置.收款账号"
+    required: false
+
+  - id: "行政复议机关"
+    key: "{{行政复议机关}}"
+    type: "string"
+    source: "系统配置.行政复议机关"
+    required: true
+
+  - id: "行政诉讼法院"
+    key: "{{行政诉讼法院}}"
+    type: "string"
+    source: "系统配置.行政诉讼法院"
+    required: true
+
+  - id: "作出日期"
+    key: "{{作出日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+branches:
+  - id: "陈述申辩听证段"
+    field: "{{陈述申辩听证段}}"
+    conditions:
+      - if: "是否有听证权=是 AND 是否有陈述申辩=未进行 AND 是否申请听证=未申请"
+        select: "branch_no_action_hearing_right"
+      - if: "是否有听证权=是 AND 是否有陈述申辩=未进行 AND 是否申请听证=已申请"
+        select: "branch_hearing_only"
+      - if: "是否有听证权=是 AND 是否有陈述申辩=已进行 AND 是否申请听证=未申请"
+        select: "branch_statement_only_hearing_right"
+      - if: "是否有听证权=是 AND 是否有陈述申辩=已进行 AND 是否申请听证=已申请"
+        select: "branch_both_hearing_right"
+      - if: "是否有听证权=否 AND 是否有陈述申辩=未进行"
+        select: "branch_no_statement_no_hearing"
+      - if: "是否有听证权=否 AND 是否有陈述申辩=已进行"
+        select: "branch_statement_only_no_hearing"
+
+  - id: "罚款收缴方式段"
+    field: "{{罚款收缴方式段}}"
+    conditions:
+      - if: "是否有罚款=true"
+        select: "branch_include_payment"
+      - if: "是否有罚款=false"
+        select: "branch_no_payment"

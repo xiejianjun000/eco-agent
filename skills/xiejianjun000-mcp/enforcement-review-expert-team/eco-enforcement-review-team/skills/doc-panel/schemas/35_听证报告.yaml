@@ -1,0 +1,85 @@
+id: "35"
+name: "听证报告"
+category: "行政处罚-告知和听证"
+complexity: "medium"
+template: "35_听证报告.md"
+description: "听证主持人制作的关于听证会情况和处理意见的报告"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "听证主持人"
+    key: "{{听证主持人}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "听证时间"
+    key: "{{听证时间}}"
+    type: "string"
+    source: "案件数据.听证.时间"
+    required: true
+
+  - id: "听证地点"
+    key: "{{听证地点}}"
+    type: "string"
+    source: "案件数据.听证.地点"
+    required: true
+
+  - id: "听证基本情况"
+    key: "{{听证基本情况}}"
+    type: "text"
+    source: "AI生成.从听证笔录生成摘要"
+    required: true
+
+  - id: "案件事实与证据"
+    key: "{{案件事实与证据}}"
+    type: "text"
+    source: "AI生成.从调查记录和听证笔录生成"
+    required: true
+
+  - id: "当事人主要意见"
+    key: "{{当事人主要意见}}"
+    type: "text"
+    source: "AI生成.从听证笔录生成摘要"
+    required: true
+
+  - id: "听证主持人意见"
+    key: "{{听证主持人意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "处理建议"
+    key: "{{处理建议}}"
+    type: "text"
+    source: "AI生成.从听证情况生成处理建议"
+    required: true
+
+  - id: "听证主持人签字"
+    key: "{{听证主持人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "报告日期"
+    key: "{{报告日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

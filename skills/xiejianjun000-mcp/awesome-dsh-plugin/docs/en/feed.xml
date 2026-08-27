@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>DeepSeek Harness (dsh) Plugins — Curated List · Awesome DSH Plugin</title>
+  <id>https://beancookie.github.io/awesome-dsh-plugin/en/</id>
+  <link href="https://beancookie.github.io/awesome-dsh-plugin/en/"/>
+  <link rel="self" href="https://beancookie.github.io/awesome-dsh-plugin/en/feed.xml"/>
+  <updated>2026-08-18T00:00:00Z</updated>
+  <entry>
+    <title>dsh-custom-theme-import</title>
+    <id>https://github.com/Juryorca/dsh-custom-theme-import</id>
+    <link href="https://github.com/Juryorca/dsh-custom-theme-import"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>DSH Web custom theme importer: one-click import from local paths or GitHub theme collections, live preview and refresh, hosted theme library; the lightweight format lets authors edit CSS/DOM files and hot-reload, making it a friendly option for personal theme development and sharing.</summary>
+  </entry>
+  <entry>
+    <title>Letter2025/dsh-task-worktree</title>
+    <id>https://github.com/Letter2025/dsh-task-worktree</id>
+    <link href="https://github.com/Letter2025/dsh-task-worktree"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>Complete task-scoped git worktrees: per-repo manifest for durable state, worktree-&lt;name&gt; branches, bring-back to main or direct commit, optional carry-over of uncommitted main changes (modeled on Qoder / Codex / Claude Code).</summary>
+  </entry>
+  <entry>
+    <title>PolinniZhong/dsh-omi-voice</title>
+    <id>https://github.com/PolinniZhong/dsh-omi-voice</id>
+    <link href="https://github.com/PolinniZhong/dsh-omi-voice"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>In-conversation read-aloud with Doubao-quality voices: every AI reply gets a 🔊 tap-to-read / auto-read toggle (off by default, state persisted), with voices synthesized by the local Omi engine (Doubao seed-tts); BYOK — keys stay in your local Keychain, the plugin stores none.</summary>
+  </entry>
+  <entry>
+    <title>yanglaofish/dsh-skill-manager</title>
+    <id>https://github.com/yanglaofish/dsh-skill-manager</id>
+    <link href="https://github.com/yanglaofish/dsh-skill-manager"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>Skill lifecycle manager for DSH: list / edit / import / enable / disable skills under a global-workspace-session three-layer model, with unified settings &amp; conversation UI, cross-layer search and pagination.</summary>
+  </entry>
+  <entry>
+    <title>odai-dsh-plugin</title>
+    <id>https://github.com/orziz/odai/tree/main/dsh/plugin</id>
+    <link href="https://github.com/orziz/odai/tree/main/dsh/plugin"/>
+    <updated>2026-08-18T00:00:00Z</updated>
+    <summary>Profile-wide DSH governance and routing bundle with configurable compaction calls and scoped local semantic memory; compatible with DSH 0.1.0-rc.6 and 0.1.0-rc.7.</summary>
+  </entry>
+  <entry>
+    <title>daetz-coder/dsh-multi-chat</title>
+    <id>https://github.com/daetz-coder/dsh-multi-chat</id>
+    <link href="https://github.com/daetz-coder/dsh-multi-chat"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A multi-window wall for the DSH Web UI: run and monitor N conversations side-by-side in one screen, with auto-discovery, per-window controls, and an authenticated LAN gateway for phone/tablet access.</summary>
+  </entry>
+  <entry>
+    <title>stopchewing/dsh-mcp-view</title>
+    <id>https://github.com/stopchewing/dsh-mcp-view</id>
+    <link href="https://github.com/stopchewing/dsh-mcp-view"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>MCP servers &amp; tools inventory panel: one-click floating panel from the sidebar that lists every MCP server and tool (transport, endpoint, JSON schema, last-used time), grouped by server, collapsed by default, with live search and refresh; last-used times come from real session logs.</summary>
+  </entry>
+  <entry>
+    <title>WFMinerva/dsh-turn-cost</title>
+    <id>https://github.com/WFMinerva/dsh-turn-cost</id>
+    <link href="https://github.com/WFMinerva/dsh-turn-cost"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Per-turn real cost under every assistant reply: CNY at official peak/off-peak rates with cache-hit ratio; reads local session logs only, zero telemetry, zero keys.</summary>
+  </entry>
+  <entry>
+    <title>xiaogu619520/dsh-plugin-task-panel</title>
+    <id>https://github.com/xiaogu619520/dsh-plugin-task-panel</id>
+    <link href="https://github.com/xiaogu619520/dsh-plugin-task-panel"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Task &amp; Context Summary Floating Panel (todo tracking, file/system token breakdown, 8-way resize, shortcut).</summary>
+  </entry>
+  <entry>
+    <title>yoli-mi/dsh-client-ui-custom</title>
+    <id>https://github.com/yoli-mi/dsh-client-ui-custom</id>
+    <link href="https://github.com/yoli-mi/dsh-client-ui-custom"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Web theming (wallpaper, glass, accent, presets), keyboard shortcuts, usage stats, a plugin marketplace, a floating history strip, and user-message Markdown rendering.</summary>
+  </entry>
+  <entry>
+    <title>zh667/TokenLedger</title>
+    <id>https://github.com/zh667/TokenLedger</id>
+    <link href="https://github.com/zh667/TokenLedger"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Shows local DSH token usage by relay site, project, and model, with account balances and subscription quota windows.</summary>
+  </entry>
+  <entry>
+    <title>Braidy-Wu/dsh-conversation-minimap</title>
+    <id>https://github.com/Braidy-Wu/dsh-conversation-minimap</id>
+    <link href="https://github.com/Braidy-Wu/dsh-conversation-minimap"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A conversation minimap for the DSH Web GUI (ChatGPT desktop style): one evenly-spaced capsule anchor per user prompt, fish-eye bell-curve magnification on hover with full prompt preview, top/bottom edge fade, blue highlight that follows the current prompt, click to jump to the message, and automatic full-history loading.</summary>
+  </entry>
+  <entry>
+    <title>dsh-odette-skin</title>
+    <id>https://github.com/lkdx0220/Genshin-odette-skin-dsh</id>
+    <link href="https://github.com/lkdx0220/Genshin-odette-skin-dsh"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>A Genshin Impact &quot;Odette&quot; themed DSH UI skin: dark/light dual-mode background images, frosted-glass overrides for 13 theme tokens, and a chibi mascot sidebar toggle; install via npm.</summary>
+  </entry>
+  <entry>
+    <title>RevolutionLA/dsh-dream-skin</title>
+    <id>https://github.com/RevolutionLA/dsh-dream-skin</id>
+    <link href="https://github.com/RevolutionLA/dsh-dream-skin"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>One-command skinning for DSH Web: 8 original themes, wallpaper (opacity/blur/gradient/URL), per-user accent, and shareable theme-pack import/export + favorites + surprise-me. Purely native on DSH's token system.</summary>
+  </entry>
+  <entry>
+    <title>chenproton/dsh-history</title>
+    <id>https://github.com/chenproton/dsh-history</id>
+    <link href="https://github.com/chenproton/dsh-history"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Browse every message you sent in the current session: full-history listing with newest-first sort, text filter, one-click copy, and click-to-jump that auto-loads earlier history when the target is not yet loaded.</summary>
+  </entry>
+  <entry>
+    <title>session-titler</title>
+    <id>https://github.com/JohnXu22786/session-titler</id>
+    <link href="https://github.com/JohnXu22786/session-titler"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Two-phase session captioning: instant keyword captions while busy, budget-model refinement when idle.</summary>
+  </entry>
+  <entry>
+    <title>sjh9714/dsh-what-changed</title>
+    <id>https://github.com/sjh9714/dsh-what-changed</id>
+    <link href="https://github.com/sjh9714/dsh-what-changed"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Session-wide file change review. Lists every file the agent wrote this session with its hunks, counts refused writes separately from changes, and folds from a session projection.</summary>
+  </entry>
+  <entry>
+    <title>Breeze136/dsh-kb-rag</title>
+    <id>https://github.com/Breeze136/dsh-kb-rag</id>
+    <link href="https://github.com/Breeze136/dsh-kb-rag"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Local literature knowledge-base RAG: 8 tools (PDF/folder/Zotero ingest, hybrid BM25+vector+reranker search, cited QA with clickable DOI links, scope/strict modes, dedup/clear/stats), all-local bge embeddings + single-file SQLite, measured 242-doc/86s ingest and sub-second hot queries on 20k chunks.</summary>
+  </entry>
+  <entry>
+    <title>memory-vault</title>
+    <id>https://github.com/JohnXu22786/memory-vault</id>
+    <link href="https://github.com/JohnXu22786/memory-vault"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Cross-session persistent memory for coding agents: SQLite local storage, hybrid keyword/semantic retrieval, Web and MCP interfaces.</summary>
+  </entry>
+  <entry>
+    <title>dsh-verify</title>
+    <id>https://github.com/263311487-ux/dsh-verify</id>
+    <link href="https://github.com/263311487-ux/dsh-verify"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Independent browser acceptance testing for agent deliverables: JSON spec drives real headless Chromium, asserts computed styles and pixel diffs, returns an HTML report and 0/1 exit code; ships npm CLI, GitHub Action, and MCP server.</summary>
+  </entry>
+  <entry>
+    <title>AlloyPlane/dsh-eye-vision</title>
+    <id>https://github.com/AlloyPlane/dsh-eye-vision</id>
+    <link href="https://github.com/AlloyPlane/dsh-eye-vision"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Vision bridge for text-only models: image_understand tool via any OpenAI-compatible multimodal API (OCR/UI analysis), with an allowed-directories whitelist.</summary>
+  </entry>
+  <entry>
+    <title>IWAIBAOLI/dsh-with-pencil</title>
+    <id>https://github.com/IWAIBAOLI/dsh-with-pencil</id>
+    <link href="https://github.com/IWAIBAOLI/dsh-with-pencil"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Bring the official pen.dev Pencil into DeepSeek Harness via the official CLI: in-conversation .pen editing tools, optimized specifically for DeepSeek's text-only model.</summary>
+  </entry>
+  <entry>
+    <title>adversarial-review</title>
+    <id>https://github.com/JohnXu22786/adversarial-review</id>
+    <link href="https://github.com/JohnXu22786/adversarial-review"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>gavel-review: adversarial multi-perspective code review — parallel attack lenses, static sentinels, severity grading.</summary>
+  </entry>
+  <entry>
+    <title>browser-automation</title>
+    <id>https://github.com/JohnXu22786/browser-automation</id>
+    <link href="https://github.com/JohnXu22786/browser-automation"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Web Bridge: real-browser automation MCP server — navigation, click, form-fill, screenshots, JS execution, accessibility-snapshot driven.</summary>
+  </entry>
+  <entry>
+    <title>codegraph</title>
+    <id>https://github.com/JohnXu22786/codegraph</id>
+    <link href="https://github.com/JohnXu22786/codegraph"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Code knowledge graph: indexes symbols, call sites and imports into SQLite, answers call/dependency questions.</summary>
+  </entry>
+  <entry>
+    <title>command-scout</title>
+    <id>https://github.com/JohnXu22786/command-scout</id>
+    <link href="https://github.com/JohnXu22786/command-scout"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Scans declared project build commands (Makefile, package.json scripts, justfile, deno tasks) and exposes them as agent tools.</summary>
+  </entry>
+  <entry>
+    <title>computer-control</title>
+    <id>https://github.com/JohnXu22786/computer-control</id>
+    <link href="https://github.com/JohnXu22786/computer-control"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Desktop control: screen capture, pointer/keyboard injection, accessibility-tree actions, confirmation flow, emergency stop.</summary>
+  </entry>
+  <entry>
+    <title>context-pruner</title>
+    <id>https://github.com/JohnXu22786/context-pruner</id>
+    <link href="https://github.com/JohnXu22786/context-pruner"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>Session context triage: prunes stale, repeated, failed and oversized context to save token budget.</summary>
+  </entry>
+  <entry>
+    <title>docs-retriever</title>
+    <id>https://github.com/JohnXu22786/docs-retriever</id>
+    <link href="https://github.com/JohnXu22786/docs-retriever"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>doctrove: versioned library documentation retrieval MCP server, zero runtime dependencies.</summary>
+  </entry>
+  <entry>
+    <title>fs-mcp</title>
+    <id>https://github.com/JohnXu22786/fs-mcp</id>
+    <link href="https://github.com/JohnXu22786/fs-mcp"/>
+    <updated>2026-08-17T00:00:00Z</updated>
+    <summary>paddock: constrained local filesystem MCP server — file access confined to configurable zones, zero runtime dependencies.</summary>
+  </entry>
+</feed>

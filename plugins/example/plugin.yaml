@@ -1,0 +1,14 @@
+name: example
+version: 0.1.0
+description: 示例插件——演示插件规范（工具注册、风险级声明、生命周期）
+entry: handler
+tools:
+  - name: example_echo
+    description: 回显输入的文本
+    risk_level: L1
+  - name: example_case_digest
+    description: 案卷要点摘要（演示 L3 工具）
+    risk_level: L3
+permissions:
+  example_echo: L1
+  example_case_digest: L3

@@ -1,0 +1,24 @@
+[Unit]
+Description=ECO AGENT Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eco
+Group=eco
+WorkingDirectory=/opt/eco
+ExecStart=/opt/eco/venv/bin/python -m eco.cli gateway start --port 7070
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+# 真实 API key 通过 EnvironmentFile 注入，严禁写入本文件
+EnvironmentFile=-/etc/eco/eco.env
+# 加固
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

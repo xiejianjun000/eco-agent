@@ -1,0 +1,127 @@
+id: "37"
+name: "案件集体讨论记录"
+category: "行政处罚-集体讨论"
+complexity: "medium"
+template: "37_案件集体讨论记录.md"
+description: "生态环境主管部门负责人对情节复杂或重大违法行为给予行政处罚进行集体讨论的记录文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案件名称"
+    key: "{{案件名称}}"
+    type: "string"
+    source: "案件数据.案件名称"
+    required: true
+    description: "格式：（违法主体+案由）案"
+
+  - id: "讨论时间"
+    key: "{{讨论时间}}"
+    type: "datetime"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "讨论地点"
+    key: "{{讨论地点}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "主持人姓名"
+    key: "{{主持人姓名}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "主持人职务"
+    key: "{{主持人职务}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "记录人姓名"
+    key: "{{记录人姓名}}"
+    type: "string"
+    source: "系统数据.记录人"
+    required: true
+
+  - id: "记录人职务"
+    key: "{{记录人职务}}"
+    type: "string"
+    source: "系统数据.记录人.职务"
+    required: false
+
+  - id: "参加人姓名及职务"
+    key: "{{参加人姓名及职务}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+    description: "逐一列明参加讨论人员的姓名和职务"
+
+  - id: "列席人姓名及职务"
+    key: "{{列席人姓名及职务}}"
+    type: "text"
+    source: "用户输入"
+    required: false
+    description: "案件调查人员可列席但不得参与讨论和表决"
+
+  - id: "汇报案件事实和依据"
+    key: "{{汇报案件事实和依据}}"
+    type: "text"
+    source: "AI生成.从案件调查材料生成"
+    required: true
+    constraints:
+      - "违法行为发生的时间、地点、情节、后果等"
+      - "案件涉及的法律、法规、规章等"
+      - "处理意见和理由"
+
+  - id: "陈述申辩或听证情况"
+    key: "{{陈述申辩或听证情况}}"
+    type: "text"
+    source: "案件数据.陈述申辩.记录"
+    required: false
+    description: "包括当事人陈述申辩情况、听证情况；未进行的注明无"
+
+  - id: "参加讨论人员的主要意见和理由"
+    key: "{{参加讨论人员意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+    constraints:
+      - "详细记载每个参加讨论人员发言的主要内容"
+      - "针对案件事实是否调查清楚、证据是否确凿、定性是否准确等进行讨论"
+
+  - id: "结论性意见"
+    key: "{{结论性意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+    description: "针对讨论的问题应当有明确的结论性意见"
+
+  - id: "参加人员签字"
+    key: "{{参加人员签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "列席人员签字"
+    key: "{{列席人员签字}}"
+    type: "string"
+    source: "用户输入"
+    required: false
+
+  - id: "记录人签字"
+    key: "{{记录人签字}}"
+    type: "string"
+    source: "系统数据.记录人"
+    required: true
+
+  - id: "签字日期"
+    key: "{{签字日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

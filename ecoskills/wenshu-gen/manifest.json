@@ -1,0 +1,13 @@
+{
+  "name": "wenshu-gen",
+  "version": "1.0.0",
+  "author": "eco-official",
+  "description": "生态环境执法文书模板生成——笔录、责令改正、处罚告知与决定书",
+  "category": "文书生成",
+  "tags": ["执法文书", "模板", "处罚决定书", "笔录"],
+  "trust_tier": "official",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": ["fagui-query"],
+  "min_eco_version": "5.0.0"
+}

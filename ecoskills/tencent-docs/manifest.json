@@ -1,0 +1,13 @@
+{
+  "name": "tencent-docs",
+  "version": "1.0.41",
+  "author": "tencent-docs（官方技能包，cdn.addon.tencentsuite.com 下载）",
+  "description": "腾讯文档（docs.qq.com）在线云文档平台操作——创建/编辑/读取/搜索各类在线文档（智能文档/Excel/PPT/Word/思维导图/流程图/智能表格/收集表）、知识库空间管理、文件管理、网页剪藏与本地文件上云",
+  "category": "办公协同",
+  "tags": ["腾讯文档", "在线文档", "云文档", "docs.qq.com", "创建文档", "智能表格", "PPT", "Excel"],
+  "trust_tier": "official",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}

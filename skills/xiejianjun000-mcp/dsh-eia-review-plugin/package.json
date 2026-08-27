@@ -1,0 +1,51 @@
+{
+  "name": "dsh-eia-review-plugin",
+  "version": "1.0.0",
+  "description": "全国通用环评审查与排污许可证技术审查DSH插件，支持国家通用规则+省级规则热插拔",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "preset.yml",
+    "skills",
+    "knowledge"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": [
+    "dsh",
+    "plugin",
+    "eia",
+    "环评",
+    "排污许可",
+    "environmental-review"
+  ],
+  "author": "XIEJIANJUN000",
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^1.0.0",
+    "@deepseek-ai/dsh-tools": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.6.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dsh.client": {
+    "platform": "web",
+    "inject": ["theme"],
+    "immediately": true
+  }
+}

@@ -1,0 +1,23 @@
+/* ===== 左导航 232px（由 ln-resize-wrapper 控制动态宽度）===== */
+.ln-resize-wrapper { position: relative; height: 100vh; overflow: hidden; flex: 0 0 232px; min-width: 180px; max-width: 360px; }
+.ln-resize-handle { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; z-index: 10; cursor: col-resize; background: transparent; transition: background .15s; }
+.ln-resize-handle:hover, .ln-resize-handle:active { background: var(--nav-accent); opacity: .4; }
+.left-nav { flex: 0 0 232px; background: var(--nav-bg); color: var(--t-rev); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.left-nav .brand { padding: 16px 16px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.left-nav .brand .shield { width: 30px; height: 30px; flex: 0 0 30px; }
+.left-nav .brand .brand-text { font-size: 12px; line-height: 1.4; color: #E8E2D8; font-weight: 600; font-family: var(--font-heading); }
+.left-nav .brand .brand-text small { display: block; font-size: 10px; color: #B6AEA2; font-weight: 400; }
+.left-nav .nav-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.nav-item { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px 0 11px; margin: 2px 8px; border-radius: 8px; color: #CFC8BC; font-size: 13px; position: relative; transition: background 150ms, color 150ms; }
+.nav-item:hover { background: rgba(255,255,255,.06); color: var(--t-rev); }
+.nav-item.active { background: var(--nav-active); color: var(--t-rev); }
+.nav-item.active::before { content: ""; position: absolute; left: -11px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--nav-accent); }
+.nav-item .ico { width: 18px; height: 18px; flex: 0 0 18px; }
+.nav-item .label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; font-size: 11px; line-height: 18px; text-align: center; background: var(--c-terra); color: #fff; font-weight: 600; }
+.nav-badge.blue { background: var(--c-blue); } .nav-badge.red { background: var(--c-red); } .nav-badge.amber { background: var(--c-amber); }
+.left-nav .user-zone { border-top: 1px solid rgba(255,255,255,.08); padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.left-nav .user-zone .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--fill); color: var(--nav-bg); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: 0 0 32px; }
+.left-nav .user-zone .u-info { font-size: 12px; line-height: 1.4; overflow: hidden; }
+.left-nav .user-zone .u-info .u-name { color: var(--t-rev); font-weight: 600; font-family: var(--font-heading); }
+.left-nav .user-zone .u-info .u-org { color: #B6AEA2; font-size: 11px; }

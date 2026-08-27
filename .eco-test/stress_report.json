@@ -1,0 +1,109 @@
+{
+  "start": "2026-08-26T08:01:34.192605",
+  "tests": [
+    {
+      "name": "记忆-批量写入",
+      "status": "PASS",
+      "detail": "1000条写入 91.99s, 记录数=1000"
+    },
+    {
+      "name": "记忆-高频检索",
+      "status": "PASS",
+      "detail": "200次检索 26.13s, 平均每次130.7ms, 总命中1000"
+    },
+    {
+      "name": "记忆-容量边界",
+      "status": "PASS",
+      "detail": "写入2500条后截断至2000, 耗时224.43s"
+    },
+    {
+      "name": "记忆-并发一致性",
+      "status": "PASS",
+      "detail": "10线程×100条, 无错误, 记录数=1000, 耗时77.94s"
+    },
+    {
+      "name": "记忆-异常输入鲁棒性",
+      "status": "FAIL",
+      "detail": "空=[], 空白=[], 符号=[{'role': 'user', 'content': '测试记忆内容_0104_AAlNQqTDkGKwiRnbzbZ法BHmhWaBAzppGyQeWGKSiAPPh态TFXML', 'score': 0.24}, {'role': 'assistant', 'content': '测试记忆内容_0375_Hg境B执X法YMjTaziDvoXwlwUV生cmbCwOZlc执XT态sGA执tXojuHlBw', 'score': 0.2}, {'role': 'assistant', 'content': '测试记忆内容_0017_q环XvhCsNjUf态TW态Y态M境dDzfcKYz态anoOjdIFifAS法k环mHDri态生', 'score': 0.16}, {'role': 'assistant', 'content': '测试记忆内容_0023_h环uU态DUq生NnVMQ态hhfJkbOa环XOrsiu生JsMBQtYRBgXmOY法WslG', 'score': 0.16}, {'role': 'assistant', 'content': '测试记忆内容_0175_onRDOEMaE生cg生iHKXMWul执icIkvijOfBIdgaRqVuUXVY境c态aGs', 'score': 0.16}], 超长=0"
+    },
+    {
+      "name": "自愈-瞬时异常恢复",
+      "status": "PASS",
+      "detail": "第3次成功, 耗时0.302s, 尝试3次"
+    },
+    {
+      "name": "自愈-持久异常熔断",
+      "status": "FAIL",
+      "detail": "应熔断但未熔断: {'success': False, 'error': '网络不可达', 'fallback': False}"
+    },
+    {
+      "name": "自愈-熔断器冷却",
+      "status": "FAIL",
+      "detail": "熔断器应仍开启: {'success': False, 'error': '熔断器开启', 'fallback': False}"
+    },
+    {
+      "name": "自愈-检查点压力",
+      "status": "PASS",
+      "detail": "20个检查点保存0.00s, 恢复0.00s, 全部成功"
+    },
+    {
+      "name": "自愈-指数退避",
+      "status": "PASS",
+      "detail": "退避时间递增: [250, 500, 950, 1800, 3450]"
+    },
+    {
+      "name": "自愈-异常分类",
+      "status": "FAIL",
+      "detail": "正确0/5"
+    },
+    {
+      "name": "自愈-高并发",
+      "status": "PASS",
+      "detail": "20并发 0.30s, 成功20/20"
+    },
+    {
+      "name": "进化-五阶段完整",
+      "status": "FAIL",
+      "detail": "缺失阶段: ['skill_generation', 'reflector_review', 'curator_gate']"
+    },
+    {
+      "name": "进化-快速连续",
+      "status": "PASS",
+      "detail": "5次连续进化 7.19s, 无崩溃"
+    },
+    {
+      "name": "进化-异常历史鲁棒性",
+      "status": "PASS",
+      "detail": "空列表/坏数据/None均正常处理"
+    },
+    {
+      "name": "进化-触发器阈值",
+      "status": "PASS",
+      "detail": "权重达标后正确触发, 耗时1.75s"
+    },
+    {
+      "name": "进化-冷却期阻止",
+      "status": "PASS",
+      "detail": "冷却期内正确阻止重复触发"
+    },
+    {
+      "name": "进化-每日调度",
+      "status": "FAIL",
+      "detail": "新实例应返回 True"
+    },
+    {
+      "name": "进化-版本递增",
+      "status": "FAIL",
+      "detail": "版本不连续: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]"
+    },
+    {
+      "name": "进化-dry_run分析",
+      "status": "FAIL",
+      "detail": "缺少关键字段: ['version', 'dry_run', 'experience_replay', 'gap_analysis', 'reflection_preview', 'note']"
+    }
+  ],
+  "end": "2026-08-26T08:09:10.566972",
+  "total_time_s": 456.32,
+  "pass": 12,
+  "fail": 8
+}

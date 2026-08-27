@@ -1,0 +1,28 @@
+/* EcoAegis 设计系统（锚定 design.md 精确 hex） ===== */
+/* ===== 新增平台向导 ===== */
+.add-wrap { max-width: 760px; margin: 0 auto; }
+.add-intro { font-size: 13px; color: var(--t-sub); margin-bottom: 16px; }
+
+.addr-box {
+  display: flex; gap: 10px; align-items: stretch;
+}
+.addr-input {
+  flex: 1; height: 42px; padding: 0 14px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: #fff; font-size: 13px; color: var(--t-main);
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.addr-input:focus { outline: none; border-color: var(--c-terra); box-shadow: 0 0 0 3px rgba(201,124,62,.15); }
+
+.hint { font-size: 12px; color: var(--t-aux); margin-top: 10px; }
+.hint.error { color: var(--c-red); }
+
+.steps { display: flex; gap: 0; margin: 22px 0; }
+.steps .step {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  position: relative; font-size: 12px; color: var(--t-aux);
+}
+.steps .step .num {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--fill); color: var(--t-sub); font-weight: 600; font-size: 12px;

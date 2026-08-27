@@ -1,0 +1,25 @@
+{
+  "name": "eco-dsh-plugins",
+  "version": "0.1.0",
+  "private": true,
+  "description": "dsh plugins ported from eco-agent: permission gate, audit chain, memory tree",
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" }
+  },
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "verify": "node scripts/runtime-verify.mjs",
+    "test": "npm run verify"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-system-prompt": "^0.0.1-rc.5",
+    "@deepseek-ai/dsh-tools": "0.0.1-rc.1",
+    "@types/node": "^26.2.0"
+  }
+}

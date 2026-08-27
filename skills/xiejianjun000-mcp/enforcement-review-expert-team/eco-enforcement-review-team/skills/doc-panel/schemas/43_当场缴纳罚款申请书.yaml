@@ -1,0 +1,58 @@
+id: "43"
+name: "当场缴纳罚款申请书"
+category: "行政处罚-执行"
+complexity: "low"
+template: "43_当场缴纳罚款申请书.md"
+description: "当事人向生态环境主管部门申请当场缴纳罚款的文书（相对人参考填写）"
+
+fields:
+  - id: "申请人名称"
+    key: "{{申请人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "处罚决定书编号"
+    key: "{{处罚决定书编号}}"
+    type: "string"
+    source: "案件数据.处罚决定书编号"
+    required: true
+
+  - id: "罚款金额"
+    key: "{{罚款金额}}"
+    type: "string"
+    source: "案件数据.处罚.罚款金额"
+    required: true
+
+  - id: "缴纳方式"
+    key: "{{缴纳方式}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "现金缴纳"
+      - "转账缴纳"
+
+  - id: "申请理由"
+    key: "{{申请理由}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "申请人签字"
+    key: "{{申请人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "申请日期"
+    key: "{{申请日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

@@ -1,0 +1,140 @@
+id: "27"
+name: "行政处罚案件调查报告"
+category: "行政处罚-调查"
+complexity: "medium"
+template: "27_行政处罚案件调查报告.md"
+description: "案件调查终结后，执法人员撰写的全面反映案件事实和初步处理意见的报告文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案件来源"
+    key: "{{案件来源}}"
+    type: "enum"
+    source: "案件数据.来源"
+    required: true
+    options:
+      - "现场检查"
+      - "非现场检查"
+      - "投诉举报"
+      - "媒体披露"
+      - "上级交办"
+      - "有关部门移送"
+      - "其他"
+
+  - id: "当事人名称或姓名"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "立案时间"
+    key: "{{立案时间}}"
+    type: "date"
+    source: "案件数据.立案日期"
+    required: true
+
+  - id: "当事人基本情况"
+    key: "{{当事人基本情况}}"
+    type: "text"
+    source: "案件数据.当事人"
+    required: true
+    constraints:
+      - "包括名称或姓名、法定代表人、负责人或经营者"
+      - "包括统一社会信用代码或身份证件号码"
+      - "包括地址或住址"
+      - "包括经营范围及其他相关必要信息"
+      - "如多个当事人或应追究相关人员责任的逐一列明"
+
+  - id: "调查经过"
+    key: "{{调查经过}}"
+    type: "text"
+    source: "AI生成.从案件调查记录生成"
+    required: true
+    constraints:
+      - "概括案件由来，包括案件来源、立案时间和批准立案的机关"
+      - "包括办案人员的组成、调查方式、调查时间等"
+
+  - id: "违法事实"
+    key: "{{违法事实}}"
+    type: "text"
+    source: "AI生成.从案件事实和证据生成"
+    required: true
+    constraints:
+      - "包括当事人从事违法行为的时间、地点、目的、手段、情节、违法所得、危害后果"
+      - "违法事实需描述清楚，与适用法条的描述一致"
+
+  - id: "证据列表"
+    key: "{{证据列表}}"
+    type: "text"
+    source: "案件数据.证据"
+    required: true
+    constraints:
+      - "列举证据形式，包括证据名称、提取时间、提供单位、证明内容"
+      - "证据以合法手段取得，具有关联性、合法性、真实性"
+      - "证据应当充分，不同证据之间能够形成证据链"
+
+  - id: "调查结论"
+    key: "{{调查结论}}"
+    type: "text"
+    source: "AI生成.从违法事实和法律适用生成"
+    required: true
+
+  - id: "违反的法律依据"
+    key: "{{违反的法律依据}}"
+    type: "text"
+    source: "案件数据.法律依据.违法条款"
+    required: true
+    constraints:
+      - "包含法律、法规、规章名称全称"
+      - "包含条、款、项具体内容"
+
+  - id: "初步处理意见"
+    key: "{{初步处理意见}}"
+    type: "text"
+    source: "AI生成.结合法条和案件情况生成"
+    required: true
+    constraints:
+      - "有明确的法律、法规、规章依据"
+      - "有行政裁量权适用的依据和理由"
+
+  - id: "调查人"
+    key: "{{调查人}}"
+    type: "string"
+    source: "系统数据.执法人员"
+    required: true
+    description: "可多人，用顿号分隔"
+
+  - id: "调查人日期"
+    key: "{{调查人日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "调查机构意见"
+    key: "{{调查机构意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "调查机构负责人签字"
+    key: "{{调查机构负责人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "调查机构负责人日期"
+    key: "{{调查机构负责人日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

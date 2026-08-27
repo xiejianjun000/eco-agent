@@ -1,0 +1,67 @@
+id: "26"
+name: "生态环境损害赔偿告知书"
+category: "行政处罚-调查取证"
+complexity: "medium"
+template: "26_生态环境损害赔偿告知书.md"
+description: "生态环境主管部门告知当事人需承担生态环境损害赔偿责任的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "违法事实"
+    key: "{{违法事实}}"
+    type: "text"
+    source: "AI生成.从案件事实生成违法事实描述"
+    required: true
+
+  - id: "生态环境损害情况"
+    key: "{{生态环境损害情况}}"
+    type: "text"
+    source: "AI生成.从监测检测结果生成损害情况"
+    required: true
+
+  - id: "赔偿范围和数额"
+    key: "{{赔偿范围和数额}}"
+    type: "text"
+    source: "AI生成.从损害评估生成赔偿计算"
+    required: true
+
+  - id: "法律依据"
+    key: "{{法律依据}}"
+    type: "text"
+    source: "AI生成.从案件事实生成法律依据"
+    required: true
+
+  - id: "磋商期限"
+    key: "{{磋商期限}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

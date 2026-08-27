@@ -1,0 +1,255 @@
+id: "08"
+name: "现场检查（勘察）笔录"
+category: "行政处罚-调查取证"
+complexity: "medium"
+template: "08_现场检查勘察笔录.md"
+description: "执法人员对现场进行检查勘察的详细记录文书，用于固定现场证据"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "检查开始时间"
+    key: "{{检查开始时间}}"
+    type: "datetime"
+    source: "案件数据.现场检查.开始时间"
+    required: true
+    description: "格式：年月日时分"
+
+  - id: "检查结束时间"
+    key: "{{检查结束时间}}"
+    type: "datetime"
+    source: "案件数据.现场检查.结束时间"
+    required: true
+    description: "格式：年月日时分"
+
+  - id: "检查地点"
+    key: "{{检查地点}}"
+    type: "string"
+    source: "案件数据.现场检查.地点"
+    required: true
+
+  - id: "被检查人名称或姓名"
+    key: "{{被检查人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "被检查人统一社会信用代码或身份证件号码"
+    key: "{{被检查人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: false
+
+  - id: "被检查人法定代表人"
+    key: "{{被检查人法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "被检查人法定代表人电话"
+    key: "{{被检查人法定代表人电话}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人电话"
+    required: false
+
+  - id: "被检查人法定代表人身份证件号码"
+    key: "{{被检查人法定代表人身份证号码}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人身份证号码"
+    required: false
+
+  - id: "现场负责人姓名"
+    key: "{{现场负责人姓名}}"
+    type: "string"
+    source: "案件数据.现场检查.现场负责人.姓名"
+    required: false
+
+  - id: "现场负责人电话"
+    key: "{{现场负责人电话}}"
+    type: "string"
+    source: "案件数据.现场检查.现场负责人.电话"
+    required: false
+
+  - id: "现场负责人身份证件号码"
+    key: "{{现场负责人身份证件号码}}"
+    type: "string"
+    source: "案件数据.现场检查.现场负责人.身份证件号码"
+    required: false
+
+  - id: "现场负责人工作单位"
+    key: "{{现场负责人工作单位}}"
+    type: "string"
+    source: "案件数据.现场检查.现场负责人.工作单位"
+    required: false
+
+  - id: "现场负责人职务"
+    key: "{{现场负责人职务}}"
+    type: "string"
+    source: "案件数据.现场检查.现场负责人.职务"
+    required: false
+
+  - id: "与本案关系"
+    key: "{{现场负责人与本案关系}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+    description: "如违法嫌疑单位的工作人员、污染受害人、证人等"
+    options:
+      - "违法嫌疑单位的工作人员"
+      - "污染受害人"
+      - "证人"
+      - "其他"
+
+  - id: "检查人一姓名"
+    key: "{{检查人一姓名}}"
+    type: "string"
+    source: "系统数据.执法人员1"
+    required: true
+
+  - id: "检查人一执法证编号"
+    key: "{{检查人一执法证编号}}"
+    type: "string"
+    source: "系统数据.执法人员1.执法证编号"
+    required: true
+
+  - id: "检查人二姓名"
+    key: "{{检查人二姓名}}"
+    type: "string"
+    source: "系统数据.执法人员2"
+    required: true
+
+  - id: "检查人二执法证编号"
+    key: "{{检查人二执法证编号}}"
+    type: "string"
+    source: "系统数据.执法人员2.执法证编号"
+    required: true
+
+  - id: "记录人姓名"
+    key: "{{记录人姓名}}"
+    type: "string"
+    source: "系统数据.记录人"
+    required: true
+
+  - id: "记录人工作单位"
+    key: "{{记录人工作单位}}"
+    type: "string"
+    source: "系统数据.记录人.工作单位"
+    required: true
+
+  - id: "其他参加人姓名及工作单位"
+    key: "{{其他参加人姓名及工作单位}}"
+    type: "string"
+    source: "用户输入"
+    required: false
+
+  - id: "告知事项"
+    key: "{{告知事项}}"
+    type: "text"
+    source: "AI生成.从执法人员信息和案由生成告知内容"
+    required: true
+    constraints:
+      - "包含执法人员出示执法证件的记录"
+      - "包含被检查人已确认的声明"
+      - "包含申请回避权利告知和配合调查义务告知"
+      - "包含被检查人是否申请回避的确认"
+
+  - id: "现场检查勘察情况"
+    key: "{{现场检查勘察情况}}"
+    type: "text"
+    source: "AI生成.从案件事实和检查记录生成"
+    required: true
+    constraints:
+      - "记录建设、生产情况（项目性质、生产工艺、生产设备、原辅材料等）"
+      - "记录环保相关手续（环评审批、竣工验收、排污许可证等）"
+      - "记录污染物产生情况和污染处理设施运行情况"
+      - "记录违法情况（违法行为确认、持续时间、过程、排放情况、环境影响等）"
+      - "记录现场采样和其他情况"
+      - "一份笔录中不得记录多个不同现场检查勘察情况"
+
+  - id: "被检查人确认意见"
+    key: "{{被检查人确认意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+    description: "参考语句：以上笔录已阅无误，记录属实。拒不审阅确认的注明情况"
+
+  - id: "被检查人签字"
+    key: "{{被检查人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "被检查人签字日期"
+    key: "{{被检查人签字日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "检查人一签字"
+    key: "{{检查人一签字}}"
+    type: "string"
+    source: "系统数据.执法人员1"
+    required: true
+
+  - id: "检查人二签字"
+    key: "{{检查人二签字}}"
+    type: "string"
+    source: "系统数据.执法人员2"
+    required: true
+
+  - id: "检查人签字日期"
+    key: "{{检查人签字日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "记录人签字"
+    key: "{{记录人签字}}"
+    type: "string"
+    source: "系统数据.记录人"
+    required: true
+
+  - id: "记录人签字日期"
+    key: "{{记录人签字日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "其他参加人签字"
+    key: "{{其他参加人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: false
+
+  - id: "其他参加人签字日期"
+    key: "{{其他参加人签字日期}}"
+    type: "date"
+    source: "用户输入"
+    required: false
+
+  - id: "页码信息"
+    key: "{{页码信息}}"
+    type: "string"
+    source: "系统数据.自动编号"
+    required: true
+    description: "第X页，共X页"
+
+  - id: "是否有现场勘察平面图"
+    key: "{{是否有现场勘察平面图}}"
+    type: "boolean"
+    source: "用户输入"
+    required: true
+    description: "是否配套制作现场勘察平面图"
+
+branches:
+  - id: "现场勘察平面图段"
+    field: "{{现场勘察平面图段}}"
+    conditions:
+      - if: "是否有现场勘察平面图=是"
+        select: "branch_include_平面图"
+      - if: "是否有现场勘察平面图=否"
+        select: "branch_no_平面图"

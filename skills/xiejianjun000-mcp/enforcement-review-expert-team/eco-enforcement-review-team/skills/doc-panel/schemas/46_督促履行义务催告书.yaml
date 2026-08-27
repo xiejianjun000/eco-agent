@@ -1,0 +1,73 @@
+id: "46"
+name: "督促履行义务催告书"
+category: "行政处罚-执行"
+complexity: "medium"
+template: "46_督促履行义务催告书.md"
+description: "生态环境主管部门督促当事人履行行政处罚决定的催告文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "处罚决定书编号"
+    key: "{{处罚决定书编号}}"
+    type: "string"
+    source: "案件数据.处罚决定书编号"
+    required: true
+
+  - id: "处罚决定日期"
+    key: "{{处罚决定日期}}"
+    type: "date"
+    source: "案件数据.处罚.决定日期"
+    required: true
+
+  - id: "未履行义务内容"
+    key: "{{未履行义务内容}}"
+    type: "text"
+    source: "AI生成.从处罚决定和履行情况生成"
+    required: true
+
+  - id: "履行期限"
+    key: "{{履行期限}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "逾期法律后果"
+    key: "{{逾期法律后果}}"
+    type: "text"
+    source: "AI生成.生成逾期法律后果"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

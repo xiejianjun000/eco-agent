@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eco-agent"
+version = "1.0.0"
+description = "ECO AGENT - Five-layer loop driven autonomous AI agent system"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "httpx>=0.27",
+    "requests>=2.31",
+    "cryptography>=42.0",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "python-dotenv>=1.0",
+    "numpy>=1.26",
+    "rich>=13.0",
+    "mcp>=1.0",
+    "PyYAML>=6.0",
+    "croniter>=1.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/xiejianjun000/eco-agent"
+Repository = "https://github.com/xiejianjun000/eco-agent.git"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+serve = ["sse-starlette>=1.0"]
+all = ["eco-agent[serve]"]
+
+[project.scripts]
+eco = "eco.cli:main"
+
+[tool.setuptools]
+packages = [
+    "agent_core", "gateway",
+    "eco", "eco.commands", "eco.config",
+    "govmcp", "govmcp.crypto", "govmcp.protocol", "govmcp.server", "govmcp.tools",
+    "govmcp_tools",
+    "server", "server.api",
+    "eco_agent_sdk",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 160
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "SIM"]
+ignore = [
+    "E402", "E501", "E701", "E702", "E741",
+    "SIM102", "SIM116", "SIM105", "SIM108",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]
+"_scripts/**" = ["F841", "B007"]
+"eco/**" = ["E501", "E701", "E702", "E741", "F841"]
+"agent_core/**" = ["E501", "E701", "E702", "E741", "F841", "F401"]
+"govmcp/__init__.py" = ["F401"]

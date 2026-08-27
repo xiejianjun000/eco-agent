@@ -1,0 +1,248 @@
+id: "39"
+name: "不予行政处罚决定书"
+category: "行政处罚-决定"
+complexity: "high"
+template: "39_不予行政处罚决定书.md"
+description: "对确认存在违法行为但因情节轻微等法定理由不予行政处罚的正式文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号年份"
+    key: "{{文号年份}}"
+    type: "string"
+    source: "案件数据.立案日期.年份"
+    required: true
+    validation: "^\\d{4}$"
+
+  - id: "文号序号"
+    key: "{{文号序号}}"
+    type: "string"
+    source: "系统生成.文号序号"
+    required: true
+
+  - id: "当事人名称或姓名"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人或负责人或经营者"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码或身份证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: true
+
+  - id: "地址或住址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: true
+
+  - id: "调查日期"
+    key: "{{调查日期}}"
+    type: "date"
+    source: "案件数据.调查日期"
+    required: true
+
+  - id: "违法事实陈述"
+    key: "{{违法事实陈述}}"
+    type: "text"
+    source: "AI生成.从案件事实和证据生成"
+    required: true
+    constraints:
+      - "包含违法行为发生的时间、地点、情节、动机、危害后果"
+      - "第一句格式：我厅（局）于X年X月X日对你（单位）进行了调查"
+
+  - id: "证据列表"
+    key: "{{证据列表}}"
+    type: "text"
+    source: "案件数据.证据"
+    required: true
+    constraints:
+      - "逐一列举证据名称、提取时间、提供单位、证明内容"
+
+  - id: "违反的法律规定"
+    key: "{{违反的法律规定}}"
+    type: "text"
+    source: "案件数据.法律依据.违法条款"
+    required: true
+    description: "法律、法规、规章名称用全称"
+
+  - id: "告知书类型"
+    key: "{{告知书类型}}"
+    type: "enum"
+    source: "案件数据.告知书.类型"
+    required: true
+    options:
+      - "不予行政处罚事先告知书"
+      - "行政处罚事先（听证）告知书"
+
+  - id: "告知书文号年份"
+    key: "{{告知书文号年份}}"
+    type: "string"
+    source: "案件数据.告知书.文号年份"
+    required: true
+
+  - id: "告知书文号序号"
+    key: "{{告知书文号序号}}"
+    type: "string"
+    source: "案件数据.告知书.文号序号"
+    required: true
+
+  - id: "告知书送达日期"
+    key: "{{告知书送达日期}}"
+    type: "date"
+    source: "案件数据.告知书.送达日期"
+    required: true
+
+  - id: "是否举行听证"
+    key: "{{是否有听证权}}"
+    type: "boolean"
+    source: "案件数据.听证权判定"
+    required: true
+
+  - id: "是否申请听证"
+    key: "{{是否申请听证}}"
+    type: "enum"
+    source: "案件数据.听证.申请状态"
+    required: false
+    options:
+      - "已申请"
+      - "未申请"
+
+  - id: "是否进行陈述申辩"
+    key: "{{是否有陈述申辩}}"
+    type: "enum"
+    source: "案件数据.陈述申辩.状态"
+    required: false
+    options:
+      - "已进行"
+      - "未进行"
+
+  - id: "陈述申辩内容"
+    key: "{{陈述申辩内容}}"
+    type: "text"
+    source: "案件数据.陈述申辩.内容"
+    required: false
+
+  - id: "陈述申辩采纳情况"
+    key: "{{陈述申辩采纳情况}}"
+    type: "text"
+    source: "AI生成.从复核意见生成"
+    required: false
+    description: "全部采纳、部分采纳或不采纳的结论性意见及理由"
+
+  - id: "听证日期"
+    key: "{{听证日期}}"
+    type: "date"
+    source: "案件数据.听证.日期"
+    required: false
+
+  - id: "听证通知日期"
+    key: "{{听证通知日期}}"
+    type: "date"
+    source: "案件数据.听证.通知日期"
+    required: false
+
+  - id: "听证申辩和质证内容"
+    key: "{{听证申辩质证内容}}"
+    type: "text"
+    source: "案件数据.听证.当事人意见"
+    required: false
+
+  - id: "集体讨论意见"
+    key: "{{集体讨论意见}}"
+    type: "text"
+    source: "案件数据.集体讨论.结论性意见"
+    required: false
+
+  - id: "违法行为改正情况"
+    key: "{{违法行为改正情况}}"
+    type: "text"
+    source: "案件数据.整改.改正情况"
+    required: true
+    description: "当事人改正违法行为的具体情况和时间"
+
+  - id: "不予处罚法定条件"
+    key: "{{不予处罚法定条件}}"
+    type: "text"
+    source: "AI生成.结合案件情况说明符合不予处罚的法定条件"
+    required: true
+
+  - id: "不予处罚法律依据"
+    key: "{{不予处罚法律依据}}"
+    type: "text"
+    source: "案件数据.法律依据.不予处罚条款"
+    required: true
+    constraints:
+      - "引用《中华人民共和国行政处罚法》第三十三条"
+      - "引用其他相关法律法规规章具体条款"
+
+  - id: "不予处罚相关文件清单"
+    key: "{{不予处罚文件清单}}"
+    type: "text"
+    source: "案件数据.法律依据.不予处罚文件"
+    required: false
+    description: "参照的不予行政处罚相关文件清单"
+
+  - id: "教育内容"
+    key: "{{教育内容}}"
+    type: "text"
+    source: "AI生成.结合违法行为生成的法制教育内容"
+    required: true
+    constraints:
+      - "逐条列明教育内容"
+
+  - id: "行政复议机关"
+    key: "{{行政复议机关}}"
+    type: "string"
+    source: "系统配置.行政复议机关"
+    required: true
+
+  - id: "行政诉讼法院"
+    key: "{{行政诉讼法院}}"
+    type: "string"
+    source: "系统配置.行政诉讼法院"
+    required: true
+
+  - id: "作出日期"
+    key: "{{作出日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+branches:
+  - id: "陈述申辩听证段"
+    field: "{{陈述申辩听证段}}"
+    conditions:
+      - if: "是否有听证权=否 AND 是否有陈述申辩=未进行"
+        select: "branch_no_statement_no_hearing"
+      - if: "是否有听证权=否 AND 是否有陈述申辩=已进行"
+        select: "branch_statement_only_no_hearing"
+      - if: "是否有听证权=是 AND 是否有陈述申辩=未进行 AND 是否申请听证=未申请"
+        select: "branch_no_action_hearing_right"
+      - if: "是否有听证权=是 AND 是否有陈述申辩=未进行 AND 是否申请听证=已申请"
+        select: "branch_hearing_only"
+      - if: "是否有听证权=是 AND 是否有陈述申辩=已进行 AND 是否申请听证=未申请"
+        select: "branch_statement_only_hearing_right"
+      - if: "是否有听证权=是 AND 是否有陈述申辩=已进行 AND 是否申请听证=已申请"
+        select: "branch_both_hearing_right"
+
+  - id: "不予处罚依据段"
+    field: "{{不予处罚依据段}}"
+    conditions:
+      - if: "不予处罚法律依据.引用条款=行政处罚法第三十三条第一款"
+        select: "branch_轻微免罚"
+      - if: "不予处罚法律依据.引用条款=其他法律法规"
+        select: "branch_其他免罚依据"

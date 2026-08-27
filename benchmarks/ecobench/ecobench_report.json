@@ -1,0 +1,383 @@
+{
+  "generated_at": "2026-07-31T08:27:30+0800",
+  "provider": "deepseek (deepseek-chat)",
+  "config": {
+    "rag_max_context_chars": 1500,
+    "per_question_timeout_s": 90,
+    "llm_call_timeout_s": 90,
+    "max_attempts": 2,
+    "backup_providers": {
+      "deepseek": "kimi",
+      "kimi": "deepseek"
+    }
+  },
+  "summary": {
+    "n_questions": 70,
+    "mode": "A/B: baseline vs rag (RAG v2 定位→直取)",
+    "baseline": {
+      "n_questions": 70,
+      "mode": "llm",
+      "citation_accuracy": 0.5376,
+      "citation_accuracy_raw": 0.4805,
+      "keypoint_f1": 0.6457,
+      "keypoint_f1_raw": 0.6271,
+      "elapsed_s": 230.9,
+      "provider_final": "deepseek",
+      "provider_switches": [],
+      "switch_count": 0,
+      "timeouts": 0,
+      "timeout_rate": 0.0,
+      "retries": 0,
+      "errors": 0,
+      "answered": 70,
+      "aborted": false,
+      "abort_reason": null,
+      "per_question_timeout_s": 90.0,
+      "llm_call_timeout_s": 90.0,
+      "rag_max_context_chars": 1500,
+      "by_category": {
+        "处罚裁量": {
+          "n": 10,
+          "citation_accuracy": 0.7,
+          "keypoint_f1": 0.665
+        },
+        "执法程序": {
+          "n": 10,
+          "citation_accuracy": 0.6,
+          "keypoint_f1": 0.7033
+        },
+        "法典-引用规范": {
+          "n": 5,
+          "citation_accuracy": 0.0,
+          "keypoint_f1": 0.55
+        },
+        "法典-新旧衔接": {
+          "n": 5,
+          "citation_accuracy": 0.0,
+          "keypoint_f1": 0.3467
+        },
+        "法典-框架结构": {
+          "n": 5,
+          "citation_accuracy": 0.3267,
+          "keypoint_f1": 0.5533
+        },
+        "法典-继承映射": {
+          "n": 5,
+          "citation_accuracy": 0.1,
+          "keypoint_f1": 0.4333
+        },
+        "法典新旧衔接": {
+          "n": 10,
+          "citation_accuracy": 0.8,
+          "keypoint_f1": 0.52
+        },
+        "法条引用": {
+          "n": 10,
+          "citation_accuracy": 0.8,
+          "keypoint_f1": 0.91
+        },
+        "违法认定": {
+          "n": 10,
+          "citation_accuracy": 0.65,
+          "keypoint_f1": 0.78
+        }
+      }
+    },
+    "rag": {
+      "n_questions": 70,
+      "mode": "rag",
+      "citation_accuracy": 0.8429,
+      "citation_accuracy_raw": 0.8429,
+      "keypoint_f1": 0.7919,
+      "keypoint_f1_raw": 0.7798,
+      "elapsed_s": 331.7,
+      "provider_final": "deepseek",
+      "provider_switches": [],
+      "switch_count": 0,
+      "timeouts": 0,
+      "timeout_rate": 0.0,
+      "retries": 0,
+      "errors": 0,
+      "answered": 70,
+      "aborted": false,
+      "abort_reason": null,
+      "per_question_timeout_s": 90.0,
+      "llm_call_timeout_s": 90.0,
+      "rag_max_context_chars": 1500,
+      "by_category": {
+        "处罚裁量": {
+          "n": 10,
+          "citation_accuracy": 1.0,
+          "keypoint_f1": 0.755
+        },
+        "执法程序": {
+          "n": 10,
+          "citation_accuracy": 0.5,
+          "keypoint_f1": 0.76
+        },
+        "法典-引用规范": {
+          "n": 5,
+          "citation_accuracy": 1.0,
+          "keypoint_f1": 1.0
+        },
+        "法典-新旧衔接": {
+          "n": 5,
+          "citation_accuracy": 0.8,
+          "keypoint_f1": 0.8167
+        },
+        "法典-框架结构": {
+          "n": 5,
+          "citation_accuracy": 1.0,
+          "keypoint_f1": 0.88
+        },
+        "法典-继承映射": {
+          "n": 5,
+          "citation_accuracy": 1.0,
+          "keypoint_f1": 0.9
+        },
+        "法典新旧衔接": {
+          "n": 10,
+          "citation_accuracy": 0.6,
+          "keypoint_f1": 0.46
+        },
+        "法条引用": {
+          "n": 10,
+          "citation_accuracy": 1.0,
+          "keypoint_f1": 0.915
+        },
+        "违法认定": {
+          "n": 10,
+          "citation_accuracy": 0.9,
+          "keypoint_f1": 0.855
+        }
+      }
+    },
+    "delta": {
+      "citation_accuracy": 0.3053,
+      "keypoint_f1": 0.1462
+    },
+    "by_category": {
+      "处罚裁量": {
+        "n": 10,
+        "baseline_citation": 0.7,
+        "rag_citation": 1.0,
+        "baseline_f1": 0.665,
+        "rag_f1": 0.755
+      },
+      "执法程序": {
+        "n": 10,
+        "baseline_citation": 0.6,
+        "rag_citation": 0.5,
+        "baseline_f1": 0.7033,
+        "rag_f1": 0.76
+      },
+      "法典-引用规范": {
+        "n": 5,
+        "baseline_citation": 0.0,
+        "rag_citation": 1.0,
+        "baseline_f1": 0.55,
+        "rag_f1": 1.0
+      },
+      "法典-新旧衔接": {
+        "n": 5,
+        "baseline_citation": 0.0,
+        "rag_citation": 0.8,
+        "baseline_f1": 0.3467,
+        "rag_f1": 0.8167
+      },
+      "法典-框架结构": {
+        "n": 5,
+        "baseline_citation": 0.3267,
+        "rag_citation": 1.0,
+        "baseline_f1": 0.5533,
+        "rag_f1": 0.88
+      },
+      "法典-继承映射": {
+        "n": 5,
+        "baseline_citation": 0.1,
+        "rag_citation": 1.0,
+        "baseline_f1": 0.4333,
+        "rag_f1": 0.9
+      },
+      "法典新旧衔接": {
+        "n": 10,
+        "baseline_citation": 0.8,
+        "rag_citation": 0.6,
+        "baseline_f1": 0.52,
+        "rag_f1": 0.46
+      },
+      "法条引用": {
+        "n": 10,
+        "baseline_citation": 0.8,
+        "rag_citation": 1.0,
+        "baseline_f1": 0.91,
+        "rag_f1": 0.915
+      },
+      "违法认定": {
+        "n": 10,
+        "baseline_citation": 0.65,
+        "rag_citation": 0.9,
+        "baseline_f1": 0.78,
+        "rag_f1": 0.855
+      }
+    }
+  },
+  "previous_round_kimi_interrupted": {
+    "note": "上轮 kimi-k2.5 通道：RAG 组 429/余额中断，多题未作答（answered 口径见各分类 answered 字段）",
+    "summary": {
+      "n_questions": 70,
+      "model": "kimi-k2.5",
+      "note": "超时题（30s 上限，mock 兜底答案）按 0 分计入主指标；answered 口径仅统计有效作答题。baseline 组超时题已重试一次（retried 标记）；rag 组重试因 Kimi 账户余额不足被 429 挂起而中止，未重试。",
+      "baseline": {
+        "citation_accuracy": 0.5186,
+        "keypoint_f1": 0.5721,
+        "citation_accuracy_answered": 0.6368,
+        "keypoint_f1_answered": 0.7026,
+        "answered": 57,
+        "timeout": 13,
+        "elapsed_s": 1777.6
+      },
+      "rag": {
+        "citation_accuracy": 0.45,
+        "keypoint_f1": 0.4164,
+        "citation_accuracy_answered": 0.875,
+        "keypoint_f1_answered": 0.8097,
+        "answered": 36,
+        "timeout": 34,
+        "elapsed_s": 1825.8
+      },
+      "by_category": {
+        "处罚裁量": {
+          "n": 10,
+          "baseline_citation": 0.8,
+          "rag_citation": 0.3,
+          "baseline_f1": 0.715,
+          "rag_f1": 0.26,
+          "baseline_citation_answered": 0.8,
+          "rag_citation_answered": 1.0,
+          "baseline_f1_answered": 0.715,
+          "rag_f1_answered": 0.8667,
+          "baseline_answered": 10,
+          "rag_answered": 3
+        },
+        "执法程序": {
+          "n": 10,
+          "baseline_citation": 0.7,
+          "rag_citation": 0.2,
+          "baseline_f1": 0.72,
+          "rag_f1": 0.14,
+          "baseline_citation_answered": 0.7,
+          "rag_citation_answered": 1.0,
+          "baseline_f1_answered": 0.72,
+          "rag_f1_answered": 0.7,
+          "baseline_answered": 10,
+          "rag_answered": 2
+        },
+        "法典-引用规范": {
+          "n": 5,
+          "baseline_citation": 0.0,
+          "rag_citation": 1.0,
+          "baseline_f1": 0.0,
+          "rag_f1": 1.0,
+          "baseline_citation_answered": null,
+          "rag_citation_answered": 1.0,
+          "baseline_f1_answered": null,
+          "rag_f1_answered": 1.0,
+          "baseline_answered": 0,
+          "rag_answered": 5
+        },
+        "法典-新旧衔接": {
+          "n": 5,
+          "baseline_citation": 0.0,
+          "rag_citation": 1.0,
+          "baseline_f1": 0.2367,
+          "rag_f1": 1.0,
+          "baseline_citation_answered": 0.0,
+          "rag_citation_answered": 1.0,
+          "baseline_f1_answered": 0.2958,
+          "rag_f1_answered": 1.0,
+          "baseline_answered": 4,
+          "rag_answered": 5
+        },
+        "法典-框架结构": {
+          "n": 5,
+          "baseline_citation": 0.16,
+          "rag_citation": 0.4,
+          "baseline_f1": 0.1667,
+          "rag_f1": 0.4,
+          "baseline_citation_answered": 0.4,
+          "rag_citation_answered": 1.0,
+          "baseline_f1_answered": 0.4167,
+          "rag_f1_answered": 1.0,
+          "baseline_answered": 2,
+          "rag_answered": 2
+        },
+        "法典-继承映射": {
+          "n": 5,
+          "baseline_citation": 0.0,
+          "rag_citation": 0.2,
+          "baseline_f1": 0.2667,
+          "rag_f1": 0.2,
+          "baseline_citation_answered": 0.0,
+          "rag_citation_answered": 0.5,
+          "baseline_f1_answered": 0.4444,
+          "rag_f1_answered": 0.5,
+          "baseline_answered": 3,
+          "rag_answered": 2
+        },
+        "法典新旧衔接": {
+          "n": 10,
+          "baseline_citation": 0.55,
+          "rag_citation": 0.1,
+          "baseline_f1": 0.56,
+          "rag_f1": 0.12,
+          "baseline_citation_answered": 0.6111,
+          "rag_citation_answered": 0.25,
+          "baseline_f1_answered": 0.6222,
+          "rag_f1_answered": 0.3,
+          "baseline_answered": 9,
+          "rag_answered": 4
+        },
+        "法条引用": {
+          "n": 10,
+          "baseline_citation": 0.8,
+          "rag_citation": 0.9,
+          "baseline_f1": 0.86,
+          "rag_f1": 0.8,
+          "baseline_citation_answered": 0.8889,
+          "rag_citation_answered": 1.0,
+          "baseline_f1_answered": 0.9556,
+          "rag_f1_answered": 0.8889,
+          "baseline_answered": 9,
+          "rag_answered": 9
+        },
+        "违法认定": {
+          "n": 10,
+          "baseline_citation": 0.7,
+          "rag_citation": 0.35,
+          "baseline_f1": 0.815,
+          "rag_f1": 0.295,
+          "baseline_citation_answered": 0.7,
+          "rag_citation_answered": 0.875,
+          "baseline_f1_answered": 0.815,
+          "rag_f1_answered": 0.7375,
+          "baseline_answered": 10,
+          "rag_answered": 4
+        }
+      },
+      "codex_special": {
+        "n": 20,
+        "baseline_citation": 0.04,
+        "rag_citation": 0.65,
+        "baseline_f1": 0.1675,
+        "rag_f1": 0.65,
+        "baseline_citation_answered": 0.0889,
+        "rag_citation_answered": 0.9286,
+        "baseline_f1_answered": 0.3722,
+        "rag_f1_answered": 0.9286,
+        "baseline_answered": 9,
+        "rag_answered": 14
+      }
+    }
+  }
+}

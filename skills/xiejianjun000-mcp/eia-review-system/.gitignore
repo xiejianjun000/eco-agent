@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbs.db
+Thumbs.db
+
+# Git
+.git/

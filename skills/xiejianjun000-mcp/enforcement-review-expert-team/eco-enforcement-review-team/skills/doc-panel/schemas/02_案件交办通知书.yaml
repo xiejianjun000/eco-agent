@@ -1,0 +1,61 @@
+id: "02"
+name: "案件交办通知书"
+category: "行政处罚-实施主体与管辖"
+complexity: "low"
+template: "02_案件交办通知书.md"
+description: "上级生态环境主管部门将管辖案件交由下级生态环境主管部门办理的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "被交办单位"
+    key: "{{被交办单位}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "案件名称"
+    key: "{{案件名称}}"
+    type: "text"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "反馈时间要求"
+    key: "{{反馈时间要求}}"
+    type: "string"
+    source: "用户输入"
+    required: false
+
+  - id: "附件材料"
+    key: "{{附件材料}}"
+    type: "text"
+    source: "用户输入"
+    required: false
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

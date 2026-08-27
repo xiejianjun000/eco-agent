@@ -1,0 +1,61 @@
+id: "15"
+name: "调取证据材料通知书"
+category: "行政处罚-调查取证"
+complexity: "low"
+template: "15_调取证据材料通知书.md"
+description: "生态环境主管部门通知有关单位或个人提供证据材料的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "接收单位"
+    key: "{{接收单位}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "调取证据材料清单"
+    key: "{{调取证据材料清单}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "提供期限"
+    key: "{{提供期限}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

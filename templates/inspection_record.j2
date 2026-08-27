@@ -1,0 +1,88 @@
+{%- set now = now or "____年__月__日" -%}
+# 现场检查（勘察）笔录
+
+---
+
+## 基本信息
+
+| 项目 | 内容 |
+|:-----|:------|
+| 检查时间 | {{ inspection_date }} {{ inspection_time_start }} 至 {{ inspection_time_end }} |
+| 检查地点 | {{ inspection_location }} |
+| 被检查对象名称 | {{ party_name }} |
+| 统一社会信用代码 | {{ credit_code }} |
+| 法定代表人/负责人 | {{ legal_representative }} |
+| 现场负责人 | {{ site_contact }} |
+| 联系电话 | {{ contact_phone }} |
+
+---
+
+## 检查人员
+
+| 姓名 | 执法证号 | 所在单位 |
+|:-----|:---------|:---------|
+{% for officer in inspection_officers %}
+| {{ officer.name }} | {{ officer.badge_no }} | {{ officer.unit }} |
+{% endfor %}
+
+---
+
+## 检查事项
+
+{% for item in inspection_items %}
+{{ loop.index }}. {{ item }}
+{% endfor %}
+
+---
+
+## 检查情况
+
+### 现场情况
+
+{{ site_conditions }}
+
+### 检查发现
+
+{% for finding in findings %}
+#### {{ finding.title }}
+
+{{ finding.description }}
+
+**证据**：{{ finding.evidence }}
+
+{% endfor %}
+
+---
+
+## 现场记录
+
+| 序号 | 检查内容 | 检查结果 | 备注 |
+|:----:|:---------|:---------|:-----|
+{% for record in inspection_records %}
+| {{ loop.index }} | {{ record.item }} | {{ record.result }} | {{ record.remark }} |
+{% endfor %}
+
+---
+
+## 被检查对象意见
+
+{{ party_opinion if party_opinion else "（被检查对象对检查情况无异议）" }}
+
+被检查对象签名：______________    日期：________
+
+---
+
+## 检查人员签名
+
+| 签名 | 日期 |
+|:-----|:-----|
+| {{ inspection_officers[0].name if inspection_officers else '' }} | |
+| {{ inspection_officers[1].name if inspection_officers|length > 1 else '' }} | |
+
+---
+
+## 备注
+
+{% for note in notes %}
+{{ loop.index }}. {{ note }}
+{% endfor %}

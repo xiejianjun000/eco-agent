@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+!web/dist/
+build/
+*.egg
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Memory Tree data (runtime generated)
+memory-tree/data/
+memory-tree/obsidian_sync/
+*.db
+*.sqlite
+
+# Runtime artifacts (agent runs generate these)
+worktrees/
+plugins/plugin_*/
+skills/auto_*.md
+skills/test*.md
+tests/reports/
+
+# Logs
+*.log
+logs/
+
+# Temp
+tmp/
+temp/
+
+# 运行时敏感数据/密钥（铁律：绝不提交 API key）
+.eco/
+stats.jsonl
+prompt_audit.jsonl
+workspaces/
+
+# Web GUI
+web/node_modules/
+# web/dist 已提交（clone 后无需构建即可用 eco server 打开界面）；重新构建后由 CI/开发者提交
+
+# Playwright CLI 快照（测试产物）
+.playwright-cli/
+output/
+.libs/

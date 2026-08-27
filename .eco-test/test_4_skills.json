@@ -1,0 +1,74 @@
+{
+  "tests": [
+    {
+      "name": "文件存在",
+      "status": "PASS",
+      "detail": "找到917个文档文件"
+    },
+    {
+      "name": "分析报告",
+      "status": "PASS",
+      "detail": "1份分析报告"
+    },
+    {
+      "name": "Playwright配置",
+      "status": "PASS",
+      "detail": "找到3个相关文件"
+    },
+    {
+      "name": "79行业指南",
+      "status": "PASS",
+      "detail": "82个行业指南文件"
+    },
+    {
+      "name": "工具模板",
+      "status": "PASS",
+      "detail": "9个模板"
+    },
+    {
+      "name": "法规知识库",
+      "status": "PASS",
+      "detail": "4个法规文件"
+    },
+    {
+      "name": "两证衔接",
+      "status": "PASS",
+      "detail": "11个衔接文件"
+    },
+    {
+      "name": "执法案例",
+      "status": "PASS",
+      "detail": "5个案例"
+    },
+    {
+      "name": "DSH配置",
+      "status": "PASS",
+      "detail": "agent.cordis.yml存在"
+    },
+    {
+      "name": "知识库JSON",
+      "status": "PASS",
+      "detail": "2个知识文件"
+    },
+    {
+      "name": "MCP服务器",
+      "status": "PASS",
+      "detail": "5个服务端文件"
+    },
+    {
+      "name": "省级规则热插拔",
+      "status": "PASS",
+      "detail": "cordis.patch.yml存在"
+    },
+    {
+      "name": "README存在",
+      "status": "PASS",
+      "detail": "OpenClaw Skill定义存在"
+    },
+    {
+      "name": "工作流定义",
+      "status": "FAIL",
+      "detail": "仅README，无工作流文件"
+    }
+  ]
+}

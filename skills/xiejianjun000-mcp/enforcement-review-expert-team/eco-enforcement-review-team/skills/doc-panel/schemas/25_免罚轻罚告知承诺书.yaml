@@ -1,0 +1,118 @@
+id: "25"
+name: "免罚轻罚告知承诺书"
+category: "行政处罚-告知"
+complexity: "low"
+template: "25_免罚轻罚告知承诺书.md"
+description: "告知当事人符合免罚轻罚条件，并由当事人作出整改承诺的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统生成.文号"
+    required: true
+
+  - id: "当事人名称或姓名"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人或负责人或经营者"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码或身份证件号码"
+    key: "{{当事人证件号码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: true
+
+  - id: "地址或住址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: true
+
+  - id: "违法行为基本情况"
+    key: "{{违法行为基本情况}}"
+    type: "text"
+    source: "AI生成.从案件事实生成违法行为摘要"
+    required: true
+    constraints:
+      - "包括违法行为发生的时间、地点、情节"
+      - "说明违法行为类别"
+
+  - id: "违反的法律规定"
+    key: "{{违反的法律规定}}"
+    type: "text"
+    source: "案件数据.法律依据.违法条款"
+    required: true
+
+  - id: "免罚轻罚理由"
+    key: "{{免罚轻罚理由}}"
+    type: "text"
+    source: "AI生成.结合案件情况生成免罚轻罚理由"
+    required: true
+    description: "说明违法行为符合免罚或轻罚的法定条件和具体情形"
+
+  - id: "免罚轻罚依据"
+    key: "{{免罚轻罚依据}}"
+    type: "text"
+    source: "案件数据.法律依据.免罚轻罚条款"
+    required: true
+
+  - id: "承诺事项"
+    key: "{{承诺事项}}"
+    type: "text"
+    source: "AI生成.从案件情况生成具体承诺事项"
+    required: true
+    constraints:
+      - "包括改正违法行为的具体措施"
+      - "包括消除或减轻危害后果的措施"
+      - "包括履行生态环境损害赔偿义务的情况"
+
+  - id: "践诺期限"
+    key: "{{践诺期限}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+    description: "当事人完成承诺事项的期限"
+
+  - id: "告知教育内容"
+    key: "{{告知教育内容}}"
+    type: "text"
+    source: "AI生成.结合违法行为的法制教育内容"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.执法人员1"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统配置.联系电话"
+    required: true
+
+  - id: "地址"
+    key: "{{联系地址}}"
+    type: "string"
+    source: "系统配置.联系地址"
+    required: false
+
+  - id: "作出日期"
+    key: "{{作出日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

@@ -1,0 +1,97 @@
+id: "05"
+name: "撤销立案审批表"
+category: "行政处罚-立案"
+complexity: "low"
+template: "05_撤销立案审批表.md"
+description: "生态环境主管部门对已立案案件进行撤销立案的内部审批文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "立案号"
+    key: "{{立案号}}"
+    type: "string"
+    source: "案件数据.立案号"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "撤销立案理由"
+    key: "{{撤销立案理由}}"
+    type: "text"
+    source: "AI生成.从案件信息生成撤销理由"
+    required: true
+
+  - id: "承办人意见"
+    key: "{{承办人意见}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "承办人签字"
+    key: "{{承办人签字}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "承办人日期"
+    key: "{{承办人日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "承办机构负责人意见"
+    key: "{{承办机构负责人意见}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "同意撤销立案"
+      - "不同意撤销立案"
+
+  - id: "承办机构负责人签字"
+    key: "{{承办机构负责人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "承办机构负责人日期"
+    key: "{{承办机构负责人日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "单位负责人审批意见"
+    key: "{{单位负责人审批意见}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "同意撤销立案"
+      - "不同意撤销立案"
+
+  - id: "单位负责人签字"
+    key: "{{单位负责人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "单位负责人日期"
+    key: "{{单位负责人日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true

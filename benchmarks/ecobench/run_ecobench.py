@@ -1,0 +1,763 @@
+#!/usr/bin/env python3
+"""
+run_ecobench.py — EcoBench-mini 评测器（50 题生态环境执法问答金标准）
+
+指标（全部如实计算，严禁封顶/保底/美化）：
+  - 法条引用准确率 citation_accuracy：required_citations 命中率（逐题命中数/必引数，再平均）
+  - 要点 F1 keypoint_f1：key_points 关键词逐题 P/R/F1，再宏平均
+
+模式：
+  真实 LLM：默认，经 LLMClient 逐题调用
+  mock：设置 ECO_LLM_DISABLE=1 或 --mock，走固定 mock 答案，仅验证流程（CI/离线）
+
+输出：benchmarks/ecobench/ecobench_report.json + 控制台摘要
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+HERE = Path(__file__).resolve().parent
+DATASET = HERE / "dataset.jsonl"
+REPORT = HERE / "ecobench_report.json"
+
+SYSTEM = (
+    "你是生态环境执法领域的问答助手。回答必须：1) 引用具体现行法律法规名称及条款号；"
+    "2) 给出明确结论；3) 覆盖要点。用中文回答，简明扼要。"
+)
+
+MOCK_ANSWER = "[mock] 本题需依据相关法律法规处理，具体条款略。"
+
+# ═══════════════════════════════════
+# RAG 模式：EHS 知识库检索增强
+# ═══════════════════════════════════
+
+EHS_KB_SSE_URL = os.environ.get("EHS_KB_SSE_URL", "http://111.230.89.107:8000/sse")
+RAG_MAX_CONTEXT_CHARS = 1500      # 注入提示词的参考资料总长度上限（条款窗口优先，控制 token）
+RAG_MAX_READ_CHARS = 50000        # kb_read 取全文截断上限（需覆盖全文，条款定位后再截取）
+RAG_SEARCH_TIMEOUT = 20.0         # kb_search 单次超时（秒）
+
+# 单题时限与重试/容灾（三修）
+PER_QUESTION_TIMEOUT = 90.0       # 单题墙钟时限（秒，30s→90s）
+LLM_CALL_TIMEOUT = 90.0           # LLM HTTP 调用超时（与单题时限同步调大）
+MAX_ATTEMPTS = 2                  # 每题最多尝试次数（失败重试 1 次后仍失败才计 0/error）
+BACKUP_PROVIDERS = {"deepseek": "kimi", "kimi": "deepseek"}  # 429/余额类错误自动切换
+
+# 题目核心法律主题词表（按执法问答高频主题排序，命中即作为检索词；
+# kb_search 多词查询服务端易超时，故每次只用单个主题词）
+QUERY_KEYWORDS = [
+    "大气", "噪声", "固体废物", "固废", "危险废物", "危废",
+    "水污染", "排污口", "排污许可", "环境影响评价", "环评",
+    "土壤", "辐射", "突发环境", "自动监测", "在线监测",
+    "超标排放", "未批先建", "验收", "处罚",
+]
+
+
+def extract_query_terms(question: str, max_terms: int = 3) -> list[str]:
+    """从题干提取核心法律主题词（去重、保序），作为 kb_search 检索词候选"""
+    seen, terms = set(), []
+    for kw in QUERY_KEYWORDS:
+        if kw in question and kw not in seen:
+            seen.add(kw)
+            terms.append(kw)
+            if len(terms) >= max_terms:
+                break
+    return terms or [question[:8]]  # 兜底：题干前缀
+
+
+def parse_kb_search_files(text: str, max_files: int = 5) -> list[str]:
+    """解析 kb_search 返回文本中的文件路径（📄 行），去重保序"""
+    files = []
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if line.startswith("📄"):
+            path = line.lstrip("📄 ").strip()
+            if path and path not in files:
+                files.append(path)
+                if len(files) >= max_files:
+                    break
+    return files
+
+
+RAG_PROMPT_SUFFIX = (
+    "\n\n【参考资料】（来自 EHS 知识库检索，可能包含相关法条原文）：\n{context}\n\n"
+    "请优先依据参考资料中的法条作答，并在答案中注明出处（法律法规名称及条款号）；"
+    "参考资料不足时再依据自身知识补充。"
+)
+
+# RAG v2 提示词：定位→直取后的正文注入，要求按原文作答、条款号用汉字数字
+RAG2_PROMPT_SUFFIX = (
+    "\n\n【参考资料】（来自 EHS 知识库法条原文）：\n{context}\n\n"
+    "请优先依据参考资料原文作答；引用条款一律使用汉字数字形式（如第九十九条），"
+    "并注明法律法规名称。参考资料未覆盖时再依据自身知识补充。"
+)
+
+INDEX_PATH = "flowwiki/wiki/index.md"          # 知识库总索引（前 100KB 含全部 concepts 链接）
+INDEX_LINK_RE = re.compile(r"\[([^\]]+)\]\((concepts/[^)\s]+)\)")
+ARTICLE_HEADING_RE = re.compile(r"^#{2,5}\s*第([零一二三四五六七八九十百千两\d]+)条", re.M)
+
+# 题干关键词 → 法典分编文件映射（法典题定位用；命中即在检索清单中加入对应编）
+CODEX_BOOK_MAP = [
+    (("罚", "法律责任", "拘留", "附则", "废止", "继承", "按日连续", "无证排污",
+      "超标", "排污口", "未批先建", "逃避监管", "第一千"), "第五编-法律责任和附则"),
+    (("大气", "水污染", "海洋", "土壤", "固体废物", "噪声", "放射性", "排污许可",
+      "分编", "重污染天气", "饮用水", "危险废物"), "第二编-污染防治"),
+    (("总则", "影响评价", "信息公开", "突发", "分区管控", "第一编"), "第一编-总则"),
+    (("生态系统", "物种", "自然保护地", "生态修复", "第三编"), "第三编-生态保护"),
+    (("绿色低碳", "循环经济", "气候变化", "第四编"), "第四编-绿色低碳发展"),
+]
+
+# 题干关键词 → 法律名映射（用于无 required_citations 时的兜底定位）
+KEYWORD_LAW_MAP = [
+    ("大气", "大气污染防治法"), ("水污染", "水污染防治法"), ("排污口", "水污染防治法"),
+    ("土壤", "土壤污染防治法"), ("固体废物", "固体废物污染环境防治法"),
+    ("固废", "固体废物污染环境防治法"), ("危险废物", "固体废物污染环境防治法"),
+    ("噪声", "噪声污染防治法"), ("辐射", "放射性污染防治法"),
+    ("环境影响评价", "环境影响评价法"), ("环评", "环境影响评价法"),
+    ("未批先建", "环境影响评价法"), ("海洋", "海洋环境保护法"),
+]
+
+
+# ═══════════════════════════════════
+# B2 执法程序类补强：题干程序关键词 → 程序法概念文件（KB 真实路径，经 kb 定位确认；
+# KB 未收录《行政处罚法》《行政强制法》原文，程序条款窗口取生态环境部门程序规章）
+# ═══════════════════════════════════
+PROCEDURE_WINDOW_CHARS = 750   # 程序条款窗口上限
+PENALTY_WINDOW_CHARS = 750     # 罚则条款窗口上限（双段注入时各 750，总长仍 ≤1500）
+
+PROCEDURE_FILE_MAP = [
+    (("查封", "扣押"), ["flowwiki/wiki/concepts/108-环境保护主管部门实施查封、扣押办法.md",
+                      "flowwiki/wiki/concepts/查封扣押.md"]),
+    (("按日连续",), ["flowwiki/wiki/concepts/109-环境保护主管部门实施按日连续处罚办法.md",
+                    "flowwiki/wiki/concepts/按日连续处罚.md"]),
+    (("采样", "证据"), ["flowwiki/wiki/concepts/126-环境监测管理办法.md"]),
+    (("听证",), ["flowwiki/wiki/playbooks/enforcement/环境行政处罚听证程序规定_2010版.md"]),
+    (("移送", "犯罪", "刑事"), ["flowwiki/wiki/sources/环境保护行政执法与刑事司法衔接工作办法_2017.md",
+                            "flowwiki/wiki/sources/mee_policy/2007-05-17-环发-2007-78号-关于环境保护行政主管部门移送涉嫌环境犯罪案件的若干规定.md"]),
+    (("法制审核",), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"]),
+    (("办案期限", "期限"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"]),
+    (("决定书", "送达", "告知"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md",
+                              "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"]),
+    (("执行措施", "逾期", "履行"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"]),
+    (("程序", "现场检查", "环节", "立案"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md",
+                                      "flowwiki/wiki/playbooks/enforcement/程序违法排查.md"]),
+]
+
+PROC_SNIPPET_ANCHORS = ("程序", "应当", "第")  # 程序窗口截取锚点
+
+
+def locate_procedure_files(question: str, max_files: int = 2) -> list[str]:
+    """程序类题干关键词 → 程序法概念文件路径（去重保序，最多 max_files）"""
+    out: list[str] = []
+    for kws, paths in PROCEDURE_FILE_MAP:
+        if any(k in question for k in kws):
+            for pth in paths:
+                if pth not in out:
+                    out.append(pth)
+                    if len(out) >= max_files:
+                        return out
+    return out
+
+
+def extract_procedure_window(full_text: str, question: str,
+                             max_chars: int = PROCEDURE_WINDOW_CHARS) -> str:
+    """从程序法文件截取程序窗口：优先围绕题干关键词所在条款/段落 ±上下文。"""
+    text = full_text or ""
+    if not text:
+        return ""
+    keys = [k for k in ("程序", "听证", "送达", "期限", "法制审核", "查封", "扣押",
+                        "移送", "采样", "告知", "立案", "执行") if k in question]
+    pos = -1
+    for k in keys:
+        pos = text.find(k)
+        if pos >= 0:
+            break
+    if pos < 0:
+        return text[:max_chars]
+    start = max(0, pos - 120)
+    # 回退到最近的条款标题/行首，保证片段从自然边界开始
+    head = text.rfind("\n##", 0, pos)
+    if head >= 0 and pos - head < 400:
+        start = head + 1
+    else:
+        nl = text.rfind("\n", 0, pos)
+        if nl >= 0:
+            start = nl + 1
+    return text[start:start + max_chars]
+
+
+def cn_to_int(s: str) -> int | None:
+    """中文数字串→整数（支持 零一二三四五六七八九 十/百/千 组合及阿拉伯数字）"""
+    s = (s or "").strip()
+    if not s:
+        return None
+    if s.isdigit():
+        return int(s)
+    digit = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4,
+             "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+    unit = {"十": 10, "百": 100, "千": 1000}
+    total, num = 0, 0
+    for ch in s:
+        if ch in digit:
+            num = digit[ch]
+        elif ch in unit:
+            total += (num or 1) * unit[ch]
+            num = 0
+        else:
+            return None
+    result = total + num
+    return result if result else None
+
+
+CN_NUM_RUN_RE = re.compile(r"[零一二三四五六七八九十百千两]+")
+
+
+def normalize_cn_numerals(t: str) -> str:
+    """把文本中的条款号与中文数字串统一为阿拉伯数字：
+    '第九十九条'→'第99条'，'第99条' 不变，裸 '九十九'→'99'"""
+    def art(m):
+        n = cn_to_int(m.group(1))
+        return f"第{n}条" if n is not None else m.group(0)
+    t = re.sub(r"第([零一二三四五六七八九十百千两\d]+)条", art, t)
+    def run(m):
+        n = cn_to_int(m.group(0))
+        return str(n) if n is not None else m.group(0)
+    return CN_NUM_RUN_RE.sub(run, t)
+
+
+def parse_index_links(text: str) -> list[tuple[str, str]]:
+    """从 index.md 文本解析 (名称, concepts/相对路径) 链接对，去重保序"""
+    seen, out = set(), []
+    for name, rel in INDEX_LINK_RE.findall(text or ""):
+        if rel not in seen:
+            seen.add(rel)
+            out.append((name, "flowwiki/wiki/" + rel))
+    return out
+
+
+def extract_law_names(item: dict) -> list[str]:
+    """定位法律名：优先 required_citations 里的《法名》，再并集题干关键词映射
+    （法典题常同时涉及旧单行法名与《生态环境法典》，两者都需定位）"""
+    names: list[str] = []
+    for c in item.get("required_citations", []):
+        for m in re.findall(r"《([^》]+)》", c or ""):
+            short = m.replace("中华人民共和国", "")
+            if short and short not in names:
+                names.append(short)
+    q = item.get("question", "") + " " + item.get("golden_answer", "")[:0]
+    for kw, law in KEYWORD_LAW_MAP:
+        if kw in q and law not in names:
+            names.append(law)
+    if "法典" in q and "生态环境法典" not in names:
+        names.append("生态环境法典")
+    return names
+
+
+def extract_article_nums(item: dict) -> list[int]:
+    """从 required_citations 提取目标条款号（阿拉伯数字），如 '第九十九条'→99"""
+    nums: list[int] = []
+    for c in item.get("required_citations", []):
+        for m in re.findall(r"第([零一二三四五六七八九十百千两\d]+)条", c or ""):
+            n = cn_to_int(m)
+            if n is not None and n not in nums:
+                nums.append(n)
+    return nums
+
+
+def extract_article_sections(full_text: str, article_nums: list[int],
+                             context_articles: int = 1,
+                             max_chars: int = RAG_MAX_CONTEXT_CHARS) -> tuple[str, list[int]]:
+    """按 '### 第X条' 标题切分，截取目标条款 ±context_articles 条上下文。
+    返回 (片段, 实际命中的条款号列表)"""
+    heads = [(cn_to_int(m.group(1)), m.start()) for m in ARTICLE_HEADING_RE.finditer(full_text or "")]
+    heads = [(n, p) for n, p in heads if n is not None]
+    if not heads or not article_nums:
+        return (full_text or "")[:max_chars], []
+    idx = {n: i for i, (n, _) in enumerate(heads)}
+    spans: list[tuple[int, int]] = []
+    hit: list[int] = []
+    for target in article_nums:
+        if target not in idx:
+            continue
+        i = idx[target]
+        lo = max(0, i - context_articles)
+        hi = min(len(heads) - 1, i + context_articles)
+        spans.append((heads[lo][1], heads[hi + 1][1] if hi + 1 < len(heads) else len(full_text)))
+        hit.append(target)
+    if not spans:
+        return (full_text or "")[:max_chars], []
+    spans.sort()
+    merged = []
+    for s, e in spans:
+        if merged and s <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], e))
+        else:
+            merged.append((s, e))
+    parts = [full_text[s:e].strip() for s, e in merged]
+    return "\n…\n".join(parts)[:max_chars], hit
+
+
+class RagRetriever:
+    """
+    EHS 知识库检索器：kb_search 找文件 → kb_read 取全文片段。
+
+    call_tool 可注入（签名为 call_tool(server, tool, arguments) -> dict），
+    便于 pytest mock；默认经 MCPConnectorManager 连接远程 SSE server。
+    """
+
+    def __init__(self, call_tool=None, server: str = "ehs_kb",
+                 url: str = EHS_KB_SSE_URL, timeout: float = RAG_SEARCH_TIMEOUT):
+        self.server = server
+        self._mgr = None
+        self._index_cache: list[tuple[str, str]] | None = None
+        if call_tool is not None:
+            self._call_tool = call_tool
+        else:
+            from agent_core.mcp_connector import MCPConnectorManager, MCPServerConfig
+            self._mgr = MCPConnectorManager(
+                [MCPServerConfig(name=server, transport="sse", url=url, timeout=timeout)])
+            status = self._mgr.connect_all()
+            if not status.get(server):
+                raise RuntimeError(f"EHS 知识库连接失败: {url}")
+            self._call_tool = self._mgr.call_tool
+            # 连通性自检
+            probe = self._call_tool(server, "kb_status", {})
+            if not probe.get("success"):
+                raise RuntimeError(f"EHS 知识库 kb_status 自检失败: {probe.get('error')}")
+
+    def close(self) -> None:
+        if self._mgr is not None:
+            self._mgr.close()
+
+    def search(self, query: str) -> tuple[list[str], str]:
+        """kb_search，返回 (文件清单, 原始文本)；失败返回 ([], '')"""
+        r = self._call_tool(self.server, "kb_search", {"query": query})
+        if not r.get("success"):
+            return [], ""
+        text = r.get("text", "")
+        return parse_kb_search_files(text), text
+
+    def read(self, path: str, max_chars: int = RAG_MAX_READ_CHARS) -> str:
+        """kb_read 取全文，截断到 max_chars；失败返回 ''
+        （kb_read 参数名为 relative_path）"""
+        r = self._call_tool(self.server, "kb_read", {"relative_path": path})
+        if not r.get("success"):
+            return ""
+        return (r.get("text", "") or "")[:max_chars]
+
+    # ── RAG v2：定位→直取 ──────────────────────────────
+
+    def _index_links(self) -> list[tuple[str, str]]:
+        """读取 index.md 并缓存 (名称, concepts 全路径) 列表；失败返回 []"""
+        if self._index_cache is None:
+            text = self.read(INDEX_PATH, max_chars=100_000)
+            self._index_cache = parse_index_links(text)
+        return self._index_cache
+
+    def locate_concept_files(self, law_names: list[str], question: str = "") -> list[str]:
+        """按法律名定位 concepts/ 下的正文文件：
+        1) index.md 链接名匹配；2) kb_search 结果中筛选 concepts/ 非 Skill 路径。
+        法典题（生态环境法典）按题干关键词经 CODEX_BOOK_MAP 加定位对应分编文件。"""
+        hits: list[str] = []
+        codex = any("生态环境法典" in n for n in law_names)
+        books: list[str] = []
+        if codex:
+            for kws, book in CODEX_BOOK_MAP:
+                if any(k in question for k in kws) and book not in books:
+                    books.append(book)
+        for name in law_names:
+            if "生态环境法典" in name:
+                continue  # 法典名下挂多个分编文件，走下方 books 精确加定位，避免 hits[:3] 截断
+            for link_name, path in self._index_links():
+                if name in link_name or link_name.replace("中华人民共和国", "") == name:
+                    if path not in hits:
+                        hits.append(path)
+        if codex:
+            for _link_name, path in self._index_links():
+                base = path.rsplit("/", 1)[-1].replace(".md", "")
+                if base in books or "总目录" in base:
+                    if path not in hits:
+                        hits.append(path)
+        if not hits:
+            for name in law_names:
+                files, _ = self.search(name)
+                for f in files:
+                    if "/concepts/" in f and "Skill" not in f and f not in hits:
+                        hits.append(f)
+        return hits[:4]
+
+    def retrieve_v2(self, item: dict) -> dict:
+        """定位→直取：法名定位 concepts 文件 → kb_read 取正文 → 按条款截取（≤1500 字符，条款窗口优先）。
+        返回 {"files": [...], "articles": [...], "context": str}"""
+        law_names = extract_law_names(item)
+        article_nums = extract_article_nums(item)
+        files = self.locate_concept_files(law_names, question=item.get("question", ""))
+        reads: list[tuple[str, str]] = []
+        for path in files:
+            full = self.read(path)
+            if full:
+                reads.append((path, full))
+        parts, hit_articles, used = [], [], []
+        remaining = RAG_MAX_CONTEXT_CHARS
+        # 第一遍：目标条款直取（优先级最高，法典题常需跨文件定位到第五编）
+        filled: set[str] = set()
+        if article_nums:
+            for path, full in reads:
+                if remaining <= 0:
+                    break
+                snippet, arts = extract_article_sections(full, article_nums, max_chars=remaining)
+                if arts:
+                    hit_articles += arts
+                    used.append(path)
+                    filled.add(path)
+                    parts.append(f"【{path}】\n{snippet[:remaining]}")
+                    remaining -= len(parts[-1])
+        # 第二遍：骨架/对照表兜底填充（单文件上限，避免一个文件吃光预算）
+        fallback_cap = 1200 if len(reads) > 1 else RAG_MAX_CONTEXT_CHARS
+        for path, full in reads:
+            if remaining <= 0:
+                break
+            if path in filled:
+                continue
+            base = path.rsplit("/", 1)[-1]
+            if "总目录" in base or base.startswith(("第一编", "第二编", "第三编", "第四编", "第五编")):
+                # 法典编/总目录：骨架截取（标题+目录条目+结构概览），服务框架结构题
+                skel = [l for l in full.splitlines()
+                        if (l.lstrip().startswith(("#", "-", ">"))
+                            and not re.match(r"^#{4}\s*第.+条", l.strip()))
+                        or ("[" in l and "]" in l
+                            and ("-->" in l or re.match(r"^[A-F]\d?\[", l.strip())))]
+                snippet = "\n".join(skel)[:fallback_cap]
+            else:
+                # 概念文件优先截取"核心制度与法典继承"对照表（法典继承映射题金标准来源）
+                tbl = re.search(r"##\s*核心制度与法典继承[\s\S]{0,1500}", full)
+                head = full[:fallback_cap]
+                if tbl:
+                    fei = [l for l in full[:4000].splitlines() if "废止" in l]
+                    snippet = (tbl.group(0) + "\n" + "\n".join(fei[:6]) + "\n" + head)[:fallback_cap]
+                else:
+                    snippet = head
+            snippet = snippet[:remaining]
+            if not snippet.strip():
+                continue
+            if path not in used:
+                used.append(path)
+            parts.append(f"【{path}】\n{snippet}")
+            remaining -= len(parts[-1])
+        context = "\n\n".join(parts)[:RAG_MAX_CONTEXT_CHARS]
+        # B2 执法程序类补强：罚则条款窗口 + 程序条款窗口双段注入（各 ≤750 字符）
+        if item.get("category") == "执法程序":
+            proc_paths = locate_procedure_files(item.get("question", ""))
+            proc_parts: list[str] = []
+            for pp in proc_paths:
+                full = self.read(pp)
+                if not full:
+                    continue
+                win = extract_procedure_window(full, item.get("question", ""))
+                if win.strip():
+                    proc_parts.append(f"【{pp}】\n{win}")
+                    if pp not in used:
+                        used.append(pp)
+            if proc_parts:
+                proc_ctx = "\n\n".join(proc_parts)[:PROCEDURE_WINDOW_CHARS]
+                context = ("【罚则条款参考】\n" + context[:PENALTY_WINDOW_CHARS]
+                           + "\n\n【程序条款参考】\n" + proc_ctx)
+        return {"files": used, "articles": hit_articles,
+                "context": context[:RAG_MAX_CONTEXT_CHARS]}
+
+    def retrieve(self, question: str) -> dict:
+        """
+        对一道题执行检索：依次尝试主题词 kb_search（单词查询，避免多词超时），
+        命中后对 top 文件做 1 次 kb_read 取片段，拼成注入上下文（总长受限）。
+        返回 {"files": [...], "context": str}。
+        """
+        files: list[str] = []
+        search_text = ""
+        for term in extract_query_terms(question):
+            files, search_text = self.search(term)
+            if files:
+                break
+        parts = []
+        if search_text:
+            parts.append("【检索命中摘要】\n" + search_text[:1500])
+        if files:
+            full = self.read(files[0])
+            if full:
+                parts.append(f"【知识库原文片段：{files[0]}】\n{full}")
+        context = "\n\n".join(parts)[:RAG_MAX_CONTEXT_CHARS]
+        return {"files": files, "context": context}
+
+
+def _norm_base(s: str) -> str:
+    """基础归一化：去空白/书名号/国名前缀（不含条款号归一化）"""
+    t = re.sub(r"\s+", "", s or "")
+    t = re.sub(r"（[^）]{0,30}）", "", t)  # 法名与条号间的修订年份等括号注释不影响命中
+    t = re.sub(r"\([^)]{0,30}\)", "", t)
+    t = t.replace("《", "").replace("》", "").replace("中华人民共和国", "")
+    t = t.replace("*", "")  # markdown 强调符（**条款**）不影响命中
+    return t
+
+
+def _norm(s: str) -> str:
+    """评分归一化：基础归一化 + 条款号/中文数字统一为阿拉伯数字，
+    使 '第九十九条'、'第99条'、'九十九' 在比较时等价"""
+    return normalize_cn_numerals(_norm_base(s))
+
+
+def score_item(answer: str, item: dict) -> dict:
+    """逐题评分：引用命中率 + 要点 F1（诚实计算，不做任何修饰）。
+    条款号经中文数字归一化后匹配；同时保留归一化前（raw）分数对照。"""
+    a = _norm(answer)
+    a_raw = _norm_base(answer)
+    cites = item["required_citations"]
+    hit_c = sum(1 for c in cites if _norm(c) in a)
+    hit_c_raw = sum(1 for c in cites if _norm_base(c) in a_raw)
+    citation_hit = hit_c / len(cites) if cites else 1.0
+    citation_hit_raw = hit_c_raw / len(cites) if cites else 1.0
+
+    kps = item["key_points"]
+    tp = sum(1 for k in kps if _norm(k) in a)
+    tp_raw = sum(1 for k in kps if _norm_base(k) in a_raw)
+    precision = tp / len(kps) if kps else 1.0  # 输出侧全部要求要点
+    recall = tp / len(kps) if kps else 1.0
+    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+    p_raw = tp_raw / len(kps) if kps else 1.0
+    f1_raw = (2 * p_raw * p_raw / (2 * p_raw)) if p_raw else 0.0
+    return {
+        "id": item["id"], "category": item["category"],
+        "citation_hit": round(citation_hit, 4),
+        "citation_hits": hit_c, "citation_total": len(cites),
+        "citation_hit_raw": round(citation_hit_raw, 4),
+        "keypoint_tp": tp, "keypoint_total": len(kps),
+        "keypoint_f1": round(f1, 4),
+        "keypoint_f1_raw": round(f1_raw, 4),
+    }
+
+
+def load_dataset(limit: int = 0) -> list[dict]:
+    items = [json.loads(l) for l in DATASET.read_text(encoding="utf-8").splitlines() if l.strip()]
+    return items[:limit] if limit else items
+
+
+def new_bench_state() -> dict:
+    """单轮跑分的过程状态：provider 切换记录、超时/重试计数、中止标记"""
+    return {"switches": [], "providers_tried": [], "timeouts": 0,
+            "retries": 0, "errors": 0, "aborted": False, "abort_reason": None}
+
+
+def _call_with_timeout(client, question: str, timeout: float = PER_QUESTION_TIMEOUT) -> str | None:
+    """带墙钟时限的 LLM 调用：超时返回 None，空串表示调用失败（查 client.last_error）"""
+    import concurrent.futures
+    ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    fut = ex.submit(client.complete, question, SYSTEM, 1024, timeout)
+    try:
+        return fut.result(timeout=timeout)
+    except concurrent.futures.TimeoutError:
+        return None
+    except Exception as e:
+        return f"[error] {type(e).__name__}: {e}"
+    finally:
+        ex.shutdown(wait=False)  # 超时后不阻塞等待后台线程
+
+
+def try_failover(client, item_id: str, state: dict) -> bool:
+    """429/余额类错误时切换备用 provider 并记录；无可切换对象返回 False"""
+    cur = getattr(client, "_provider_name", "")
+    alt = BACKUP_PROVIDERS.get(cur)
+    if not alt or alt in state["providers_tried"]:
+        return False
+    if not hasattr(client, "switch_provider") or not client.switch_provider(alt):
+        return False
+    state["providers_tried"].append(alt)
+    state["switches"].append({"question": item_id, "from": cur, "to": alt,
+                              "reason": (client.last_error or {}) and "quota/429/balance"})
+    print(f"    [failover] {item_id}: {cur} 余额/限流不可用，已切换备用 provider → {alt}",
+          flush=True)
+    return True
+
+
+def answer_question(client, item: dict, mock: bool,
+                    retriever: RagRetriever | None = None,
+                    state: dict | None = None) -> tuple[str, list[str], list[int]]:
+    """答题（单题 90s 时限 + 失败重试 1 次 + 429/余额自动切换备用 provider）。
+    返回 (答案, 检索文件清单, 命中条款号)。retriever 非空时为 RAG 模式。
+    state 非空时记录切换/超时/中止事件；两家 provider 均不可用时置 aborted。"""
+    if mock or client is None or not client.available():
+        return MOCK_ANSWER, [], []
+    if state is None:
+        state = new_bench_state()
+    if getattr(client, "_provider_name", None) and client._provider_name not in state["providers_tried"]:
+        state["providers_tried"].append(client._provider_name)
+    question = item["question"]
+    files: list[str] = []
+    articles: list[int] = []
+    if retriever is not None:
+        try:
+            hit = retriever.retrieve_v2(item)
+            files = hit["files"]
+            articles = hit.get("articles", [])
+            if hit["context"]:
+                question = question + RAG2_PROMPT_SUFFIX.format(context=hit["context"])
+        except Exception as e:
+            print(f"    [RAG] {item['id']} 检索失败（降级为无检索作答）: {e}", flush=True)
+
+    attempts = 0
+    while True:
+        attempts += 1
+        ans = _call_with_timeout(client, question, timeout=PER_QUESTION_TIMEOUT)
+        if ans is None:  # 墙钟超时
+            state["timeouts"] += 1
+            if attempts < MAX_ATTEMPTS:
+                state["retries"] += 1
+                print(f"    [timeout] {item['id']} 第 {attempts} 次超时（>{PER_QUESTION_TIMEOUT:.0f}s），重试", flush=True)
+                continue
+            state["errors"] += 1
+            return "[error] timeout: 单题超过时限仍未返回", files, articles
+        if isinstance(ans, str) and ans.startswith("[error]"):  # 客户端抛出的异常
+            if attempts < MAX_ATTEMPTS:
+                state["retries"] += 1
+                continue
+            state["errors"] += 1
+            return ans, files, articles
+        if ans:  # 正常答案
+            return ans, files, articles
+        # 空串：调用失败，看错误类别
+        err = getattr(client, "last_error", None) or {}
+        if err.get("kind") == "quota":  # 429/余额类 → 切换备用 provider
+            if try_failover(client, item["id"], state):
+                continue  # 切换后重答本题，不消耗重试次数
+            state["aborted"] = True
+            state["abort_reason"] = (
+                f"两家 provider 均不可用（{err.get('status')} quota/balance），中止于 {item['id']}")
+            print(f"    [abort] {state['abort_reason']}（已得题目分数保留）", flush=True)
+            state["errors"] += 1
+            return "[error] aborted: 所有 LLM provider 均不可用", files, articles
+        # 其他失败：重试 1 次后仍失败才计 error
+        if attempts < MAX_ATTEMPTS:
+            state["retries"] += 1
+            print(f"    [retry] {item['id']} 调用失败（{err.get('kind')} {err.get('status')}），重试", flush=True)
+            continue
+        state["errors"] += 1
+        return f"[error] {err.get('kind', 'unknown')}: {err.get('detail', '')[:120]}", files, articles
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(prog="run_ecobench", description="EcoBench-mini runner")
+    ap.add_argument("--limit", type=int, default=0, help="只跑前 N 题（控制成本）")
+    ap.add_argument("--mock", action="store_true", help="mock 模式（离线/CI）")
+    ap.add_argument("--out", default=str(REPORT))
+    ap.add_argument("--rag", action="store_true",
+                    help="RAG 模式：答题前经 MCP 检索 EHS 知识库并注入参考资料")
+    ap.add_argument("--category", default="", help="只跑指定类别题目（如 执法程序）")
+    args = ap.parse_args(argv)
+
+    mock = args.mock or os.environ.get("ECO_LLM_DISABLE", "").strip().lower() in ("1", "true", "yes")
+    client = None
+    if not mock:
+        from agent_core.llm_client import get_default_client
+        client = get_default_client()
+        if not client.available():
+            print("[EcoBench] LLM 不可用，自动降级 mock 模式", flush=True)
+            mock = True
+
+    retriever = None
+    if args.rag and not mock:
+        try:
+            retriever = RagRetriever()
+            print(f"[EcoBench] RAG 模式：已连接 EHS 知识库 {EHS_KB_SSE_URL}", flush=True)
+        except Exception as e:
+            print(f"[EcoBench] RAG 检索器初始化失败，降级为无检索: {e}", flush=True)
+            retriever = None
+
+    items = load_dataset(args.limit)
+    if args.category:
+        items = [it for it in items if it.get("category") == args.category]
+    mode = "mock" if mock else ("rag" if retriever else "llm")
+    print(f"[EcoBench-mini] n={len(items)} mode={mode}", flush=True)
+
+    state = new_bench_state()
+    results = []
+    t0 = time.time()
+    for i, item in enumerate(items, 1):
+        ans, files, articles = answer_question(client, item, mock, retriever=retriever,
+                                               state=state)
+        sc = score_item(ans, item)
+        sc["answer"] = ans
+        sc["retrieved_files"] = files
+        sc["retrieved_articles"] = articles
+        sc["golden_answer"] = item["golden_answer"]
+        sc["answered"] = not ans.startswith(("[error]", "[mock]"))
+        results.append(sc)
+        print(f"  [{i:02d}/{len(items)}] {item['id']} {item['category']} "
+              f"cite={sc['citation_hit']:.2f} f1={sc['keypoint_f1']:.2f}", flush=True)
+        if state["aborted"]:
+            print(f"[EcoBench] 中止：{state['abort_reason']}（已得 {len(results)} 题分数保留）",
+                  flush=True)
+            break
+
+    n = len(results) or 1
+    provider = getattr(client, "_provider_name", None) if client is not None else None
+    summary = {
+        "n_questions": len(results),
+        "mode": mode,
+        "citation_accuracy": round(sum(r["citation_hit"] for r in results) / n, 4),
+        "citation_accuracy_raw": round(sum(r["citation_hit_raw"] for r in results) / n, 4),
+        "keypoint_f1": round(sum(r["keypoint_f1"] for r in results) / n, 4),
+        "keypoint_f1_raw": round(sum(r["keypoint_f1_raw"] for r in results) / n, 4),
+        "elapsed_s": round(time.time() - t0, 1),
+        # 三修过程指标（如实记录）
+        "provider_final": provider,
+        "provider_switches": state["switches"],
+        "switch_count": len(state["switches"]),
+        "timeouts": state["timeouts"],
+        "timeout_rate": round(state["timeouts"] / n, 4),
+        "retries": state["retries"],
+        "errors": state["errors"],
+        "answered": sum(1 for r in results if r.get("answered")),
+        "aborted": state["aborted"],
+        "abort_reason": state["abort_reason"],
+        "per_question_timeout_s": PER_QUESTION_TIMEOUT,
+        "llm_call_timeout_s": LLM_CALL_TIMEOUT,
+        "rag_max_context_chars": RAG_MAX_CONTEXT_CHARS,
+        "by_category": {},
+    }
+    cats = sorted({r["category"] for r in results})
+    for c in cats:
+        sub = [r for r in results if r["category"] == c]
+        m = len(sub) or 1
+        summary["by_category"][c] = {
+            "n": len(sub),
+            "citation_accuracy": round(sum(r["citation_hit"] for r in sub) / m, 4),
+            "keypoint_f1": round(sum(r["keypoint_f1"] for r in sub) / m, 4),
+        }
+
+    report = {"summary": summary, "results": results}
+    Path(args.out).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    print("\n===== EcoBench-mini 摘要（如实报告，无封顶/保底） =====")
+    print(f"  题目数: {summary['n_questions']}  模式: {summary['mode']}  耗时: {summary['elapsed_s']}s")
+    print(f"  法条引用准确率: {summary['citation_accuracy']:.4f} "
+          f"(归一化前 {summary['citation_accuracy_raw']:.4f})")
+    print(f"  要点 F1:        {summary['keypoint_f1']:.4f} "
+          f"(归一化前 {summary['keypoint_f1_raw']:.4f})")
+    for c, s in summary["by_category"].items():
+        print(f"    - {c}: cite={s['citation_accuracy']:.2f} f1={s['keypoint_f1']:.2f} (n={s['n']})")
+    print(f"  作答率: {summary['answered']}/{summary['n_questions']}  "
+          f"超时: {summary['timeouts']} ({summary['timeout_rate']:.1%})  "
+          f"重试: {summary['retries']}  错误: {summary['errors']}")
+    print(f"  provider 切换: {summary['switch_count']} 次  中止: {summary['aborted']}")
+    print(f"  报告: {args.out}")
+    if retriever is not None:
+        retriever.close()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

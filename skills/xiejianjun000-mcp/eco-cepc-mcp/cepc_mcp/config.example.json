@@ -1,0 +1,107 @@
+{
+  "$schema": "https://workbuddy.cn/schemas/mcp-server-config.json",
+  "name": "cepc-mcp",
+  "displayName": "建设项目竣工环保验收信息系统 MCP",
+  "version": "2.1.0",
+  "description": "全国建设项目竣工环境保护验收信息系统（cepc.lem.org.cn）MCP 封装 — WAF已绕过，20个真实API端点，项目详情84字段9模块完整捕获",
+
+  "transport": {
+    "type": "stdio",
+    "command": "python3",
+    "args": ["cepc_mcp/server.py"],
+    "cwd": "/Users/mac/Desktop/执法督察评查专家/验收信息系统MCP"
+  },
+
+  "env": {
+    "CEPC_ACCOUNT": "${env:CEPC_ACCOUNT}",
+    "CEPC_PASSWORD": "${env:CEPC_PASSWORD}",
+    "CEPC_BASE_URL": "https://cepc.lem.org.cn"
+  },
+
+  "tools": [
+    "veto_rules_list",
+    "project_audit",
+    "batch_audit",
+    "report_export",
+    "public_project_search",
+    "system_config",
+    "dict_map",
+    "cepc_login",
+    "project_list",
+    "project_detail",
+    "region_statistics",
+    "user_info",
+    "user_menus",
+    "notifications",
+    "check_tasks",
+    "export_tasks",
+    "export_create",
+    "problem_projects",
+    "area_tree"
+  ],
+
+  "capabilities": {
+    "public_queries": true,
+    "authenticated_queries": true,
+    "audit_engine": "local",
+    "report_generation": "local",
+    "waf_bypass": "chrome_cdp",
+    "captcha_ocr": "ddddocr",
+    "auto_login": true,
+    "export_api": "POST hyProjectExportTask/save",
+    "project_detail": "queryById (84 fields, 9 modules)"
+  },
+
+  "api_endpoints": {
+    "public": [
+      "GET /jeeplus-vue/projectmanager/projectinfo/hyProjectInfo/listByGs",
+      "GET /jeeplus-vue/sys/sysConfig/getConfig",
+      "GET /jeeplus-vue/sys/getCode",
+      "GET /jeeplus-vue/sys/dict/getDictMap"
+    ],
+    "authenticated": [
+      "POST /jeeplus-vue/sys/login",
+      "GET /jeeplus-vue/sys/user/info",
+      "GET /jeeplus-vue/sys/user/getMenus",
+      "GET /jeeplus-vue/sys/user/list",
+      "GET /jeeplus-vue/sys/user/queryById",
+      "GET /jeeplus-vue/sys/office/treeData",
+      "GET /jeeplus-vue/projectmanager/projectinfo/hyProjectInfo/list",
+      "GET /jeeplus-vue/projectmanager/projectinfo/hyProjectInfo/queryById",
+      "GET /jeeplus-vue/projectmanager/projectinfo/hyProjectInfo/getTjForGmjj",
+      "GET /jeeplus-vue/notify/list",
+      "GET /jeeplus-vue/projectcheck/hyCheckTask/list",
+      "GET /jeeplus-vue/projectexporttask/hyProjectExportTask/list",
+      "POST /jeeplus-vue/projectexporttask/hyProjectExportTask/save",
+      "GET /jeeplus-vue/wtts/hyWtts/list",
+      "GET /jeeplus-vue/dict/hpspjg/hyDimHpspjg/getAreaTreeData"
+    ]
+  },
+
+  "search_filters": {
+    "tested": [
+      "dwName — 建设单位名称 (海螺→13条)",
+      "projectName — 项目名称 (水泥→18条)",
+      "projectAddressRegionCode — 区域代码 (431300→1059条)",
+      "beginYsgkStaDate/endYsgkStaDate — 公示日期范围 (2026全年→36条)",
+      "hylbCode — 行业类别代码",
+      "ysjl — 验收结论",
+      "isYqtb/isJtby — 填报标志",
+      "pwxkCodeZt — 排污许可证状态"
+    ]
+  },
+
+  "rate_limits": {
+    "requests_per_minute": 30,
+    "concurrent_connections": 1
+  },
+
+  "notes": [
+    "v2.1: 项目详情API修正为queryById(84字段9模块)，搜索筛选验证完成，导出POST API捕获。",
+    "v2.0: WAF完全绕过（Chrome CDP），19个真实API端点全部实现。",
+    "自动登录：Chrome启动 → WAF通过 → 验证码OCR → 填表登录 → Token管理。",
+    "本地工具（veto_rules_list / project_audit / batch_audit / report_export）已可独立使用。",
+    "远程工具首次调用会自动启动Chrome并登录（约20秒），后续调用复用会话。",
+    "依赖：pip install mcp httpx pydantic ddddocr pillow"
+  ]
+}

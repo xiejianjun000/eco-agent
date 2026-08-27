@@ -1,0 +1,9 @@
+[Unit]
+Description=Run DSH EIA Review Plugin Maintenance daily at 3:00 AM
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

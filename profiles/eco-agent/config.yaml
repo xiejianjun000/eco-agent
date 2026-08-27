@@ -1,0 +1,201 @@
+# ECO AGENT Hermes Profile Config
+# 生态环境执法 AI Agent 配置文件
+# 版本：v0.1.0
+
+agent:
+  name: "eco-agent"
+  description: "生态环境执法 AI Agent — AI 同事，执法无忧"
+  version: "0.1.0"
+
+  # System prompt 加载顺序
+  system_prompt:
+    - CLAUDE.md          # Agent 宪法
+    - SCHEMA.md          # 知识宪法
+    - SOUL.md            # 身份人格
+    - MEMORY.md          # 核心记忆
+
+  # 最大迭代次数
+  max_iterations: 90
+  iteration_budget: 75
+
+# ===== 模型提供者配置 =====
+inference:
+  # 默认提供者
+  default_provider: "claude"
+
+  providers:
+    # Claude (Anthropic — 主模型)
+    claude:
+      api_mode: "anthropic_messages"
+      model: "claude-sonnet-4-20260514"
+      max_tokens: 8192
+      temperature: 0.1  # 执法场景需要低温度，保证一致性
+      api_key_env: "ANTHROPIC_API_KEY"
+
+    # DeepSeek (国产备选)
+    deepseek:
+      api_mode: "chat_completions"
+      model: "deepseek-chat"          # 默认（一般对话）；Think 流可选 deepseek-v4-pro / deepseek-reasoner
+      base_url: "https://api.deepseek.com"
+      max_tokens: 8192
+      temperature: 0.1
+      api_key_env: "DEEPSEEK_API_KEY"
+      # 账户可用模型（2026-08 实测 API 返回）：deepseek-v4-pro（推理+工具，含 reasoning_content）、
+      # deepseek-v4-flash、deepseek-v4-flash-vision-exp、deepseek-chat、deepseek-reasoner
+
+    # 通义千问 (国产备选)
+    qwen:
+      api_mode: "chat_completions"
+      model: "qwen-max"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      max_tokens: 8192
+      temperature: 0.1
+      api_key_env: "QWEN_API_KEY"
+
+  # Provider 自动路由
+  router:
+    primary: "claude"           # 主模型
+    fallback: "deepseek"        # 降级模型
+    failover_threshold: 3       # 主模型连续失败 3 次后切换
+
+# ===== 缓存配置 =====
+cache:
+  prompt_cache:
+    enabled: true
+    stable_prompts:             # 低频变化 — 长期缓存
+      - CLAUDE.md
+      - SCHEMA.md
+      - SOUL.md
+    context_prompts:            # 中等频率 — 会话级缓存
+      - MEMORY.md
+      - skills/*.md
+    volatile_prompts:           # 高频变化 — 不缓存
+      - USER.md
+  ttl:
+    stable: 3600                # 1 小时
+    context: 300                # 5 分钟
+
+# ===== 记忆系统配置 =====
+memory:
+  # L1: 核心记忆 (MEMORY.md)
+  core_memory:
+    path: "MEMORY.md"
+    max_chars: 2200
+
+  # L2: 用户信息 (USER.md)
+  user_memory:
+    path: "USER.md"
+    max_chars: 1375
+
+  # L3: 会话归档 (SQLite FTS5)
+  session_archive:
+    enabled: true
+    db_path: "~/.hermes/profiles/eco-agent/memory.db"
+    search_limit: 10
+
+  # L4: 外部记忆提供者
+  external_provider:
+    enabled: false              # MVP 阶段暂不启用
+    provider: "holographic"     # 推荐: Holographic (本地 SQLite+FTS5)
+
+# ===== 工具系统配置 =====
+tools:
+  # 默认启用的工具集
+  default_toolsets:
+    - "core"                    # 核心工具 (bash/read/write/edit)
+    - "filesystem"             # 文件系统
+    - "web"                     # 网络检索
+    - "mcp"                     # MCP 工具
+
+  # MCP 服务器配置
+  mcp_servers:
+    eco-knowledge:
+      command: "python"
+      args: ["_scripts/eco-knowledge-mcp.py"]
+      description: "ECO 法规知识库 MCP — 检索 FlowWiki 知识库"
+
+    obsidian-vault:
+      command: "python"
+      args: ["-m", "obsidian_mcp"]
+      description: "Obsidian Vault MCP — 读取 Obsidian 笔记"
+      # 使用 enquire-mcp 或 obsidian-mcp
+
+  # 工具权限 (Risk Model)
+  permissions:
+    read_local:
+      allow_paths:
+        - "~/.hermes/profiles/eco-agent/"
+        - "~/Documents/Obsidian Vault/raw/"
+        - "~/Documents/Obsidian Vault/wiki/"
+      deny_paths: []
+
+    write_local:
+      allow_paths:
+        - "~/.hermes/profiles/eco-agent/memory-tree/"
+        - "~/.hermes/profiles/eco-agent/.memory/"
+      deny_paths:
+        - "~/Documents/Obsidian Vault/raw/"
+        - "~/Documents/Obsidian Vault/wiki/"
+
+    execute:
+      allow_commands:
+        - "python _scripts/*.py"
+      allow_network: false
+
+    external:
+      enabled: false
+
+# ===== Curator 自学习引擎 =====
+curator:
+  enabled: true
+  interval_hours: 24            # 每 24 小时运行一次
+  min_idle_hours: 2             # 空闲超过 2 小时才运行
+  skill_output_dir: "skills/"
+  archive_after_days: 90        # 90 天未使用的 Skill 自动归档
+  max_skills: 50                # 最多保留 50 个活跃 Skill
+
+# ===== 飞书集成 =====
+feishu:
+  enabled: true                  # ✅ 已启用（凭证已配置）
+  bot_name: "ECO AGENT 执法助手"
+  app_id_env: "FEISHU_APP_ID"
+  app_secret_env: "FEISHU_APP_SECRET"
+
+  # 审批收件箱
+  approval:
+    enabled: false
+    risk_threshold: "medium"     # medium 及以上风险需要审批
+
+# ===== 企业微信集成 =====
+wecom:
+  enabled: false                 # 设为 true 启用（需要 WECOM_CORP_ID/AGENT_ID/SECRET）
+  bot_name: "ECO AGENT"
+  app_id_env: "WECOM_CORP_ID"
+  agent_id_env: "WECOM_AGENT_ID"
+  secret_env: "WECOM_SECRET"
+
+# ===== 钉钉集成 =====
+dingtalk:
+  enabled: false                 # 设为 true 启用（需要 DINGTALK_APP_KEY/APP_SECRET）
+  bot_name: "ECO AGENT"
+  app_key_env: "DINGTALK_APP_KEY"
+  app_secret_env: "DINGTALK_APP_SECRET"
+  robot_code_env: "DINGTALK_ROBOT_CODE"
+
+# ===== 微信集成 =====
+wechat:
+  enabled: false                 # 设为 true 启用（需要 WECHAT_APP_ID/APP_SECRET）
+  mode: "official_account"       # official_account | wechaty
+  app_id_env: "WECHAT_APP_ID"
+  app_secret_env: "WECHAT_APP_SECRET"
+
+# ===== 平台入口 =====
+entry:
+  default_mode: "cli"           # 默认 CLI 模式
+  modes:
+    cli:
+      enabled: true
+    gateway:
+      enabled: true              # 网关服务已就绪
+      server_script: "gateway/eco-gateway-server.py"
+      default_port: 7070

@@ -1,0 +1,52 @@
+id: "01"
+name: "指定管辖通知书"
+category: "行政处罚-实施主体与管辖"
+complexity: "low"
+template: "01_指定管辖通知书.md"
+description: "上级生态环境主管部门指定下级生态环境主管部门管辖案件的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "被指定管辖单位"
+    key: "{{被指定管辖单位}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "案件名称"
+    key: "{{案件名称}}"
+    type: "text"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "法律依据"
+    key: "{{法律依据}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "第二十五条和第十四条"
+      - "第二十五条和第十五条"
+
+  - id: "抄送单位"
+    key: "{{抄送单位}}"
+    type: "string"
+    source: "用户输入"
+    required: false
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

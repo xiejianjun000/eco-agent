@@ -1,0 +1,41 @@
+# DSH 环评审查插件注册配置
+# EHS 知识库 MCP: SSE 远程连接
+# 端点: http://111.230.89.107:8000/sse/
+# 鉴权: X-API-Key (通过环境变量 EHS_KB_API_KEY 注入)
+
+- insert:
+    # 主插件
+    - id: eia-review
+      name: 'dsh-eia-review-plugin'
+      config:
+        province: "zhejiang"
+        reviewMode: "both"
+        enableMCP: true
+        strictMode: true
+        mcpUrl: "http://111.230.89.107:8000/sse/"
+        mcpApiKey: !!js process.env.EHS_KB_API_KEY
+
+    # EHS 知识库 MCP 客户端 (SSE 远程连接)
+    # 方式1: 如果 dsh-mcp-client 支持 SSE 直连
+    - id: mcp-ehs-kb
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: ehs-kb
+        transport: sse
+        url: "http://111.230.89.107:8000/sse/"
+        headers:
+          X-API-Key: !!js process.env.EHS_KB_API_KEY
+
+    # 方式2: 通过 mcp-remote 桥接 (如果客户端只支持 stdio)
+    # - id: mcp-ehs-kb-stdio
+    #   name: '@deepseek-ai/dsh-mcp-client'
+    #   config:
+    #     serverName: ehs-kb
+    #     transport: stdio
+    #     command: npx
+    #     args: 
+    #       - '-y'
+    #       - 'mcp-remote'
+    #       - 'http://111.230.89.107:8000/sse/'
+    #       - '--header'
+    #       - 'X-API-Key: !!js process.env.EHS_KB_API_KEY'

@@ -1,0 +1,88 @@
+id: "11"
+name: "先行登记保存证据通知书"
+category: "行政处罚-调查取证"
+complexity: "medium"
+template: "11_先行登记保存证据通知书.md"
+description: "生态环境主管部门在证据可能灭失或以后难以取得情况下对证据进行先行登记保存的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码"
+    key: "{{统一社会信用代码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: false
+
+  - id: "地址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: false
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "涉嫌违反法律条款"
+    key: "{{涉嫌违反法律条款}}"
+    type: "text"
+    source: "AI生成.从案件事实生成违法条款"
+    required: true
+
+  - id: "保存起始日期"
+    key: "{{保存起始日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "保存截止日期"
+    key: "{{保存截止日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "保存方式"
+    key: "{{保存方式}}"
+    type: "select"
+    source: "用户输入"
+    required: true
+    options:
+      - "就地"
+      - "异地"
+
+  - id: "存放地点"
+    key: "{{存放地点}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

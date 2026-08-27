@@ -1,0 +1,33 @@
+# [已废弃] 2026-08-08 — 已迁移至 hermes cron 调度
+# 请执行: bash scripts/setup-hermes.sh 注册 hermes cron 作业
+# 原: EcoAegis 系统 crontab 定时任务调度
+# 原安装: crontab /Users/mac/EcoAegis/auth/crontab.example
+# 原编辑: crontab -e
+# 原查看: crontab -l
+
+# 路径配置
+PROJECT=/Users/mac/EcoAegis
+AUTH=$PROJECT/auth
+PYTHON=$AUTH/venv/bin/python
+
+# ── 心跳检测 ─────────────────────────────────────────
+# 每天 07:50 完整心跳（早于一切自动化）
+50 7 * * * cd $PROJECT && bash $AUTH/heartbeat.sh all >> $AUTH/heartbeat.log 2>&1
+
+# 每天 14:00 午后复核
+0 14 * * * cd $PROJECT && bash $AUTH/heartbeat.sh all >> $AUTH/heartbeat.log 2>&1
+
+# ── 平台巡检 ─────────────────────────────────────────
+# 每天 08:00 水环境平台巡检（心跳通过后才执行）
+0 8 * * * cd $PROJECT && OCR_PYTHON=$PYTHON bash $AUTH/task_guard.sh "水环境巡检" water "水环境巡检报告_*.md" echo "[placeholder] 水环境巡检脚本待接入" >> $PROJECT/patrol_water.log 2>&1
+
+# 每天 08:30 大气帮扶平台跟踪（心跳通过后才执行）
+30 8 * * * cd $PROJECT && OCR_PYTHON=$PYTHON bash $AUTH/task_guard.sh "大气帮扶跟踪" atmosphere "大气帮扶跟踪报告_*.md" echo "[placeholder] 大气帮扶跟踪脚本待接入" >> $PROJECT/patrol_atmosphere.log 2>&1
+
+# ── DDL 日环 ──────────────────────────────────────────
+# 每天 19:00 DDL 学习反思闭环（扫描 alerts/ + state/）
+0 19 * * * cd $PROJECT && bash $AUTH/heartbeat.sh all >> $AUTH/heartbeat.log 2>&1
+
+# ── 日志轮转 ─────────────────────────────────────────
+# 每周日 03:00 清理 30 天前的日志
+0 3 * * 0 find $AUTH/heartbeat.log $PROJECT/patrol_*.log -mtime +30 -delete 2>/dev/null; find $AUTH/alerts/ -name 'alert_*.json' -mtime +30 -delete 2>/dev/null

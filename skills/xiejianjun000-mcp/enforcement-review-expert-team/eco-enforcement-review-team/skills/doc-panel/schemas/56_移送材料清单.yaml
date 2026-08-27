@@ -1,0 +1,55 @@
+id: "56"
+name: "涉嫌环境犯罪案件移送材料清单"
+category: "行政处罚-移送"
+complexity: "low"
+template: "56_移送材料清单.md"
+description: "涉嫌环境犯罪案件移送材料的清单目录"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "移送材料列表"
+    key: "{{移送材料列表}}"
+    type: "text"
+    source: "AI生成.从案件材料自动生成列表"
+    required: true
+
+  - id: "移送单位经办人"
+    key: "{{移送单位经办人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "接收单位经办人"
+    key: "{{接收单位经办人}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "移送日期"
+    key: "{{移送日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "接收日期"
+    key: "{{接收日期}}"
+    type: "date"
+    source: "用户输入"
+    required: true

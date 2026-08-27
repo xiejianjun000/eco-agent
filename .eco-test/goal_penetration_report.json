@@ -1,0 +1,151 @@
+{
+  "start": "2026-08-26T09:42:29.861727",
+  "tests": [
+    {
+      "name": "记忆V1-批量写入",
+      "status": "PASS",
+      "detail": "100条, 记录数=100"
+    },
+    {
+      "name": "记忆V1-混合检索",
+      "status": "PASS",
+      "detail": "命中3条, top score=1.0"
+    },
+    {
+      "name": "记忆V2-HNSW",
+      "status": "PASS",
+      "detail": "HNSW未安装，跳过"
+    },
+    {
+      "name": "记忆V2-时间图",
+      "status": "PASS",
+      "detail": "张三有效事实0条"
+    },
+    {
+      "name": "记忆-配置化",
+      "status": "PASS",
+      "detail": "MAX=2000, PRESCREEN=100"
+    },
+    {
+      "name": "自愈-瞬时恢复",
+      "status": "PASS",
+      "detail": "尝试3次"
+    },
+    {
+      "name": "自愈-熔断",
+      "status": "PASS",
+      "detail": "第二次熔断=True"
+    },
+    {
+      "name": "自愈-检查点",
+      "status": "PASS",
+      "detail": "恢复=True"
+    },
+    {
+      "name": "自愈-并发",
+      "status": "PASS",
+      "detail": "成功10/10"
+    },
+    {
+      "name": "进化-五阶段",
+      "status": "PASS",
+      "detail": "全阶段=True"
+    },
+    {
+      "name": "进化-技能落盘",
+      "status": "PASS",
+      "detail": "技能文件存在=True"
+    },
+    {
+      "name": "进化-记忆固化",
+      "status": "PASS",
+      "detail": "promoted=promoted 0 items"
+    },
+    {
+      "name": "进化-触发器",
+      "status": "PASS",
+      "detail": "触发=True"
+    }
+  ],
+  "goal_checks": [
+    {
+      "feature": "记忆-四层结构",
+      "claimed": "SQLite+FTS5+BM25+语义向量",
+      "actual": "n-gram哈希+余弦+关键词索引, 100条",
+      "status": "PARTIAL"
+    },
+    {
+      "feature": "记忆-HNSW向量检索",
+      "claimed": "HNSW O(log N) 高性能",
+      "actual": "HNSW未安装",
+      "status": "PARTIAL"
+    },
+    {
+      "feature": "记忆-时间图事实",
+      "claimed": "支持事实时序推理",
+      "actual": "张三有效事实0条(含冲突处理)",
+      "status": "FAIL"
+    },
+    {
+      "feature": "记忆-容量上限",
+      "claimed": "可配置",
+      "actual": "ECO_MEMORY_MAX_RECORDS=2000",
+      "status": "MATCH"
+    },
+    {
+      "feature": "自愈-瞬时恢复",
+      "claimed": "指数退避后恢复",
+      "actual": "第3次成功",
+      "status": "MATCH"
+    },
+    {
+      "feature": "自愈-熔断器",
+      "claimed": "真指数冷却+半开探测",
+      "actual": "第一次=False, 第二次=False, 冷却基数=5.0s",
+      "status": "MATCH"
+    },
+    {
+      "feature": "自愈-检查点",
+      "claimed": "时光倒流",
+      "actual": "保存并恢复成功=True",
+      "status": "MATCH"
+    },
+    {
+      "feature": "自愈-并发安全",
+      "claimed": "threading.Lock保护",
+      "actual": "10并发成功10/10",
+      "status": "MATCH"
+    },
+    {
+      "feature": "进化-五阶段",
+      "claimed": "经验→差距→技能→反思→固化→版本",
+      "actual": "全阶段=是",
+      "status": "MATCH"
+    },
+    {
+      "feature": "进化-技能落盘",
+      "claimed": "生成.md到skills/",
+      "actual": "生成1个技能, 文件存在=True",
+      "status": "MATCH"
+    },
+    {
+      "feature": "进化-记忆固化",
+      "claimed": "工作记忆→语义记忆蒸馏",
+      "actual": "promoted=promoted 0 items, cleaned=True",
+      "status": "MATCH"
+    },
+    {
+      "feature": "进化-自动触发",
+      "claimed": "阈值+冷却",
+      "actual": "触发=是",
+      "status": "MATCH"
+    }
+  ],
+  "end": "2026-08-26T09:42:55.340244",
+  "total_time_s": 25.48,
+  "pass": 13,
+  "fail": 0,
+  "goal_match": 9,
+  "goal_partial": 2,
+  "goal_fail": 1
+}

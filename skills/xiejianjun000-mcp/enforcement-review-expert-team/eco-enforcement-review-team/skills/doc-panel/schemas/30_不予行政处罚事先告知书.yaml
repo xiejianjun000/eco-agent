@@ -1,0 +1,85 @@
+id: "30"
+name: "不予行政处罚事先（听证）告知书"
+category: "行政处罚-告知和听证"
+complexity: "medium"
+template: "30_不予行政处罚事先告知书.md"
+description: "生态环境主管部门在作出不予行政处罚决定前告知当事人相关事项的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "违法事实"
+    key: "{{违法事实}}"
+    type: "text"
+    source: "AI生成.从调查记录生成违法事实"
+    required: true
+
+  - id: "违反法律条款"
+    key: "{{违反法律条款}}"
+    type: "text"
+    source: "AI生成.从案件事实匹配法律条款"
+    required: true
+
+  - id: "不予处罚理由"
+    key: "{{不予处罚理由}}"
+    type: "text"
+    source: "AI生成.从违法事实生成不予处罚理由"
+    required: true
+
+  - id: "不予处罚法律依据"
+    key: "{{不予处罚法律依据}}"
+    type: "text"
+    source: "AI生成.生成不予处罚法律依据"
+    required: true
+
+  - id: "陈述申辩期限"
+    key: "{{陈述申辩期限}}"
+    type: "date"
+    source: "系统数据.计算日期.陈述申辩截止日"
+    required: true
+
+  - id: "听证申请期限"
+    key: "{{听证申请期限}}"
+    type: "date"
+    source: "系统数据.计算日期.听证申请截止日"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

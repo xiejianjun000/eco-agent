@@ -1,0 +1,13 @@
+{
+  "name": "jiance-analysis",
+  "version": "1.0.0",
+  "author": "eco-official",
+  "description": "环境监测数据异常解读——突变/漂移/恒值识别与成因分析",
+  "category": "监测工具",
+  "tags": ["监测数据", "异常识别", "在线监控", "数据造假"],
+  "trust_tier": "official",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "5.0.0"
+}

@@ -1,0 +1,413 @@
+// CollaborativeEditor.tsx — 人机协同文档编辑器
+// AI 标注 + 人类确认 + 双方同步修改
+// 核心交互：AI 高亮问题 → 人类接受/拒绝/修改 → 应用到文档
+
+import React, { useState, useRef, useEffect, useMemo, useImperativeHandle, forwardRef } from 'react'
+import { Annotation, AnnotationStatus, createAiAnnotation, createHumanAnnotation, ANNOTATION_STYLES } from '../types/annotation'
+import { bus, EVENTS } from '../events'
+
+export interface CollaborativeEditorHandle {
+  accept: (id: string) => void
+  reject: (id: string) => void
+  edit: (id: string) => void
+  addHumanAnnotation: () => void
+  runAiReview: () => void
+}
+
+interface Props {
+  docTitle: string
+  initialText?: string
+  onAnnotationsChange?: (anns: Annotation[]) => void
+}
+
+// 模拟案卷文本
+const DEFAULT_TEXT = `一、案件基本情况
+
+当事人：XX化工有限公司
+统一社会信用代码：91431300XXXXXXXXXX
+地址：娄底市XX区XX路XX号
+
+二、违法事实
+
+2026年6月12日，我局执法人员对该公司进行现场检查，发现其废气排放口二氧化硫浓度为450mg/m³，超过《钢铁烧结、球团工业大气污染物排放标准》（GB 28662-2012）表1限值（200mg/m³），超标125%。
+
+现场检查时，该公司正在生产，污染防治设施未正常运行。
+
+三、证据材料
+
+1. 现场检查（勘察）笔录 1 份；
+2. 调查询问笔录 2 份；
+3. 监测报告 1 份（编号：娄环监字[2026]第XXX号）；
+4. 现场照片、影像资料 1 套。
+
+四、处理意见
+
+建议依据《中华人民共和国大气污染防治法》第九十九条之规定，对该公司超标排放的违法行为立案查处。`
+
+const CollaborativeEditor = forwardRef<CollaborativeEditorHandle, Props>(function CollaborativeEditor({ docTitle, initialText, onAnnotationsChange }: Props, ref) {
+  const [text, setText] = useState(initialText || DEFAULT_TEXT)
+  const [annotations, setAnnotations] = useState<Annotation[]>([])
+  const [selectedAnnId, setSelectedAnnId] = useState<string | null>(null)
+  const [editingAnnId, setEditingAnnId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const editorRef = useRef<HTMLDivElement>(null)
+
+  // 通知外部批注变化
+  useEffect(() => {
+    onAnnotationsChange?.(annotations)
+  }, [annotations])
+
+  // AI 自动标注（真实 LLM 评查）
+  const [reviewing, setReviewing] = useState(false)
+  const runAiReview = async () => {
+    if (reviewing) return
+    setReviewing(true)
+    try {
+      // 调用 eco serve 真实 AI 评查
+      const { aiReview } = await import('../api')
+      const items = await aiReview(text, docTitle)
+
+      // 过滤掉已有批注的重复
+      const existingStarts = new Set(annotations.map(a => a.start))
+      const newAnns: Annotation[] = []
+
+      for (const item of items) {
+        // 验证位置在文档范围内
+        if (item.start < 0 || item.start >= text.length) continue
+        if (existingStarts.has(item.start)) continue
+
+        const actualLength = Math.min(item.length, text.length - item.start)
+        const original = text.slice(item.start, item.start + actualLength)
+
+        newAnns.push(createAiAnnotation(
+          item.start,
+          actualLength,
+          original || item.originalText,
+          item.suggestion,
+          item.note,
+          item.type || 'suggestion',
+        ))
+      }
+
+      // 如果没有返回结果，用本地兜底关键词
+      if (newAnns.length === 0) {
+        const fallback = createLocalFallback()
+        newAnns.push(...fallback)
+      }
+
+      setAnnotations(prev => sortAnns([...prev, ...newAnns]))
+    } catch (e) {
+      console.error('AI评查失败，使用本地兜底', e)
+      const fallback = createLocalFallback()
+      setAnnotations(prev => sortAnns([...prev, ...fallback]))
+    } finally {
+      setReviewing(false)
+    }
+  }
+
+  // 本地兜底标注（eco serve 不可用时）
+  const createLocalFallback = (): Annotation[] => {
+    const newAnns: Annotation[] = []
+    const idx1 = text.indexOf('450mg/m³')
+    if (idx1 >= 0) {
+      newAnns.push(createAiAnnotation(idx1, 9, '450mg/m³', '450mg/m³（超标125%）', '二氧化硫浓度超标125%，建议核实监测数据。', 'error'))
+    }
+    const idx2 = text.indexOf('污染防治设施未正常运行')
+    if (idx2 >= 0) {
+      newAnns.push(createAiAnnotation(idx2, 12, '污染防治设施未正常运行', '污染防治设施未正常运行（涉嫌逃避监管）', '依据《大气污染防治法》第二十条。', 'warning'))
+    }
+    return newAnns
+  }
+
+  // 首次进入自动 AI 评查
+  useEffect(() => {
+    setTimeout(runAiReview, 800)
+  }, [])
+
+  // 暴露命令式方法给父组件（批注侧栏按钮调用）
+  useImperativeHandle(ref, () => ({
+    accept: acceptAnn,
+    reject: rejectAnn,
+    edit: startEdit,
+    addHumanAnnotation,
+    runAiReview,
+  }))
+
+  function sortAnns(anns: Annotation[]) {
+    return [...anns].sort((a, b) => a.start - b.start)
+  }
+
+  // 接受批注
+  function acceptAnn(id: string) {
+    const ann = annotations.find(a => a.id === id)
+    if (!ann) return
+    const updated = { ...ann, status: 'accepted' as AnnotationStatus }
+    const newAnns = annotations.map(a => a.id === id ? updated : a)
+    // 应用到文档
+    const newText = text.slice(0, ann.start) + (ann.suggestion || ann.originalText) + text.slice(ann.start + ann.length)
+    setText(newText)
+    setAnnotations(newAnns)
+    // 由于文本变化，调整后续批注位置
+    const diff = (ann.suggestion || ann.originalText).length - ann.length
+    if (diff !== 0) {
+      const adjusted = newAnns.map(a => {
+        if (a.id === id) return a
+        if (a.start > ann.start) return { ...a, start: a.start + diff }
+        return a
+      })
+      setAnnotations(sortAnns(adjusted))
+    }
+  }
+
+  // 拒绝批注
+  function rejectAnn(id: string) {
+    setAnnotations(prev => prev.map(a => a.id === id ? { ...a, status: 'rejected' } : a))
+  }
+
+  // 开始编辑批注建议
+  function startEdit(id: string) {
+    const ann = annotations.find(a => a.id === id)
+    if (!ann) return
+    setEditingAnnId(id)
+    setEditText(ann.suggestion || ann.originalText)
+  }
+
+  // 保存编辑后的建议
+  function saveEdit(id: string) {
+    const ann = annotations.find(a => a.id === id)
+    if (!ann) return
+    const updated = { ...ann, suggestion: editText, status: 'accepted' as AnnotationStatus }
+    const newAnns = annotations.map(a => a.id === id ? updated : a)
+    const newText = text.slice(0, ann.start) + editText + text.slice(ann.start + ann.length)
+    setText(newText)
+    setAnnotations(newAnns)
+    setEditingAnnId(null)
+    // 调整后续位置
+    const diff = editText.length - ann.length
+    if (diff !== 0) {
+      const adjusted = newAnns.map(a => {
+        if (a.id === id) return a
+        if (a.start > ann.start) return { ...a, start: a.start + diff }
+        return a
+      })
+      setAnnotations(sortAnns(adjusted))
+    }
+  }
+
+  // 人类手动添加批注（选中文字）
+  function addHumanAnnotation() {
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0) return
+    const selected = sel.toString()
+    if (!selected || !editorRef.current?.contains(sel.anchorNode)) return
+
+    const range = sel.getRangeAt(0)
+    const preRange = range.cloneRange()
+    preRange.selectNodeContents(editorRef.current)
+    preRange.setEnd(range.startContainer, range.startOffset)
+    const start = preRange.toString().length
+
+    const note = window.prompt('添加批注说明：')
+    if (!note) return
+
+    const ann = createHumanAnnotation(start, selected.length, selected, note)
+    setAnnotations(prev => sortAnns([...prev, ann]))
+    sel.removeAllRanges()
+  }
+
+  // 渲染带高亮的文档
+  const renderedText = useMemo(() => {
+    if (annotations.length === 0) return text
+    const sorted = sortAnns(annotations.filter(a => a.status !== 'rejected'))
+    let result = ''
+    let pos = 0
+    for (const ann of sorted) {
+      if (ann.start < pos) continue
+      result += text.slice(pos, ann.start)
+      const style = ANNOTATION_STYLES[ann.type]
+      const isSelected = selectedAnnId === ann.id
+      result += ` ${ann.id} `  // 标记位置
+      pos = ann.start + ann.length
+    }
+    result += text.slice(pos)
+    return result
+  }, [text, annotations, selectedAnnId])
+
+  return (
+    <div style={{ display: 'flex', height: '100%' }}>
+      {/* 文档区 */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div style={{ display: 'flex', gap: 6, padding: '6px 10px', borderBottom: '1px solid #1a2f1a', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: '#5a7a6a' }}>📄 {docTitle}</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+            <button onClick={runAiReview} disabled={reviewing} style={{ ...toolBtn('#2d7a5f'), opacity: reviewing ? 0.6 : 1 }}>
+              {reviewing ? '🤖 评查中...' : '🤖 AI评查'}
+            </button>
+            <button onClick={addHumanAnnotation} style={toolBtn('#2a5a8a')}>✏️ 人工标注</button>
+            <button onClick={() => setAnnotations(prev => prev.filter(a => a.status !== 'accepted'))} style={toolBtn('transparent', '#5a7a6a')}>清除已接受</button>
+          </div>
+        </div>
+        <div
+          ref={editorRef}
+          style={{ flex: 1, overflow: 'auto', padding: '16px 24px', background: '#111811', color: '#d0d8d0', fontSize: 13, lineHeight: 2, whiteSpace: 'pre-wrap' }}
+          onMouseUp={() => setTimeout(addHumanAnnotation, 0)}
+        >
+          {/* 渲染带批注的文本 */}
+          {annotations.filter(a => a.status !== 'rejected').length === 0 ? (
+            text
+          ) : (
+            renderAnnotatedText(text, annotations.filter(a => a.status !== 'rejected'), selectedAnnId, setSelectedAnnId)
+          )}
+        </div>
+      </div>
+    </div>
+  )
+})
+
+// 渲染带高亮的文本（返回 React 片段）
+function renderAnnotatedText(
+  text: string,
+  anns: Annotation[],
+  selectedAnnId: string | null,
+  setSelectedAnnId: (id: string | null) => void
+): React.ReactNode {
+  const sorted = [...anns].sort((a, b) => a.start - b.start)
+  const parts: React.ReactNode[] = []
+  let pos = 0
+  let key = 0
+
+  for (const ann of sorted) {
+    if (ann.start < pos) continue
+    if (ann.start > pos) {
+      parts.push(<span key={key++}>{text.slice(pos, ann.start)}</span>)
+    }
+    const style = ANNOTATION_STYLES[ann.type]
+    const isSel = selectedAnnId === ann.id
+    parts.push(
+      <span
+        key={key++}
+        onClick={() => setSelectedAnnId(ann.id)}
+        title={ann.note}
+        style={{
+          background: isSel ? `${ann.type === 'error' ? '#f04040' : ann.type === 'warning' ? '#f0a040' : ann.type === 'suggestion' ? '#40a0f0' : '#a040f0'}33` : `${style.color}22`,
+          borderBottom: `2px solid ${style.color}`,
+          cursor: 'pointer',
+          borderRadius: 2,
+          padding: '0 2px',
+        }}
+      >
+        {text.slice(ann.start, ann.start + ann.length)}
+        <sup style={{ color: style.color, fontSize: 10, marginLeft: 2 }}>{style.icon}</sup>
+      </span>
+    )
+    pos = ann.start + ann.length
+  }
+  if (pos < text.length) {
+    parts.push(<span key={key++}>{text.slice(pos)}</span>)
+  }
+  return parts
+}
+
+function toolBtn(bg: string, color = '#fff', border = 'none') {
+  return {
+    padding: '4px 10px', fontSize: 11, background: bg, color, border,
+    borderRadius: 4, cursor: 'pointer',
+  }
+}
+
+// ─── 批注侧栏（右侧批注面板）──────────────
+export function AnnotationSidebar({
+  annotations,
+  selectedAnnId,
+  onSelect,
+  onAccept,
+  onReject,
+  onEdit,
+  onAddHuman,
+}: {
+  annotations: Annotation[]
+  selectedAnnId: string | null
+  onSelect: (id: string) => void
+  onAccept: (id: string) => void
+  onReject: (id: string) => void
+  onEdit: (id: string) => void
+  onAddHuman: () => void
+}) {
+  const pending = annotations.filter(a => a.status === 'pending')
+  const accepted = annotations.filter(a => a.status === 'accepted')
+  const rejected = annotations.filter(a => a.status === 'rejected')
+
+  return (
+    <div style={{ width: 260, borderLeft: '1px solid #1a2f1a', background: '#0d150d', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+      <div style={{ padding: '8px 10px', borderBottom: '1px solid #1a2f1a', display: 'flex', alignItems: 'center' }}>
+        <span style={{ fontSize: 12, fontWeight: 600 }}>💬 批注 ({pending.length})</span>
+        <button onClick={onAddHuman} style={{ marginLeft: 'auto', padding: '3px 8px', fontSize: 10, background: '#2a5a8a', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+          + 人工标注
+        </button>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: 6 }}>
+        {/* 待处理批注 */}
+        {pending.map(ann => {
+          const style = ANNOTATION_STYLES[ann.type]
+          const isSel = selectedAnnId === ann.id
+          return (
+            <div key={ann.id} onClick={() => onSelect(ann.id)} style={{
+              padding: 8, marginBottom: 6, borderRadius: 8, cursor: 'pointer',
+              background: isSel ? '#1a2f1a' : '#0f1a0f', border: `1px solid ${isSel ? style.color : '#1a2f1a'}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>{style.icon}</span>
+                <span style={{ fontSize: 10, color: style.color, fontWeight: 600 }}>{style.label}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 10, color: '#5a7a6a' }}>{ann.source === 'ai' ? '🤖' : '👤'}</span>
+              </div>
+              <div style={{ fontSize: 11, color: '#c0c8c0', marginTop: 4 }}>{ann.note}</div>
+              <div style={{ fontSize: 10, color: '#8a9a8a', marginTop: 4, fontStyle: 'italic' }}>
+                "…{ann.originalText.slice(0, 30)}{ann.originalText.length > 30 ? '…' : ''}…"
+              </div>
+              {ann.suggestion && (
+                <div style={{ fontSize: 10, color: '#5ae0a0', marginTop: 4 }}>
+                  💡 建议: {ann.suggestion.slice(0, 40)}{ann.suggestion.length > 40 ? '…' : ''}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+                <button onClick={(e) => { e.stopPropagation(); onAccept(ann.id) }} style={{ flex: 1, padding: '3px 0', fontSize: 10, background: '#2d7a5f', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>✓ 接受</button>
+                <button onClick={(e) => { e.stopPropagation(); onReject(ann.id) }} style={{ flex: 1, padding: '3px 0', fontSize: 10, background: 'transparent', color: '#f0a0a0', border: '1px solid #5a2a2a', borderRadius: 4, cursor: 'pointer' }}>✗ 拒绝</button>
+                <button onClick={(e) => { e.stopPropagation(); onEdit(ann.id) }} style={{ padding: '3px 6px', fontSize: 10, background: 'transparent', color: '#8a9a8a', border: '1px solid #1a2f1a', borderRadius: 4, cursor: 'pointer' }}>✏️</button>
+              </div>
+            </div>
+          )
+        })}
+        {/* 已接受 */}
+        {accepted.length > 0 && (
+          <>
+            <div style={{ fontSize: 10, color: '#3a6a4a', margin: '8px 0 4px' }}>✓ 已接受 ({accepted.length})</div>
+            {accepted.map(ann => (
+              <div key={ann.id} style={{ padding: 6, marginBottom: 4, background: '#0a1a0a', borderRadius: 6, border: '1px solid #1a2f1a', opacity: 0.7 }}>
+                <div style={{ fontSize: 10, color: '#4cd28a' }}>✓ {ann.note.slice(0, 40)}</div>
+              </div>
+            ))}
+          </>
+        )}
+        {/* 已拒绝 */}
+        {rejected.length > 0 && (
+          <>
+            <div style={{ fontSize: 10, color: '#5a3a3a', margin: '8px 0 4px' }}>✗ 已拒绝 ({rejected.length})</div>
+            {rejected.map(ann => (
+              <div key={ann.id} style={{ padding: 6, marginBottom: 4, background: '#150a0a', borderRadius: 6, border: '1px solid #2a1a1a', opacity: 0.6 }}>
+                <div style={{ fontSize: 10, color: '#a06060', textDecoration: 'line-through' }}>{ann.note.slice(0, 40)}</div>
+              </div>
+            ))}
+          </>
+        )}
+        {pending.length === 0 && accepted.length === 0 && rejected.length === 0 && (
+          <div style={{ color: '#3a5a4a', fontSize: 11, textAlign: 'center', marginTop: 30 }}>
+            暂无批注<br/>点击"AI评查"自动审查文档
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
+export default CollaborativeEditor

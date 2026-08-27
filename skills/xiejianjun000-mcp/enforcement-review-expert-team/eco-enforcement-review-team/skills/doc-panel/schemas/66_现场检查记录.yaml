@@ -1,0 +1,293 @@
+id: "66"
+name: "现场检查记录"
+category: "行政检查-现场检查"
+complexity: "medium"
+template: "66_现场检查记录.md"
+description: "生态环境主管部门对本行政区域环境保护工作实施监督管理、日常检查的内部记录文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "被检查单位名称"
+    key: "{{被检查单位名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "排污许可证号"
+    key: "{{排污许可证号}}"
+    type: "string"
+    source: "案件数据.当事人.排污许可证号"
+    required: false
+
+  - id: "法人代表姓名"
+    key: "{{法人代表姓名}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码"
+    key: "{{统一社会信用代码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: false
+
+  - id: "法人代表联系电话"
+    key: "{{法人代表联系电话}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人电话"
+    required: false
+
+  - id: "地址"
+    key: "{{地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: false
+
+  - id: "现场负责人姓名"
+    key: "{{现场负责人姓名}}"
+    type: "string"
+    source: "案件数据.现场检查.现场负责人.姓名"
+    required: false
+
+  - id: "现场负责人职务"
+    key: "{{现场负责人职务}}"
+    type: "string"
+    source: "案件数据.现场检查.现场负责人.职务"
+    required: false
+
+  - id: "现场负责人联系电话"
+    key: "{{现场负责人联系电话}}"
+    type: "string"
+    source: "案件数据.现场检查.现场负责人.电话"
+    required: false
+
+  - id: "检查时间"
+    key: "{{检查时间}}"
+    type: "datetime"
+    source: "案件数据.现场检查.时间"
+    required: true
+
+  - id: "检查内容"
+    key: "{{检查内容}}"
+    type: "text"
+    source: "用户输入"
+    required: true
+
+  - id: "执法人员一姓名"
+    key: "{{执法人员一姓名}}"
+    type: "string"
+    source: "系统数据.执法人员1"
+    required: true
+
+  - id: "执法人员二姓名"
+    key: "{{执法人员二姓名}}"
+    type: "string"
+    source: "系统数据.执法人员2"
+    required: true
+
+  - id: "告知信息情况"
+    key: "{{告知信息情况}}"
+    type: "text"
+    source: "AI生成.标准告知文本"
+    required: true
+    description: "出示执法证件、告知陈述申辩和申请回避等权利、协助调查等义务的记录"
+
+  - id: "当事人确认签字"
+    key: "{{当事人确认签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "生产状态"
+    key: "{{生产状态}}"
+    type: "enum"
+    source: "用户输入"
+    required: true
+    options:
+      - "正常生产"
+      - "非正常生产"
+      - "其他"
+
+  - id: "未经环评审批新建项目"
+    key: "{{未经环评审批新建项目}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "有"
+      - "无"
+      - "其他"
+
+  - id: "未执行三同时建设项目"
+    key: "{{未执行三同时建设项目}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "有"
+      - "无"
+      - "其他"
+
+  - id: "污染设施建设验收运行情况"
+    key: "{{污染设施建设验收运行情况}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "正常运行"
+      - "不正常运行"
+      - "其他"
+
+  - id: "自动监控系统运行状态"
+    key: "{{自动监控系统运行状态}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "正常运行"
+      - "非正常运行"
+      - "未安装"
+
+  - id: "自动监控系统联网状态"
+    key: "{{自动监控系统联网状态}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "已联网"
+      - "未联网"
+
+  - id: "自动监控系统验收状态"
+    key: "{{自动监控系统验收状态}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "已验收"
+      - "未验收"
+
+  - id: "在线监测数据"
+    key: "{{在线监测数据}}"
+    type: "text"
+    source: "用户输入"
+    required: false
+
+  - id: "废水排放情况"
+    key: "{{废水排放情况}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "正常排放"
+      - "不正常排放"
+      - "其他"
+
+  - id: "废气排放情况"
+    key: "{{废气排放情况}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "正常排放"
+      - "不正常排放"
+      - "其他"
+
+  - id: "一般固废情况"
+    key: "{{一般固废情况}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "有，暂存转移正常"
+      - "有，暂存转移不正常"
+      - "无"
+
+  - id: "危险废物情况"
+    key: "{{危险废物情况}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "有，暂存转移正常"
+      - "有，暂存转移不正常"
+      - "无"
+
+  - id: "环保管理机构"
+    key: "{{环保管理机构}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "有"
+      - "无"
+
+  - id: "污染设施运行台账"
+    key: "{{污染设施运行台账}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "有"
+      - "无"
+
+  - id: "环境应急预案"
+    key: "{{环境应急预案}}"
+    type: "enum"
+    source: "用户输入"
+    required: false
+    options:
+      - "有"
+      - "无"
+
+  - id: "现场监察结论"
+    key: "{{现场监察结论}}"
+    type: "text"
+    source: "AI生成.从检查情况生成监察结论"
+    required: true
+
+  - id: "处理意见及相关要求"
+    key: "{{处理意见及相关要求}}"
+    type: "text"
+    source: "AI生成.结合检查情况生成处理意见"
+    required: true
+
+  - id: "执法人员一签字"
+    key: "{{执法人员一签字}}"
+    type: "string"
+    source: "系统数据.执法人员1"
+    required: true
+
+  - id: "执法人员一工作单位"
+    key: "{{执法人员一工作单位}}"
+    type: "string"
+    source: "系统数据.执法人员1.工作单位"
+    required: false
+
+  - id: "执法人员二签字"
+    key: "{{执法人员二签字}}"
+    type: "string"
+    source: "系统数据.执法人员2"
+    required: true
+
+  - id: "执法人员二工作单位"
+    key: "{{执法人员二工作单位}}"
+    type: "string"
+    source: "系统数据.执法人员2.工作单位"
+    required: false
+
+  - id: "被检查单位现场负责人签字"
+    key: "{{被检查单位现场负责人签字}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "记录人签字"
+    key: "{{记录人签字}}"
+    type: "string"
+    source: "系统数据.记录人"
+    required: true

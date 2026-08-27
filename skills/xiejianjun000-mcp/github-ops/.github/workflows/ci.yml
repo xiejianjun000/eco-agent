@@ -1,0 +1,13 @@
+name: GitHub-OPS CI
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: 验证文件
+        run: |
+          test -f SKILL.md && echo "✅ SKILL.md 存在" || exit 1
+          test -f README.md && echo "✅ README.md 存在" || exit 1
+          test -f meta.json && echo "✅ meta.json 存在" || exit 1
+          echo "✅ 所有必需文件存在"

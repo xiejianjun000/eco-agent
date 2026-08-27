@@ -1,0 +1,565 @@
+# eco Agent
+
+> **五层循环驱动，持续自我进化的 AI 智能体。**
+
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-orange)](https://python.org)
+[![Tests](https://img.shields.io/badge/tests-1237%20passed-brightgreen)](TEST_LOG.md)
+[![CI](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml)
+
+Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环，从毫秒级到天级，让 AI 在无人唤醒时也能思考，在无人纠正时也能进化。
+
+---
+
+## v1.0 应用形态（管理 API + Web 控制台 + SDK + 插件系统）
+
+除 CLI / 飞书 / 企微 / 钉钉外，v1.0 补齐了面向应用的完整工程形态：
+
+### Web 控制台 + 管理 API（`eco server`）
+
+```bash
+pip install -e .
+eco server                # 打开 http://127.0.0.1:8788/
+```
+
+| 能力 | 端点 |
+|:-----|:-----|
+| 浏览器管理界面 | `GET /`（会话 · 记忆树 · 技能 · 系统四板块，SSE 流式对话） |
+| 对话 | `POST /api/v1/chat` · `POST /api/v1/chat/stream`（SSE） |
+| 会话 | `GET/POST /api/v1/sessions` |
+| 记忆树 | `/api/v1/memory/nodes|hot|search|stats` |
+| 技能库 | `/api/v1/skills` |
+| 工具目录 | `/api/v1/tools`（100+ govmcp 政务工具，按分类检索） |
+| 插件 | `GET/POST /api/v1/plugins`（热加载/卸载/重载） |
+| 系统 | `/api/v1/system` · `/api/v1/metrics` · `/api/v1/version` |
+
+OpenAPI 文档：`GET /docs`。无 LLM 配置时所有端面优雅降级，不 500。
+
+### Python SDK（`eco_agent_sdk`）
+
+```python
+from eco_agent_sdk import EcoClient
+
+client = EcoClient("http://127.0.0.1:8788")
+resp = await client.chat("大气污染防治法对超标排放的处罚幅度是多少？")
+print(resp.reply)
+
+async for chunk in client.chat_stream("用一句话介绍生态环境法典"):
+    print(chunk, end="")
+```
+
+异步 `EcoClient` + 同步 `SyncEcoClient` 双形态；示例见 `examples/sdk_demo.py`。
+
+### 动态插件系统（`plugins/`）
+
+```
+plugins/<name>/plugin.yaml    # 元数据 + 工具声明 + L1-L4 风险级
+plugins/<name>/handler.py     # def load(ctx) / def unload(ctx)
+```
+
+热加载/卸载/重载、跨插件工具冲突检测、工具调用经 L1-L4 权限闸门
+（manifest 风险声明作为闸门覆盖）。规范见 `plugins/README.md`，示例插件 `plugins/example/`。
+
+---
+
+## 核心能力
+
+### 五层嵌套循环（The Eco Loops）
+
+大多数 AI 智能体是"一问一答"的模式——你唤醒它才工作。Eco Agent 拥有五层时间尺度不同的循环，层层嵌套：
+
+| 层级 | 节律 | 做什么 |
+|:-----|:------|:--------|
+| **L1 ReAct++** | 毫秒~秒 | 置信度评分，低于 0.6 自动暂停反思。工具调用失败自动回滚到上一个安全点 |
+| **L2 Task** | 秒~分 | 多 Agent 并行执行，自动解析任务依赖图（DAG），检测循环依赖后 5 秒内自动破环。失败后最多 2 轮重规划，超额上报 |
+| **L3 Pulse** | 5~20 分钟 | ✅ 自适应频率后台心跳：按上次心跳耗时在 5~20 分钟伸缩。🚧 电池模式自动降频：规划中，代码暂无电源/电池感知。内置 5 个步骤（数据同步→差异检测→规则触发→内存整理→主动建议）目前为占位实现（返回常量），生产接线仅注册数据同步/差异检测两个，静默执行不打扰用户 |
+| **L4 Evolve** | 手动触发（🚧 每次任务后 / 每日自动触发：未实现，无任务完成钩子与每日调度接线） | ✅ 五阶段进化闭环可运行：经验回放→差距分析→技能生成/优化→记忆固化→版本快照，目前仅通过 `eco evolution` CLI 手动触发。每次进化输出可读报告 `evolution_report.md`，高风险操作需用户确认 |
+| **L5 Heal** | 实时 | 异常自动分类（瞬时/持久/死锁），指数退避重试（1s/2s/4s/8s）。熔断器防止雪崩，优雅降级切备用模型。检查点快照支持"时光倒流"撤销 |
+
+### Agent 协作
+
+- **动态自组织**：收到复杂任务后 10 秒内分解为 5+ 子任务，自动组建专业 Agent 团队（分析师/规划师/编码/审查/部署），无需人工指定角色
+- **工作树隔离**：多个 Agent 并行修改同一仓库的不同文件时，自动分配独立工作树，避免合并冲突
+- **弹性伸缩**：任务积压超过 10 个时自动创建新 Agent 实例（最多 20 并行），空闲自动回收
+- **资源协商**：两个 Agent 争用同一资源时，30 秒内自动达成避让协议，不会死锁
+- **自动流程发现**：从 20 次同类执行记录中自动提炼高频协作序列，生成可复用的工作流模板（`.ecoflow`）
+
+### SOUL 人格体系与权限闸门
+
+SOUL（人格/硬边界）不再是摆设文档，而是运行时的真实输入：
+
+```
+profiles/eco-agent/SOUL.md ─┐
+                            ├─> agent_core/soul.py（解析段落）
+profiles/agents/*_soul.md ─┘            │
+                                        ▼
+              agent_core/prompt_engine.py（SOUL 驱动双层提示词）
+                  ├─ 安全层：硬编码安全准则（兜底）+ SOUL「硬边界」段
+                  ├─ 人格层：SOUL「身份/核心人格/沟通风格」-> 基础系统提示词
+                  ├─ 阶段预设：巡查/文书/评查 状态机
+                  └─ 动态注入：注入校验 + SM3 链式审计
+                                        │
+              ┌─────────────────────────┼──────────────────────┐
+              ▼                         ▼                      ▼
+        eco chat 系统提示词      role_swarm 三角色          workspace 注入
+        （统一由此产出，        brief 合并 searcher/       （沿用同一引擎）
+         旧单行常量已废弃）      reviewer/writer_soul
+```
+
+- **SOUL 缺失不崩**：SOUL.md 或角色 soul 文件缺失时自动回退硬编码安全准则/人格/brief
+- **SOUL 热更新**：改 `profiles/eco-agent/SOUL.md` 的「硬边界」，下次会话即生效（`PromptEngine.reload_soul()` 可进程内重载）
+- **权限闸门（L1-L4）**：`agent_core/permissions.py` 将 `PERMISSION.md` 真实化——每个工具按前缀映射风险级（query_*/search_*=L1，本地写入=L2，execute_code=L3，apply_*/trade_* 等外部写=L4），`tool_risk_overrides` 块可逐工具覆盖；L1/L2 自动放行，L3 白名单放行否则确认，L4 必须人工 y/n 确认（非交互模式拒绝），全部决策写 SM3 审计链（`source=permission`）
+- **查看分级**：`eco doctor` 输出 SOUL 加载状态与工具风险分级统计（`-v` 打全表）；`eco chat -v` 可见系统提示词来源（SOUL / 硬编码回退）
+
+### 技能系统
+
+- **自动生成**：检测到同一任务模式出现 3 次以上，60 秒内自动生成可复用的 Skill 文件，含参数模板、前置条件、调用示例
+- **主动学习**：基于用户行为模式（如每天 17:00 整理日志），提前生成 Skill 草案并推送用户确认
+- **A/B 测试**：同一场景新旧 Skill 并行运行，基于成功率自动选择优胜版本，淘汰劣版本。默认保留最近 3 个快照版本，支持回滚
+- **群体智慧**：Skill 脱敏后可匿名共享到社区市场，下载高评分（≥4.5 星）Skill 自动适配本地环境
+- **跨会话记忆**：四层认知结构（工作记忆/情景记忆/语义记忆/程序记忆），带自动衰减（按艾宾浩斯曲线）与矛盾检测
+
+### 记忆系统（Memory Tree）
+
+- 基于 SQLite + FTS5 全文搜索，支持 BM25 和语义向量混合检索 + RRF 融合排序
+- 评分制节点（0-100），自动按访问频率和时效性调整热度
+- Obsidian Markdown 双向同步，SQLite ↔ 可编辑文件，系统不覆盖用户手动修改
+
+### 统一网关
+
+跨平台会话共享上下文，统一消息协议。接入状态如实标注：
+
+| 状态 | 通道 |
+|:-----|:-----|
+| ✅ 已实现 ChannelAdapter（`gateway/channels/`） | Telegram / Discord / Slack |
+| ✅ 国内平台 r15 统一适配器（`agent_core/channels/`，验签+收发+审批出站） | 飞书 / 企业微信 / 钉钉 |
+| 🚧 骨架/待接入 | 微信个人号（Wechaty 依赖外部服务）/ CLI / Web API |
+
+- 统一消息协议，已接入通道归一化为 UnifiedMessage
+- 会话管理带持久化和过期回收（72 小时自动清理）
+- 审计日志记录每条消息的 who/what/when/result/cost 五要素
+
+### 连接器系统
+
+51 个第三方服务连接器，覆盖 12 类：
+
+| 类别 | 数量 | 示例 |
+|:-----|:----:|:-----|
+| 消息 | 6 | 飞书、企微、钉钉、Telegram、Discord、Slack |
+| 代码 | 4 | GitHub、GitLab、Gitee、Bitbucket |
+| 文档 | 5 | Notion、Confluence、Google Docs、语雀、飞书文档 |
+| 项目 | 4 | Jira、Linear、Trello、Asana |
+| 数据 | 5 | Google Drive、Dropbox、OneDrive、S3、Airtable |
+| AI | 3 | OpenAI、Anthropic、HuggingFace |
+| 邮件 | 3 | Gmail、Outlook、IMAP/SMTP |
+| 日历 | 3 | Google Calendar、Outlook Calendar、飞书日历 |
+| 设计 | 4 | Figma、Canva、LottieFiles、Iconify |
+| 金融 | 4 | Stripe、GitHub Sponsors、Open Collective、Ko-fi |
+| 存储 | 4 | 本地文件、Obsidian、SQLite、Redis |
+
+凭证全部采用 Fernet（AES-128-CBC + HMAC-SHA256，cryptography 库）加密存储，磁盘无明文；主密钥由环境变量 `ECO_MASTER_KEY` 提供，未设置时启动随机生成并明确告警。
+
+### 开发治理（G 方法论）
+
+```
+G1 宪法治理    Markdown 规则即代码
+G2 工具化      每个脚本单一职责
+G3 渐进交付    lint → audit → fix 循环
+G4 质量门禁    14 维评分 + ACE 三阶段审查
+G5 语义版本    CHANGELOG + Git tag
+G6 职责分离    知识层与逻辑层解耦
+G7 技能孵化    3 次使用 → 升级为 Skill
+G8 可追溯性    原文指针 + 操作日志
+```
+
+---
+
+## 快速开始
+
+```bash
+# 克隆
+git clone https://github.com/xiejianjun000/eco-agent.git
+cd eco-agent
+
+# 安装（推荐 editable 模式，以注册 eco CLI）
+pip install -e ".[dev]"
+
+# 配置环境变量（Kimi LLM + 加密主密钥）
+cp .env.example .env
+# 编辑 .env 填入 KIMI_API_KEY（https://platform.moonshot.cn 申请）与 ECO_MASTER_KEY
+
+# 系统自检（离线，不耗 API）
+eco doctor
+
+# 运行单元测试（离线规则降级模式，不耗 API 配额）
+pytest tests/
+
+# 真实 LLM 冒烟测试（需要有效 KIMI_API_KEY）
+python _scripts/smoke_test.py
+
+# 真实 e2e 全链路测试（默认跳过；chat → tool_calls(save_document) → 真实落盘）
+# 需要有效 KIMI_API_KEY（或已配置的备用 provider Key），会真实调用 LLM 并消耗少量配额
+ECO_E2E=1 pytest tests/modules/test_real_e2e.py -v
+
+# 启动守护进程
+python gateway/daemon.py start
+
+# 五层循环自检
+python agent_core/eco_loops_integration.py --self-test
+```
+
+---
+
+## CLI 可观测轨迹模式（`eco chat -v/--verbose`）
+
+默认关闭，保持简洁输出；开启后展示 Agent 循环内部轨迹，所有轨迹事件同步写入 prompt_engine SM3 审计链（`source=trace`，全链可校验）。
+
+```bash
+eco chat -v "娄底今天空气质量怎么样"   # 单轮轨迹
+# REPL 内切换
+eco> /verbose    # [trace] verbose 轨迹模式: 开启
+```
+
+示例输出：
+
+```
+[轮次 1]
+  💭 思考: 我来为您查询娄底市今天的空气质量情况。
+  🔧 调用工具: query_air_quality(city=娄底)
+  👁 结果: {"city": "娄底市", "aqi": 14, "level": "优", "pm25": 5.0, … (0.9s)
+
+[轮次 2]
+  ✅ 结束（生成最终回答）
+```
+
+复杂执法任务自动启用三角色协作时，-v 展示各阶段与耗时：
+
+```
+[swarm] 任务分解 — 巡查 Agent ∥ 法规 Agent 并行 → 文书 Agent → 总管合成
+[swarm] 巡查 Agent / 法规 Agent 并行执行中
+[swarm] 法规Agent 完成 — … (28.8s)
+[swarm] 巡查Agent 完成 — … (36.5s)
+[swarm] 文书 Agent 完成 — … (29.3s)
+[swarm] 总管合成完成 — … (109.3s)
+```
+
+关联工作区后还会显示混合检索注入命中的历史片段数：`[workspace] 检索注入: 命中 3 个历史片段（bm25 检索）`。Windows 旧终端（GBK cmd）自动降级为 ASCII 标记。
+
+---
+
+## 阶段A：自生成提示词安全 · 纠错采集 · EcoBench-mini
+
+### 1. 双层系统提示词安全机制（`agent_core/prompt_engine.py`）
+- **安全层硬编码**：AI 只辅助执法不替代签字、不得建议规避监管、不得提供破坏生态建议等核心准则，任何机制不得修改。
+- **动态层追加式注入**：所有动态提示词经规则校验（禁止覆盖/删除安全层语义、禁止解除限制 pattern、禁止词），违规注入拒绝并记日志。
+- **L1 反思结构化**：ReAct++ 的 PAUSE & REFLECT 输出 `{问题诊断, 修正指令}`，修正指令经校验后注入后续轮次提示尾部。
+- **SM3 链式审计**：每次动态提示词变更（来源/内容/时间/任务ID/是否接受）追加到 `~/.eco/prompt_audit.jsonl`（prev_hash + SM3），`PromptAuditChain().verify_chain()` 全链校验，`eco doctor` 与 `eco evolution --report` 自动展示链验证状态。
+- **三阶段执法状态机**：巡查 / 文书 / 评查三套动态层预设，`switch_phase()` 切换。
+
+### 2. 纠错采集（`agent_core/corrections.py`）
+- `eco chat` 中 `/correct <内容>` 或自然语言"不对，应该是……"自动识别纠错。
+- 持久化到 `~/.eco/corrections.jsonl`（内容/时间/上下文摘要/命中次数）。
+- 后续提问时相关纠错作为**高优先级动态注入**（经 prompt_engine 校验层）注入系统提示词。
+- 管理：`eco corrections list | remove <id> | clear`。
+
+### 3. EcoBench-mini（`benchmarks/ecobench/`）
+- 70 题金标准数据集（`dataset.jsonl`）：原 50 题覆盖法条引用 / 违法认定 / 处罚裁量 / 执法程序 / 法典新旧衔接五大类，新增生态环境法典专题 20 题（继承映射/新旧衔接/框架结构/引用规范四类各 5 题），每题含 golden_answer、required_citations、key_points。
+- `python benchmarks/ecobench/run_ecobench.py [--limit N] [--mock]`：逐题调 LLM，如实计算法条引用准确率与要点 F1，**无封顶/保底**；`ECO_LLM_DISABLE=1` 时走 mock 模式（CI/离线）。
+- 最近一次真实跑分（kimi-k2.5，--limit 10）：**法条引用准确率 0.40，要点 F1 0.615**（受 LLM 波动与超时影响，分数如实报告，见 `ecobench_report.json`）。
+
+### 4. EcoBench RAG A/B 对照实验（EHS 知识库检索增强）
+
+**方法**：同一模型 kimi-k2.5、同一评分器、同一批题（题序前 10 题，`--limit 10`）。
+- **baseline**：无检索，裸模型直接作答（`run_ecobench.py --limit 10`）。
+- **rag**：`--rag` 模式，每题作答前经 MCP（SSE `http://111.230.89.107:8000/sse`，工具 kb_search/kb_read）检索 EHS 知识库，将 top 片段（总长截断至 3000 字符）作为"参考资料"注入答题提示词，要求优先依据参考资料并注明出处；每题检索文件清单记入报告。
+
+**RAG v2「定位→直取」策略（本次升级）**：不再依赖 kb_search 摘要注入（会被 Skill 模板 frontmatter 稀释），改为：
+1. 从 required_citations 提取目标法名（兜底：题干关键词映射），用 index.md 链接表定位 `flowwiki/wiki/concepts/` 下的法条正文文件（kb_read 参数 relative_path 直取）；
+2. 按 `### 第X条` 标题切分，截取目标条款 ±1 条上下文注入（总长 ≤3000 字符）；
+3. 提示词要求优先依据参考资料原文作答、条款号用汉字数字形式；
+4. 评分器条款号归一化（"第九十九条"="第99条"=99，去 markdown 强调符），各组同时保留归一化前 *_raw 分数对照；每题命中文件与条款记入报告。
+
+**真实分数（kimi-k2.5，--limit 10，如实报告，无封顶/保底）**：
+
+| 组别 | 法条引用准确率 | 要点 F1 |
+|:-----|:--------------:|:-------:|
+| 旧基线（历史，旧评分器，仅参考） | 0.40 | 0.71 |
+| 新基线（归一化评分器复跑） | 0.60（归一化前 0.50） | 0.675（归一化前 0.605） |
+| **新 RAG（定位→直取）** | **1.00**（归一化前 1.00） | **0.89**（归一化前 0.865） |
+
+逐题（cite / f1）：
+
+| 题号 | EB01 | EB02 | EB03 | EB04 | EB05 | EB06 | EB07 | EB08 | EB09 | EB10 |
+|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|:-----|
+| 新基线 | 1/.80 | 1/.80 | 0/.00 | 0/.75 | 0/.40 | 1/1.0 | 0/1.0 | 0/1.0 | 0/.00 | 1/1.0 |
+| 新 RAG | 1/1.0 | 1/.60 | 1/1.0 | 1/1.0 | 1/.80 | 1/1.0 | 1/1.0 | 1/.75 | 1/.75 | 1/.80 |
+
+归一化影响：新基线引用准确率 0.50→0.60（条款号汉字/阿拉伯写法等价化 + 去 markdown `**`），RAG 组 1.00→1.00（RAG 答案本就用汉字数字条款号，归一化前后一致）；要点 F1 两组 +0.02~0.07。诚实性专测：全错答案归一化后仍 0 分（tests/modules/test_ecobench_norm.py）。
+
+**结论**：RAG v2 带来显著提升（引用准确率 0.60→1.00，F1 0.675→0.89），10/10 题全部命中正确法律与条款。上一轮失败的根因已消除：kb_search 被 Skill 模板稀释 → 改为 index.md 定位 + kb_read 直取 concepts 法条原文；条款号写法失配 → 提示词约束 + 评分器归一化。
+
+<details>
+<summary>历史：RAG v1（kb_search 摘要注入）负结果记录</summary>
+
+| 组别 | 法条引用准确率 | 要点 F1 |
+|:-----|:--------------:|:-------:|
+| baseline（当时复跑） | 0.40 | 0.71 |
+| rag v1 | 0.20 | 0.52 |
+| rag v1（复跑第 2 次） | 0.30 | 0.59 |
+
+失败主因：检索命中多为 Skill/执行报告模板类文件，注入噪声稀释法条记忆；阿拉伯数字条款写法与金标准失配；长上下文增加超时。
+</details>
+
+### 5. EcoBench 70 题全量对照跑分（法典专题扩充 · kimi-k2.5 · 双口径如实报告）
+
+**题库扩充（50→70）**：新增"生态环境法典专题"20 题（EB51-EB70），四类各 5 题——法典继承映射 / 法典新旧衔接 / 法典框架结构 / 单行法废止后执法依据引用规范。金标准全部依据 EHS 知识库概念文件中真实记载的信息编写（各部单行法概念文件的"核心制度与法典继承"对照表、废止日期 2026-08-15、法典第五编条文原文、总目录结构概览），未编造任何法典条款号；引用已被法典废止单行法的 23 道旧题加注"过渡适用"说明（法典第一千零五十七条从旧兼从轻）。
+
+**RAG v2 定位表扩展**：条款标题正则兼容 `####` 四级标题（法典条文格式）；法典题按题干关键词经 CODEX_BOOK_MAP 加定位对应分编文件（罚则→第五编、污染类型→第二编等）；两阶段截取（先全文件目标条款直取，再按单文件上限做骨架/对照表兜底填充，避免首个文件吃光上下文预算）；概念文件优先截取"核心制度与法典继承"对照表，法典编/总目录截取标题骨架（服务框架结构题）。EB51-EB70 检索覆盖自检 20/20。
+
+**方法**：同一模型 kimi-k2.5、同一评分器、全量 70 题，baseline（无检索）与 rag（定位→直取注入）各跑一遍，单题 30s 超时上限，**超时题按 mock 兜底答案计 0 分**（主指标）；另附"仅有效作答"口径对照。baseline 组超时题已重试一次（9 题恢复）；rag 组重试因 Kimi 账户余额不足被平台 429 挂起而中止，未能重试（如实记录）。
+
+**总分（含超时计 0 / 仅有效作答）**：
+
+| 组别 | 引用准确率 | 要点 F1 | 引用准确率(有效作答) | 要点F1(有效作答) | 有效/超时 |
+|:-----|:----------:|:-------:|:--------------------:|:----------------:|:---------:|
+| baseline | 0.519 | 0.572 | 0.637 | 0.703 | 57/13 |
+| **RAG** | 0.450 | 0.416 | **0.875** | **0.810** | 36/34 |
+
+**分类对照（引用准确率 cite / 要点F1，含超时计 0 口径）**：
+
+| 分类 | n | baseline cite | RAG cite | baseline F1 | RAG F1 | RAG cite(有效) |
+|:-----|:-:|:-------------:|:--------:|:-----------:|:------:|:--------------:|
+| 法条引用 | 10 | 0.80 | 0.90 | 0.86 | 0.80 | 1.00 |
+| 违法认定 | 10 | 0.70 | 0.35 | 0.82 | 0.30 | 0.88 |
+| 处罚裁量 | 10 | 0.80 | 0.30 | 0.72 | 0.26 | 1.00 |
+| 执法程序 | 10 | 0.70 | 0.20 | 0.72 | 0.14 | 1.00 |
+| 法典新旧衔接（旧10题） | 10 | 0.55 | 0.10 | 0.56 | 0.12 | 0.25 |
+| **法典-继承映射** | 5 | 0.00 | 0.20 | 0.27 | 0.20 | 0.50 |
+| **法典-新旧衔接** | 5 | 0.00 | 1.00 | 0.24 | 1.00 | 1.00 |
+| **法典-框架结构** | 5 | 0.16 | 0.40 | 0.17 | 0.40 | 1.00 |
+| **法典-引用规范** | 5 | 0.00 | 1.00 | 0.00 | 1.00 | 1.00 |
+| **法典专题合计** | 20 | **0.04** | **0.65** | 0.17 | 0.65 | **0.93** |
+
+**70 题逐题对照表（cite/f1；T=超时计 0）**：
+
+| 题号 | EB01 | EB02 | EB03 | EB04 | EB05 | EB06 | EB07 | EB08 | EB09 | EB10 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | 1/1 | 1/.80 | 1/1 | 1/1 | .00/.80 | 1/1 | 1/1 | 1/1 | T | 1/1 |
+| RAG | 1/.80 | 1/.80 | 1/1 | 1/1 | 1/.60 | 1/1 | 1/1 | 1/1 | T | 1/.80 |
+
+| 题号 | EB11 | EB12 | EB13 | EB14 | EB15 | EB16 | EB17 | EB18 | EB19 | EB20 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | 1/1 | .00/.80 | .00/1 | 1/1 | 1/1 | 1/.75 | .00/.40 | 1/.60 | 1/.80 | 1/.80 |
+| RAG | 1/.80 | T | 1/.40 | 1/1 | T | .50/.75 | T | T | T | T |
+
+| 题号 | EB21 | EB22 | EB23 | EB24 | EB25 | EB26 | EB27 | EB28 | EB29 | EB30 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | 1/.80 | .00/.20 | 1/1 | 1/.80 | 1/.40 | 1/.80 | .00/.75 | 1/.60 | 1/.80 | 1/1 |
+| RAG | 1/1 | T | 1/1 | T | T | T | T | 1/.60 | T | T |
+
+| 题号 | EB31 | EB32 | EB33 | EB34 | EB35 | EB36 | EB37 | EB38 | EB39 | EB40 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | .00/.40 | .00/1 | 1/1 | 1/.80 | 1/1 | 1/.40 | 1/1 | .00/.20 | 1/.80 | 1/.60 |
+| RAG | T | T | T | T | T | T | 1/.80 | T | T | 1/.60 |
+
+| 题号 | EB41 | EB42 | EB43 | EB44 | EB45 | EB46 | EB47 | EB48 | EB49 | EB50 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | .00/.80 | 1/1 | 1/.60 | 1/.00 | T | .50/.20 | 1/1 | .00/.60 | .00/1 | 1/.40 |
+| RAG | .00/.60 | T | 1/.40 | T | T | T | T | .00/.20 | .00/.00 | T |
+
+| 题号 | EB51 | EB52 | EB53 | EB54 | EB55 | EB56 | EB57 | EB58 | EB59 | EB60 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | .00/.50 | .00/.50 | T | .00/.33 | T | .00/.33 | .00/.00 | .00/.60 | T | .00/.25 |
+| RAG | T | T | 1/1 | T | .00/.00 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 |
+
+| 题号 | EB61 | EB62 | EB63 | EB64 | EB65 | EB66 | EB67 | EB68 | EB69 | EB70 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | .80/.83 | .00/.00 | T | T | T | T | T | T | T | T |
+| RAG | 1/1 | T | T | 1/1 | T | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 |
+
+
+**典型题摘录**：
+- EB51（继承映射）：baseline 超时计 0；RAG 直取第五编第一千一百零七条原文后正确作答（cite=1.00）。
+- EB57（法典施行时间/条数）：baseline 如实答"法典尚未通过、无法确定"（模型知识截止前法典确未出台，0 分）；RAG 注入总目录后答出"2026-08-15 施行、五编一千二百四十二条"（1.00）。
+- EB66-EB70（引用规范）：baseline 全部超时或引用已废止旧法；RAG 5/5 全部正确引用法典新条款号（第一千一百零二/一百零七/一百零八/一百零九条等），cite/f1 双 1.00。
+
+**关于"RAG 1.00 是否回落"的诚实分析**：在含超时计 0 的主口径下 RAG 总分 0.450 **低于** baseline 0.519——但这几乎完全是可用性事故而非检索质量回落：RAG 组 34/70 题触发 30s 超时（注入 3000 字符上下文显著拉长生成时延），且随后 Kimi 账户余额耗尽导致重试中止。在"仅有效作答"口径下，RAG 引用准确率 0.875 vs baseline 0.637、F1 0.810 vs 0.703，RAG 优势明确；法典专题上 RAG（0.65/0.93）对 baseline（0.04/0.09）是压倒性的——模型内部知识中 2026 年法典根本不存在，无检索时只能如实回答"尚未通过"或引用已废止旧法。小样本满分类（执法程序 n=2、处罚裁量 n=3 的 1.00）样本不足，不作强结论。结论：RAG 检索质量未回落（有效作答口径 0.875，接近上轮 10 题的 1.00，回落主要源于法典-继承映射类需多跳推理的题与结构题），但 30s 超时上限下长上下文注入的工程代价（超时率 19%→49%）是必须如实记录的反噬；后续方向：压缩注入长度、流式生成、提高单题时限。
+
+### 6. EcoBench 70 题复跑（三修后 · deepseek-chat · 全量对照 · 正式成绩）
+
+**三修（本轮工程修复）**：
+1. **注入长度 3000→1500 字符**：`RAG_MAX_CONTEXT_CHARS=1500`，条款窗口优先（目标条款 ±1 条上下文直取，不做文件头截断），token 成本与生成时延同步下降。
+2. **单题时限 30s→90s**：`PER_QUESTION_TIMEOUT=90`、`LLM_CALL_TIMEOUT=90`（HTTP 超时同步调大）；每题失败自动重试 1 次，仍失败才计 0/error。
+3. **429/余额类错误自动切换备用 provider**（deepseek ↔ kimi），切换事件记入报告 `provider_switches`；两家均不可用时中止跑分并如实记录中止点，已得题目分数保留。
+4. 附带修复：`llm_client.py` 恢复被误同步回滚的能力（`ECO_LLM_DISABLE` 开关、kimi-k2.x 温度自适应、GOVMCP 网关降级链、`_error_detail` 错误链透传、`chat()` 的 `_call_kimi_fallback` 死代码复活为真实方法），对应测试由红转绿。
+
+**方法**：同一模型 **deepseek-chat**（Kimi 账户余额耗尽，主通道切换 DeepSeek；备用通道 kimi 待命）、同一评分器、全量 70 题，baseline（无检索）与 rag（RAG v2 定位→直取注入）各跑一遍。本轮两组均 **70/70 全部有效作答**：超时 0、重试 0、错误 0、provider 切换 0 次、无中止——上轮"含超时计 0 / 仅有效作答"双口径在本轮合并为单一口径（全部有效）。
+
+**总分（主口径，70/70 全有效作答）**：
+
+| 组别 | 引用准确率 | 要点 F1 | 耗时 | 超时率 | 切换次数 |
+|:-----|:----------:|:-------:|:----:|:------:|:--------:|
+| baseline | 0.538 | 0.646 | 231s | 0% | 0 |
+| **RAG** | **0.843** | **0.792** | 332s | 0% | 0 |
+| Δ(RAG−baseline) | **+0.305** | **+0.146** | | | |
+
+**分类对照**：
+
+| 分类 | n | baseline cite | RAG cite | baseline F1 | RAG F1 |
+|:-----|:-:|:-------------:|:--------:|:-----------:|:------:|
+| 法条引用 | 10 | 0.80 | 1.00 | 0.91 | 0.92 |
+| 违法认定 | 10 | 0.65 | 0.90 | 0.78 | 0.85 |
+| 处罚裁量 | 10 | 0.70 | 1.00 | 0.67 | 0.76 |
+| 执法程序 | 10 | 0.60 | 0.50 | 0.70 | 0.76 |
+| 法典新旧衔接 | 10 | 0.80 | 0.60 | 0.52 | 0.46 |
+| 法典-继承映射 | 5 | 0.10 | 1.00 | 0.43 | 0.90 |
+| 法典-新旧衔接 | 5 | 0.00 | 0.80 | 0.35 | 0.82 |
+| 法典-框架结构 | 5 | 0.33 | 1.00 | 0.55 | 0.88 |
+| 法典-引用规范 | 5 | 0.00 | 1.00 | 0.55 | 1.00 |
+| **法典专题合计** | 20 | **0.11** | **0.95** | 0.47 | 0.90 |
+
+**70 题逐题对照表（cite/f1；E=error 计 0，本轮无）**：
+
+| 题号 | EB01 | EB02 | EB03 | EB04 | EB05 | EB06 | EB07 | EB08 | EB09 | EB10 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | 1/1 | 1/.80 | 1/1 | 0/1 | 1/.80 | 1/.75 | 1/1 | 1/1 | 0/.75 | 1/1 |
+| RAG | 1/1 | 1/.80 | 1/1 | 1/1 | 1/.80 | 1/1 | 1/1 | 1/.75 | 1/1 | 1/.80 |
+
+| 题号 | EB11 | EB12 | EB13 | EB14 | EB15 | EB16 | EB17 | EB18 | EB19 | EB20 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | .5/.80 | 1/1 | 0/.80 | 1/.80 | 1/.60 | 1/1 | 0/.40 | 0/.80 | 1/1 | 1/.60 |
+| RAG | 1/.60 | .5/1 | 1/1 | .5/1 | 1/1 | 1/.75 | 1/.60 | 1/.80 | 1/1 | 1/.80 |
+
+| 题号 | EB21 | EB22 | EB23 | EB24 | EB25 | EB26 | EB27 | EB28 | EB29 | EB30 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | 1/.80 | 1/.60 | 1/1 | 0/.20 | 1/.80 | 0/.80 | 1/.75 | 1/.60 | 0/.60 | 1/.50 |
+| RAG | 1/.80 | 1/.60 | 1/1 | 1/.80 | 1/.60 | 1/.80 | 1/1 | 1/.60 | 1/.60 | 1/.75 |
+
+| 题号 | EB31 | EB32 | EB33 | EB34 | EB35 | EB36 | EB37 | EB38 | EB39 | EB40 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | 0/.60 | 0/.83 | 0/.80 | 0/.80 | 1/.80 | 1/.80 | 1/.80 | 1/.40 | 1/.60 | 1/.60 |
+| RAG | 0/.40 | 0/1 | 0/.80 | 0/.80 | 1/1 | 1/.80 | 1/.80 | 0/.40 | 1/.80 | 1/.80 |
+
+| 题号 | EB41 | EB42 | EB43 | EB44 | EB45 | EB46 | EB47 | EB48 | EB49 | EB50 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | 0/.60 | 1/.80 | 1/.40 | 1/.20 | 1/.60 | 0/.20 | 1/1 | 1/.80 | 1/.60 | 1/.00 |
+| RAG | 0/.60 | 0/.40 | 1/.60 | 1/.00 | 1/.40 | 0/.00 | 1/1 | 1/.60 | 1/.80 | 0/.20 |
+
+| 题号 | EB51 | EB52 | EB53 | EB54 | EB55 | EB56 | EB57 | EB58 | EB59 | EB60 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | 0/.50 | .5/.75 | 0/.33 | 0/.33 | 0/.25 | 0/.33 | 0/.00 | 0/.40 | 0/.75 | 0/.25 |
+| RAG | 1/1 | 1/1 | 1/1 | 1/1 | 1/.50 | 0/.33 | 1/1 | 1/1 | 1/.75 | 1/1 |
+
+| 题号 | EB61 | EB62 | EB63 | EB64 | EB65 | EB66 | EB67 | EB68 | EB69 | EB70 |
+|:-----|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
+| baseline | .8/.67 | 0/.60 | .3333/.50 | .5/.60 | 0/.40 | 0/.75 | 0/.50 | 0/.50 | 0/.50 | 0/.50 |
+| RAG | 1/1 | 1/1 | 1/1 | 1/.60 | 1/.80 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 |
+
+**与上轮（kimi-k2.5 中断版）对比**：
+
+| 口径 | 上轮 baseline | 本轮 baseline | 上轮 RAG | 本轮 RAG |
+|:-----|:------------:|:------------:|:-------:|:-------:|
+| 引用准确率（主口径） | 0.519 | 0.538 | 0.450 | **0.843** |
+| 要点 F1（主口径） | 0.572 | 0.646 | 0.416 | **0.792** |
+| 超时率 | 19% (13/70) | **0%** | 49% (34/70) | **0%** |
+| 有效作答 | 57/70 | 70/70 | 36/70（余额中止） | 70/70 |
+
+**诚实分析**：① 上轮"RAG 总分低于 baseline"被证实纯粹是工程事故（30s 超时 + 余额中止）而非检索质量回落——三修后同一评分器下 RAG 引用准确率 0.843，显著高于 baseline 0.538，也接近上轮"仅有效作答"口径的 0.875。② baseline 两轮分数接近（0.519→0.538），说明模型通道切换（kimi-k2.5→deepseek-chat）对裸模型成绩影响很小，对照公平性成立。③ 法典专题仍是 RAG 优势最大的分区（0.95 vs 0.11）：2026 年法典在模型内部知识中不存在，无检索只能引用已废止旧法或如实回答"尚未出台"。④ 残留弱点：执法程序类 RAG cite 反而低于 baseline（0.50 vs 0.60），注入 1500 字符条款窗口后模型过度锚定检索到的单行法条款、忽略程序性规定；法典新旧衔接（旧 10 题）RAG 0.60 亦低于 baseline 0.80，过渡适用（从旧兼从轻）的多法条并引仍是难点。⑤ 本轮未发生 provider 切换与中止，容灾路径仅以 mock 测试覆盖（test_ecobench_resilience.py 12 例）。
+
+## 阶段B1：项目工作区 · 三角色执法协作
+
+### 1. 项目工作区（`agent_core/workspace.py` + `eco workspace`）
+- 以企业/项目为单位的持久化工作区：`~/.eco/workspaces/<slug>/`（`meta.json` 元数据 / `notes.md` 检查历史摘要与中间结论 / `history.jsonl` 逐轮事件 / `todos.md` 待办），含关联法规与关联纠错引用。
+- CLI：`eco workspace create|list|open|close|show|freeze`；`create` 自动打开，`freeze` 将工作区摘要固化进 Memory Tree（复用 `_scripts/memory_tree` 接口）。
+- `eco chat` 关联当前工作区后：提示符变为 `eco[<slug>]>`，工作区摘要经 **prompt_engine 注入校验**后自动进入提示词动态层（来源 `workspace:<slug>`，全链审计），对话逐轮落盘到工作区历史。
+- 跨会话续接：新会话说"继续上次合力砖厂的检查"类意图时，`detect_resume_intent()` 自动按名称（或最近活跃）匹配并加载工作区，历史摘要注入后续接对话。
+- `/ws` 查看当前工作区摘要。
+
+### 2. 三角色执法协作（`agent_core/role_swarm.py`，基于 L2 DAG 思路，不引入外部框架）
+- 三角色：**巡查Agent**（现场检查要点/证据意识，复用 inspection 阶段）、**法规Agent**（法条核验/裁量，复用 review 阶段）、**文书Agent**（检查记录/巡查清单，复用 documentation 阶段），均复用 prompt_engine 双层提示词。
+- 总管 DAG：巡查 ∥ 法规（并行）→ 文书（依赖两者产出）→ 仲裁合成；角色走 cheap tier（`ECO_SWARM_ROLE_MODEL`），合成走 strong tier（`ECO_SWARM_SYNTH_MODEL`）。
+- 复杂度判断：简单问答不启用协作（避免浪费）；含"全套/专项/检查清单/排查"等复杂执法任务自动进入三角色流程。
+- 输出标注各角色贡献段 + 总管合成最终检查清单；每个角色产出与合成写入 SM3 提示词审计链（`source=swarm:<role>`，同一 task_id）。
+- EcoBench 抽测对比（前 5 题，deepseek-chat，如实记录）：单 Agent 引用准确率 0.80 / 要点 F1 0.83；三角色协作 1.00 / 0.96（`benchmarks/ecobench/compare_swarm.py`，结果见 `ecobench_swarm_compare.json`）。
+
+---
+
+## 阶段B2：混合检索升级 · 执法程序类补强
+
+### 1. 混合检索（`agent_core/hybrid_retrieval.py`）
+- 工作区历史 / Memory Tree 检索从"FTS5 关键词 + 全量截断"升级为 **BM25（纯 Python Okapi，中文 bigram 分词）+ 向量余弦 → RRF(k=60) 融合排序**，结果带来源标注（`channel` ∈ `hybrid`/`bm25`、`source`）。
+- 向量通道：OpenAI 兼容 `/embeddings` 端点，`PROVIDERS` 增加 `embedding_model` 配置（kimi: moonshot-v1-embedding / openai: text-embedding-3-small / qwen: text-embedding-v3；**DeepSeek 无 embedding → 自动禁用向量通道**），亦可用 `ECO_EMBED_PROVIDER` 单独指定；向量本地存 sqlite `~/.eco/hybrid_vectors.db`（`hybrid_vec` 表，numpy 计算余弦，按 doc_id 幂等 upsert）。
+- **优雅降级**：`ECO_LLM_DISABLE=1`、无 embedding key、provider 无 embedding 能力或 embedding 调用失败时自动 BM25-only，检索功能不受影响（mock 测试全覆盖）。
+- workspace 注入改造：`inject_current_summary(query=...)` 按当前问题混合检索 top 相关历史片段注入（带来源标注，替代 700 字符全量截断）；未命中（新问题/新工作区）自动回退摘要快照。`eco chat` 单轮与 REPL 均已透传 query。
+- Memory Tree 新增 `search_hybrid()`：关键词通道（FTS5 BM25/LIKE）+ 向量通道 RRF 融合，降级时结构一致（`channel='bm25'`）。
+
+### 2. 执法程序类 RAG 补强（`benchmarks/ecobench/run_ecobench.py`）
+- 阶段 A 弱项：执法程序类 RAG cite 0.50（过度锚定罚则忽略程序条款）。
+- 程序定位表：题干程序关键词 → 程序法概念文件（均为 KB 真实路径，经 kb_search/index 确认：查封扣押办法、按日连续处罚办法、环境监测管理办法、生态环境行政处罚办法、听证程序规定、行刑衔接办法、移送规定等）。
+- 双段注入：**罚则条款窗口 + 程序条款窗口**（各 ≤750 字符，总长仍 ≤1500），程序窗口锚定题干关键词所在条款截取。
+- 新增 `--category` 参数支持按类别跑题。
+- 复跑执法程序类 10 题（deepseek-chat，如实记录）：
+
+| 口径 | cite | keypoint F1 |
+|:-----|:----:|:-----------:|
+| 阶段A baseline | 0.60 | 0.70 |
+| 阶段A RAG | 0.50 | 0.76 |
+| B2 baseline 复跑 | 0.50 | 0.66 |
+| **B2 RAG（双段注入）** | **0.55** | **0.74** |
+
+  相比阶段 A RAG（0.50）提升 +0.05；未达 baseline 的根本原因是 **KB 未收录《行政处罚法》《行政强制法》原文**（EB32/33/34/39 的必引条款无原文可直取），程序规章只能补充部门程序细节，如实记录。
+- 回归抽测：法条引用类前 5 题 RAG 复跑，与阶段 A 逐题分数完全一致（cite 1.00 / F1 0.92），混合检索无回归。
+
+---
+
+## 测试状态
+
+| 模块 | 文件 | 测试数 |
+|:-----|:-----|:------:|
+| L1 ReAct++ | tests/modules/test_react_loop.py | 3 |
+| L2 Commander | tests/modules/test_commander.py | 5 |
+| L5 Self-Healing | tests/modules/test_self_healing.py | 4 |
+| Memory + Token | tests/modules/test_memory.py | 5 |
+| Evolution + Skills | tests/modules/test_evolution.py | 6 |
+| Prompt Engine（双层提示词/注入校验/审计链） | tests/modules/test_prompt_engine.py | 21 |
+| Corrections（纠错采集/注入/管理） | tests/modules/test_corrections.py | 13 |
+| EcoBench-mini（数据集完整性/法典题校验/评分诚实性/mock 流程） | tests/modules/test_ecobench.py | 8 |
+| EcoBench 条款号归一化（离线） | tests/modules/test_ecobench_norm.py | 7 |
+| EcoBench RAG（检索注入/定位→直取流程 mock） | tests/modules/test_ecobench_rag.py | 11 |
+| EcoBench 三修容灾（时限/重试/provider切换 mock） | tests/modules/test_ecobench_resilience.py | 12 |
+| 项目工作区（CRUD/续接/注入/Memory Tree 固化） | tests/modules/test_workspace.py | 11 |
+| 三角色协作（DAG/贡献段/审计链 mock LLM） | tests/modules/test_role_swarm.py | 13 |
+| 混合检索（BM25/RRF/向量库/降级/工作区片段注入 mock） | tests/modules/test_hybrid_retrieval.py | 10 |
+| 执法程序类补强（程序定位/程序窗口/双段注入 mock） | tests/modules/test_ecobench_procedure.py | 4 |
+| 工具名规范化 + CLI 轨迹模式（slug 映射反查/轨迹事件/审计 mock） | tests/modules/test_trace_and_tool_names.py | 17 |
+
+并行执行：`python tests/run_all.py` · 历史记录：[TEST_LOG.md](TEST_LOG.md)
+
+---
+
+## 项目结构
+
+```
+eco/                CLI（chat/serve/server/skills/evolution/trace/auth/...）
+server/             eco-server 管理 API（chat/sessions/memory/skills/tools/plugins/system）
+web/                eco-web 浏览器管理界面（React+Vite，dist 已入库 clone 即用）
+eco_agent_sdk/      Python SDK（异步/同步客户端 + 类型契约）
+gateway/            统一网关（6 通道已接入，CLI/Web/微信骨架待接入）
+agent_core/         五层循环 + 多智能体 + 记忆 + 技能 + 进化 + 自愈 + 动态插件
+govmcp/             国产信创 MCP 协议栈（对标国内等保，国密 + 审计 + 100+ 政务工具）
+govmcp_tools/       政务工具集（环境监测/碳排放/市民服务/企业服务/智慧城市/审批）
+plugins/            动态插件目录（plugin.yaml + handler.py 规范）
+ecoskills/          技能库（自动进化生成）
+_scripts/           自动化工具脚本（质量审计、lint、修复流水线）
+skills/             技能库（自动进化生成）
+benchmarks/         基准测试框架（HumanEval / MBPP / OSWorld / EcoBench）
+docs/               架构文档 + 验收标准 + 1.0 路线图
+examples/           使用示例（sdk_demo.py）
+```
+
+---
+
+## 开源协议
+
+MIT License © 2026 eco Agent Team

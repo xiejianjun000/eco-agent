@@ -1,0 +1,13 @@
+{
+  "name": "hunan-env-law",
+  "version": "1.0.0",
+  "author": "军哥/DSH hunan-env-law 移植",
+  "description": "湖南生态环境智慧执法办案系统自动化——登录、案卷台账查询、案卷材料打包下载归档（冷水江分局工作流）",
+  "category": "执法平台",
+  "tags": ["湖南执法平台", "案卷台账", "冷水江", "打包下载", "zfyth"],
+  "trust_tier": "official",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": ["requests", "pycryptodome", "ddddocr"],
+  "min_eco_version": "1.0.0"
+}

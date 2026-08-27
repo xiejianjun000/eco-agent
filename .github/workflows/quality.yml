@@ -1,0 +1,32 @@
+name: Quality Audit
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Every Monday at 2:00 AM
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Quality Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run quality audit
+        run: |
+          python3 -c "
+          import sys, json
+          sys.path.insert(0, '.')
+          from _scripts.quality_audit import audit_project_quality
+          result = audit_project_quality()
+          scores = result.get('scores', {})
+          below = {k: v for k, v in scores.items() if v < 0.7}
+          if below:
+              print(f'WARNING: {len(below)} dimensions below threshold:')
+              for k, v in below.items():
+                  print(f'  {k}: {v:.1%}')
+          else:
+              print('All quality dimensions OK')
+          "

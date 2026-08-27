@@ -1,0 +1,33 @@
+# eco-agent 本地观测栈：otel-collector + jaeger + prometheus（可选）
+# 启动：cd deploy/otel && docker compose up -d
+# 使用：ECO_OTLP_ENDPOINT=http://localhost:4318 eco trace --tree <session> --export otlp
+# Jaeger UI: http://localhost:16686   Prometheus: http://localhost:9090
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector:0.100.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP（eco 默认走这里）
+      - "8889:8889"   # Prometheus exporter
+    depends_on:
+      - jaeger
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    ports:
+      - "16686:16686" # Jaeger UI
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped

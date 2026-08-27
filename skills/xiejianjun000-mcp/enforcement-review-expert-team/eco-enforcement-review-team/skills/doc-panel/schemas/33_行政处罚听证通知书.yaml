@@ -1,0 +1,67 @@
+id: "33"
+name: "行政处罚听证通知书"
+category: "行政处罚-告知和听证"
+complexity: "low"
+template: "33_行政处罚听证通知书.md"
+description: "生态环境主管部门通知当事人参加行政处罚听证会的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "听证主持人"
+    key: "{{听证主持人}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "听证时间"
+    key: "{{听证时间}}"
+    type: "date"
+    source: "用户输入"
+    required: true
+
+  - id: "听证地点"
+    key: "{{听证地点}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "联系人"
+    key: "{{联系人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "联系电话"
+    key: "{{联系电话}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

@@ -1,0 +1,73 @@
+id: "12"
+name: "解除先行登记保存证据通知书"
+category: "行政处罚-调查取证"
+complexity: "medium"
+template: "12_解除先行登记保存证据通知书.md"
+description: "生态环境主管部门解除对证据先行登记保存措施的文书"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "文号"
+    key: "{{文号}}"
+    type: "string"
+    source: "系统数据.生成文号"
+    required: true
+
+  - id: "当事人名称"
+    key: "{{当事人名称}}"
+    type: "string"
+    source: "案件数据.当事人.名称"
+    required: true
+
+  - id: "法定代表人"
+    key: "{{法定代表人}}"
+    type: "string"
+    source: "案件数据.当事人.法定代表人"
+    required: false
+
+  - id: "统一社会信用代码"
+    key: "{{统一社会信用代码}}"
+    type: "string"
+    source: "案件数据.当事人.证件号码"
+    required: false
+
+  - id: "地址"
+    key: "{{当事人地址}}"
+    type: "string"
+    source: "案件数据.当事人.地址"
+    required: false
+
+  - id: "原通知书日期"
+    key: "{{原通知书日期}}"
+    type: "date"
+    source: "案件数据.先行登记保存.日期"
+    required: true
+
+  - id: "原通知书文号"
+    key: "{{原通知书文号}}"
+    type: "string"
+    source: "案件数据.先行登记保存.文号"
+    required: true
+
+  - id: "保存证据名称"
+    key: "{{保存证据名称}}"
+    type: "text"
+    source: "案件数据.先行登记保存.物品名称"
+    required: true
+
+  - id: "解除日期"
+    key: "{{解除日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
+
+  - id: "决定日期"
+    key: "{{决定日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true

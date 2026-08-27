@@ -1,0 +1,49 @@
+id: "64"
+name: "卷内备考表"
+category: "行政处罚-结案归档"
+complexity: "low"
+template: "64_卷内备考表.md"
+description: "行政处罚案件卷宗内备考表，记录卷内文件状况和整理情况"
+
+fields:
+  - id: "部门名称"
+    key: "{{部门名称}}"
+    type: "string"
+    source: "系统配置.生态环境主管部门名称"
+    required: true
+
+  - id: "卷宗号"
+    key: "{{卷宗号}}"
+    type: "string"
+    source: "案件数据.归档.卷宗号"
+    required: true
+
+  - id: "案由"
+    key: "{{案由}}"
+    type: "string"
+    source: "案件数据.案由"
+    required: true
+
+  - id: "卷内文件情况说明"
+    key: "{{卷内文件情况说明}}"
+    type: "text"
+    source: "AI生成.从卷宗文件生成说明"
+    required: true
+
+  - id: "整理人"
+    key: "{{整理人}}"
+    type: "string"
+    source: "系统数据.当前用户"
+    required: true
+
+  - id: "检查人"
+    key: "{{检查人}}"
+    type: "string"
+    source: "用户输入"
+    required: true
+
+  - id: "立卷日期"
+    key: "{{立卷日期}}"
+    type: "date"
+    source: "系统数据.当前日期"
+    required: true
