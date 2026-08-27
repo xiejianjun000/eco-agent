@@ -108,7 +108,7 @@ def _llm_summary(messages: list[dict], max_head: int = 30) -> str | None:
         prompt = (
             "请把以下对话提炼为不超过 200 字的要点摘要，"
             "保留关键事实、数字、结论与待办：\n\n" + transcript[:6000])
-        result = client.chat([{"role": "user", "content": prompt}], max_tokens=400)
+        result = client.chat([{"role": "user", "content": prompt}], temperature=0.3)
         if isinstance(result, dict) and result.get("_error"):
             return None
         try:

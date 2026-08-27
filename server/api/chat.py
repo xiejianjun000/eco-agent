@@ -401,12 +401,18 @@ def _build_messages(message: str, history: list[dict], session_id: str = "defaul
         pass
     system = eng.build_system_prompt(dynamic_sections=dynamic)
     messages: list[dict] = [{"role": "system", "content": system}]
-    # 历史压缩（对标 DSH compaction，零成本确定性版）：
-    # 总预算 6000 字——超预算时保留最近 8 条完整 + 最早 2 条，中间略去
-    hist = [h for h in history if isinstance(h, dict)
+    # 历史压缩（对标 DSH compaction）：超预算时 LLM 提炼早期要点 + 保留近期尾部，
+    # LLM 不可用降级为前缀截断；压缩动作写 session_log（compaction/summary）
+    hist = [{"role": h.get("role"), "content": str(h.get("content", ""))}
+            for h in history if isinstance(h, dict)
             and h.get("role") in ("user", "assistant")]
-    if sum(len(str(h.get("content", ""))) for h in hist) > 6000:
-        hist = hist[-8:]
+    try:
+        from agent_core.compaction import compact
+
+        hist = compact(hist, session_id=session_id or "default",
+                       max_tokens=6000).get("messages", hist)
+    except Exception:  # noqa: BLE001 — 压缩失败退回原始历史
+        pass
     for h in hist:
         content = str(h.get("content", ""))
         # 单条过长截断（保留首尾，中略）——防单条巨型消息撑爆上下文
@@ -1988,6 +1994,16 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                                    level=_tool_level(name), decision="allow")
             messages.append({"role": "tool", "tool_call_id": tool_call_id,
                              "content": result})
+        # 反思回路（对标 DSH observe）：本轮有失败/空结果时，先让模型判断
+        # 换参重试 / 换工具 / 换来源，而不是机械地带着坏结果继续
+        if any(_looks_failed(str(r[3])) for r in results):
+            messages.append({
+                "role": "user",
+                "content": "注意：上一轮部分工具返回了失败或空结果。"
+                           "请先判断原因（参数写错/权限/来源不可用），"
+                           "必要时换参数或换工具重试一次；"
+                           "确认确实查不到，再基于已有信息作答并标[待确认]，禁止编造。",
+            })
     # 循环耗尽：追加总结指令（终轮无工具，强制基于已检索结果作答）。
     messages.append({
         "role": "user",
@@ -2643,6 +2659,17 @@ def _tool_level(name: str) -> str:
     if name == "tdocs_upload_html":
         return "L2"
     return "L2"
+
+
+def _looks_failed(result: str) -> bool:
+    """工具结果是否表现为失败/空（反思回路用）：命中即触发换参重试引导。"""
+    r = (result or "").strip()
+    if not r:
+        return True
+    low = r[:300].lower()
+    return any(k in low for k in (
+        "失败", "error", "异常", "超时", "拒绝", "不可用", "未登录",
+        "null", "无数据", "未找到", "not found", "权限"))
 
 
 def _tool_category(name: str) -> str:
