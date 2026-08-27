@@ -1608,16 +1608,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
     except Exception as e:  # noqa: BLE001 — 审计失败不阻断业务
         logger.warning("trace audit failed: %s", e)
     # 教训自动沉淀（自愈闭环：失败对话提炼为 lesson，下次自动注入）
-    try:
-        from agent_core.lessons import extract_lesson, get_lesson_store
-
-        tool_names = [t.get("name", "") for t in trace if t.get("type") == "tool"]
-        lesson = extract_lesson(req.message, reply, tool_names)
-        if lesson:
-            _svc("lessons", get_lesson_store).add(lesson)
-            logger.info("lesson 已沉淀: %s", lesson.get("lesson", "")[:80])
-    except Exception as e:  # noqa: BLE001
-        logger.warning("lesson extract failed: %s", e)
+    _maybe_extract_lesson(req.message, reply, trace)
     # 会话级 token 计量 + 首个 LLM 响应耗时（非流式下为近似首响应，非逐 token 采样）
     suggestions: list[str] = []
     try:
@@ -2698,6 +2689,21 @@ def _tool_level(name: str) -> str:
     return "L2"
 
 
+def _maybe_extract_lesson(message: str, reply: str, trace: list[dict]) -> None:
+    """教训自动沉淀（自愈闭环）：失败对话提炼为 lesson，下次自动注入。
+    流式/非流式端点共用，保证 Web 界面（流式）也走学习闭环。"""
+    try:
+        from agent_core.lessons import extract_lesson, get_lesson_store
+
+        tool_names = [t.get("name", "") for t in trace if t.get("type") == "tool"]
+        lesson = extract_lesson(message, reply, tool_names)
+        if lesson:
+            _svc("lessons", get_lesson_store).add(lesson)
+            logger.info("lesson 已沉淀: %s", lesson.get("lesson", "")[:80])
+    except Exception as e:  # noqa: BLE001 — 沉淀失败不阻断对话
+        logger.warning("lesson extract failed: %s", e)
+
+
 def _looks_failed(result: str) -> bool:
     """工具结果是否表现为失败/空（反思回路用）：命中即触发换参重试引导。"""
     r = (result or "").strip()
@@ -2839,6 +2845,8 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
         # 会话落盘（重启可恢复）：失败回复（[eco-server] 开头）不写 assistant 消息
         ok = not reply.startswith("[eco-server]")
         _persist_turn(req.session_id, req.message, reply, ok=ok, trace=trace)
+        # 教训自动沉淀（自愈闭环：失败对话提炼为 lesson，下次自动注入）
+        _maybe_extract_lesson(req.message, reply, trace)
         # 建议提示词（DSH suggest-prompt 对标）：规则引擎，可选 LLM 增强
         suggestions: list[str] = []
         try:
