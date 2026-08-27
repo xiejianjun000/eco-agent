@@ -237,6 +237,25 @@ class MetaEvolution:
             logger.warning(f"[Evolve] LLM 元认知分析失败，跳过该章节: {e}")
         return None
 
+    def generate_report(self) -> str:
+        """只读进化状态报告（供 `eco evolution --report` 展示）：
+        当前版本、经验/教训沉淀量、版本快照数、记忆规模。不触发进化、不写版本。"""
+        try:
+            lessons = DATA_DIR / "lessons.jsonl"
+            memory = DATA_DIR / "memory.jsonl"
+            n_lessons = sum(1 for _ in open(lessons, encoding="utf-8")) if lessons.exists() else 0
+            n_memory = sum(1 for _ in open(memory, encoding="utf-8")) if memory.exists() else 0
+            n_versions = len([d for d in VERSIONS_DIR.iterdir() if d.is_dir()])
+        except Exception:  # noqa: BLE001
+            n_lessons = n_memory = n_versions = 0
+        return (
+            f"=== Eco Agent 进化状态报告 ===\n"
+            f"进化版本: v{self._version - 1}\n"
+            f"已沉淀教训(lessons): {n_lessons} 条\n"
+            f"跨会话记忆(memory): {n_memory} 条\n"
+            f"自我版本快照(versions): {n_versions} 个\n"
+        )
+
     def _generate_report(self, phases: dict, elapsed_ms: float) -> str:
         """生成进化报告"""
         report = [
