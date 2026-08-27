@@ -1666,7 +1666,7 @@ def _save_span_tree(tree) -> None:
 
 
 async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
-                                max_rounds: int = 3, on_event=None,
+                                max_rounds: int = 8, on_event=None,
                                 stream_answer: bool = False, session_id: str = "",
                                 web_client: bool = False) -> tuple:
     """法典工具循环：LLM 决定查条 → 执行检索 → 结果回填 → 综合回答。
@@ -1988,17 +1988,13 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                                    level=_tool_level(name), decision="allow")
             messages.append({"role": "tool", "tool_call_id": tool_call_id,
                              "content": result})
-    # 循环耗尽：追加总结指令，强制基于已检索结果直接回答
+    # 循环耗尽：追加总结指令（终轮无工具，强制基于已检索结果作答）。
     messages.append({
         "role": "user",
-        "content": "工具检索已完成。请基于上面工具返回的真实结果，"
-                   "直接给出最终回答（不要再调用工具，不要输出工具调用格式）。"
-                   "格式要求（硬性）：结论先行、要点式；除法规条文原文引用外"
-                   "总长不超过 300 字，能用表格/列表绝不用段落，"
-                   "禁止复盘检索过程、禁止长篇分析。"
-                   "数据类问题（趋势/对比/占比）：若尚未生成图表，可再调用一次 chart_render "
-                   "生成图表卡片，正文用「📊 标题」引用；不要声称'无图表工具'。"
-                   "如果结果不足以回答，就基于已有内容作答并标注局限。",
+        "content": "工具检索已结束。请基于上面工具返回的真实结果直接给出最终回答。"
+                   "格式：✅结论先行 + 证据表格/清单（关键数字、来源、时间点给全）"
+                   "+ 诚实边界；查不到/不足的就标[待确认]，禁止编造；"
+                   "不要输出工具调用格式，不要复盘检索过程。",
     })
     t_llm = time.monotonic()
     content = ""
