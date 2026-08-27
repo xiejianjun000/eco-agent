@@ -26,7 +26,20 @@ class PermissionGateBody(BaseModel):
 
 @router.get("/version")
 async def version() -> dict:
-    return {"version": get_version()}
+    """版本 + git 提交号（前端 footer 显示，刷新即可确认当前构建）。"""
+    import subprocess
+    from pathlib import Path
+
+    rev = ""
+    try:
+        p = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                           capture_output=True, text=True, timeout=5,
+                           cwd=str(Path(__file__).resolve().parent.parent.parent))
+        if p.returncode == 0:
+            rev = p.stdout.strip()[:10]
+    except Exception:  # noqa: BLE001
+        pass
+    return {"version": get_version(), "rev": rev}
 
 
 @router.post("/system/permission-gate")

@@ -54,6 +54,7 @@ function relTime(iso: string): string {
 export default function App(): React.ReactElement {
   const [page, setPage] = useState<PageId>('chat');
   const [version, setVersion] = useState<string>('');
+  const [rev, setRev] = useState<string>('');
   const [collapsed, setCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionOut[]>([]);
@@ -86,7 +87,7 @@ export default function App(): React.ReactElement {
 
   React.useEffect(() => {
     import('./api').then(({ api }) => {
-      api.version().then((v) => setVersion(v.version)).catch(() => setVersion(''));
+      api.version().then((v) => { setVersion(v.version); setRev(v.rev ?? ''); }).catch(() => setVersion(''));
       // 刷新后显示最新的那条会话（列表已按最近活跃排序）
       api.sessions().then((list) => {
         setSessions(list);
@@ -339,7 +340,7 @@ export default function App(): React.ReactElement {
               <span className="foot-btn" title="切换主题" onClick={toggleTheme}>
                 {theme === 'dark' ? '☀ 亮色' : '🌙 暗色'}
               </span>
-              <span>v{version || '…'}</span>
+              <span title={`git ${rev}`}>v{version || '…'}{rev ? ` (${rev})` : ''}</span>
             </div>
           )}
         </div>

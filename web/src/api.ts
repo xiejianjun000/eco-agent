@@ -144,7 +144,7 @@ export interface SessionOut {
 
 export const api = {
   health: () => fetch('/healthz').then((r) => r.json()),
-  version: () => get<{ version: string }>('/version'),
+  version: () => get<{ version: string; rev?: string }>('/version'),
   sessions: () => get<SessionOut[]>('/sessions'),
   createSession: (userName?: string) => post<SessionOut>('/sessions', { user_name: userName ?? '' }),
   renameSession: (sessionId: string, name: string) => patch<SessionOut>(`/sessions/${sessionId}`, { name }),

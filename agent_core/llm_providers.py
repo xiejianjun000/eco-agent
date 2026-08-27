@@ -75,8 +75,8 @@ _register(ProviderSpec(
     name="deepseek", display="深度求索 DeepSeek",
     base_url="https://api.deepseek.com/v1",
     env_key="DEEPSEEK_API_KEY",
-    default_model="deepseek-chat",
-    models=["deepseek-chat", "deepseek-reasoner"],
+    default_model="deepseek-v4-pro",
+    models=["deepseek-chat", "deepseek-reasoner", "deepseek-v4-pro", "deepseek-v4-flash"],
     caps={"tools", "stream", "json"},
     doc="https://platform.deepseek.com/api_keys",
 ))
