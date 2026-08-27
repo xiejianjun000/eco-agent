@@ -199,7 +199,8 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const [busy, setBusy] = useState(false);
   const [model, setModel] = useState('');
   const [branchTag, setBranchTag] = useState<string | null>(null);
-  const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc' | 'task' | 'slot' | 'preview'>('trace');
+  const [sideTab, setSideTab] = useState<'trace' | 'context' | 'artifact' | 'doc' | 'task' | 'slot' | 'preview'>('trace');
+  const [sysInfo, setSysInfo] = useState<Record<string, unknown> | null>(null);
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
   const [docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
   // 右侧预览面板：文档生成/上传后自动内嵌打开 docs.qq.com（不弹系统浏览器）
@@ -795,6 +796,15 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             轨迹{activeTrace.length > 0 ? ` (${activeTrace.length})` : ''}
           </button>
           <button
+            className={`side-tab${sideTab === 'context' ? ' active' : ''}`}
+            onClick={() => {
+              setSideTab('context');
+              api.system().then((d) => setSysInfo(d)).catch(() => setSysInfo({}));
+            }}
+          >
+            上下文
+          </button>
+          <button
             className={`side-tab${sideTab === 'artifact' ? ' active' : ''}`}
             onClick={() => setSideTab('artifact')}
           >
@@ -835,6 +845,42 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             </button>
           ))}
         </div>
+
+        {sideTab === 'context' && (
+          <div className="side-context">
+            <div className="rp-row"><span className="rp-key">会话 ID</span><span className="rp-val">{sessionId}</span></div>
+            <div className="rp-row"><span className="rp-key">模型</span><span className="rp-val">{model || '默认（deepseek-v4-pro）'}</span></div>
+            <div className="rp-row"><span className="rp-key">消息数</span><span className="rp-val">{messages.length}</span></div>
+            {(() => {
+              const last = [...messages].reverse().find((m) => m.role === 'assistant' && m.usage?.total_tokens);
+              return last ? (
+                <div className="rp-row">
+                  <span className="rp-key">最近回答 tokens</span>
+                  <span className="rp-val">
+                    {last.usage!.total_tokens} tok
+                    {last.durationMs ? ` · ${fmtMs(last.durationMs)}` : ''}
+                  </span>
+                </div>
+              ) : null;
+            })()}
+            <div className="rp-section-title">系统状态</div>
+            {(() => {
+              const c = (sysInfo as { components?: Record<string, { available?: boolean; stats?: Record<string, unknown> }> } | null)?.components;
+              const llm = c?.llm?.stats;
+              const gate = (sysInfo as { permission_gate?: { enabled?: boolean } } | null)?.permission_gate;
+              const mem = (sysInfo as { memory?: { total_nodes?: number; total_edges?: number } } | null)?.memory;
+              return (
+                <>
+                  <div className="rp-row"><span className="rp-key">LLM 提供方</span><span className="rp-val">{String(llm?.provider ?? '—')}</span></div>
+                  <div className="rp-row"><span className="rp-key">LLM 模型</span><span className="rp-val">{String(llm?.model ?? '—')}</span></div>
+                  <div className="rp-row"><span className="rp-key">权限闸门</span><span className="rp-val">{gate?.enabled ? '已启用' : '未启用'}</span></div>
+                  <div className="rp-row"><span className="rp-key">记忆节点</span><span className="rp-val">{mem?.total_nodes ?? 0} 节点 · {mem?.total_edges ?? 0} 边</span></div>
+                </>
+              );
+            })()}
+            {!sysInfo && <div className="rp-empty">加载系统状态中…</div>}
+          </div>
+        )}
 
         {sideTab === 'trace' && (
           <div className="side-trace">

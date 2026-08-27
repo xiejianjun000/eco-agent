@@ -953,3 +953,17 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
   display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px;
 }
 .hero-chips .suggest-chip { font-size: 12.5px; padding: 6px 14px; }
+
+/* ── 右栏「上下文」面板（会话/模型/用量/系统状态） ── */
+.side-context { padding: 12px; overflow-y: auto; }
+.side-context .rp-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12.5px;
+}
+.side-context .rp-key { color: var(--t-aux); flex-shrink: 0; }
+.side-context .rp-val { color: var(--t-main); font-weight: 500; text-align: right; word-break: break-all; }
+.side-context .rp-section-title {
+  font-size: 11px; font-weight: 700; color: var(--t-sub); letter-spacing: .5px;
+  margin: 14px 0 2px; text-transform: uppercase;
+}
+.side-context .rp-empty { padding: 14px 0; color: var(--t-aux); font-size: 12px; }
