@@ -58,3 +58,4 @@ web/node_modules/
 .playwright-cli/
 output/
 .libs/
+.venv-mcp/

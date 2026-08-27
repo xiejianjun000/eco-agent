@@ -233,6 +233,10 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default") -> 
         "3. 污染源在线监控：wryzxjc_*；国家四平台执法数据：sthjzf_*；排污许可：permit_*。\n"
         "4. 数据图表：chart_render（line/bar/stacked_bar/pie）——趋势曲线/因子对比/占比\n"
         "必须调用它出卡片；函数清单里一定有这个工具，禁止声称'当前会话无 chart_render 工具'。\n"
+        "5. 排污许可证公开信息（企业许可证/执行报告/整改公告/排放口）：mcp__permit__*。\n"
+        "6. 部官网数据（空气质量/地表水/海水/辐射/部要闻/政策库）：mcp__mee_kb__*。\n"
+        "7. 湖南实时数据（14市州实时AQI/逐小时/预报/排名/环评公示/政策文件/执法案例/\n"
+        "信用评价/环境质量月报）：mcp__hunan_env__*——查湖南省内数据优先走这里。\n"
         "这些工具是实测直连端点，调用即得真实数据；查不到时才说查不到，不要绕去搜网页。",
         "tool_guidance",
     )
@@ -898,6 +902,44 @@ _CHAT_MCP_TOOLS = (
     "mcp__tencent_docs__doc_create_with_markdown",
     "mcp__tencent_docs__create_space_node",
     "mcp__tencent_docs__create_space",
+    # 全国排污许可证公开端 MCP（L1 只读，免登录公开数据）
+    "mcp__permit__search_licenses", "mcp__permit__get_license_detail",
+    "mcp__permit__get_license_pages", "mcp__permit__download_license_page",
+    "mcp__permit__get_qrcode_info", "mcp__permit__get_post_permit_status",
+    "mcp__permit__get_rectification", "mcp__permit__get_announcements",
+    "mcp__permit__list_policy_docs", "mcp__permit__get_policy_detail",
+    "mcp__permit__get_discharge_points", "mcp__permit__get_monitoring_data",
+    # 生态环境百科全书 MCP（L1 只读，部官网数据）
+    "mcp__mee_kb__read_web_page", "mcp__mee_kb__list_web_links",
+    "mcp__mee_kb__read_air_quality", "mcp__mee_kb__read_air_forecast",
+    "mcp__mee_kb__read_air_monthly", "mcp__mee_kb__read_surface_water",
+    "mcp__mee_kb__read_sea_water", "mcp__mee_kb__read_radiation_level",
+    "mcp__mee_kb__list_mee_categories", "mcp__mee_kb__read_mee_list",
+    "mcp__mee_kb__read_mee_article", "mcp__mee_kb__list_policy_types",
+    # 湖南省生态环境厅公开数据 MCP（L1 只读）
+    "mcp__hunan_env__air_quality_realtime", "mcp__hunan_env__air_quality_hourly",
+    "mcp__hunan_env__air_quality_forecast", "mcp__hunan_env__air_quality_rank_daily",
+    "mcp__hunan_env__eia_publicity_search", "mcp__hunan_env__policy_document_search",
+    "mcp__hunan_env__notice_announcement_list", "mcp__hunan_env__environmental_quality_monthly",
+    "mcp__hunan_env__env_statistics_report", "mcp__hunan_env__enforcement_case_search",
+    "mcp__hunan_env__credit_evaluation_query", "mcp__hunan_env__document_detail",
+    "mcp__hunan_env__news_dynamic_list", "mcp__hunan_env__interaction_list",
+    "mcp__hunan_env__key_domain_list", "mcp__hunan_env__legal_document_list",
+    "mcp__hunan_env__management_public_list", "mcp__hunan_env__org_structure_list",
+    "mcp__hunan_env__media_center_list", "mcp__hunan_env__site_search",
+    # 生态环境百科全书 MCP 补充（常用只读）
+    "mcp__mee_kb__search_site", "mcp__mee_kb__search_policy", "mcp__mee_kb__read_policy",
+    "mcp__mee_kb__search_standard", "mcp__mee_kb__read_standard",
+    "mcp__mee_kb__query_eia_credit", "mcp__mee_kb__search_permit",
+    "mcp__mee_kb__search_waste_category", "mcp__mee_kb__list_laws",
+    "mcp__mee_kb__list_quality_reports", "mcp__mee_kb__read_quality_report",
+    "mcp__mee_kb__list_agencies", "mcp__mee_kb__list_river_bureaus",
+    "mcp__mee_kb__list_nuclear_entrances", "mcp__mee_kb__list_eia_entrances",
+    "mcp__mee_kb__permit_guide", "mcp__mee_kb__read_policy_type",
+    "mcp__mee_kb__read_policy_interpretation", "mcp__mee_kb__read_interact",
+    "mcp__mee_kb__read_exposure", "mcp__mee_kb__list_nnsa_sections",
+    "mcp__mee_kb__read_nnsa_list", "mcp__mee_kb__list_standard_categories",
+    "mcp__mee_kb__list_domains_meta",
 )
 
 
@@ -2573,7 +2615,8 @@ def _tool_level(name: str) -> str:
     """工具风险级（审计台账用）。"""
     if name.startswith("statute_") or name in ("kb_search", "kb_semantic_search"):
         return "L1"
-    if name.startswith(("mcp__github__", "mcp__eia__")):
+    if name.startswith(("mcp__github__", "mcp__eia__",
+                        "mcp__permit__", "mcp__mee_kb__", "mcp__hunan_env__")):
         return "L1"
     if name == "chart_render":
         return "L1"
@@ -2590,7 +2633,8 @@ def _tool_category(name: str) -> str:
                   "kb_read", "kb_list", "kb_status", "file_read", "git_status",
                   "chart_render")
     write_tools = ("kb_upload", "kb_delete", "kb_sync", "file_write", "tdocs_upload_html")
-    if name.startswith(("mcp__github__", "mcp__eia__")):
+    if name.startswith(("mcp__github__", "mcp__eia__",
+                        "mcp__permit__", "mcp__mee_kb__", "mcp__hunan_env__")):
         return "read"
     if name in read_tools or name.startswith("statute_"):
         return "read"

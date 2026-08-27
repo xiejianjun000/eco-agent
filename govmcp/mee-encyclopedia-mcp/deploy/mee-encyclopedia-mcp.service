@@ -1,0 +1,26 @@
+[Unit]
+Description=MEE Encyclopedia MCP Server (生态环境部网站矩阵百科全书 MCP)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=marvis
+Group=marvis
+WorkingDirectory=/home/marvis/Marvis/User/oAN1i2V9IKSttNzGvTYEZsETdCjA/workspace/conv_1a0419cbd63_d8498dd8e911/output/mee-encyclopedia-mcp
+# 生产推荐：stdin/stdout 由 MCP 客户端（如 Claude Desktop / IDE）托管；
+# 本单元仅作为 standalone 进程守护示例，端口与传输方式按需调整。
+ExecStart=/home/marvis/Marvis/User/oAN1i2V9IKSttNzGvTYEZsETdCjA/workspace/conv_1a0419cbd63_d8498dd8e911/output/mee-encyclopedia-mcp/.venv/bin/mee-encyclopedia-mcp --transport stdio
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+Environment=MEE_ENV=production
+# 仅放开出站网络（只读抓取），不开放入站端口
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/marvis/Marvis/User/oAN1i2V9IKSttNzGvTYEZsETdCjA/workspace/conv_1a0419cbd63_d8498dd8e911/output/mee-encyclopedia-mcp/work
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+permit_cache.db
+*.db

@@ -1,0 +1,5 @@
+fastmcp==2.14.7
+requests>=2.31
+beautifulsoup4>=4.12
+pycryptodome>=3.20
+（内容由AI生成，仅供参考）

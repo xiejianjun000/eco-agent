@@ -1,0 +1,16 @@
+# 运行时产物 / 缓存
+downloads/
+work/
+temp/
+.pressure/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# 环境与密钥
+.env
+.env.local

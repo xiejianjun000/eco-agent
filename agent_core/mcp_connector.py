@@ -296,13 +296,34 @@ class MCPConnectorManager:
 
     # ---- 连接管理 ----
 
-    def connect_all(self) -> dict[str, bool]:
-        """连接全部配置的 server，返回 {name: 是否成功}；失败仅记录不抛出"""
-        status = {}
+    def connect_all(self, timeout: float = 120.0) -> dict[str, bool]:
+        """并发连接全部 server（慢服务不再串行拖累整体；各自超时降级）。"""
+        status: dict[str, bool] = {}
+        conns: dict[str, MCPServerConnection] = {}
         for cfg in self.configs:
             conn = MCPServerConnection(cfg, self._loop)
             self._servers[cfg.name] = conn
-            status[cfg.name] = conn.connect()
+            conns[cfg.name] = conn
+
+        async def _safe_connect(conn: MCPServerConnection) -> None:
+            try:
+                await asyncio.wait_for(conn._connect_async(),
+                                       timeout=conn.config.timeout + 10)
+                logger.info(f"[MCP] {conn.config.name}: 已连接，发现 {len(conn.tools)} 个工具")
+            except Exception as e:  # noqa: BLE001 — 单服务失败降级跳过
+                conn.connected = False
+                conn.last_error = str(e)
+                logger.warning(f"[MCP] {conn.config.name}: 连接失败（降级跳过）: {e}")
+
+        async def _gather() -> None:
+            await asyncio.gather(*(_safe_connect(c) for c in conns.values()))
+
+        try:
+            asyncio.run_coroutine_threadsafe(_gather(), self._loop).result(timeout)
+        except Exception:  # noqa: BLE001 — 全局超时也不阻断
+            pass
+        for name, conn in conns.items():
+            status[name] = conn.connected
         return status
 
     def get(self, name: str) -> MCPServerConnection | None:

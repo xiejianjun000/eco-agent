@@ -1,0 +1,78 @@
+# MEE Encyclopedia MCP 数据源矩阵配置
+# 来源：2026-08-27 穿透式调研（mee.gov.cn 网站矩阵）
+
+http:
+  timeout: 20
+  retries: 2
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+  verify_ssl: true
+  # 礼貌抓取：请求间隔限速与抖动（秒），避免高频触发反爬
+  min_interval_seconds: 2.0
+  jitter_seconds: 2.0
+
+cache:
+  ttl_seconds: 300          # 实时数据缓存 5 分钟
+  ttl_seconds_slow: 3600    # 低频数据缓存 1 小时
+  max_entries: 512
+
+download:
+  base_dir: "downloads"     # 下载根目录（相对 server 工作目录）
+  max_size_mb: 200
+  allowed_schemes: ["http", "https"]
+
+sources:
+  main_site: "https://www.mee.gov.cn"
+  sitemap: "https://www.mee.gov.cn/home/wzdt/"
+
+  # ---- 实时环境质量（监测总站系）----
+  air_quality: "https://air.cnemc.cn:18007/"
+  air_forecast: "http://106.37.208.228:8082/"
+  surface_water: "https://szzdjc.cnemc.cn:8070/GJZ/Business/Publish/Main.html"
+  sea_water: "http://ep.nmemc.org.cn:8888/Water/"
+  radiation: "http://data.rmtc.org.cn:8080/gis/PubIndex.html"
+
+  # ---- 业务系统 ----
+  permit: "https://permit.mee.gov.cn/"
+  eia_credit: "https://xypt.china-eia.com/XYPT/"
+  eia_record: "https://beian.china-eia.com/"
+  solid_waste: "https://www.cswm.org.cn/"
+  chemical: "http://gfxt.meescc.cn"
+
+  # ---- 内容板块 ----
+  news: "https://www.mee.gov.cn/ywdt/"
+  standards: "https://www.mee.gov.cn/ywgz/fgbz/bz/"
+  policy: "https://www.mee.gov.cn/zcwj/"
+  announcement: "https://www.mee.gov.cn/ywdt/gsgg/"
+  quality_report: "https://www.mee.gov.cn/hjzl/"
+
+  # ---- 直属单位（百科知识域来源）----
+  agencies:
+    cnemc: "https://www.cnemc.cn"
+    craes: "https://www.craes.cn"
+    nmemc: "https://www.nmemc.org.cn"
+    caep: "https://www.caep.org.cn"
+    china_eia: "https://www.china-eia.com"
+    meescc: "https://www.meescc.cn"
+    secmep: "https://www.secmep.cn"
+    chinansc: "https://www.chinansc.cn"
+    ncsc: "https://www.ncsc.org.cn"
+    nies: "https://www.nies.org"
+    scies: "https://www.scies.org"
+    tcare: "https://www.tcare-mee.cn"
+    prcee: "https://www.prcee.org"
+    chinaeic: "https://www.chinaeic.net"
+    fecomee: "https://www.fecomee.org.cn"
+    chinaeol: "https://www.chinaeol.net"
+
+  # ---- 流域海域局 ----
+  river_bureaus:
+    cjjg: "https://cjjg.mee.gov.cn"
+    huanghejg: "https://huanghejg.mee.gov.cn"
+    huaihejg: "https://huaihejg.mee.gov.cn"
+    hhbhjg: "https://hhbhjg.mee.gov.cn"
+    zjnhjg: "https://zjnhjg.mee.gov.cn"
+    thdhjg: "https://thdhjg.mee.gov.cn"
+
+logging:
+  level: "INFO"
+  audit_log: "logs/audit.log"

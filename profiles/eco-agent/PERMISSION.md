@@ -187,6 +187,162 @@ tool_risk_overrides:
     level: L1
   - tool: mcp__github__list_branches
     level: L1
+  - tool: mcp__permit__search_licenses
+    level: L1
+  - tool: mcp__permit__get_license_detail
+    level: L1
+  - tool: mcp__permit__get_license_pages
+    level: L1
+  - tool: mcp__permit__download_license_page
+    level: L1
+  - tool: mcp__permit__get_qrcode_info
+    level: L1
+  - tool: mcp__permit__get_post_permit_status
+    level: L1
+  - tool: mcp__permit__get_rectification
+    level: L1
+  - tool: mcp__permit__get_announcements
+    level: L1
+  - tool: mcp__permit__list_policy_docs
+    level: L1
+  - tool: mcp__permit__get_policy_detail
+    level: L1
+  - tool: mcp__permit__get_discharge_points
+    level: L1
+  - tool: mcp__permit__get_monitoring_data
+    level: L1
+  - tool: mcp__mee_kb__read_web_page
+    level: L1
+  - tool: mcp__mee_kb__list_web_links
+    level: L1
+  - tool: mcp__mee_kb__read_air_quality
+    level: L1
+  - tool: mcp__mee_kb__read_air_forecast
+    level: L1
+  - tool: mcp__mee_kb__read_air_monthly
+    level: L1
+  - tool: mcp__mee_kb__read_surface_water
+    level: L1
+  - tool: mcp__mee_kb__read_sea_water
+    level: L1
+  - tool: mcp__mee_kb__read_radiation_level
+    level: L1
+  - tool: mcp__mee_kb__list_mee_categories
+    level: L1
+  - tool: mcp__mee_kb__read_mee_list
+    level: L1
+  - tool: mcp__mee_kb__read_mee_article
+    level: L1
+  - tool: mcp__mee_kb__list_policy_types
+    level: L1
+  - tool: mcp__mee_kb__read_policy_type
+    level: L1
+  - tool: mcp__mee_kb__read_policy_interpretation
+    level: L1
+  - tool: mcp__mee_kb__list_quality_reports
+    level: L1
+  - tool: mcp__mee_kb__read_quality_report
+    level: L1
+  - tool: mcp__mee_kb__list_interact_sections
+    level: L1
+  - tool: mcp__mee_kb__read_interact
+    level: L1
+  - tool: mcp__mee_kb__read_exposure
+    level: L1
+  - tool: mcp__mee_kb__read_english_list
+    level: L1
+  - tool: mcp__mee_kb__list_nnsa_sections
+    level: L1
+  - tool: mcp__mee_kb__read_nnsa_list
+    level: L1
+  - tool: mcp__mee_kb__search_site
+    level: L1
+  - tool: mcp__mee_kb__search_policy
+    level: L1
+  - tool: mcp__mee_kb__read_policy
+    level: L1
+  - tool: mcp__mee_kb__search_standard
+    level: L1
+  - tool: mcp__mee_kb__read_standard
+    level: L1
+  - tool: mcp__mee_kb__query_eia_credit
+    level: L1
+  - tool: mcp__mee_kb__search_permit
+    level: L1
+  - tool: mcp__mee_kb__search_waste_category
+    level: L1
+  - tool: mcp__mee_kb__list_domains_meta
+    level: L1
+  - tool: mcp__mee_kb__list_agencies
+    level: L1
+  - tool: mcp__mee_kb__list_river_bureaus
+    level: L1
+  - tool: mcp__mee_kb__list_nuclear_entrances
+    level: L1
+  - tool: mcp__mee_kb__list_eia_entrances
+    level: L1
+  - tool: mcp__mee_kb__list_waste_entrances
+    level: L1
+  - tool: mcp__mee_kb__list_laws
+    level: L1
+  - tool: mcp__mee_kb__list_standard_categories
+    level: L1
+  - tool: mcp__mee_kb__permit_guide
+    level: L1
+  - tool: mcp__mee_kb__rag_query
+    level: L1
+  - tool: mcp__mee_kb__rag_ingest
+    level: L1
+  - tool: mcp__mee_kb__download_file
+    level: L1
+  - tool: mcp__mee_kb__download_standard_pdf
+    level: L1
+  - tool: mcp__mee_kb__export_mee_list
+    level: L1
+  - tool: mcp__mee_kb__export_air_quality_csv
+    level: L1
+  - tool: mcp__mee_kb__list_downloads
+    level: L1
+  - tool: mcp__hunan_env__air_quality_realtime
+    level: L1
+  - tool: mcp__hunan_env__air_quality_hourly
+    level: L1
+  - tool: mcp__hunan_env__air_quality_forecast
+    level: L1
+  - tool: mcp__hunan_env__air_quality_rank_daily
+    level: L1
+  - tool: mcp__hunan_env__eia_publicity_search
+    level: L1
+  - tool: mcp__hunan_env__policy_document_search
+    level: L1
+  - tool: mcp__hunan_env__notice_announcement_list
+    level: L1
+  - tool: mcp__hunan_env__environmental_quality_monthly
+    level: L1
+  - tool: mcp__hunan_env__env_statistics_report
+    level: L1
+  - tool: mcp__hunan_env__enforcement_case_search
+    level: L1
+  - tool: mcp__hunan_env__credit_evaluation_query
+    level: L1
+  - tool: mcp__hunan_env__news_dynamic_list
+    level: L1
+  - tool: mcp__hunan_env__interaction_list
+    level: L1
+  - tool: mcp__hunan_env__key_domain_list
+    level: L1
+  - tool: mcp__hunan_env__legal_document_list
+    level: L1
+  - tool: mcp__hunan_env__management_public_list
+    level: L1
+  - tool: mcp__hunan_env__org_structure_list
+    level: L1
+  - tool: mcp__hunan_env__media_center_list
+    level: L1
+  - tool: mcp__hunan_env__document_detail
+    level: L1
+  - tool: mcp__hunan_env__site_search
+    level: L1
   - tool: hunan_case_list
     level: L2
   # 政务平台-污染源在线监测（govmcp 只读，L1 自动放行；本机直连 218.77.102.213）

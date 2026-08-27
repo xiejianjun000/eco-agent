@@ -1,0 +1,26 @@
+[project]
+name = "hunan-env-mcp"
+version = "0.1.0"
+description = "湖南省生态环境厅公开数据查询 MCP Server（空气质量/环评公示/政策文件/通知公告等）"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.2.0",
+    "curl_cffi>=0.7.0",
+    "beautifulsoup4>=4.12.0",
+    "cachetools>=5.3.0",
+    "tenacity>=8.2.0",
+    "pydantic>=2.6.0",
+]
+
+[project.scripts]
+hunan-env-mcp = "hunan_env_mcp.server:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
