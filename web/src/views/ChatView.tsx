@@ -744,6 +744,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             <option value="deepseek-v4-pro">deepseek-v4-pro（含Think流·推荐）</option>
             <option value="deepseek-reasoner">deepseek-reasoner（含Think流）</option>
             <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+            <option value="doubao-plan">doubao-plan（豆包 Agent Plan·火山方舟）</option>
             <option value="qwen-max">qwen-max</option>
             <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
           </select>

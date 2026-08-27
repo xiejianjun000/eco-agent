@@ -7,17 +7,17 @@ from agent_core.llm_providers import (
 )
 
 EXPECTED = {
-    "moonshot", "deepseek", "zhipu", "qwen", "wenxin", "doubao", "hunyuan",
-    "spark", "minimax", "stepfun", "baichuan", "sensenova", "ollama",
+    "moonshot", "deepseek", "zhipu", "qwen", "wenxin", "doubao", "doubao_plan",
+    "hunyuan", "spark", "minimax", "stepfun", "baichuan", "sensenova", "ollama",
     "openrouter", "custom",
 }
 CAPS_ALL = {"tools", "stream", "json", "vision"}
 
 
 class TestRegistry:
-    def test_all_15_providers_registered(self):
+    def test_all_16_providers_registered(self):
         assert set(PROVIDERS) == EXPECTED
-        assert len(list_providers()) == 15
+        assert len(list_providers()) == 16
 
     def test_provider_spec_fields(self):
         for spec in list_providers():
@@ -100,7 +100,7 @@ class TestLLMClientIntegration:
         assert LEGACY["kimi"]["embedding_model"] == "moonshot-v1-embedding"
         assert LEGACY["qwen"]["api_key_env"] == "DASHSCOPE_API_KEY"
         assert LEGACY["doubao"]["api_key_env"] == "DOUBAO_API_KEY"
-        assert set(LEGACY) == {"deepseek", "openai", "anthropic", "kimi", "qwen", "doubao"}
+        assert set(LEGACY) == {"deepseek", "openai", "anthropic", "kimi", "qwen", "doubao", "doubao_plan"}
 
     def test_from_provider(self, monkeypatch):
         from agent_core.llm_client import LLMClient

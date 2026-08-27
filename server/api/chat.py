@@ -23,6 +23,28 @@ logger = logging.getLogger("eco.server.chat")
 import os as _os_default_model
 DEFAULT_CHAT_MODEL = _os_default_model.environ.get("ECO_DEFAULT_MODEL", "deepseek-v4-pro")
 
+# 多模型路由：模型串前缀 → (provider, 实际模型名)。前端下拉可选
+_MODEL_ROUTES: dict[str, tuple[str, str]] = {
+    "doubao-plan": ("doubao_plan", "ark-code-latest"),
+    "doubao-plan:ark-code-latest": ("doubao_plan", "ark-code-latest"),
+    "doubao-plan:doubao-seed-2.0-code": ("doubao_plan", "doubao-seed-2.0-code"),
+}
+_alt_client_cache: dict[str, object] = {}
+
+
+def _client_for(model: str):
+    """按模型串路由 provider：'doubao-plan[:模型名]' → 火山方舟 Agent Plan 客户端。
+    返回 (client, 实际模型名)；其余走默认 deepseek 客户端。"""
+    from agent_core.llm_client import LLMClient, get_default_client
+
+    if model and model in _MODEL_ROUTES:
+        prov, inner = _MODEL_ROUTES[model]
+        key = f"{prov}:{inner}"
+        if key not in _alt_client_cache:
+            _alt_client_cache[key] = LLMClient(provider=prov, model=inner)
+        return _alt_client_cache[key], inner
+    return get_default_client(), model or DEFAULT_CHAT_MODEL
+
 router = APIRouter()
 
 
@@ -1534,7 +1556,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
                             usage={}, duration_ms=0, ttft_ms=0, trace=[],
                             suggestions=[])
 
-    client = _svc("llm", get_default_client)
+    client, _eff_model = _client_for(req.model)
     messages = _build_messages(req.message, req.history, req.session_id or "default")
     t0 = time.monotonic()
     # 三角色协作（内置三智能体）：复杂执法任务走 RoleSwarm DAG
@@ -1563,7 +1585,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
                             suggestions=suggestions)
     try:
         reply, trace, usage, first_llm_ms, first_token_ms = await _chat_with_codex_loop(
-            client, messages, req.model or DEFAULT_CHAT_MODEL, session_id=req.session_id)
+            client, messages, _eff_model, session_id=req.session_id)
     except Exception as e:  # noqa: BLE001 — API 边界兜底
         logger.exception("chat failed")
         _persist_turn(req.session_id, req.message, "", ok=False)
@@ -2673,7 +2695,7 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
 
     from agent_core.llm_client import get_default_client
 
-    client = _svc("llm", get_default_client)
+    client, _eff_model = _client_for(req.model)
     messages = _build_messages(req.message, req.history, req.session_id or "default")
     t0 = time.monotonic()
     # 线程安全队列：工作线程（流式 chunk 回调）与事件循环（gen 消费）共用，
@@ -2716,7 +2738,7 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
             yield "data: [DONE]\n\n"
             return
         task = asyncio.create_task(
-            _chat_with_codex_loop(client, messages, req.model or DEFAULT_CHAT_MODEL,
+            _chat_with_codex_loop(client, messages, _eff_model,
                                   on_event=on_event, stream_answer=True,
                                   session_id=req.session_id,
                                   web_client=(request.headers.get("x-eco-client", "") == "web")))

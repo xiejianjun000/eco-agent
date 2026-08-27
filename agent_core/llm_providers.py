@@ -122,6 +122,16 @@ _register(ProviderSpec(
 ))
 
 _register(ProviderSpec(
+    name="doubao_plan", display="豆包 Agent Plan（火山方舟智能体计划）",
+    base_url="https://ark.cn-beijing.volces.com/api/plan/v3",
+    env_key="ARK_API_KEY",
+    default_model="ark-code-latest",
+    models=["ark-code-latest", "doubao-seed-2.0-code"],
+    caps={"tools", "stream", "json"},
+    doc="https://console.volcengine.com/ark/region:cn-beijing/subscription/agent-plan",
+))
+
+_register(ProviderSpec(
     name="hunyuan", display="腾讯混元",
     base_url="https://api.hunyuan.cloud.tencent.com/v1",  # 官方 OpenAI 兼容端点
     env_key="HUNYUAN_API_KEY",

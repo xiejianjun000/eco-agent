@@ -45,6 +45,7 @@ PROVIDERS = {
     "kimi": _legacy_entry("moonshot", api_key_env="KIMI_API_KEY", embedding_model="moonshot-v1-embedding"),
     "qwen": _legacy_entry("qwen", embedding_model="text-embedding-v3"),
     "doubao": _legacy_entry("doubao", api_key_env="DOUBAO_API_KEY"),  # 历史 env 名保持兼容；注册表用 ARK_API_KEY
+    "doubao_plan": _legacy_entry("doubao_plan"),  # 火山方舟 Agent Plan（/api/plan/v3）
 }
 
 STATS_FILE = Path.home() / ".eco" / "stats.jsonl"
@@ -110,7 +111,8 @@ def summarize_llm_stats(limit: int = 0, stats_file=None) -> dict:
 
 
 class LLMClient:
-    def __init__(self):
+    def __init__(self, provider: str | None = None, model: str | None = None):
+        """可选 provider/model 覆盖（多模型并存路由用，如豆包 Agent Plan）。"""
         # 自举环境：无论谁在何时构造本客户端（含早于 create_app/envboot 的
         # 导入期路径、子代理进程、独立脚本），先把 .env 合入 os.environ——
         # 根治"no api key (provider not configured)"时序类缺陷。
@@ -132,12 +134,13 @@ class LLMClient:
         except OSError:
             pass  # 读取受限（沙箱等）时降级为纯 os.environ 模式
         self._env = env
-        self._provider_name = (os.environ.get("ECO_PROVIDER") or os.environ.get("ECO_LLM_PROVIDER")
+        self._provider_name = (provider
+                               or os.environ.get("ECO_PROVIDER") or os.environ.get("ECO_LLM_PROVIDER")
                                or env.get("ECO_PROVIDER") or env.get("ECO_LLM_PROVIDER") or "deepseek")
         prov = PROVIDERS.get(self._provider_name, PROVIDERS["deepseek"])
         self._provider = prov
-        # 模型覆盖：ECO_MODEL 环境变量（如 deepseek-v4-pro）覆盖 provider 默认模型
-        eco_model = os.environ.get("ECO_MODEL", "").strip()
+        # 模型覆盖：显式参数 > ECO_MODEL 环境变量（如 deepseek-v4-pro）> provider 默认
+        eco_model = (model or os.environ.get("ECO_MODEL", "")).strip()
         if eco_model:
             self._provider = dict(prov, default_model=eco_model)
         self._api_key = os.environ.get(prov["api_key_env"]) or env.get(prov["api_key_env"], "")
