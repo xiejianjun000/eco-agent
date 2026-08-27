@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from typing import Any
 
@@ -37,28 +38,47 @@ def register_tools(mcp: FastMCP) -> None:
     def search_licenses(
         province: str = "",
         city: str = "",
+        management: str = "",
         unit_name: str = "",
         license_no: str = "",
-        industry: str = "",
+        publish_time: str = "",
         page: int = 1,
+        temp_report_key: str = "",
     ) -> str:
-        """按省/市/单位名/许可证编号/行业分页查询全国排污许可证（公开端，无需登录）。
+        """按管理类别/单位名称/许可证编号/发布时间分页查询全国排污许可证（公开端）。
 
-        Args:
-            province: 省份，如"河北省"（留空表示全国）
-            city: 地市
-            unit_name: 企业名称关键字
-            license_no: 排污许可证编号（如 91110108MA001XXXXX001V）
-            industry: 行业类别
-            page: 页码，从 1 开始
+        实测字段名（官方搜索表单）：
+          management: 管理类别，1=重点管理，0=简化管理（留空=全部）
+          unit_name: 单位名称关键字（对应表单 registerentername，如"冷水江"）
+          license_no: 排污许可证编号（对应表单 xkznum，如 91431381MA7JPAPY8J001Y）
+          publish_time: 发证时间（YYYY-MM-DD）
+          page: 页码，从 1 开始；翻页自动携带 tempReportKey（第 1 页结果会返回，
+                继续取第 2 页时把上一页返回的 tempReportKey 传入即可）
+
+        注意：province/city 按省/市过滤在公开端已失效（省市区编码接口 getRegions
+        已下线，传任何值均返回 0）；按地区统计请用 unit_name 关键字 + management 组合。
         """
         data = {
-            "province": province, "city": city, "unitName": unit_name,
-            "licenseNumber": license_no, "industry": industry,
-            "pageIndex": page, "pageSize": 20,
+            "province": province, "city": city, "management": management,
+            "registerentername": unit_name, "xkznum": license_no,
+            "publishtime": publish_time,
+            "page.pageNo": page, "pageSize": 20,
         }
+        if temp_report_key:
+            data["tempReportKey"] = temp_report_key
         html = c.post(config.URL_LICENSE_LIST, data=data)
-        return _out(parse_license_list(html))
+        if page > 1 and not temp_report_key:
+            # 首次直接翻页：先取第 1 页拿到 tempReportKey，再翻目标页
+            m = re.search(r'name="tempReportKey"\s+value="([0-9a-f]+)"', html)
+            if m:
+                data["tempReportKey"] = m.group(1)
+                html = c.post(config.URL_LICENSE_LIST, data=data)
+        result = parse_license_list(html)
+        m = re.search(r'name="tempReportKey"\s+value="([0-9a-f]+)"', html)
+        if m:
+            result["tempReportKey"] = m.group(1)
+        result["page"] = page
+        return _out(result)
 
     # ---------- 2. 许可证详情 ----------
     @mcp.tool()
@@ -161,7 +181,8 @@ def register_tools(mcp: FastMCP) -> None:
             unit_name: 企业名称
             page: 页码
         """
-        data = {"province": province, "unitName": unit_name, "pageIndex": page, "pageSize": 20}
+        data = {"province": province, "registerentername": unit_name,
+                "page.pageNo": page, "pageSize": 20}
         html = c.post(config.URL_RECTIFY_LIST, data=data)
         return _out(parse_news_list(html))
 
@@ -181,7 +202,7 @@ def register_tools(mcp: FastMCP) -> None:
         }.get(announce_type)
         if not url:
             return _out({"error": "announce_type 仅支持：注销/撤销/遗失"})
-        data = {"province": "", "unitName": "", "pageIndex": page, "pageSize": 20}
+        data = {"province": "", "registerentername": "", "page.pageNo": page, "pageSize": 20}
         html = c.post(url, data=data)
         return _out(parse_announce_list(html))
 
