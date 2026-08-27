@@ -2258,11 +2258,18 @@ def _smart_preview(result: str, limit: int = 1200) -> str:
     return re.sub(r"<[^>]+>", " ", s)[:limit]
 
 
+    if problems:
+        return True, "；".join(problems)
+    return False, ""
+
+
 def _quality_gate(content: str, trace: list[dict]) -> tuple[bool, str]:
     """回答质量确定性门禁（对标 DSH guard，零额外 LLM 成本）：
     ① 法条号↔内容一致性：回答中每个'第X条'引用与法典原文比对
        （关键数字/4字词重合 ≥2 视为一致）；
-    ② 表格行数一致性：'共N个' 与表格行数必须相符。
+    ② 表格行数一致性：'共N个' 与表格行数必须相符；
+    ③ 数据源一致性：'共N个/家/条/页' 与工具返回的总数（共M/total/count/total_pages）核对；
+    ④ 自相矛盾：同一计数口径（'共N+同单位'）出现两个不同数值。
     返回 (需纠偏, 纠偏说明)。"""
     t = (content or "").strip()
     if not t:
@@ -2324,6 +2331,36 @@ def _quality_gate(content: str, trace: list[dict]) -> tuple[bool, str]:
                 rows = rows[1:]  # 首行是表头，不计入数据行数
             if rows and len(rows) != expected:
                 problems.append(f"'共{expected}个'与表格行数{len(rows)}不符")
+    except Exception:  # noqa: BLE001
+        pass
+    # ── ③ 数据源一致性：'共N单位' 与工具返回总数核对 ──
+    try:
+        ans_counts = re.findall(r"共\s*(\d+)\s*(?:个|家|条|页|次)", t)
+        # 工具结果文本里的总数口径
+        src_counts: list[int] = []
+        for e in (trace or []):
+            rp = str(e.get("result_preview") or "")
+            src_counts += [int(m) for m in re.findall(r"共\s*(\d+)\s*(?:个|家|条|页|次)", rp)]
+            src_counts += [int(m) for m in re.findall(
+                r"\"?(?:total|count|total_pages)\"?\s*[:=]\s*(\d+)", rp, re.I)]
+        if ans_counts and src_counts:
+            for n in {int(x) for x in ans_counts}:
+                if n not in src_counts:
+                    problems.append(f"'共{n}'与工具返回总数[{', '.join(map(str, src_counts[:5]))}]不符")
+                    break
+    except Exception:  # noqa: BLE001
+        pass
+    # ── ④ 自相矛盾：同一计数口径出现两个不同数值 ──
+    try:
+        # 捕获 (数值, 单位) 对，如同一单位出现不同数值即为矛盾
+        pairs = re.findall(r"共\s*(\d+)\s*(个|家|条|页|次)", t)
+        by_unit: dict[str, set[int]] = {}
+        for n, u in pairs:
+            by_unit.setdefault(u, set()).add(int(n))
+        for u, ns in by_unit.items():
+            if len(ns) > 1:
+                problems.append(f"同一口径'共N{u}'出现多个数值 {sorted(ns)}")
+                break
     except Exception:  # noqa: BLE001
         pass
     if problems:
