@@ -583,6 +583,11 @@ class LLMClient:
             "stream": True,
             "max_tokens": _max_tokens(16384),
         }
+        # v4 推理档位（对齐 DSH 深度思考）：ECO_REASONING_EFFORT=high/max 提升推理深度。
+        # 非流式路径已支持，此处补流式路径（codex 循环主用 stream=True），否则档位形同虚设。
+        _effort = os.environ.get("ECO_REASONING_EFFORT", "").strip()
+        if _effort and model.startswith("deepseek-v4"):
+            body["reasoning_effort"] = _effort
         if tools:
             body["tools"] = tools
             body["tool_choice"] = "auto"

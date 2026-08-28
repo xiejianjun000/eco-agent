@@ -1800,12 +1800,14 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
             if isinstance(u, dict):
                 for k in total_usage:
                     total_usage[k] += int(u.get(k) or 0)
-        if reasoning:
+        tool_calls = msg.get("tool_calls")
+        if reasoning and not tool_calls:
+            # 本轮直接作答（无工具调用）时在此发 think；有工具调用则统一由下方带 tools 字段的
+            # think 事件发出（避免同轮思考重复推两次）。
             _emit({"type": "think", "round": round_idx, "cost_ms": llm_ms,
                    "thought": _sanitize_thinking(reasoning)})
         audit.record_llm_call(model or client._provider["default_model"],
                               round_idx, llm_ms)
-        tool_calls = msg.get("tool_calls")
         if tool_calls and stream_answer and round_content_parts:
             # 已实时推送的文字是本轮思考（非最终回答）→ reset 撤销
             _push_delta("", reset=True)
