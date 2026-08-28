@@ -84,7 +84,7 @@ def test_engine_default_sections(engine):
     assert ids == ["safety", "persona", "tool_capability", "phase"]
     prompt = engine.build_system_prompt()
     assert prompt.startswith(SAFETY_LAYER)
-    assert "当前阶段：现场巡查" in prompt  # phase 片段随状态机求值
+    assert "当前视角：生态环境系统全要素" in prompt  # 默认全要素通用，不再默认现场巡查
 
 
 def test_engine_custom_section_pluggable(engine):
@@ -110,7 +110,7 @@ def test_engine_dynamic_sections_ordering(engine):
 
 
 def test_engine_phase_switch_updates_prompt(engine):
-    assert "现场巡查" in engine.build_system_prompt()
+    assert "全要素通用" in engine.build_system_prompt()
     assert engine.switch_phase("documentation") is True
     prompt = engine.build_system_prompt()
     assert "执法文书制作" in prompt
@@ -119,8 +119,8 @@ def test_engine_phase_switch_updates_prompt(engine):
 
 def test_engine_overview(engine):
     ov = engine.overview()
-    assert ov["phase"] == "inspection"
-    assert ov["phase_name"] == "巡查"
+    assert ov["phase"] == "general"
+    assert ov["phase_name"] == "全要素通用"
     assert len(ov["sections"]) == 4
     assert "assembled_preview" in ov and "assembled_len" in ov
 
@@ -142,7 +142,7 @@ def test_prompt_overview_api(client):
     r = client.get("/api/v1/prompt/overview")
     assert r.status_code == 200
     data = r.json()
-    assert data["phase"] in ("inspection", "documentation", "review")
+    assert data["phase"] in ("general", "inspection", "documentation", "review")
     assert len(data["sections"]) >= 4
 
 

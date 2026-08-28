@@ -266,11 +266,13 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default") -> 
     # 动态上下文片段：日期/阶段/工作区（DSH 注入 CWD 等运行时上下文的对标）
     try:
         import os as _os
-        phase = getattr(eng, "phase", "inspection")
-        ctx_lines = [f"今天是 {date.today().isoformat()}。",
-                     f"当前工作阶段（执法要素内）：{phase}。",
-                     "对话历史是过去记录，其中文件/文档状态可能已变化——"
-                     "引用前先调用工具核实当前状态。"]
+        phase = getattr(eng, "phase", "general")
+        ctx_lines = [f"今天是 {date.today().isoformat()}。"]
+        # 仅当显式进入执法阶段时才注入阶段提示；默认全要素通用不注入执法阶段
+        if phase != "general":
+            ctx_lines.append(f"当前执法阶段：{phase}。")
+        ctx_lines.append("对话历史是过去记录，其中文件/文档状态可能已变化——"
+                         "引用前先调用工具核实当前状态。")
         ws = _os.environ.get("ECO_WORKSPACE_DIR", "").strip()
         ecod = _os.environ.get("ECO_DIR", "").strip()
         if ws:

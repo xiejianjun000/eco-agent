@@ -71,8 +71,11 @@ _FALLBACK_PERSONA = (
     "【身份】\n" + LEGACY_SYSTEM_PROMPT
 )
 
-# 三阶段执法提示词状态机：巡查 / 文书 / 评查
+# 阶段状态机：全要素通用（默认）/ 执法三阶段（巡查·文书·评查，显式切换才激活）
 PHASE_PRESETS: dict[str, list[str]] = {
+    "general": [
+        "当前视角：生态环境系统全要素（大气/水/土壤/固废/噪声/辐射/生态/碳 + 法规/监测/环评/排污许可/执法/督察/应急）。执法只是要素之一；未明确要求进入执法阶段时按全要素通用回答，不要自称'现场巡查/文书/评查阶段'。",
+    ],
     "inspection": [
         "当前阶段：现场巡查。重点：线索发现、现场取证规范（照片/笔录/监测数据）、违法线索初步判断。引用法条时优先引用《生态环境法典》（2026-08-15 施行，10 部单行法同日废止），旧法引用须双标注法典对应条款。",
     ],
@@ -83,7 +86,7 @@ PHASE_PRESETS: dict[str, list[str]] = {
         "当前阶段：案卷评查。重点：程序正当性审查（立案/告知/听证/送达/执行）、证据链完整性、法条适用准确性、新旧法衔接。",
     ],
 }
-PHASE_NAMES = {"inspection": "巡查", "documentation": "文书", "review": "评查"}
+PHASE_NAMES = {"general": "全要素通用", "inspection": "巡查", "documentation": "文书", "review": "评查"}
 
 # ═══════════════════════════════════
 # 注入校验规则
@@ -772,7 +775,7 @@ class PromptEngine:
             soul = load_soul()
         self.soul = soul
         self._injections: list[dict] = []  # {"source","content","task_id","ts"}
-        self._phase: str = "inspection"
+        self._phase: str = "general"
 
         # ── 基础提示词片段（默认四段，可被插件 register_section 覆盖/新增）──
         self.sections = PromptSectionRegistry()

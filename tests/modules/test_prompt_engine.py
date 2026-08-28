@@ -52,7 +52,7 @@ class TestDoubleLayerPrompt:
         assert SAFETY_LAYER in engine.build_system_prompt()
 
     def test_phase_state_machine(self, engine):
-        assert engine.phase == "inspection"
+        assert engine.phase == "general"
         assert engine.switch_phase("documentation") is True
         assert engine.phase == "documentation"
         assert "文书" in PHASE_PRESETS["documentation"][0]
