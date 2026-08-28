@@ -53,12 +53,18 @@ function renderTable(lines: string[]): { html: string; consumed: number } | null
   return { html, consumed: i };
 }
 
-/** 行内语法：**粗体** `代码` *斜体* */
+/** 行内语法：**粗体** `代码` *斜体* + 机器标识自动包 code（DSH 规范） */
 function renderInline(text: string): string {
   let out = text;
   out = out.replace(/`([^`]+)`/g, '<code class="md-inline">$1</code>');
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   out = out.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  // 自动包裹机器标识为行内代码（审批ID/状态值/接口标识/风险级）
+  // (?<!>) 跳过已由反引号生成的 <code> 内容，避免二次包裹
+  out = out.replace(/(?<!>)(appr-[a-z0-9-]{6,})/g, '<code class="md-inline">$1</code>');
+  out = out.replace(/(?<!>)\b(pending|approved|rejected|allowed|denied)\b/g, '<code class="md-inline">$1</code>');
+  out = out.replace(/(?<!>)\b(FQ|answerer)\b/g, '<code class="md-inline">$1</code>');
+  out = out.replace(/(?<!>)\b(L[1-4])\b/g, '<code class="md-inline">$1</code>');
   return out;
 }
 
@@ -69,6 +75,7 @@ export function renderMarkdown(text: string): string {
   const out: string[] = [];
   let listType: 'ul' | 'ol' | null = null;
   let inCodeBlock = false;
+  let emittedContent = false;  // 是否已输出首个内容块（摘要行判定用）
   let codeBuffer: string[] = [];
   let codeLang = '';
 
@@ -206,7 +213,10 @@ export function renderMarkdown(text: string): string {
 
     // 普通段落
     closeList();
-    out.push(`<p class="md-p">${renderInline(trimmed)}</p>`);
+    // 回答摘要行（首个以 ✅ 开头的段落）：加 md-summary 类，底部细线分隔正文
+    const isSummary = !emittedContent && trimmed.startsWith('✅');
+    emittedContent = true;
+    out.push(`<p class="md-p${isSummary ? ' md-summary' : ''}">${renderInline(trimmed)}</p>`);
     i += 1;
   }
 
