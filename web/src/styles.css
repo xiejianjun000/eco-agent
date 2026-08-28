@@ -967,3 +967,45 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
   margin: 14px 0 2px; text-transform: uppercase;
 }
 .side-context .rp-empty { padding: 14px 0; color: var(--t-aux); font-size: 12px; }
+
+/* ── DSH 式过程块：图标+类型名+描述平铺流（单行截断+展开） ── */
+.dsh-process { display: flex; flex-direction: column; gap: 2px; }
+.dsh-event-row { border-radius: 6px; }
+.dsh-event-row:hover { background: var(--fill); }
+.dsh-event-line {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 3px 8px; font-size: 12px; line-height: 1.7; cursor: pointer;
+  color: var(--t-sub);
+}
+.dsh-icon { flex-shrink: 0; }
+.dsh-type { flex-shrink: 0; color: var(--t-main); font-weight: 600; }
+.dsh-type::after { content: ' ·'; color: var(--t-aux); }
+.dsh-desc {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dsh-meta { flex-shrink: 0; color: var(--t-aux); }
+.dsh-meta::before { content: '· '; }
+.dsh-cost {
+  flex-shrink: 0; margin-left: auto;
+  font-family: var(--mono); font-size: 11px; color: var(--t-aux);
+  font-variant-numeric: tabular-nums;
+}
+.dsh-expand {
+  flex-shrink: 0; width: 18px; height: 18px; border: 1px solid var(--line);
+  border-radius: 50%; background: var(--panel); color: var(--t-aux);
+  font-size: 10px; line-height: 1; cursor: pointer; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.dsh-expand:hover { border-color: var(--terra); color: var(--terra-dark); }
+.dsh-event-body { padding: 4px 8px 6px 30px; }
+.dsh-body-text {
+  color: var(--t-sub); white-space: pre-wrap; word-break: break-word;
+  font-size: 12px; line-height: 1.6;
+}
+.dsh-body-result {
+  margin: 0; padding: 6px 10px; background: var(--fill); border-radius: 6px;
+  color: var(--t-sub); font-size: 11px; max-height: 240px; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

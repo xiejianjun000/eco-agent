@@ -63,7 +63,7 @@ function fmtMs(ms?: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-/** 统计行：时间 · 用时 · 首响应 · token 速率（DSH 式计量） */
+/** 统计行：时间 · 用时 · 首响应 · token 速率（DSH 式计量，千分位） */
 function fmtStatRow(m: Msg): string {
   const parts: string[] = [];
   if (m.time) parts.push(m.time);
@@ -71,7 +71,9 @@ function fmtStatRow(m: Msg): string {
   if (m.ttftMs !== undefined) parts.push(`首响应 ${fmtMs(m.ttftMs)}`);
   const total = m.usage?.total_tokens;
   const durS = (m.durationMs ?? 0) / 1000;
-  if (total && durS > 0) parts.push(`${total} tok · ${Math.round(total / durS)} tok/s`);
+  if (total && durS > 0) {
+    parts.push(`${total.toLocaleString('en-US')} tok · ${Math.round(total / durS).toLocaleString('en-US')} tok/s`);
+  }
   return parts.join(' · ');
 }
 
@@ -112,77 +114,139 @@ function renderCards(trace: TraceEvent[]): React.ReactElement | null {
   );
 }
 
+function getEventIcon(type: string, name?: string): string {
+  if (type === 'think') return '⚙️';
+  if (type === 'answer') return '💬';
+  if (type === 'correction') return '🔄';
+  if (type === 'tool' || type === 'tool_start') {
+    const n = (name || '').toLowerCase();
+    if (n.includes('bash') || n.includes('shell')) return '📺';
+    if (n.includes('read')) return '📄';
+    if (n.includes('write') || n.includes('edit')) return '✏️';
+    return '✨';
+  }
+  return '·';
+}
+
+/** DSH 式单条过程行：图标+类型名+描述，单行截断，点击展开完整内容 */
+function ProcessRow({ icon, label, desc, meta, cost, children }: {
+  icon: string; label: string; desc: string; meta?: string; cost?: number;
+  children?: React.ReactNode;
+}): React.ReactElement {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className={`dsh-event-row${open ? ' open' : ''}`}>
+      <div className="dsh-event-line" onClick={() => { if (children) setOpen(!open); }}>
+        <span className="dsh-icon">{icon}</span>
+        <span className="dsh-type">{label}</span>
+        <span className="dsh-desc">{desc}</span>
+        {meta && <span className="dsh-meta">{meta}</span>}
+        {cost !== undefined && <span className="dsh-cost">({fmtMs(cost)})</span>}
+        {children && (
+          <button
+            className="dsh-expand"
+            title={open ? '收起' : '展开'}
+            onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+          >{open ? '^' : 'v'}</button>
+        )}
+      </div>
+      {open && children && <div className="dsh-event-body">{children}</div>}
+    </div>
+  );
+}
+
+/** 把 think_delta 分片累积为运行中的 Think 行，think 事件覆盖为权威行 */
 function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
   if (!trace || trace.length === 0) return null;
-  const turns = groupTraceByRound(trace);
-  const hasProc = trace.some((t) => t.type === 'think' || t.type === 'think_delta' || t.type === 'tool' || t.type === 'tool_start');
+  const hasProc = trace.some((t) => ['think', 'think_delta', 'tool', 'tool_start', 'answer', 'correction'].includes(t.type));
   if (!hasProc) return null;
+
+  // 一、扁平化事件流：think_delta 累积 → think 权威；tool 成行；answer/correction 成行
+  type Row = { key: string; icon: string; label: string; desc: string; meta?: string; cost?: number; body?: React.ReactNode };
+  const rows: Row[] = [];
+  const live: Record<number, string> = {};  // 运行中 Think 的累积文本（按 round）
+  let liveKey = 0;
+
+  const flushLive = (r: number) => {
+    if (live[r]) {
+      const text = live[r];
+      delete live[r];
+      rows.push({
+        key: `live-${r}-${liveKey++}`,
+        icon: '⚙️', label: 'Think',
+        desc: text.length > 80 ? `${text.slice(0, 80)}…` : text,
+        meta: `R${r}`,
+        body: <div className="dsh-body-text">{escapeHtml(text)}</div>,
+      });
+    }
+  };
+
+  for (const ev of trace) {
+    const r = ev.round ?? 1;
+    if (ev.type === 'think_delta') {
+      if (ev.text) live[r] = (live[r] ?? '') + ev.text;
+      continue;
+    }
+    if (ev.type === 'think') {
+      // 权威版覆盖运行中累积
+      delete live[r];
+      if (ev.thought) {
+        rows.push({
+          key: `think-${r}-${ev.cost_ms ?? rows.length}`,
+          icon: '⚙️', label: 'Think',
+          desc: ev.thought.length > 80 ? `${ev.thought.slice(0, 80)}…` : ev.thought,
+          meta: `R${r}`, cost: ev.cost_ms,
+          body: <div className="dsh-body-text">{escapeHtml(ev.thought)}</div>,
+        });
+      }
+      continue;
+    }
+    if (ev.type === 'tool_start') continue;  // tool 事件已含 name/args/cost/result
+    if (ev.type === 'tool') {
+      rows.push({
+        key: `tool-${ev.name}-${ev.cost_ms ?? rows.length}-${rows.length}`,
+        icon: getEventIcon('tool', ev.name), label: 'Tool call',
+        desc: `${ev.name} · ${fmtArgs(ev.args)}`,
+        cost: ev.cost_ms,
+        body: ev.result_preview
+          ? <pre className="dsh-body-result" dangerouslySetInnerHTML={{ __html: renderToolResult(ev.result_preview) }} />
+          : undefined,
+      });
+      continue;
+    }
+    if (ev.type === 'answer') {
+      rows.push({
+        key: `answer-${rows.length}`,
+        icon: '💬', label: 'Answer',
+        desc: `生成最终回答（共 ${(ev.chars ?? 0).toLocaleString('en-US')} 字）`,
+        cost: ev.cost_ms,
+      });
+      continue;
+    }
+    if (ev.type === 'correction') {
+      rows.push({
+        key: `corr-${rows.length}`,
+        icon: '🔄', label: 'Correction',
+        desc: ev.note || '自我纠偏', cost: ev.cost_ms,
+      });
+      continue;
+    }
+  }
+  // 尾部未收尾的 think_delta 也 flush 出来（流式进行中）
+  for (const r of Object.keys(live).map(Number)) flushLive(r);
+
+  // 相邻去重：同一 Think 内容连续出现（流式累积 + 权威事件重复）只保留一条
+  const deduped = rows.filter((row, i) =>
+    i === 0 || !(row.label === rows[i - 1].label && row.desc === rows[i - 1].desc));
+
   return (
-    <div className="process-block">
-      {turns.map((turn) => {
-        // 实时思考流（DSH Think 流）：think_delta 分片按序累积；
-        // think 事件（服务端清洗后的权威版）覆盖累积值
-        const rounds: number[] = [];
-        const seen = new Set<number>();
-        const live: Record<number, string> = {};
-        const thinkEv: Record<number, TraceEvent | undefined> = {};
-        for (const ev of turn.events) {
-          const r = ev.round ?? turn.round;
-          if (!seen.has(r)) { seen.add(r); rounds.push(r); }
-          if (ev.type === 'think_delta' && ev.text) live[r] = (live[r] ?? '') + ev.text;
-          if (ev.type === 'think') { thinkEv[r] = ev; if (ev.thought) live[r] = ev.thought; }
-        }
-        return (
-          <div key={turn.round} className="process-turn">
-            {rounds.map((r) => {
-              const te = thinkEv[r];
-              const toolStarts = turn.events.filter(
-                (t) => t.type === 'tool_start' && (t.round ?? turn.round) === r);
-              const toolEvts = turn.events.filter(
-                (t) => t.type === 'tool' && (t.round ?? turn.round) === r);
-              return (
-                <div key={`r${r}`} className="pt-round">
-                  {(live[r] || te) && (
-                    <details className={`think-item${!te ? ' running' : ''}`} open={!te}>
-                      <summary className="think-summary">
-                        <span className="pt-caret">▸</span>
-                        <span className="think-label">思考 · R{r}</span>
-                        {!te && <span className="live-dot" title="正在实时思考" />}
-                        {te && te.tools && te.tools.length > 0 && (
-                          <span className="think-tools">· {te.tools.join('、')}</span>
-                        )}
-                        {te && <span className="trace-cost">{fmtMs(te.cost_ms)}</span>}
-                      </summary>
-                      <div className="think-body">
-                        {live[r] ? escapeHtml(live[r]) : '（思考内容未返回）'}
-                      </div>
-                    </details>
-                  )}
-                  {toolStarts.map((ts, ti) => {
-                    const done = toolEvts.find((t) => t.name === ts.name);
-                    const running = !done;
-                    return (
-                      <details key={ti} className={`call-item${running ? ' running' : ''}`}>
-                        <summary className="call-summary">
-                          <span className="pt-caret">▸</span>
-                          <span className="call-name">{ts.name}</span>
-                          <span className="call-args">{fmtArgs(ts.args)}</span>
-                          {running && <span className="live-dot" title="执行中" />}
-                          {done && <span className="trace-cost">{fmtMs(done.cost_ms)}</span>}
-                        </summary>
-                        {done && done.result_preview && (
-                          <pre className="call-result"
-                               dangerouslySetInnerHTML={{ __html: renderToolResult(done.result_preview) }} />
-                        )}
-                      </details>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
+    <div className="process-block dsh-process">
+      {deduped.map((row) => (
+        <ProcessRow key={row.key} icon={row.icon} label={row.label}
+                    desc={row.desc} meta={row.meta} cost={row.cost}>
+          {row.body}
+        </ProcessRow>
+      ))}
     </div>
   );
 }
