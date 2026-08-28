@@ -51,6 +51,15 @@ PROVIDERS = {
 STATS_FILE = Path.home() / ".eco" / "stats.jsonl"
 
 
+def _max_tokens(default: int) -> int:
+    """回答长度上限（防止未设 max_tokens 时被模型默认输出上限硬切断句）。
+    ECO_MAX_TOKENS 可覆盖；解析失败回落默认值。"""
+    try:
+        return int(os.environ.get("ECO_MAX_TOKENS", str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
 def record_llm_stat(provider: str, model: str, latency_ms: float,
                     prompt_tokens=None, completion_tokens=None,
                     path: str = "", ok: bool = True):
@@ -510,6 +519,7 @@ class LLMClient:
             "messages": messages,
             "temperature": self._resolve_temperature(model, 0.7),
             "stream": False,
+            "max_tokens": _max_tokens(8192),
         }
         # v4 推理档位（可选）：ECO_REASONING_EFFORT=high/max 控制思考深度与首字延迟
         _effort = os.environ.get("ECO_REASONING_EFFORT", "").strip()
@@ -571,6 +581,7 @@ class LLMClient:
             "messages": messages,
             "temperature": self._resolve_temperature(model, 0.7),
             "stream": True,
+            "max_tokens": _max_tokens(16384),
         }
         if tools:
             body["tools"] = tools
