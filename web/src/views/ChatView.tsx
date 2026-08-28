@@ -252,13 +252,8 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
 }
 
 export default function ChatView({ sessionId = 'default', onActivity }: { sessionId?: string; onActivity?: () => void }): React.ReactElement {
-  const [messages, setMessages] = useState<Msg[]>([
-    {
-      role: 'assistant',
-      content: '你好，我是 eco Agent——生态环境系统全要素 AI 同事。大气/水/土壤/固废/噪声/辐射/生态/碳全要素，法规、监测、环评、排污许可、执法、督察、应急都能帮上忙。',
-      time: fmtClock(),
-    },
-  ]);
+  // 新会话从空消息开始：欢迎信息由 hero 主页承担，不再注入"你好，我是 eco Agent…"气泡
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [model, setModel] = useState('');
@@ -436,7 +431,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
     .flatMap((m) => extractArtifacts(m.content));
 
   /** 新会话欢迎态：还没有任何用户消息时显示居中的 hero 主页（DSH 对标） */
-  const fresh = messages.length === 1;
+  const fresh = messages.length === 0;
 
   // ── 子代理任务面板逻辑 ─────────────────────────────
   // 选中任务轮询（running/pending 时每 2.5s 刷新，done 后停止）
