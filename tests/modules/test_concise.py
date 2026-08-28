@@ -51,13 +51,21 @@ def test_sanitize_thinking_keeps_statute_citations():
     assert "第45条" in out
 
 
-def test_sanitize_thinking_strips_self_persuasion_prefix():
-    # '我应该'前缀剥掉但保留行动内容；规则背书句整句删除
+def test_sanitize_thinking_keeps_real_reasoning():
+    # 对标 DSH：'我应该/根据规则'式自我说服是真实推理，原样保留；
+    # 只有'规则N'背书句整句删除。条文'第X条'引用不受影响。
     text = "根据规则，我应该先查法条。我应该先用 analyze_document 读取第1054条。"
     out = _sanitize_thinking(text)
-    assert "规则" not in out and "我应该" not in out
-    assert "先用 analyze_document 读取第1054条" in out
+    assert "根据规则，我应该先查法条。" in out  # 真实推理保留
+    assert "我应该先用 analyze_document 读取第1054条。" in out
     assert "第1054条" in out
+
+
+def test_sanitize_thinking_keeps_reasoning_over_old_cap():
+    # 旧实现 cap=100 会把真实推理截断到 100 字；新实现保留完整深度思考（≤3000）
+    text = "先拆解问题。" + "核实依据、调用工具、交叉验证、给出结论与下一步。" * 20
+    out = _sanitize_thinking(text)
+    assert len(out) > 100
 
 
 def test_short_text_untouched():
