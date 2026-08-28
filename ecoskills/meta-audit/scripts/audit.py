@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 ecoskills/meta-audit/scripts/audit.py — 技能自审（self-audit 元技能）
 ===================================================================

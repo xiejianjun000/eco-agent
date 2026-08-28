@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 _scripts/build_law_graph.py — 法典引用图谱构建（P1-2 GraphRAG 地基）
 ==================================================================

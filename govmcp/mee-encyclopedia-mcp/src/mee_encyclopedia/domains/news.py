@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +138,7 @@ def list_mee_categories() -> dict:
     }
 
 
-def read_mee_list(fetcher, cache, category: str = "要闻动态", limit: int = 20, keyword: Optional[str] = None) -> dict:
+def read_mee_list(fetcher, cache, category: str = "要闻动态", limit: int = 20, keyword: str | None = None) -> dict:
     """读取生态环境部主站（含核安全局子站）指定栏目最新列表。"""
     url = CATEGORY_URLS.get(category)
     if not url:

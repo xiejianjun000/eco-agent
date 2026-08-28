@@ -8,7 +8,7 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -36,7 +36,7 @@ class Cache:
         raw = f"{method}|{url}|{json.dumps(body, ensure_ascii=False, sort_keys=True)}"
         return hashlib.sha1(raw.encode("utf-8")).hexdigest()
 
-    def get(self, method: str, url: str, body: Any | None = None) -> Optional[str]:
+    def get(self, method: str, url: str, body: Any | None = None) -> str | None:
         k = self._key(method, url, body)
         with self._lock:
             row = self._conn.execute(
@@ -114,7 +114,7 @@ class PermitClient:
             if hit is not None:
                 return hit
 
-        last_err: Optional[Exception] = None
+        last_err: Exception | None = None
         for attempt in range(config.RETRY_TIMES):
             try:
                 self._throttle()
@@ -142,7 +142,7 @@ class PermitClient:
     def download(self, url: str, params: dict | None = None) -> bytes:
         """下载二进制文件（不缓存）。"""
         self._ensure_ready()
-        last_err: Optional[Exception] = None
+        last_err: Exception | None = None
         for attempt in range(config.RETRY_TIMES):
             try:
                 self._throttle()

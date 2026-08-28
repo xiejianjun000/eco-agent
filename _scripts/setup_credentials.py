@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 _scripts/setup_credentials.py — eco-agent 凭证本机自助配置（一站式）
 

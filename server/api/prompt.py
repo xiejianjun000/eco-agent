@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 server/api/prompt.py — 提示词组装管理 API（DSH 式模块化提示词）
 

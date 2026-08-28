@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ def search_waste_category(fetcher, cache, keyword: str) -> dict:
     result = {"keyword": keyword, "source": SOLID_WASTE, "items": [], "note": ""}
     try:
         html = fetcher.get_text(SOLID_WASTE)
-        from ..core.parser import parse_article, parse_links
+        from ..core.parser import parse_links
         links = parse_links(html, base_url=SOLID_WASTE, limit=100)
         items = [lk for lk in links if keyword in lk["title"]][:10]
         result["items"] = items

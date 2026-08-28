@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 govmcp_tools/env_open_data.py — 环境公开数据源工具（P0-2 数据源版图）
 ====================================================================
@@ -19,7 +18,6 @@ govmcp_tools/env_open_data.py — 环境公开数据源工具（P0-2 数据源�
 
 from __future__ import annotations
 
-import time
 from typing import Any
 
 import httpx

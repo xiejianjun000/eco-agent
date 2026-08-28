@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -83,13 +82,13 @@ def read_air_forecast(fetcher, cache, region: str = "全国") -> dict:
     return result
 
 
-def read_air_monthly(fetcher, cache, month: Optional[str] = None) -> dict:
+def read_air_monthly(fetcher, cache, month: str | None = None) -> dict:
     """读取全国环境空气质量状况月报（主站环境质量栏目）。"""
     key = f"air:monthly:{month or 'latest'}"
     cached = cache.get(key)
     if cached:
         return {**cached, "cache": "hit"}
-    url = "https://www.mee.gov.cn/hjzl/dqhj/" if not month else f"https://www.mee.gov.cn/hjzl/dqhj/"
+    url = "https://www.mee.gov.cn/hjzl/dqhj/" if not month else "https://www.mee.gov.cn/hjzl/dqhj/"
     result = {"month": month or "最新", "source": url, "links": []}
     try:
         html = fetcher.get_text(url)

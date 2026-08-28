@@ -103,7 +103,6 @@ def _mount_web_gui(app: FastAPI) -> None:
     # 注册在所有 API 路由之后：/api/v1、/healthz 等由路由优先处理，其余路径回退 SPA 静态文件。
     # index.html 禁缓存（改版后刷新即取新 bundle）；哈希资产文件名自带版本，可长缓存
     from fastapi.responses import FileResponse
-    from starlette.responses import Response
 
     async def _no_cache_index(request: Request):
         return FileResponse(web_dist / "index.html", headers={

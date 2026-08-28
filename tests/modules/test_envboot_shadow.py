@@ -4,7 +4,6 @@
 python-dotenv override=False 跳过补填 → llm_client 报 no api key。
 修复：空值视为缺失，按 仓库 .env > ~/.eco/.env 顺序补填非空值。
 """
-import pytest
 
 from agent_core.envboot import _fill_empty_keys, _parse_env_file
 

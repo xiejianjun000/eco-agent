@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """DSH 式模块化提示词组装系统测试
 ================================
 覆盖：
@@ -217,7 +216,6 @@ def test_suggest_phase_push():
 
 
 def test_suggest_hybrid_rules_only_by_default(monkeypatch):
-    import os
 
     from agent_core.suggest import build_suggestions_hybrid
 
@@ -229,7 +227,6 @@ def test_suggest_hybrid_rules_only_by_default(monkeypatch):
 
 
 def test_llm_suggestions_never_crash_without_llm(monkeypatch):
-    import os
 
     from agent_core.suggest import build_suggestions_hybrid
 

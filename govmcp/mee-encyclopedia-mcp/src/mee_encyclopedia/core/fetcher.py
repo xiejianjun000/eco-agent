@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import random
 import time
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -29,7 +29,7 @@ _DEFAULT_UA = (
 class Fetcher:
     """统一的网页/API 抓取器：礼貌限速 + 指数退避 + 文本/二进制两种模式。"""
 
-    def __init__(self, config: Optional[dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         cfg = config or load_config()
         http_cfg = cfg.get("http", {})
         self.timeout = float(http_cfg.get("timeout", 20))
@@ -57,9 +57,9 @@ class Fetcher:
         """指数退避：1s, 2s, 4s... 最多 8s。"""
         time.sleep(min(2**attempt, 8))
 
-    def get_text(self, url: str, params: Optional[dict] = None) -> str:
+    def get_text(self, url: str, params: dict | None = None) -> str:
         """GET 请求并返回文本。失败自动退避重试。"""
-        last_exc: Optional[Exception] = None
+        last_exc: Exception | None = None
         for attempt in range(self.retries + 1):
             self._pace()
             try:
@@ -75,14 +75,14 @@ class Fetcher:
                     self._backoff(attempt)
         raise RuntimeError(f"抓取失败: {url} -> {last_exc}")
 
-    def get_json(self, url: str, params: Optional[dict] = None) -> Any:
+    def get_json(self, url: str, params: dict | None = None) -> Any:
         """GET 请求并解析 JSON。"""
         text = self.get_text(url, params=params)
         return httpx._utils.json_loads(text)
 
     def get_bytes(self, url: str) -> bytes:
         """GET 请求并返回二进制内容（用于下载）。"""
-        last_exc: Optional[Exception] = None
+        last_exc: Exception | None = None
         for attempt in range(self.retries + 1):
             self._pace()
             try:

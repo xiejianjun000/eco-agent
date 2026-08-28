@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 _scripts/run_evals.py — 执法评测集 runner（P0 评测地基）
 ====================================================

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 govmcp_tools/sthjzf.py
 国家生态环境保护综合执法监管平台（四平台）govmcp 工具集

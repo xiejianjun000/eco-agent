@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """元技能三件套 + P0 评测集地基回归测试
 ========================================
 覆盖：meta-audit 自审评分、meta-test 用例生成、meta-interview 批量骨架、
@@ -14,7 +13,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-import pytest  # noqa: E402
 
 
 def _load_script(rel_path: str):
@@ -121,12 +119,11 @@ def test_evals_suites_parse():
 def test_mechanical_article_check_mock(monkeypatch):
     import _scripts.run_evals as ev
 
-    fake = ROOT / "evals" / "statute-application.md"  # 真实存在（用作 path= 校验）
     ok, note = ev.mechanical_check(
         {"citation": "article=164", "question": "", "dimension": "", "golden": ""})
     assert ok and "命中" in note  # 真实法典库校验（164 条存在）
     ok2, _ = ev.mechanical_check(
-        {"citation": f"path=evals/statute-application.md", "question": "",
+        {"citation": "path=evals/statute-application.md", "question": "",
          "dimension": "", "golden": ""})
     assert ok2
     ok3, note3 = ev.mechanical_check(

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 agent_core/prompt_sections.py — DSH 式模块化系统提示词组装注册表
 =================================================================

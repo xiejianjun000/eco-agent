@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 _scripts/smoke_test.py — 端到端穿透式测试·压力测试·冒烟测试 套件
 ================================================================
@@ -110,7 +109,7 @@ def smoke() -> None:
 # ── B. 穿透测试（安全契约，直接函数级，不耗 LLM）──────────────
 
 def penetration() -> None:
-    from agent_core.exec_tools import (file_edit, file_read, file_write,
+    from agent_core.exec_tools import (file_read, file_write,
                                        run_shell)
     from agent_core.prompt_engine import validate_injection
     from agent_core.web_search_tool import _parse_links

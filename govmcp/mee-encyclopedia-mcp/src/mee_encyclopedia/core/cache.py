@@ -4,10 +4,9 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class Cache:
         digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:32]
         return self._disk_dir / f"{digest}.json"
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """命中且未过期返回数据，否则 None。"""
         now = time.time()
         hit = self._mem.get(key)
@@ -53,7 +52,7 @@ class Cache:
                 logger.debug("缓存读取失败 %s: %s", key, exc)
         return None
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None, slow: bool = False) -> Any:
+    def set(self, key: str, value: Any, ttl: int | None = None, slow: bool = False) -> Any:
         expire_at = time.time() + (ttl if ttl is not None else (self.ttl_slow if slow else self.ttl))
         if len(self._mem) >= self.max_entries:
             self._mem.pop(next(iter(self._mem)), None)

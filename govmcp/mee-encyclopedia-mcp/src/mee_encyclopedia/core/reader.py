@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from .fetcher import Fetcher
 from .parser import parse_article, parse_links

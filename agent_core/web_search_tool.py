@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 agent_core/web_search_tool.py — 网页搜索工具（多引擎兜底，无 API key）
 ====================================================================

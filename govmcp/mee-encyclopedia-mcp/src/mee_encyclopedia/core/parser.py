@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable, Optional
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
@@ -61,7 +60,7 @@ def parse_article(html: str, max_chars: int = 8000) -> str:
     return text[:max_chars]
 
 
-def extract_json_from_script(html: str, pattern: str = r"window\._DATA_\s*=\s*(\{.*?\});") -> Optional[str]:
+def extract_json_from_script(html: str, pattern: str = r"window\._DATA_\s*=\s*(\{.*?\});") -> str | None:
     """尝试从内联脚本中提取 JSON 片段（兼容性工具）。"""
     m = re.search(pattern, html, re.S)
     return m.group(1) if m else None

@@ -73,7 +73,7 @@ def _slide_xml(title: str, bullets: list[str]) -> str:
         f'<p:txBody><a:bodyPr/><a:lstStyle/>'
         f'<a:p><a:r><a:rPr lang="zh-CN" sz="2800" b="1"/><a:t>{title}</a:t></a:r></a:p>'
     )
-    for i, b in enumerate(bullets):
+    for b in bullets:
         tx_body += (
             f'<a:p><a:r><a:rPr lang="zh-CN" sz="1600"/><a:t>• {escape(b)}</a:t></a:r></a:p>'
         )

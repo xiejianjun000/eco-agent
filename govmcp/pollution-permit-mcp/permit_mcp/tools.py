@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import re
-import time
 from typing import Any
 
 from fastmcp import FastMCP
@@ -13,7 +12,7 @@ from . import config
 from .client import PermitClient
 from .parser import (decrypt_point_data, parse_announce_list, parse_license_detail,
                      parse_license_list, parse_laws_list, parse_news_detail,
-                     parse_news_list, parse_post_permit_status)
+                     parse_news_list)
 
 _client: PermitClient | None = None
 

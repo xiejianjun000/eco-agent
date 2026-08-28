@@ -38,7 +38,7 @@ def read_nnsa_list(fetcher, cache, section: str = "工作动态", limit: int = 1
     return data
 
 
-def read_radiation_level(fetcher, cache, region: Optional[str] = None) -> dict:
+def read_radiation_level(fetcher, cache, region: str | None = None) -> dict:
     """读取全国空气吸收剂量率发布数据。来源：辐射环境监测技术中心。"""
     key = f"radiation:{region or 'all'}"
     cached = cache.get(key)

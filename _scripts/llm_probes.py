@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """smoke_test.py 的 LLM 穿透探针（--llm 追加，真实调用模型）。"""
 
 import json

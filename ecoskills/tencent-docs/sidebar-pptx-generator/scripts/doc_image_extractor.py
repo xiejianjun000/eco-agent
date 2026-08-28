@@ -24,7 +24,6 @@ import sys
 import os
 import argparse
 from pathlib import Path
-from typing import Optional, List, Dict
 
 MIN_IMAGE_SIZE = 100 * 1024
 
@@ -159,7 +158,7 @@ SUPPORTED_FORMATS = {
 }
 
 
-def scan_directory(directory: str) -> List[str]:
+def scan_directory(directory: str) -> list[str]:
     """扫描目录中所有支持的文档文件（不包含子目录）。"""
     files = []
     for entry in os.listdir(directory):
@@ -188,10 +187,10 @@ def extract_images_from_file(filepath: str, output_dir: str) -> int:
 
 
 def extract_images(
-    inputs: List[str],
+    inputs: list[str],
     output_dir: str,
     flat: bool = False
-) -> Dict[str, int]:
+) -> dict[str, int]:
     """
     批量提取图片。
 
@@ -240,7 +239,6 @@ def extract_images(
 
     for idx, filepath in enumerate(unique_files, start=1):
         basename = Path(filepath).stem
-        ext = Path(filepath).suffix.lower()
 
         if flat:
             # 所有图片放一起，文件名加前缀区分

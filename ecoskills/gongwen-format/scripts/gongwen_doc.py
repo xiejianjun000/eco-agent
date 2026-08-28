@@ -325,7 +325,6 @@ def build_document(data, output_path: Path):
 
     if isinstance(blocks, list) and blocks:
         title_rendered = False
-        first_h1_consumed = False
 
         # 1) 标题：只渲染第一条 h1
         for block in blocks:
@@ -341,7 +340,6 @@ def build_document(data, output_path: Path):
                     )
                     _add_blank_paragraph(document)
                     title_rendered = True
-                first_h1_consumed = True
                 break
 
         # 若未提供 h1，则回退使用 data["title"]（兼容）

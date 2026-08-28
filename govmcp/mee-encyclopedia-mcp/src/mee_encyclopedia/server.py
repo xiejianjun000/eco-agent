@@ -8,9 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
 from pathlib import Path
-from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
 
@@ -88,28 +86,28 @@ def read_air_forecast(region: str = "全国") -> dict:
 
 
 @mcp.tool()
-def read_air_monthly(month: Optional[str] = None) -> dict:
+def read_air_monthly(month: str | None = None) -> dict:
     """读取全国环境空气质量状况月报（month 形如 202608）。"""
     audit("read_air_monthly", month or "latest")
     return air.read_air_monthly(FETCHER, CACHE, month)
 
 
 @mcp.tool()
-def read_surface_water(station: Optional[str] = None) -> dict:
+def read_surface_water(station: str | None = None) -> dict:
     """读取国家地表水水质自动监测数据。"""
     audit("read_surface_water", station or "all")
     return water.read_surface_water(FETCHER, CACHE, station)
 
 
 @mcp.tool()
-def read_sea_water(region: Optional[str] = None) -> dict:
+def read_sea_water(region: str | None = None) -> dict:
     """读取国家海水水质监测数据。"""
     audit("read_sea_water", region or "all")
     return water.read_sea_water(FETCHER, CACHE, region)
 
 
 @mcp.tool()
-def read_radiation_level(region: Optional[str] = None) -> dict:
+def read_radiation_level(region: str | None = None) -> dict:
     """读取全国空气吸收剂量率（辐射环境监测数据）。"""
     audit("read_radiation_level", region or "all")
     return radiation.read_radiation_level(FETCHER, CACHE, region)
@@ -124,7 +122,7 @@ def list_mee_categories() -> dict:
 
 
 @mcp.tool()
-def read_mee_list(category: str = "要闻动态", limit: int = 20, keyword: Optional[str] = None) -> dict:
+def read_mee_list(category: str = "要闻动态", limit: int = 20, keyword: str | None = None) -> dict:
     """读取主站栏目最新列表：支持全部 60+ 栏目（要闻/政策文种/业务工作/环境质量报告/互动/曝光台/党建/专题/核安全局），可选 keyword 过滤标题。"""
     audit("read_mee_list", category)
     return news.read_mee_list(FETCHER, CACHE, category, limit=limit, keyword=keyword)
@@ -345,7 +343,7 @@ def rag_ingest(doc_id: str, title: str, text: str, source: str = "") -> dict:
 # ---------------- 下载工具族（核心能力 2） ----------------
 
 @mcp.tool()
-def download_file(url: str, save_dir: str = ".", filename: Optional[str] = None) -> dict:
+def download_file(url: str, save_dir: str = ".", filename: str | None = None) -> dict:
     """下载公开 URL 文件到本地下载目录（仅 http/https，限制大小）。"""
     audit("download_file", url)
     return DOWNLOADER.download(url, save_dir=save_dir, filename=filename)

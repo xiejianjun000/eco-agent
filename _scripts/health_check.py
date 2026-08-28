@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 _scripts/health_check.py — eco-agent 一键健康自检
 
@@ -157,7 +156,8 @@ def check() -> dict:
 
 
 def live_probes() -> list[dict]:
-    import urllib.request, urllib.error
+    import urllib.request
+    import urllib.error
     # C 维度契约基线：关键 MCP/平台端点若配置了凭证，401 即"凭证失效待换"而非普通异常
     import json as _json
 
@@ -196,7 +196,7 @@ def live_probes() -> list[dict]:
                              "detail": "HTTP 401 — Token 失效，重新获取后跑 "
                                        "setup_credentials.py 第 5 项"})
             else:
-                rows.append({"group": "连通性", "name": name, "ok": True if e.code in (401, 403) else False,
+                rows.append({"group": "连通性", "name": name, "ok": e.code in (401, 403),
                              "detail": f"HTTP {e.code}（{'端点可达待鉴权' if e.code in (401, 403) else '异常'}）"})
         except Exception as e:  # noqa: BLE001
             rows.append({"group": "连通性", "name": name, "ok": False, "detail": str(e)[:80]})

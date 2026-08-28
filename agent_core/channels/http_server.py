@@ -275,7 +275,7 @@ class ChannelRequestHandler(BaseHTTPRequestHandler):
             {"error": f"未知路径: {method} {path}"},
             ensure_ascii=False).encode("utf-8"))
 
-    def do_GET(self) -> None:  # noqa: N802（stdlib 约定）
+    def do_GET(self) -> None:  # noqa: N802 (stdlib 约定)
         self._route("GET")
 
     def do_POST(self) -> None:  # noqa: N802

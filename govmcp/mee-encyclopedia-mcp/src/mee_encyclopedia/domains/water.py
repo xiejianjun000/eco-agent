@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +9,7 @@ SURFACE_WATER = "https://szzdjc.cnemc.cn:8070/GJZ/Business/Publish/Main.html"
 SEA_WATER = "http://ep.nmemc.org.cn:8888/Water/"
 
 
-def read_surface_water(fetcher, cache, station: Optional[str] = None) -> dict:
+def read_surface_water(fetcher, cache, station: str | None = None) -> dict:
     """读取国家地表水水质自动监测数据（每 4 小时更新）。"""
     key = f"water:surface:{station or 'all'}"
     cached = cache.get(key)
@@ -34,7 +33,7 @@ def read_surface_water(fetcher, cache, station: Optional[str] = None) -> dict:
     return result
 
 
-def read_sea_water(fetcher, cache, region: Optional[str] = None) -> dict:
+def read_sea_water(fetcher, cache, region: str | None = None) -> dict:
     """读取国家海水水质监测数据。来源：国家海洋环境监测中心。"""
     key = f"water:sea:{region or 'all'}"
     cached = cache.get(key)

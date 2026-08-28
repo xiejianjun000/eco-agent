@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 agent_core/chart_gen.py — 确定性图表生成器（chart_render 工具内核）
 ====================================================================

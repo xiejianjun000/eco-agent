@@ -1,7 +1,6 @@
 """推理流采集测试：deepseek-reasoner/v4 系列的 reasoning_content →
 msg._reasoning → chat 循环 think 事件（DSH Think 流）。"""
 
-import json
 
 from agent_core.llm_client import LLMClient
 

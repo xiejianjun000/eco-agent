@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 govmcp_tools/permit_management.py
 全国排污许可证管理信息平台-管理端 govmcp 工具集
@@ -64,7 +63,7 @@ HEADERS = {
 REQUEST_TIMEOUT = 25.0
 
 _lock = threading.Lock()
-_client: "PermitClient | None" = None
+_client: PermitClient | None = None
 
 
 def _session_dir() -> str | None:

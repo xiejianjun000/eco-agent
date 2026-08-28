@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from agent_core.cordis import Context, load_composition  # noqa: E402
+from agent_core.cordis import Context  # noqa: E402
 
 PASS = 0
 FAIL = 0
@@ -43,7 +43,7 @@ def test_services() -> None:
     check("ctx.get 未提供返回 None", ctx.get("nope") is None)
     check("ctx.xxx 直读", isinstance(ctx.svc, _Svc))
     try:
-        ctx.nope
+        _ = ctx.nope
         check("未提供服务直读抛 AttributeError", False)
     except AttributeError:
         check("未提供服务直读抛 AttributeError", True)

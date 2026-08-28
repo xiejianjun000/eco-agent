@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 govmcp_tools/wryzxjc.py
 娄底市污染源在线监测系统（重点污染源自动监控平台）govmcp 工具集

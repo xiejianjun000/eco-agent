@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """腾讯文档 HTML → 在线文档 一键上云管线.
 
 链路（对齐 ecoskills/tencent-docs 官方 aipage 工作流）:

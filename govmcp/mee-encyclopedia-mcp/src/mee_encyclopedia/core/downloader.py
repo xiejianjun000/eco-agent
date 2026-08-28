@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import logging
-import re
 from pathlib import Path
-from typing import Optional
 from urllib.parse import urlparse
 
 from .fetcher import Fetcher
@@ -17,13 +15,13 @@ logger = logging.getLogger(__name__)
 class Downloader:
     """安全的下载器：仅 http/https、限大小、限目录。"""
 
-    def __init__(self, fetcher: Fetcher, base_dir: Optional[Path] = None, max_size_mb: int = 200) -> None:
+    def __init__(self, fetcher: Fetcher, base_dir: Path | None = None, max_size_mb: int = 200) -> None:
         self._fetcher = fetcher
         self._base = base_dir or get_download_base({})
         self._base.mkdir(parents=True, exist_ok=True)
         self._max_bytes = max_size_mb * 1024 * 1024
 
-    def download(self, url: str, save_dir: str = ".", filename: Optional[str] = None, sub_dir: Optional[str] = None) -> dict:
+    def download(self, url: str, save_dir: str = ".", filename: str | None = None, sub_dir: str | None = None) -> dict:
         """下载 URL 到下载根目录。save_dir 相对下载根目录；sub_dir 追加一层。"""
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https"):
@@ -53,7 +51,7 @@ class Downloader:
             "saved_at": str(dest),
         }
 
-    def download_text(self, text: str, filename: str, save_dir: str = ".", sub_dir: Optional[str] = None) -> dict:
+    def download_text(self, text: str, filename: str, save_dir: str = ".", sub_dir: str | None = None) -> dict:
         """将文本内容写入文件（数据导出用）。"""
         target_root = self._base
         if sub_dir:

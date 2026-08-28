@@ -37,7 +37,7 @@ DOC_TYPES = {
 
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 
-from front_matter import parse_front_matter, strip_front_matter
+from front_matter import parse_front_matter
 ASCII_PUNCT_NEAR_CJK_RE = re.compile(
     r"[\u3400-\u4dbf\u4e00-\u9fff][,:;!?()\[\]{}\"']|"
     r"[,:;!?()\[\]{}\"'][\u3400-\u4dbf\u4e00-\u9fff]|"

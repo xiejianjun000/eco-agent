@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -16,7 +16,7 @@ CONFIG_PATH = PROJECT_ROOT / "config" / "sources.yaml"
 _logger = logging.getLogger(__name__)
 
 
-def load_config(path: Optional[Path] = None) -> dict[str, Any]:
+def load_config(path: Path | None = None) -> dict[str, Any]:
     """加载 sources.yaml 配置；缺失时返回空 dict，不阻断启动。"""
     p = path or CONFIG_PATH
     try:
@@ -48,7 +48,7 @@ def ensure_within(base: Path, target: Path) -> Path:
     return target
 
 
-def setup_logging(level: str = "INFO", audit_file: Optional[str] = None) -> None:
+def setup_logging(level: str = "INFO", audit_file: str | None = None) -> None:
     logging.basicConfig(
         level=getattr(logging, level.upper(), logging.INFO),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",

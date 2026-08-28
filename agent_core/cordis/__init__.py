@@ -26,7 +26,8 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 logger = logging.getLogger("eco.cordis")
 
@@ -86,15 +87,15 @@ class _Timer:
 class Context:
     """组合上下文：服务注册表 + 事件总线 + 插件生命周期。"""
 
-    def __init__(self, name: str = "root", parent: "Context | None" = None) -> None:
+    def __init__(self, name: str = "root", parent: Context | None = None) -> None:
         self.name = name
         self.parent = parent
         self._services: dict[str, Any] = {}
         self._service_owners: dict[str, str | None] = {}
-        self._plugins: dict[str, "_Fiber"] = {}
+        self._plugins: dict[str, _Fiber] = {}
         self._handlers: dict[str, list[tuple[str | None, Callable, bool]]] = {}
         self._fiber: _Fiber | None = None  # 当前加载中的 fiber（插件 apply 内使用）
-        self._isolates: dict[str, "Context"] = {}  # label → 隔离子域（DSH isolate）
+        self._isolates: dict[str, Context] = {}  # label → 隔离子域（DSH isolate）
 
     # ── 服务 ─────────────────────────────────────────────
 
@@ -157,7 +158,7 @@ class Context:
                     self._remove_entry(event, entry)
         return results
 
-    def isolate(self, label: str = "") -> "Context":
+    def isolate(self, label: str = "") -> Context:
         """隔离域：子作用域快照继承当前服务/插件，域内变更不回写父域；
         同 label 复用同一隔离域（DSH isolate 语义）。"""
         if label and label in self._isolates:

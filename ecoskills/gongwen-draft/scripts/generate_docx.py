@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import re
 from pathlib import Path
 
 from font_guard import build_font_config, ensure_required_fonts, install_assets_for_missing
@@ -12,7 +11,6 @@ from front_matter import parse_front_matter, meta_text
 
 try:
     from docx import Document
-    from docx.enum.section import WD_SECTION
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn

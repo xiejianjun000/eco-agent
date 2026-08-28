@@ -13,7 +13,6 @@
 
 from fastmcp import FastMCP
 
-from permit_mcp import config
 from permit_mcp.tools import register_tools
 
 

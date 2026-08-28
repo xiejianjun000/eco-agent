@@ -58,6 +58,10 @@ select = ["E", "F", "W", "B", "UP", "SIM"]
 ignore = [
     "E402", "E501", "E701", "E702", "E741",
     "SIM102", "SIM116", "SIM105", "SIM108",
+    # 本仓库既定模式（非缺陷）：循环内同步调用的闭包捕获（B023）、
+    # FastAPI File() 默认参数（B008）、best-effort zip 配对（B905）、
+    # 未用上下文管理器的文件打开（SIM115，遗留风格，后续专项收口）
+    "B023", "B008", "B905", "SIM115",
 ]
 
 [tool.ruff.lint.per-file-ignores]

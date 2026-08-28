@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 agent_core/suggest.py — 会话后建议提示词（对标 DSH suggest-prompt 插件）
 =====================================================================

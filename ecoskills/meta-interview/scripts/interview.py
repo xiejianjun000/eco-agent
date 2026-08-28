@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 ecoskills/meta-interview/scripts/interview.py — 访谈式技能冷启动
 ================================================================

@@ -80,8 +80,6 @@ class _Ctx:
 
 @pytest.fixture()
 def fake_ctx(monkeypatch):
-    ctx = _Ctx(None, None, None)
-
     class _CtxFactory:
         def __init__(self, token, ClientSession, client_factory):
             pass

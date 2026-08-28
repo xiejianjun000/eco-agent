@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 _scripts/setup_tencent_docs.py — 腾讯文档 MCP Token 本机自助配置
 

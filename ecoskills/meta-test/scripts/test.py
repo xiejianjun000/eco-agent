@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 ecoskills/meta-test/scripts/test.py — 技能自测用例生成（auto-test 元技能）
 =========================================================================
@@ -72,16 +71,16 @@ def generate_cases(name: str) -> dict:
     for t in tables:
         if len(t) >= 2 and len(t[0]) <= 12:
             lines.append(f"## Q 知识题: 在《{name}》技能中，「{t[0]}」对应的要点是什么？")
-            lines.append(f"维度: 知识记忆")
+            lines.append("维度: 知识记忆")
             lines.append(f"黄金要点: {t[1]}")
-            lines.append(f"引用校验: 无")
+            lines.append("引用校验: 无")
             lines.append("")
 
     # ② 知识题：数字/时限
     for num in _numbers(body)[:5]:
         lines.append(f"## Q 知识题: {name} 技能涉及的时限/数值「{num}」的具体规定是什么？")
         lines.append("维度: 知识记忆")
-        lines.append(f"黄金要点: 与技能原文一致（见 SKILL.md 相关表格）")
+        lines.append("黄金要点: 与技能原文一致（见 SKILL.md 相关表格）")
         lines.append("引用校验: 无")
         lines.append("")
 

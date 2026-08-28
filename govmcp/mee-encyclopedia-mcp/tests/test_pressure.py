@@ -16,7 +16,6 @@
 """
 from __future__ import annotations
 
-import json
 import sys
 import time
 from pathlib import Path
@@ -174,7 +173,7 @@ total = len(RESULTS)
 passed = sum(1 for _, ok, _, _ in RESULTS if ok)
 failed = [x for x in RESULTS if not x[0].startswith("SKIP") and not x[1]]
 elapsed = time.time() - T0
-print(f"\n===== 压力测试摘要 =====")
+print("\n===== 压力测试摘要 =====")
 print(f"总调用: {total}  通过: {passed}  失败: {len(failed)}  总耗时: {elapsed:.0f}s")
 if failed:
     print("失败清单:")

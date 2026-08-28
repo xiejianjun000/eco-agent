@@ -14,7 +14,8 @@ GET /api/v1/slots 动态渲染标签与内容（数据经 GET /api/v1/slots/{id}
 from __future__ import annotations
 
 import threading
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 # 已知挂点
 SLOT_NAMES = ("side.tab",)

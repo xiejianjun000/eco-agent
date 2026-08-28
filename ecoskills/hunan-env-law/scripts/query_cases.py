@@ -5,7 +5,11 @@
 
 用法: python3 scripts/query_cases.py [--all] [--missing]
 """
-import json, pickle, requests, sys, os
+import json
+import pickle
+import requests
+import sys
+import os
 
 BASE_URL = "http://113.246.57.20:8507/zfyth"
 COOKIE_FILE = "/tmp/zfyth_cookies.pkl"
@@ -28,7 +32,7 @@ def get_all_cases(session):
     """获取全部案卷列表"""
     all_cases = []
     page = 1
-    
+
     while True:
         query_data = {
             'page': page,
@@ -48,18 +52,18 @@ def get_all_cases(session):
         if r.status_code != 200:
             print(f"❌ 查询失败 (page={page})")
             break
-        
+
         data = r.json()
         rows = data.get('rows', [])
         if not rows:
             break
-        
+
         for row in rows:
             if row.get('AJLX') in ('FQLA', 'YBCF') or row.get('LAH'):
                 all_cases.append(row)
-        
+
         page += 1
-    
+
     return all_cases
 
 def get_existing_files():
@@ -83,46 +87,46 @@ def find_missing(cases, existing):
         if name in seen:
             continue
         seen.add(name)
-        
+
         # Check if exists
         found = False
         for ex in existing:
             if name in ex or ex in name:
                 found = True
                 break
-        
+
         if not found and name not in ('冷水江市', '娄底市'):
             missing.append(c)
-    
+
     return missing
 
 def main():
     session = load_session()
-    
+
     print("📊 正在获取案卷列表...")
     cases = get_all_cases(session)
     print(f"   共获取 {len(cases)} 条案卷")
-    
+
     print("📁 正在检查本地已有文件...")
     existing = get_existing_files()
     print(f"   已有 {len(existing)} 个 PDF 文件")
-    
+
     print("🔍 正在对比缺失案卷...")
     missing = find_missing(cases, existing)
     print(f"   缺失 {len(missing)} 个案卷")
-    
+
     # Print summary
     print("\n" + "="*60)
     print(f"📋 汇总: 平台 {len(cases)} 条 | 本地 {len(existing)} 个 | 缺失 {len(missing)} 个")
     print("="*60)
-    
+
     # Save missing list
     with open(MISSING_FILE, 'w') as f:
         json.dump(missing, f, ensure_ascii=False, indent=2)
     print(f"\n缺失列表已保存到: {MISSING_FILE}")
-    
+
     # Print missing cases
-    print(f"\n📝 缺失案卷列表:")
+    print("\n📝 缺失案卷列表:")
     for i, c in enumerate(missing[:20], 1):
         print(f"  {i:2d}. {c['DSRMC']:　<20s} | {c['LAH']} | {c.get('LASJ', '?')}")
     if len(missing) > 20:

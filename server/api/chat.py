@@ -1400,8 +1400,8 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             return _json.dumps({"ok": False, "error": "article 需为 1-1242 的条号"},
                                ensure_ascii=False)
         root = Path(__file__).resolve().parent.parent
-        script_dir = str(root / "ecoskills" / "eco-codex" / "scripts")
-        import subprocess, sys as _sys
+        import subprocess
+        import sys as _sys
 
         def _lookup(cmd, arg):
             try:
@@ -1423,7 +1423,6 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
                 adj.setdefault(int(a), []).append(int(b))
             seen = {art}
             frontier = set(adj.get(art, []))
-            hops1 = set(frontier)
             for _ in range(2):
                 nxt = set()
                 for n in frontier:
@@ -1437,7 +1436,7 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
                 related.append({"num": n, "source": "引用图谱",
                                 "head": (d.get("text", "") or "")[:60]})
         except Exception:
-            hops1 = set()
+            pass
         # ② 同编邻接（±2）
         for delta in (-2, -1, 1, 2):
             n = art + delta
@@ -1557,7 +1556,6 @@ def _extract_reply(result: dict) -> str:
 async def chat(req: ChatRequest) -> ChatResponse:
     import time
 
-    from agent_core.llm_client import get_default_client
 
     # fail-closed 检查点：LLM 请求前会话日志必须持久完整（对标 DSH checkpoint policy）
     _durable_guard(req.session_id, "llm/request")
@@ -1717,9 +1715,6 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
     first_llm_ms: int | None = None
     first_token_ms: int | None = None
     user_message = str(messages[-1].get("content") or "") if messages else ""
-    save_req_re = re.compile(
-        r"落盘|保存(文件|文书|清单|报告)?|生成(文书|清单|报告)|写(清单|文书)|存(档|文件)"
-        r"|save_document|\.md|\.txt")
     empty_talk_re = re.compile(
         r"正在(调用|查询|检索|获取|调取)|请稍候|稍等|马上(为您)?(查询|检索)|我先(查|检索)"
         r"|待工具返回|待.*填入|（此处待|占位）|<invoke|invoke name|kb_get_document|让我直接"
@@ -2261,11 +2256,6 @@ def _smart_preview(result: str, limit: int = 1200) -> str:
     return re.sub(r"<[^>]+>", " ", s)[:limit]
 
 
-    if problems:
-        return True, "；".join(problems)
-    return False, ""
-
-
 def _quality_gate(content: str, trace: list[dict]) -> tuple[bool, str]:
     """回答质量确定性门禁（对标 DSH guard，零额外 LLM 成本）：
     ① 法条号↔内容一致性：回答中每个'第X条'引用与法典原文比对
@@ -2771,7 +2761,6 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
     # fail-closed 检查点：LLM 请求前会话日志必须持久完整（对标 DSH checkpoint policy）
     _durable_guard(req.session_id, "llm/request")
 
-    from agent_core.llm_client import get_default_client
 
     client, _eff_model = _client_for(req.model)
     messages = _build_messages(req.message, req.history, req.session_id or "default")

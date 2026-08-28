@@ -1,5 +1,4 @@
 """湖南省厅环境质量月报工具测试：表格解析 / 文章定位 / 关键词过滤（mock 网络）。"""
-import pytest
 
 from govmcp_tools import hunan_env as he
 

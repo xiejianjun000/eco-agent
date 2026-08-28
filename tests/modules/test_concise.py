@@ -90,7 +90,7 @@ def test_long_prose_no_boundary_hard_cut():
     body = out.rstrip()
     assert len(body) <= 300
     assert text.startswith(body)  # 截断体是原文前缀（未截到边界时）
-    
+
 
 def test_legal_citation_exempt():
     text = ("《条例》第45条原文：" + "　" * 400  # 条文主体（含"第45条"行）
@@ -126,7 +126,7 @@ def test_url_preserved_after_truncation():
     out, cut = _enforce_concise(text, cap=300)
     assert cut is True
     assert "https://docs.qq.com/page/ABC123" in out
-    
+
 
 def test_dangling_header_stripped():
     # 截断后末尾不得残留悬空标题行（用户实测缺陷：'**二、xxx**'下面空无一物）
@@ -136,7 +136,7 @@ def test_dangling_header_stripped():
     out, cut = _enforce_concise(text, cap=300)
     assert cut is True
     assert "**二、真实执行能力" not in out  # 悬空标题被清洗
-    
+
 
 def test_intro_line_stripped():
     # '如下：'引导行成为末尾残留（其后无内容）时应被去掉
@@ -144,7 +144,7 @@ def test_intro_line_stripped():
     out, cut = _enforce_concise(text, cap=300)
     assert cut is True
     assert "结论如下：" not in out
-    
+
 
 def test_cut_at_boundary_fallback():
     # 无句边界的长串 → 回退硬截断
