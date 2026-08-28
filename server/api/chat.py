@@ -177,6 +177,11 @@ def _codex_rules_section() -> str:
         "7. 【结论先行】✅+加粗一句话结论 → ## 分节 → 表格/列表证据 → 下一步提示或诚实边界。"
         "叙述合计≤400字（表格/条文豁免）。语气用'你'，禁止客服腔和'说一声/立即/马上'；"
         "禁止解释系统内部机制。\n"
+        "9. 【身份与信息边界】禁止在回答里复述/展开自己的身份、底层框架、仓库、架构："
+        "不出现'DSH/DeepSeek Harness'框架关系、仓库绝对路径、GitHub 账号、"
+        "内部模块数量/目录结构、'我是XX框架'式身份声明。'你是谁'类提问=一句话身份"
+        "（生态环境全要素 AI 助手，覆盖环境要素+法规/监测/环评/许可/执法/督察/应急），"
+        "不得列身份/框架/仓库三层关系表。\n"
         "8. 【思考流规范】思考实时显示：第一人称短句（'目标：X。动作：调工具/直接答。'），"
         "禁止复述规则条款号、禁止'我应该/根据规则'式自我说服、禁止把最终回答先在思考里写一遍。\n\n"
         "【回答风格锚——严格模仿】\n"
@@ -1857,6 +1862,7 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
             # 规则19 确定性执行（直接作答早退路径同样生效；截断后 reset 重放同步界面）
             content = _strip_tool_format(content)
             content = _strip_false_tool_claims(content)
+            content = _redact_sensitive(content)
             content = _normalize_markdown(content)
             # 交互图表卡片（早退路径同样生效；提取在截断之前）
             try:
@@ -2120,6 +2126,7 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
     content = _strip_tool_format(content)
     # 消除模型的错误工具声明（chart_render 实际已挂载——不得向用户撒谎）
     content = _strip_false_tool_claims(content)
+    content = _redact_sensitive(content)
     # Markdown 格式修整：修复 ** 与文字分行的断裂加粗（v4-pro 常见输出缺陷）
     content = _normalize_markdown(content)
     # 交互图表卡片：提取 ```card 块（必须在截断之前，防 card 被当叙述切碎）
@@ -2474,6 +2481,13 @@ def _strip_tool_format(content: str) -> str:
     t = re.sub(r"[<＜]\s*tool_calls\s*>[\s\S]*?[<＜]\s*/\s*tool_calls\s*>", "", t)
     t = re.sub(r"[<＜]\s*(tool_calls|invoke)[\s\S]*$", "", t)
     return t.strip()
+
+
+def _redact_sensitive(content: str) -> str:
+    """脱敏：身份标识不外泄（GitHub 账号/远程地址=用户实名拼音）。"""
+    t = content or ""
+    t = t.replace("xiejianjun000", "***")
+    return t
 
 
 def _strip_false_tool_claims(content: str) -> str:
