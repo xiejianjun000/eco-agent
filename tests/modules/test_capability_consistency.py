@@ -106,7 +106,9 @@ def test_open_url_whitelist():
     """open_url：白名单域名放行、非法域名/协议拒绝（不真正打开浏览器）。"""
     from server.api.chat import _open_browser
 
-    ok = _open_browser("https://docs.qq.com/space/abc")
+    # prefer_panel=True：docs.qq.com 走右侧面板标记，不触发系统 xdg-open/open
+    # （CI 无头环境无浏览器，真实打开会报非零退出码导致误判）
+    ok = _open_browser("https://docs.qq.com/space/abc", prefer_panel=True)
     assert '"ok": true' in ok
     bad_domain = _open_browser("https://evil.example.com/")
     assert '"ok": false' in bad_domain and "白名单" in bad_domain
