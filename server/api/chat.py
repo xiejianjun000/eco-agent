@@ -1720,6 +1720,8 @@ async def chat(req: ChatRequest) -> ChatResponse:
         logger.warning("trace audit failed: %s", e)
     # 教训自动沉淀（自愈闭环：失败对话提炼为 lesson，下次自动注入）
     _maybe_extract_lesson(req.message, reply, trace)
+    # 自主技能孵化（进化闭环：同类工具组合 ≥3 次 → 提炼为 Skill）
+    _maybe_hatch_skill(req.message, reply, trace)
     # 会话级 token 计量 + 首个 LLM 响应耗时（非流式下为近似首响应，非逐 token 采样）
     suggestions: list[str] = []
     try:
@@ -2895,6 +2897,23 @@ def _maybe_extract_lesson(message: str, reply: str, trace: list[dict]) -> None:
         logger.warning("lesson extract failed: %s", e)
 
 
+def _maybe_hatch_skill(message: str, reply: str, trace: list[dict]) -> None:
+    """自主技能孵化（Hermes 对标）：同类工具组合使用 ≥3 次 → 提炼为 Skill。
+    流式/非流式端点共用，与教训沉淀并列的自我进化闭环。"""
+    try:
+        tool_names = [t.get("name", "") for t in trace if t.get("type") == "tool"]
+        if len(tool_names) < 2:
+            return
+        hatcher = _svc("skill_hatcher", lambda: None)
+        if hatcher is None:
+            return
+        skill_id = hatcher.observe(message, tool_names, reply)
+        if skill_id:
+            logger.info("skill hatched: %s", skill_id)
+    except Exception as e:  # noqa: BLE001 — 孵化失败不阻断对话
+        logger.warning("skill hatch failed: %s", e)
+
+
 def _looks_failed(result: str) -> bool:
     """工具结果是否表现为失败/空（反思回路用）：命中即触发换参重试引导。"""
     r = (result or "").strip()
@@ -3037,6 +3056,8 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
         _persist_turn(req.session_id, req.message, reply, ok=ok, trace=trace)
         # 教训自动沉淀（自愈闭环：失败对话提炼为 lesson，下次自动注入）
         _maybe_extract_lesson(req.message, reply, trace)
+        # 自主技能孵化（进化闭环：同类工具组合 ≥3 次 → 提炼为 Skill）
+        _maybe_hatch_skill(req.message, reply, trace)
         # 建议提示词（DSH suggest-prompt 对标）：规则引擎，可选 LLM 增强
         suggestions: list[str] = []
         try:

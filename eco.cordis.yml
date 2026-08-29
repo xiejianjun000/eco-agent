@@ -17,3 +17,7 @@
 
 # 内置 Cron 定时调度：自然语言→cron→后台线程调度（通电 scheduler.py）
 - plugin: agent_core.cordis_plugins.cron_scheduler
+
+# 自主技能孵化：同类工具组合 ≥3 次 → AutoLearnEngine 提炼为 Skill（通电 skill_system.py）
+- plugin: agent_core.cordis_plugins.skill_hatcher
+  config: { hatch_threshold: 3, min_tools: 3 }
