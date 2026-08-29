@@ -299,6 +299,8 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const [sysInfo, setSysInfo] = useState<Record<string, unknown> | null>(null);
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
   const [docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
+  /** 磁盘上已持久化的 MD 产物（重启/刷新后仍可点开，对齐 DSH 文件产物持久化） */
+  const [persistedArtifacts, setPersistedArtifacts] = useState<{ name: string; title: string; size: number }[]>([]);
   // 右侧预览面板：文档生成/上传后自动内嵌打开 docs.qq.com（不弹系统浏览器）
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>('');
@@ -430,7 +432,16 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
 
   React.useEffect(() => {
     import('../api').then(({ api }) => {
-      api.documents().then((r) => setDocFiles(r.files)).catch(() => {});
+      api.documents().then((r) => {
+        setDocFiles(r.files);
+        if (r.artifacts && r.artifacts.length > 0) {
+          setPersistedArtifacts(r.artifacts.map((a) => ({
+            name: a.name,
+            title: a.name.replace(/\.md$/, '').replace(/_\d+$/, ''),
+            size: Math.round(a.size_kb * 1024),
+          })));
+        }
+      }).catch(() => {});
       api.documentTools().then((r) => setDocTools(r.tools)).catch(() => {});
       // 会话恢复：按当前会话（工作区点击的真实 session_id）重放历史
       api.sessionMessages(sessionId).then((r) => {
@@ -466,6 +477,18 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const artifacts = messages
     .filter((m) => m.role === 'assistant')
     .flatMap((m) => extractArtifacts(m.content));
+
+  /** MD 产物（完整稿落盘）：从轨迹 artifact 事件收集，右侧「产物」栏同步展示 */
+  const mdArtifacts = messages
+    .filter((m) => m.role === 'assistant')
+    .flatMap((m) => (m.trace ?? []).filter((t) => t.type === 'artifact' && t.name))
+    .map((t) => ({ name: t.name!, title: t.title ?? t.name!, size: t.size }));
+
+  /** 合并：当前会话轨迹产物 + 磁盘持久化产物（按名去重，刷新/重启后仍在） */
+  const allMdArtifacts = [
+    ...mdArtifacts,
+    ...persistedArtifacts.filter((p) => !mdArtifacts.some((m) => m.name === p.name)),
+  ];
 
   /** 新会话欢迎态：还没有任何用户消息时显示居中的 hero 主页（DSH 对标） */
   const fresh = messages.length === 0;
@@ -907,7 +930,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             className={`side-tab${sideTab === 'artifact' ? ' active' : ''}`}
             onClick={() => setSideTab('artifact')}
           >
-            产物{artifacts.length > 0 ? ` (${artifacts.length})` : ''}
+            产物{artifacts.length + allMdArtifacts.length > 0 ? ` (${artifacts.length + allMdArtifacts.length})` : ''}
           </button>
           <button
             className={`side-tab${sideTab === 'doc' ? ' active' : ''}`}
@@ -1187,30 +1210,35 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
 
         {sideTab === 'artifact' && (
           <div className="side-artifacts">
-            {artifacts.length === 0 ? (
+            {artifacts.length === 0 && allMdArtifacts.length === 0 ? (
               <div className="empty" style={{ padding: 24 }}>
-                暂无产物——回复中的代码块会自动提取到这里。
+                暂无产物——回复中的代码块会自动提取到这里，被要点化的完整稿会以 MD 产物落盘并同步到此处。
               </div>
             ) : (
-              artifacts.map((a, i) => (
-                <details key={i} className="artifact-item">
-                  <summary className="artifact-summary">
-                    <span className="artifact-lang">{a.lang}</span>
-                    <span className="artifact-len">{a.code.length} 字符</span>
-                    <button
-                      className="btn ghost artifact-copy"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        void navigator.clipboard.writeText(a.code);
-                      }}
-                    >
-                      复制
-                    </button>
-                  </summary>
-                  <pre className="artifact-code">{escapeHtml(a.code)}</pre>
-                </details>
-              ))
+              <>
+                {allMdArtifacts.map((a, i) => (
+                  <ArtifactCard key={`md-${i}`} name={a.name} title={a.title} size={a.size} />
+                ))}
+                {artifacts.map((a, i) => (
+                  <details key={i} className="artifact-item">
+                    <summary className="artifact-summary">
+                      <span className="artifact-lang">{a.lang}</span>
+                      <span className="artifact-len">{a.code.length} 字符</span>
+                      <button
+                        className="btn ghost artifact-copy"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void navigator.clipboard.writeText(a.code);
+                        }}
+                      >
+                        复制
+                      </button>
+                    </summary>
+                    <pre className="artifact-code">{escapeHtml(a.code)}</pre>
+                  </details>
+                ))}
+              </>
             )}
           </div>
         )}
