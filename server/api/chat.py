@@ -719,6 +719,54 @@ def _codex_tools() -> list[dict]:
         {
             "type": "function",
             "function": {
+                "name": "cron_add",
+                "description": "添加定时任务（自然语言描述转 cron 表达式，如'每天 17:00 整理日志'/'每周五检查'）。"
+                               "返回 job_id，后台调度器按表达式自动触发。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "description": {"type": "string", "description": "自然语言定时描述（每天/每周/每小时+时间）"},
+                        "cron_expr": {"type": "string", "description": "可选，标准 cron 表达式（5 段），留空则由自然语言解析"},
+                    },
+                    "required": ["description"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "cron_list",
+                "description": "列出所有已注册的定时任务（job_id/cron 表达式/描述/上次运行/下次运行/运行次数）。",
+                "parameters": {"type": "object", "properties": {}, "required": []},
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "cron_remove",
+                "description": "移除指定定时任务。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"job_id": {"type": "string", "description": "任务 ID（cron_list 返回）"}},
+                    "required": ["job_id"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "cron_run",
+                "description": "手动立即触发一次指定定时任务（不等 cron 到点）。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"job_id": {"type": "string", "description": "任务 ID（cron_list 返回）"}},
+                    "required": ["job_id"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "chart_render",
                 "description": "生成离线交互图表卡片（折线/柱状/堆叠柱/饼图/点位散点图，零依赖 SVG，政务内网可用）。"
                                "调用后图表自动渲染为会话内卡片，正文只需用「📊 标题」提及，禁止手写 echarts/HTML。"
@@ -1228,6 +1276,31 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             if k in ("series", "method", "threshold")
         })
         return result[:2000]
+    if name.startswith("cron_"):
+        # 定时调度：读写 scheduler 单例（cron_scheduler 插件已通电启动）
+        from agent_core.scheduler import scheduler
+
+        if name == "cron_add":
+            cron_expr = str(arguments.get("cron_expr", "")).strip()
+            desc = str(arguments.get("description", "")).strip()
+            if not desc:
+                return json.dumps({"error": "description 必填"}, ensure_ascii=False)
+            if cron_expr:
+                jid = scheduler.add_job(cron_expr, desc, "nudge")
+            else:
+                jid = scheduler.add_from_nl(desc, "nudge")
+            if not jid:
+                return json.dumps({"error": f"无法解析自然语言定时描述: {desc}（支持 每天X:00/每小时/每30分钟/每周一 等）"},
+                                  ensure_ascii=False)
+            return json.dumps({"ok": True, "job_id": jid, "cron_expr": cron_expr or scheduler.list_jobs()[-1]["cron_expr"]},
+                              ensure_ascii=False)
+        if name == "cron_list":
+            return json.dumps({"ok": True, "jobs": scheduler.list_jobs()}, ensure_ascii=False)
+        if name == "cron_remove":
+            ok = scheduler.remove_job(str(arguments.get("job_id", "")))
+            return json.dumps({"ok": ok, "error": "" if ok else "任务不存在"}, ensure_ascii=False)
+        if name == "cron_run":
+            return json.dumps(scheduler.run_job(str(arguments.get("job_id", ""))), ensure_ascii=False)
     if name == "chart_render":
         # 离线图表卡片：此处只校验参数并返回短结果；
         # 完整 HTML 由工具事件发射处（_emit tool 之后）用同一参数确定性重生成，
