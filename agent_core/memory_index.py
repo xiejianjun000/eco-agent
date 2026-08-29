@@ -113,19 +113,42 @@ class MemoryIndex:
 
     def search(self, query: str, k: int = 5,
                exclude_recent: int = 0) -> list[dict]:
-        """语义检索 top-k 条记忆（余弦相似度），返回 [{role, content, score}]。
+        """语义检索 top-k 条记忆。优先混合检索（BM25 中文 bigram + 向量 RRF 融合，
+        hybrid_retrieval.py 已实现但此前未通电接入）；失败/无结果优雅降级字符 n-gram。
         exclude_recent：跳过最近 N 条（避免把"当前正在进行的对话"当回忆）。"""
         q = (query or "").strip()
         if not q:
             return []
-        qvec = _ngram_vec(q)
-        scored: list[tuple[float, dict]] = []
         with self._lock:
             items = self._records[:-exclude_recent] if exclude_recent else self._records
-            for rec in items:
-                s = _cosine(qvec, _ngram_vec(rec.get("content", "")))
-                if s > 0.08:
-                    scored.append((s, rec))
+        # 通电：混合检索（BM25 bigram + 向量，RRF 融合）——比纯字符 n-gram 对中文更准
+        try:
+            from agent_core.hybrid_retrieval import hybrid_search
+            events = [{"id": r.get("hash", ""), "content": r.get("content", ""),
+                       "kind": r.get("role", "")} for r in items]
+            hits = hybrid_search(events, q, top_k=k, namespace="memory", embed=True)
+            if hits:
+                by_id = {r.get("hash", ""): r for r in items}
+                out = []
+                for h in hits:
+                    # hybrid 返回的 id 带 namespace 前缀（memory:hash），剥掉前缀再回查原记录
+                    rid = str(h.get("id", "")).rsplit(":", 1)[-1]
+                    r = by_id.get(rid)
+                    if r:
+                        out.append({"role": r.get("role", ""), "content": r.get("content", ""),
+                                    "score": round(h.get("score", 0.0), 3),
+                                    "channel": h.get("channel", "")})
+                if out:
+                    return out
+        except Exception:  # noqa: BLE001 — hybrid 失败/缺依赖降级 n-gram
+            pass
+        # 降级：字符 n-gram 余弦（原实现，离线零依赖兜底）
+        qvec = _ngram_vec(q)
+        scored: list[tuple[float, dict]] = []
+        for rec in items:
+            s = _cosine(qvec, _ngram_vec(rec.get("content", "")))
+            if s > 0.08:
+                scored.append((s, rec))
         scored.sort(key=lambda x: -x[0])
         return [{"role": r.get("role", ""), "content": r.get("content", ""),
                  "score": round(s, 3)} for s, r in scored[:k]]
