@@ -774,6 +774,14 @@ details[open] > .think-summary .pt-caret, details[open] > .call-summary .pt-care
 .artifact-card-icon { flex-shrink: 0; }
 .artifact-card-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .artifact-card-meta { color: var(--t-aux); font-size: 11px; margin-left: auto; }
+.artifact-card-act {
+  border: none; background: transparent; color: var(--t-sub); font-size: 13px;
+  cursor: pointer; padding: 1px 5px; border-radius: 5px; text-decoration: none; flex-shrink: 0;
+}
+.artifact-card-act:hover { background: var(--fill); color: var(--t-main); }
+.artifact-group { margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px 8px; }
+.artifact-group-head { font-size: 12px; color: var(--t-sub); font-weight: 600; margin: 2px 4px 6px; }
+.artifact-group .artifact-card { margin-top: 4px; }
 .artifact-card-body { border-top: 1px solid var(--line); padding: 8px 12px; background: #FFFFFF; }
 .artifact-card-body .bubble { background: transparent; border: none; padding: 4px 0; font-size: 14px; }
 .md-slim .md-p { line-height: 1.55; }

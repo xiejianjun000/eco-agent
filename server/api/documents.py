@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 logger = logging.getLogger("eco.server.documents")
 
@@ -69,6 +70,17 @@ async def read_artifact(name: str) -> dict:
         raise HTTPException(status_code=500, detail=f"read failed: {e}") from e
     return {"name": safe, "path": str(target), "content": content,
             "size": target.stat().st_size}
+
+
+@router.get("/documents/artifact/{name}/download")
+async def download_artifact(name: str) -> FileResponse:
+    """下载回答产物文件（Content-Disposition attachment，浏览器触发下载）。"""
+    art_dir = _artifacts_dir()
+    target = art_dir / Path(name).name
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="artifact not found")
+    return FileResponse(str(target), filename=target.name,
+                        media_type="text/markdown")
 
 
 @router.get("/documents/tools")

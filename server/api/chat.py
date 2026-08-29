@@ -670,12 +670,13 @@ def _codex_tools() -> list[dict]:
             "function": {
                 "name": "save_document",
                 "description": "将生成的文书/清单/报告真实写入工作区 deliverables 目录并落盘，返回真实文件绝对路径。"
+                               "支持 .md/.txt（纯文本）与 .docx（Word，标题/列表/表格/加粗自动转换）。"
                                "用于处罚文书底稿、现场检查清单、监测报告保存。",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "filename": {"type": "string", "description": "文件名（可含中文，如 现场检查清单.md；不允许路径分隔符）"},
-                        "content": {"type": "string", "description": "完整文本内容（UTF-8 编码落盘）"},
+                        "filename": {"type": "string", "description": "文件名（可含中文，如 现场检查清单.md 或 处罚决定书.docx；不允许路径分隔符）"},
+                        "content": {"type": "string", "description": "完整文本内容（UTF-8；.docx 时按 Markdown 语法解析段落/标题/列表/表格）"},
                         "workspace": {"type": "string", "description": "可选，目标工作区名；缺省用当前工作区"},
                     },
                     "required": ["filename", "content"],
@@ -686,8 +687,8 @@ def _codex_tools() -> list[dict]:
             "type": "function",
             "function": {
                 "name": "analyze_document",
-                "description": "读取本地纯文本文档（txt/md/csv/log/json），返回内容。用于检查笔录、监测数据文件分析。"
-                               "PDF/DOCX 无解析依赖会如实报不支持。",
+                "description": "读取本地文档：纯文本（txt/md/csv/log/json）+ PDF（PyMuPDF 逐页提取）+ DOCX（原生解析段落）。"
+                               "用于检查笔录、监测数据文件、环评报告、文书底稿分析。",
                 "parameters": {
                     "type": "object",
                     "properties": {"file_path": {"type": "string", "description": "文件绝对路径"}},
@@ -698,15 +699,35 @@ def _codex_tools() -> list[dict]:
         {
             "type": "function",
             "function": {
-                "name": "chart_render",
-                "description": "生成离线交互图表卡片（折线/柱状/堆叠柱/饼图，零依赖 SVG，政务内网可用）。"
-                               "调用后图表自动渲染为会话内卡片，正文只需用「📊 标题」提及，禁止手写 echarts/HTML。"
-                               "数据趋势/对比/占比类结论必须配图表。",
+                "name": "detect_data_anomaly",
+                "description": "监测数据突变/真伪辅助鉴定的统计异常检测（纯本地计算）："
+                               "grubbs 离群点（z 分数）+ cusum 累计和漂移检测。"
+                               "输入数值序列，返回可疑点下标/统计量；只给量化线索，真伪结论需结合运维记录核实。",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "enum": ["line", "bar", "stacked_bar", "pie"],
-                                 "description": "图表类型：line 折线（多期趋势）/ bar 柱状（分组对比）/ stacked_bar 堆叠柱（构成趋势）/ pie 饼图（占比）"},
+                        "series": {"type": "array", "items": {"type": "number"},
+                                   "description": "数值序列（如某点位多期监测浓度）"},
+                        "method": {"type": "string", "enum": ["auto", "grubbs", "cusum"],
+                                   "description": "检测方法：auto 两者都做 / grubbs 离群点 / cusum 漂移突变"},
+                        "threshold": {"type": "number", "description": "grubbs z 分数阈值（默认 3.0）"},
+                    },
+                    "required": ["series"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "chart_render",
+                "description": "生成离线交互图表卡片（折线/柱状/堆叠柱/饼图/点位散点图，零依赖 SVG，政务内网可用）。"
+                               "调用后图表自动渲染为会话内卡片，正文只需用「📊 标题」提及，禁止手写 echarts/HTML。"
+                               "数据趋势/对比/占比/空间点位分布类结论必须配图表。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "enum": ["line", "bar", "stacked_bar", "pie", "scatter", "map"],
+                                 "description": "图表类型：line 折线（多期趋势）/ bar 柱状（分组对比）/ stacked_bar 堆叠柱（构成趋势）/ pie 饼图（占比）/ scatter、map 点位散点图（经纬度点成图，排污口/污染源空间分布）"},
                         "title": {"type": "string", "description": "图表标题（会显示在卡片上）"},
                         "x_labels": {"type": "array", "items": {"type": "string"},
                                      "description": "X 轴标签列表（line/bar/stacked_bar 必填，如月份/断面名）"},
@@ -715,6 +736,8 @@ def _codex_tools() -> list[dict]:
                         "unit": {"type": "string", "description": "数值单位（如 %、mg/L、家、次）"},
                         "pie_data": {"type": "array", "items": {"type": "object"},
                                      "description": "饼图数据：[{\"name\":\"项名\",\"value\":数值}, ...]（仅 pie 类型用）"},
+                        "points": {"type": "array", "items": {"type": "object"},
+                                   "description": "点位数据：[{\"lng\":经度,\"lat\":纬度,\"name\":\"点位名\",\"value\":数值}, ...]（仅 scatter/map 类型用，排污口/污染源经纬度点成图）"},
                     },
                     "required": ["type", "title"],
                 },
@@ -1197,6 +1220,14 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             if k in ("filename", "content", "workspace", "file_path")
         })
         return result[:2000]
+    if name == "detect_data_anomaly":
+        from agent_core.tools_registry import execute_tool
+
+        result = await execute_tool(name, {
+            k: v for k, v in arguments.items()
+            if k in ("series", "method", "threshold")
+        })
+        return result[:2000]
     if name == "chart_render":
         # 离线图表卡片：此处只校验参数并返回短结果；
         # 完整 HTML 由工具事件发射处（_emit tool 之后）用同一参数确定性重生成，
@@ -1211,6 +1242,7 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
                 series=arguments.get("series") or [],
                 unit=str(arguments.get("unit", "")),
                 pie_data=arguments.get("pie_data") or [],
+                points=arguments.get("points") or [],
             )
         except Exception as e:  # noqa: BLE001
             return json.dumps({"ok": False, "error": f"图表参数非法: {e}"}, ensure_ascii=False)

@@ -59,7 +59,9 @@ class TestHelpAndBanner:
         assert "error" in h(file_path=str(tmp_path / "none.txt"))
         pdf = tmp_path / "x.pdf"
         pdf.write_bytes(b"%PDF-1.4 fake")
-        assert "仅支持纯文本" in h(file_path=str(pdf))["error"]
+        # PDF 现已原生支持（PyMuPDF），假 PDF 应报解析失败而非"仅支持纯文本"
+        pdf_err = h(file_path=str(pdf))
+        assert "error" in pdf_err and "PDF 解析失败" in pdf_err["error"]
 
     def test_status_bar_format(self):
         bar = cmd_chat._status_bar([{"role": "user", "content": "你好 eco"}])

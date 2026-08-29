@@ -250,6 +250,55 @@ def _pie_chart(title: str, items: list[dict], unit: str) -> str:
     return _TMPL.format(title=_html.escape(title), sub=sub, body="".join(parts), legend=legend)
 
 
+def _scatter_map(title: str, points: list[dict], unit: str) -> str:
+    """经纬度点位散点图（离线 SVG，点成图，无需地图瓦片/外部 GIS 服务）。
+    points=[{'lng','lat','name','value'},...]，x 轴经度、y 轴纬度。"""
+    pts = []
+    for p in points:
+        try:
+            lng = float(p.get("lng", p.get("longitude", 0)))
+            lat = float(p.get("lat", p.get("latitude", 0)))
+        except (TypeError, ValueError):
+            continue
+        pts.append((lng, lat, str(p.get("name", "")), p.get("value")))
+    if not pts:
+        raise ValueError("scatter/map 需要 points=[{'lng','lat','name','value'},...]")
+    w, h, mx, my, tx, ty = 820, 420, 56, 36, 16, 14
+    pw, ph = w - mx - tx, h - my - ty
+    lngs = [p[0] for p in pts]
+    lats = [p[1] for p in pts]
+    lng0, lng1 = min(lngs), max(lngs)
+    lat0, lat1 = min(lats), max(lats)
+    dx = (lng1 - lng0) or 0.001
+    dy = (lat1 - lat0) or 0.001
+    lng0, lng1 = lng0 - dx * 0.08, lng1 + dx * 0.08
+    lat0, lat1 = lat0 - dy * 0.08, lat1 + dy * 0.08
+    lat_ticks = _nice_ticks(lat0, lat1, 5)
+    lng_ticks = _nice_ticks(lng0, lng1, 5)
+
+    def _px(lng):
+        return mx + (lng - lng0) / (lng1 - lng0) * pw
+
+    def _py(lat):
+        return my + ph - (lat - lat0) / (lat1 - lat0) * ph
+
+    parts = [_svg_head(w, h + 30), _axis((mx, my, pw, ph), lat_ticks, ylabel="纬度")]
+    for t in lng_ticks:
+        tx_px = _px(t)
+        parts.append(f'<line x1="{tx_px:.1f}" y1="{my}" x2="{tx_px:.1f}" y2="{my + ph}" stroke="#F1F3F5" stroke-width="1"/>')
+        parts.append(f'<text x="{tx_px:.1f}" y="{my + ph + 18}" text-anchor="middle" font-size="10.5" fill="#818588">{_fmt(t)}</text>')
+    parts.append(f'<text x="{mx + pw / 2}" y="{my + ph + 32}" text-anchor="middle" font-size="11" fill="#616567">经度</text>')
+    for lng, lat, name, value in pts:
+        cx, cy = _px(lng), _py(lat)
+        tip = f"{_html.escape(name)}（{lng:.4f},{lat:.4f}）" + (f" · {_html.escape(str(value))}" if value is not None else "")
+        parts.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="5" fill="#D97706" stroke="#fff" stroke-width="1.5" data-tip="{tip}"/>')
+        if name:
+            parts.append(f'<text x="{cx:.1f}" y="{cy - 8:.1f}" text-anchor="middle" font-size="9.5" fill="#616567">{_html.escape(name[:12])}</text>')
+    parts.append("</svg>")
+    sub = f"{len(pts)} 个点位 · 经度 {lng0:.2f}~{lng1:.2f} · 纬度 {lat0:.2f}~{lat1:.2f}" + (f" · 单位 {_html.escape(unit)}" if unit else "")
+    return _TMPL.format(title=_html.escape(title), sub=sub, body="".join(parts), legend="")
+
+
 def render_chart(
     type: str = "line",
     title: str = "图表",
@@ -257,10 +306,16 @@ def render_chart(
     series: list | None = None,
     unit: str = "",
     pie_data: list | None = None,
+    points: list | None = None,
 ) -> str:
     """生成完整离线 SVG 图表 HTML。参数非法时返回带错误说明的 HTML（不抛异常）。"""
     t = (type or "line").lower()
     try:
+        if t in ("scatter", "map"):
+            pts = list(points or [])
+            if not pts:
+                raise ValueError("scatter/map 需要 points=[{'lng','lat','name','value'},...]")
+            return _scatter_map(title or "点位分布", pts, unit)
         if t in ("line", "multi_line"):
             xl = list(x_labels or [])
             ss = list(series or [])
@@ -288,7 +343,7 @@ def render_chart(
             if not items:
                 raise ValueError("pie 需要 pie_data=[{'name','value'},...]")
             return _pie_chart(title or "占比图", items, unit)
-        raise ValueError(f"不支持的图表类型: {type}（支持 line/bar/stacked_bar/pie）")
+        raise ValueError(f"不支持的图表类型: {type}（支持 line/bar/stacked_bar/pie/scatter/map）")
     except Exception as e:  # noqa: BLE001 — 图表失败也要给可读反馈
         msg = _html.escape(str(e))
         return f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"></head>

@@ -2734,22 +2734,67 @@ def _h_query_water_quality(water_body: str, section: str = ""):
 
 @tool("analyze_document")
 def _h_analyze_document(file_path: str):
-    """真实读取本地纯文本文档（txt/md/csv/log/json 等），返回内容（截断 20000 字符防撑爆上下文）。
-    权限级别 L1（analyze_ 前缀，只读）。PDF/DOCX 无解析依赖，如实报不支持。"""
+    """真实读取本地文档：纯文本(txt/md/csv/log/json) + PDF(PyMuPDF) + DOCX(原生解析)。
+    权限级别 L1（analyze_ 前缀，只读）。内容截断 20000 字符防撑爆上下文。"""
     from pathlib import Path as _P
     p = _P(str(file_path or "")).expanduser()
     if not p.is_file():
         return {"error": f"file not found: {file_path}"}
-    if p.suffix.lower() in (".pdf", ".docx", ".doc"):
-        return {"error": f"{p.suffix} 解析依赖未安装，当前仅支持纯文本；请先另存为 .txt",
+    suffix = p.suffix.lower()
+    cap = 20000
+    if suffix == ".pdf":
+        try:
+            import fitz  # PyMuPDF
+        except ImportError:
+            return {"error": "PDF 解析依赖未安装（PyMuPDF）", "file_path": str(p)}
+        try:
+            doc = fitz.open(str(p))
+            pages = [pg.get_text() for pg in doc]
+            content = "\n\n".join(f"【第{i + 1}页】\n{t}" for i, t in enumerate(pages))
+            doc.close()
+        except Exception as e:  # noqa: BLE001
+            return {"error": f"PDF 解析失败: {e}", "file_path": str(p)}
+        return {"file_path": str(p), "kind": "pdf", "pages": len(pages),
+                "chars": len(content), "truncated": len(content) > cap,
+                "content": content[:cap]}
+    if suffix in (".docx",):
+        return _read_docx(p, cap)
+    if suffix == ".doc":
+        return {"error": ".doc（旧二进制格式）不支持，请另存为 .docx 或 .txt",
                 "file_path": str(p)}
     try:
         content = p.read_text(encoding="utf-8", errors="replace")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return {"error": str(e), "file_path": str(p)}
-    cap = 20000
     return {"file_path": str(p), "chars": len(content),
             "truncated": len(content) > cap, "content": content[:cap]}
+
+
+def _read_docx(p, cap: int) -> dict:
+    """原生解析 .docx（zip + word/document.xml），无需 python-docx 依赖。"""
+    import zipfile
+    import re as _re
+    from xml.etree import ElementTree as _ET
+    try:
+        with zipfile.ZipFile(str(p)) as z:
+            xml = z.read("word/document.xml")
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"DOCX 解析失败: {e}", "file_path": str(p)}
+    try:
+        root = _ET.fromstring(xml)
+        # w:t 是文本节点，w:p 是段落（段落间加换行）
+        ns = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+        paras = []
+        for para in root.iter(f"{ns}p"):
+            texts = [n.text or "" for n in para.iter(f"{ns}t")]
+            line = "".join(texts).strip()
+            paras.append(line)
+        content = "\n".join(paras)
+    except Exception as e:  # noqa: BLE001
+        return {"error": f"DOCX 解析失败: {e}", "file_path": str(p)}
+    return {"file_path": str(p), "kind": "docx",
+            "chars": len(content), "truncated": len(content) > cap,
+            "content": content[:cap]}
 
 
 
@@ -2781,7 +2826,13 @@ def _h_save_document(filename: str, content: str, workspace: str = ""):
         stem, suf = fname.rsplit(".", 1) if "." in fname else (fname, "")
         target = deliv / (f"{stem}_{n}.{suf}" if suf else f"{stem}_{n}")
         n += 1
-    target.write_text(str(content), encoding="utf-8")
+    if target.suffix.lower() == ".docx":
+        try:
+            _gen_docx(str(content), str(target))
+        except Exception as e:  # noqa: BLE001
+            return {"saved": False, "error": f"docx 生成失败: {e}"}
+    else:
+        target.write_text(str(content), encoding="utf-8")
     try:
         ws.add_event("deliverable", f"save_document -> {target.name} ({target.stat().st_size}B)")
     except Exception:
@@ -2789,6 +2840,98 @@ def _h_save_document(filename: str, content: str, workspace: str = ""):
     return {"saved": True, "path": str(target.resolve()),
             "workspace": ws.meta.get("slug", ws.path.name),
             "bytes": target.stat().st_size}
+
+
+def _gen_docx(md_text: str, target: str) -> None:
+    """原生生成 .docx（zip + OOXML，无需 python-docx 依赖）。
+    支持：标题(#)/无序列表(-)/表格(|)/加粗(**)/普通段落。"""
+    import zipfile
+    from xml.sax.saxutils import escape as _esc
+    import re as _re
+
+    def _inline(text: str) -> str:
+        # **加粗** → <w:r><w:rPr><w:b/></w:rPr><w:t>
+        parts = []
+        for i, seg in enumerate(_re.split(r"\*\*([^*]+)\*\*", text)):
+            if i % 2 == 1:
+                parts.append(f'<w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">{_esc(seg)}</w:t></w:r>')
+            elif seg:
+                parts.append(f'<w:r><w:t xml:space="preserve">{_esc(seg)}</w:t></w:r>')
+        return "".join(parts) or '<w:r><w:t></w:t></w:r>'
+
+    body = []
+    table_buf: list[list[str]] = []
+    in_table = False
+
+    def _flush_table():
+        nonlocal in_table, table_buf
+        if not table_buf:
+            return
+        rows_xml = []
+        for ri, row in enumerate(table_buf):
+            cells = "".join(
+                f'<w:tc><w:p>{_inline(c)}</w:p></w:tc>' for c in row)
+            rows_xml.append(
+                f'<w:tr><w:trPr>{"<w:tblHeader/>" if ri == 0 else ""}</w:trPr>{cells}</w:tr>')
+        body.append(
+            '<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders>'
+            '<w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/>'
+            '<w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/>'
+            '<w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/>'
+            '</w:tblBorders></w:tblPr>' + "".join(rows_xml) + '</w:tbl>')
+        table_buf = []
+        in_table = False
+
+    for line in (md_text or "").splitlines():
+        s = line.strip()
+        if s.startswith("|"):
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            if all(_re.match(r"^:?-{2,}:?$", c) for c in cells if c):
+                continue  # 分隔行跳过
+            if not in_table:
+                in_table = True
+                table_buf = []
+            table_buf.append(cells)
+            continue
+        _flush_table()
+        if not s:
+            continue
+        if s.startswith("### "):
+            body.append(f'<w:p><w:pPr><w:pStyle w:val="Heading3"/></w:pPr>{_inline(s[4:])}</w:p>')
+        elif s.startswith("## "):
+            body.append(f'<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr>{_inline(s[3:])}</w:p>')
+        elif s.startswith("# "):
+            body.append(f'<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr>{_inline(s[2:])}</w:p>')
+        elif s.startswith(("- ", "* ")):
+            body.append(f'<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>{_inline(s[2:])}</w:p>')
+        else:
+            body.append(f"<w:p>{_inline(s)}</w:p>")
+    _flush_table()
+
+    document = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        '<w:body>' + "".join(body) +
+        '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/></w:sectPr></w:body></w:document>'
+    )
+    content_types = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+        '</Types>'
+    )
+    rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+        '</Relationships>'
+    )
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", content_types)
+        z.writestr("_rels/.rels", rels)
+        z.writestr("word/document.xml", document)
 
 
 
@@ -2805,6 +2948,52 @@ _CATEGORY_BY_PREFIX = [
     ("ocr_", "文字识别"), ("execute_", "沙箱执行"), ("save_", "本地产物落盘"),
     ("initiate_", "流程发起"),
 ]
+
+# 核心工具参数说明（按参数名通用映射 + 工具级覆盖）
+@tool("detect_data_anomaly")
+def _h_detect_data_anomaly(series, method: str = "auto", threshold: float = 3.0):
+    """监测数据突变/真伪辅助鉴定（统计异常检测，纯本地计算）：
+    - grubbs: z 分数离群点检测（|z|>threshold 标记可疑）
+    - cusum: 累计和漂移检测（对均值突变敏感）
+    只给量化线索（下标/z 值/cusum），真伪结论需结合运维记录核实，禁止直接下判定。"""
+    try:
+        vals = [float(x) for x in (series or []) if x is not None]
+    except (TypeError, ValueError):
+        return {"error": "series 必须为数值列表"}
+    if len(vals) < 4:
+        return {"error": "数据点不足（<4），无法做统计检验", "series_len": len(vals)}
+    mean = sum(vals) / len(vals)
+    var = sum((x - mean) ** 2 for x in vals) / len(vals)
+    std = var ** 0.5
+    if std == 0:
+        return {"series_len": len(vals), "mean": mean, "note": "标准差为 0，无变异，无离群点",
+                "suspicious": [], "cusum_shifts": []}
+    out: dict = {"series_len": len(vals), "mean": round(mean, 4), "std": round(std, 4)}
+    if method in ("grubbs", "auto"):
+        z = [(x - mean) / std for x in vals]
+        out["z_scores"] = [round(zz, 3) for zz in z]
+        out["suspicious"] = [{"index": i, "value": vals[i], "z": round(zz, 3)}
+                             for i, zz in enumerate(z) if abs(zz) > threshold]
+    if method in ("cusum", "auto"):
+        k = 0.5 * std
+        h = 5.0 * std
+        cpos = cneg = 0.0
+        shifts: list = []
+        for i, x in enumerate(vals):
+            cpos = max(0.0, cpos + (x - mean) - k)
+            cneg = max(0.0, cneg - (x - mean) - k)
+            if cpos > h:
+                shifts.append({"index": i, "direction": "up", "cusum": round(cpos, 3)})
+                cpos = 0.0
+            if cneg > h:
+                shifts.append({"index": i, "direction": "down", "cusum": round(cneg, 3)})
+                cneg = 0.0
+        out["cusum_shifts"] = shifts
+    out.setdefault("suspicious", [])
+    out.setdefault("cusum_shifts", [])
+    out["note"] = "统计异常仅作量化线索，真伪须结合运维记录/工况核实，禁止直接下结论"
+    return out
+
 
 # 核心工具参数说明（按参数名通用映射 + 工具级覆盖）
 @tool("execute_code")

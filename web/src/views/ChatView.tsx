@@ -114,11 +114,25 @@ function renderCards(trace: TraceEvent[]): React.ReactElement | null {
   );
 }
 
-/** 回答产物卡片：完整稿落盘为 MD，点击拉取原文渲染（DSH 文件产物对标） */
-function ArtifactCard({ name, title, size }: { name: string; title: string; size?: number }): React.ReactElement {
+/** 按扩展名返回产物图标（对齐 QClaw 文件类型图标） */
+function fileIcon(name: string): string {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (['md', 'txt', 'log', 'csv', 'json'].includes(ext)) return '📄';
+  if (ext === 'docx' || ext === 'doc') return '📝';
+  if (ext === 'pdf') return '📕';
+  if (['xlsx', 'xls', 'csv'].includes(ext)) return '📊';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) return '🖼️';
+  if (['ppt', 'pptx'].includes(ext)) return '📽️';
+  if (['zip', 'gz', 'tar'].includes(ext)) return '🗜️';
+  return '📎';
+}
+
+/** 回答产物卡片：完整稿落盘为文件，点击拉取原文渲染 + 下载/复制路径/复制链接（DSH/QClaw 文件产物对标） */
+function ArtifactCard({ name, title, size, path }: { name: string; title: string; size?: number; path?: string }): React.ReactElement {
   const [open, setOpen] = React.useState(false);
   const [content, setContent] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [copied, setCopied] = React.useState<string | null>(null);
 
   const toggle = () => {
     setOpen((v) => !v);
@@ -131,12 +145,37 @@ function ArtifactCard({ name, title, size }: { name: string; title: string; size
     }
   };
 
+  const copyPath = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const v = path || name;
+    void navigator.clipboard.writeText(v).then(() => setCopied('path'));
+    setTimeout(() => setCopied(null), 1200);
+  };
+
+  const copyLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const v = `${location.origin}/api/v1/documents/artifact/${encodeURIComponent(name)}`;
+    void navigator.clipboard.writeText(v).then(() => setCopied('link'));
+    setTimeout(() => setCopied(null), 1200);
+  };
+
   return (
     <div className="artifact-card">
       <div className="artifact-card-head" onClick={toggle}>
-        <span className="artifact-card-icon">📄</span>
-        <span className="artifact-card-title">{title || name}</span>
+        <span className="artifact-card-icon">{fileIcon(name)}</span>
+        <span className="artifact-card-title" title={name}>{title || name}</span>
         {size !== undefined && <span className="artifact-card-meta">{(size / 1024).toFixed(1)} KB</span>}
+        <a
+          className="artifact-card-act"
+          title="下载文件"
+          href={`/api/v1/documents/artifact/${encodeURIComponent(name)}/download`}
+          download={name}
+          onClick={(e) => e.stopPropagation()}
+        >⬇</a>
+        <button className="artifact-card-act" title="复制本地路径"
+                onClick={copyPath}>{copied === 'path' ? '✓' : '🗂'}</button>
+        <button className="artifact-card-act" title="复制分享链接"
+                onClick={copyLink}>{copied === 'link' ? '✓' : '🔗'}</button>
         <button className="dsh-expand" title={open ? '收起' : '展开'}
                 onClick={(e) => { e.stopPropagation(); toggle(); }}>{open ? '^' : 'v'}</button>
       </div>
@@ -300,7 +339,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
   const [docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
   /** 磁盘上已持久化的 MD 产物（重启/刷新后仍可点开，对齐 DSH 文件产物持久化） */
-  const [persistedArtifacts, setPersistedArtifacts] = useState<{ name: string; title: string; size: number }[]>([]);
+  const [persistedArtifacts, setPersistedArtifacts] = useState<{ name: string; title: string; size: number; path?: string }[]>([]);
   // 右侧预览面板：文档生成/上传后自动内嵌打开 docs.qq.com（不弹系统浏览器）
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>('');
@@ -439,6 +478,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             name: a.name,
             title: a.name.replace(/\.md$/, '').replace(/_\d+$/, ''),
             size: Math.round(a.size_kb * 1024),
+            path: a.path,
           })));
         }
       }).catch(() => {});
@@ -482,7 +522,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const mdArtifacts = messages
     .filter((m) => m.role === 'assistant')
     .flatMap((m) => (m.trace ?? []).filter((t) => t.type === 'artifact' && t.name))
-    .map((t) => ({ name: t.name!, title: t.title ?? t.name!, size: t.size }));
+    .map((t) => ({ name: t.name!, title: t.title ?? t.name!, size: t.size, path: t.path }));
 
   /** 合并：当前会话轨迹产物 + 磁盘持久化产物（按名去重，刷新/重启后仍在） */
   const allMdArtifacts = [
@@ -750,9 +790,19 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
                     : (busy ? '<span class="thinking">正在思考<span class="dots">…</span></span>' : ''),
                 }}
               />
-              {m.role === 'assistant' && (m.trace ?? []).filter((t) => t.type === 'artifact' && t.name).map((t, ai) => (
-                <ArtifactCard key={`${t.name}-${ai}`} name={t.name!} title={t.title ?? t.name!} size={t.size} />
-              ))}
+              {m.role === 'assistant' && (() => {
+                const arts = (m.trace ?? []).filter((t) => t.type === 'artifact' && t.name);
+                if (arts.length === 0) return null;
+                const cards = arts.map((t, ai) => (
+                  <ArtifactCard key={`${t.name}-${ai}`} name={t.name!} title={t.title ?? t.name!} size={t.size} path={t.path} />
+                ));
+                return arts.length > 1 ? (
+                  <div className="artifact-group">
+                    <div className="artifact-group-head">📦 本次任务产物（{arts.length}）</div>
+                    {cards}
+                  </div>
+                ) : cards;
+              })()}
               {m.role === 'user' && (m.attachments?.length ?? 0) > 0 && (
                 <div className="attach-chips">
                   {m.attachments!.map((a, ai) => (
@@ -1217,7 +1267,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             ) : (
               <>
                 {allMdArtifacts.map((a, i) => (
-                  <ArtifactCard key={`md-${i}`} name={a.name} title={a.title} size={a.size} />
+                  <ArtifactCard key={`md-${i}`} name={a.name} title={a.title} size={a.size} path={a.path} />
                 ))}
                 {artifacts.map((a, i) => (
                   <details key={i} className="artifact-item">
