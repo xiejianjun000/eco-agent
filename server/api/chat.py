@@ -2588,13 +2588,14 @@ def _strip_dangling_blocks(parts: list[str]) -> list[str]:
     return out
 
 
-def _enforce_concise(content: str, cap: int = 300) -> tuple[str, bool]:
+def _enforce_concise(content: str, cap: int = 800) -> tuple[str, bool]:
     """规则19 的确定性执行：要点式回答硬上限（模型层面纪律不可靠时的用户可见保证）。
 
     预算模型：条文引用句（含'第X条'的句子）完整豁免、不计入上限；
     其余内容（叙述 + 表格行）共享 cap 字预算，按序截断；截断后收尾清洗
-    （不留悬空标题/引导行），并追加提示（用户可要'详细版'）。
-    返回 (文本, 是否截断)。"""
+    （不留悬空标题/引导行）。返回 (文本, 是否截断)。
+    cap=800：给多节/多点实质回答（如 4 类价值分析）完整展开的空间，
+    避免 300 字硬切导致"### 2 之后凭空消失"的残缺输出；仍防失控刷屏。"""
     text = (content or "").strip()
     if not text or len(text) <= cap:
         return text, False

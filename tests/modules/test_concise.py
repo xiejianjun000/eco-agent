@@ -75,7 +75,7 @@ def test_short_text_untouched():
 def test_long_prose_cut_at_boundary():
     # 。边界位于 cap 附近（~283）→ 应在句边界截断
     text = "开头。" + "内容" * 140 + "。" + "内容" * 140 + "。"
-    out, cut = _enforce_concise(text)
+    out, cut = _enforce_concise(text, cap=300)
     assert cut is True
     assert len(out) <= 480
     body = out.rstrip()
@@ -85,7 +85,7 @@ def test_long_prose_cut_at_boundary():
 def test_long_prose_no_boundary_hard_cut():
     # 无句边界可用 → 硬截断于 cap
     text = "开头。" + "内容" * 200 + "。结尾句。"
-    out, cut = _enforce_concise(text)
+    out, cut = _enforce_concise(text, cap=300)
     assert cut is True
     body = out.rstrip()
     assert len(body) <= 300
