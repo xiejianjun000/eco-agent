@@ -8,15 +8,22 @@ server/api/documents.py — 文档面板 API
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 logger = logging.getLogger("eco.server.documents")
 
 router = APIRouter()
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "output"
+
+
+def _artifacts_dir() -> Path:
+    """回答产物目录（$ECO_DIR/artifacts/，与 chat._save_answer_artifact 一致）。"""
+    base = Path(os.environ.get("ECO_DIR") or Path.home() / ".eco")
+    return base / "artifacts"
 
 
 @router.get("/documents")
@@ -32,7 +39,36 @@ async def list_documents() -> dict:
                     "size_kb": round(st.st_size / 1024, 1),
                     "modified": st.st_mtime,
                 })
-    return {"count": len(files), "files": files}
+    # 回答产物（MD）并入文档列表：持久落盘，重启仍在
+    art_dir = _artifacts_dir()
+    artifacts = []
+    if art_dir.is_dir():
+        for f in sorted(art_dir.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True):
+            st = f.stat()
+            artifacts.append({
+                "name": f.name,
+                "path": str(f),
+                "size_kb": round(st.st_size / 1024, 1),
+                "modified": st.st_mtime,
+                "kind": "artifact",
+            })
+    return {"count": len(files) + len(artifacts), "files": files, "artifacts": artifacts}
+
+
+@router.get("/documents/artifact/{name}")
+async def read_artifact(name: str) -> dict:
+    """返回回答产物的 Markdown 原文（前端点开产物卡片时拉取渲染）。"""
+    art_dir = _artifacts_dir()
+    safe = Path(name).name  # 防路径穿越：只取 basename
+    target = art_dir / safe
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="artifact not found")
+    try:
+        content = target.read_text(encoding="utf-8", errors="replace")
+    except OSError as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"read failed: {e}") from e
+    return {"name": safe, "path": str(target), "content": content,
+            "size": target.stat().st_size}
 
 
 @router.get("/documents/tools")

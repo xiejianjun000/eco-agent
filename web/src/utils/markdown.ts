@@ -222,5 +222,7 @@ export function renderMarkdown(text: string): string {
 
   if (inCodeBlock) closeCodeBlock();
   closeList();
-  return out.join('\n');
+  // 用空串拼接（非 \n）：.bubble 是 white-space: pre-wrap，块间的 \n 会被
+  // 渲染成多余空行，导致"行与行之间间隔太大"——块级元素间距由各自 margin 控制。
+  return out.join('');
 }

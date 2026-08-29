@@ -53,7 +53,7 @@ export interface ChatUsage {
 }
 
 export interface TraceEvent {
-  type: 'think' | 'think_delta' | 'tool_start' | 'tool' | 'answer' | 'correction' | 'document' | 'card';
+  type: 'think' | 'think_delta' | 'tool_start' | 'tool' | 'answer' | 'correction' | 'document' | 'card' | 'artifact';
   round?: number;
   name?: string;
   category?: 'read' | 'write' | 'exec';
@@ -74,6 +74,9 @@ export interface TraceEvent {
   title?: string;
   /** answer 事件：本回答被要点版截断（前端显示「详细版」按钮） */
   truncated?: boolean;
+  /** artifact 事件：完整稿落盘为 MD 产物（点击拉取原文查看） */
+  path?: string;
+  size?: number;
 }
 
 export interface Skill {
@@ -168,6 +171,7 @@ export const api = {
   metrics: () => get<Record<string, unknown>>('/metrics'),
   documents: () => get<{ count: number; files: { name: string; path: string; size_kb: number; modified: number }[] }>('/documents'),
   documentTools: () => get<{ count: number; tools: { name: string; desc: string }[] }>('/documents/tools'),
+  artifact: (name: string) => get<{ name: string; path: string; content: string; size: number }>(`/documents/artifact/${encodeURIComponent(name)}`),
   subagentSpawn: (body: { message: string; history?: { role: string; content: string }[]; background?: boolean; label?: string }) =>
     post<SubagentInfo>('/subagents', body),
   subagentList: () => get<{ agents: SubagentInfo[]; stats: Record<string, number> }>('/subagents'),

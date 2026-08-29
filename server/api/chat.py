@@ -1886,6 +1886,12 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                     save_full(content, _full_before_cut_early)
                 except Exception:  # noqa: BLE001
                     pass
+                # 完整稿落盘为持久 MD 产物（对齐 DSH），前端渲染可点产物卡片
+                _art = _save_answer_artifact(_full_before_cut_early)
+                if _art:
+                    _emit({"type": "artifact", "round": round_idx,
+                           "title": _art["title"], "name": _art["name"],
+                           "path": _art["path"], "size": _art["size"]})
                 if stream_answer and content:
                     _push_delta(content, reset=True)
             # 质量门禁（早退路径同样生效）：条号/表格行数不一致 → 自动纠偏重写一次
@@ -2152,6 +2158,12 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
             save_full(content, _full_before_cut)  # 「详细版」承诺：完整稿落盘
         except Exception:  # noqa: BLE001
             pass
+        # 完整稿落盘为持久 MD 产物（对齐 DSH），前端渲染可点产物卡片
+        _art = _save_answer_artifact(_full_before_cut)
+        if _art:
+            _emit({"type": "artifact", "round": round_idx,
+                   "title": _art["title"], "name": _art["name"],
+                   "path": _art["path"], "size": _art["size"]})
         if stream_answer and content:
             _push_delta(content, reset=True)
     # 质量门禁（对标 DSH guard）：条号/表格行数不一致 → 自动纠偏重写一次
@@ -2588,14 +2600,37 @@ def _strip_dangling_blocks(parts: list[str]) -> list[str]:
     return out
 
 
-def _enforce_concise(content: str, cap: int = 800) -> tuple[str, bool]:
-    """规则19 的确定性执行：要点式回答硬上限（模型层面纪律不可靠时的用户可见保证）。
+def _save_answer_artifact(full: str) -> dict | None:
+    """回答被要点化截断时，把完整稿落盘为持久 MD 产物（对齐 DSH 文件产物）。
+
+    产物目录：$ECO_DIR/artifacts/（持久，重启仍在，前端可点开查看）。
+    返回 {name, path, size, title}；失败返回 None（不影响主回答）。"""
+    import os as _os
+    import time as _time
+    from pathlib import Path as _P
+
+    try:
+        base = _P(_os.environ.get("ECO_DIR") or _P.home() / ".eco")
+        art_dir = base / "artifacts"
+        art_dir.mkdir(parents=True, exist_ok=True)
+        first = next((ln.strip() for ln in (full or "").splitlines() if ln.strip()), "")
+        title = re.sub(r"[^\w\u4e00-\u9fff-]+", "", first.lstrip("✅").strip())[:24] or "回答产物"
+        name = f"{title}_{int(_time.time())}.md"
+        target = art_dir / name
+        target.write_text(full, encoding="utf-8")
+        return {"name": name, "path": str(target), "size": target.stat().st_size, "title": title}
+    except Exception:  # noqa: BLE001 — 产物落盘失败不影响主回答
+        return None
+
+
+def _enforce_concise(content: str, cap: int = 500) -> tuple[str, bool]:
+    """规则19 的确定性执行：对话只给核心内容，完整稿落盘为 MD 产物（对齐 DSH）。
 
     预算模型：条文引用句（含'第X条'的句子）完整豁免、不计入上限；
     其余内容（叙述 + 表格行）共享 cap 字预算，按序截断；截断后收尾清洗
     （不留悬空标题/引导行）。返回 (文本, 是否截断)。
-    cap=800：给多节/多点实质回答（如 4 类价值分析）完整展开的空间，
-    避免 300 字硬切导致"### 2 之后凭空消失"的残缺输出；仍防失控刷屏。"""
+    cap=500：对话只保留结论+关键点（核心），超出部分由调用方落盘为
+    artifacts/*.md 产物（前端可点开查看完整稿），不再硬生生堆在气泡里。"""
     text = (content or "").strip()
     if not text or len(text) <= cap:
         return text, False
@@ -2604,6 +2639,11 @@ def _enforce_concise(content: str, cap: int = 800) -> tuple[str, bool]:
     items: list[tuple[str, bool, bool]] = []
     for ln in text.splitlines():
         s = ln.strip()
+        # 表格行整体作为一个非豁免条目，不做条文引用切分——否则表单元格内的
+        # "第N条"会被误当条文切碎，导致表格被截成半行（实测"| 12 | 这是"残缺）
+        if s.startswith("|"):
+            items.append((ln, False, True))
+            continue
         spans = list(re.finditer(r"第[一二三四五六七八九十百零千\d]+条[^。！；]*[。！；]?", s))
         if not spans:
             items.append((ln, False, True))
@@ -2622,9 +2662,9 @@ def _enforce_concise(content: str, cap: int = 800) -> tuple[str, bool]:
     parts: list[tuple[str, bool]] = []  # (text, newline_before)
     used = 0
     cited = 0
-    cite_budget = 400  # 条文引用豁免封顶：超出部分不再全文保留
+    cite_budget = 300  # 条文引用豁免封顶：超出部分不再全文保留
     table_used = 0
-    table_budget = 800  # 表格是证据主体：整表豁免（超出才裁行），绝不中途切断
+    table_budget = 400  # 表格豁免封顶：超长表落产物，对话只留核心证据表
     dropped_cite = False
     dropped_table = False
     truncated = False

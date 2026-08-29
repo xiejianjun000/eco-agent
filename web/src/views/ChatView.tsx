@@ -114,6 +114,43 @@ function renderCards(trace: TraceEvent[]): React.ReactElement | null {
   );
 }
 
+/** 回答产物卡片：完整稿落盘为 MD，点击拉取原文渲染（DSH 文件产物对标） */
+function ArtifactCard({ name, title, size }: { name: string; title: string; size?: number }): React.ReactElement {
+  const [open, setOpen] = React.useState(false);
+  const [content, setContent] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
+
+  const toggle = () => {
+    setOpen((v) => !v);
+    if (content === null && !loading) {
+      setLoading(true);
+      void api.artifact(name)
+        .then((r) => setContent(r.content ?? ''))
+        .catch(() => setContent(`（拉取失败，产物文件：${name}）`))
+        .finally(() => setLoading(false));
+    }
+  };
+
+  return (
+    <div className="artifact-card">
+      <div className="artifact-card-head" onClick={toggle}>
+        <span className="artifact-card-icon">📄</span>
+        <span className="artifact-card-title">{title || name}</span>
+        {size !== undefined && <span className="artifact-card-meta">{(size / 1024).toFixed(1)} KB</span>}
+        <button className="dsh-expand" title={open ? '收起' : '展开'}
+                onClick={(e) => { e.stopPropagation(); toggle(); }}>{open ? '^' : 'v'}</button>
+      </div>
+      {open && (
+        <div className="artifact-card-body">
+          {loading ? <span className="thinking">加载中…</span> : (
+            <div className="bubble md-slim" dangerouslySetInnerHTML={{ __html: content ? renderMarkdown(content) : '' }} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function getEventIcon(type: string, name?: string): string {
   if (type === 'think') return '⚙️';
   if (type === 'answer') return '💬';
@@ -690,6 +727,9 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
                     : (busy ? '<span class="thinking">正在思考<span class="dots">…</span></span>' : ''),
                 }}
               />
+              {m.role === 'assistant' && (m.trace ?? []).filter((t) => t.type === 'artifact' && t.name).map((t, ai) => (
+                <ArtifactCard key={`${t.name}-${ai}`} name={t.name!} title={t.title ?? t.name!} size={t.size} />
+              ))}
               {m.role === 'user' && (m.attachments?.length ?? 0) > 0 && (
                 <div className="attach-chips">
                   {m.attachments!.map((a, ai) => (
