@@ -2530,6 +2530,17 @@ def _normalize_markdown(content: str) -> str:
     t = re.sub(r"^[ \t]*\*{1,3}[ \t]*$", "", t, flags=re.M)
     # ✅ 后换行合并回同行（"✅\n第1107条…" → "✅ 第1107条…"）
     t = re.sub(r"✅[ \t]*\n[ \t]*", "✅ ", t)
+    # 表格挤行修复：模型偶发把多行数据用 || 塞进一行（如 8 要素挤成一行）
+    # → 拆回一行一条（| c1 | c2 || c1 | c2 | → 两行），否则 _enforce_concise
+    # 会把整行当超长数据裁掉，残留"表头+分隔行"的空表
+    _lines = []
+    for _ln in t.split("\n"):
+        _s = _ln.strip()
+        if _s.startswith("|") and "||" in _ln and not re.match(r"^\|[\s:|-]+\|$", _s):
+            _lines.append(re.sub(r"\s*\|\|\s*", " |\n| ", _ln))
+        else:
+            _lines.append(_ln)
+    t = "\n".join(_lines)
     # 连续空行压缩
     t = re.sub(r"\n{3,}", "\n\n", t)
     return t.strip()
@@ -2598,6 +2609,24 @@ def _strip_dangling_blocks(parts: list[str]) -> list[str]:
                 continue
         break
     return out
+
+
+def _strip_empty_tables(text: str) -> str:
+    """移除空表（表头+分隔行，其后无数据行）——截断把整行数据裁掉后残留的
+    坏表（'| 要素 | 术语 |\n|---|---|' 无一行数据），整表删除（完整数据在产物里）。"""
+    lines = text.split("\n")
+    out: list[str] = []
+    i, n = 0, len(lines)
+    while i < n:
+        cur = lines[i].strip()
+        if (cur.startswith("|") and i + 1 < n
+                and re.match(r"^\|[\s:|-]+\|$", lines[i + 1].strip())
+                and (i + 2 >= n or not lines[i + 2].strip().startswith("|"))):
+            i += 2  # 表头 + 分隔行，无数据行 → 跳过
+            continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
 
 
 def _save_answer_artifact(full: str) -> dict | None:
@@ -2706,6 +2735,7 @@ def _enforce_concise(content: str, cap: int = 500) -> tuple[str, bool]:
         return text, False
     joined = "".join(("\n" if nl else "") + t for t, nl in parts)
     result = "\n".join(_strip_dangling_blocks(joined.split("\n"))).strip()
+    result = _strip_empty_tables(result)
     # 链接保全：被截掉的 http(s) 链接补挂到文末（右侧「预览」面板依赖 docs.qq.com 链接）
     lost = [u for u in re.findall(r"https?://[^\s\"'<>()\[\]，。；]+", text)
             if u not in result]
