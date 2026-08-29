@@ -2695,31 +2695,41 @@ def _enforce_concise(content: str, cap: int = 500) -> tuple[str, bool]:
     text = (content or "").strip()
     if not text or len(text) <= cap:
         return text, False
-    # 按行切分条目 (text, exempt, newline_before)：同行片段保持同行拼接，
-    # 避免把 **加粗** 的头尾拆成独立行（曾在截断时把加粗重新掰断）
-    items: list[tuple[str, bool, bool]] = []
+    # 按行切分条目 (text, exempt, newline_before, is_code)：同行片段保持同行拼接，
+    # 避免把 **加粗** 的头尾拆成独立行（曾在截断时把加粗重新掰断）。
+    # is_code=True 的行（``` 围栏及其内容）整体豁免、绝不截断——否则代码块被
+    # 500 字预算拦腰切断，输出"乱七八糟的半截代码"（实测 v4-pro 会直接在回答里贴脚本）。
+    items: list[tuple[str, bool, bool, bool]] = []
+    in_code = False
     for ln in text.splitlines():
         s = ln.strip()
+        if s.startswith("```"):
+            in_code = not in_code
+            items.append((ln, False, True, True))
+            continue
+        if in_code:
+            items.append((ln, False, True, True))
+            continue
         # 表格行整体作为一个非豁免条目，不做条文引用切分——否则表单元格内的
         # "第N条"会被误当条文切碎，导致表格被截成半行（实测"| 12 | 这是"残缺）
         if s.startswith("|"):
-            items.append((ln, False, True))
+            items.append((ln, False, True, False))
             continue
         spans = list(re.finditer(r"第[一二三四五六七八九十百零千\d]+条[^。！；]*[。！；]?", s))
         if not spans:
-            items.append((ln, False, True))
+            items.append((ln, False, True, False))
             continue
         pos = 0
         first = True
         for m in spans:
             if m.start() > pos:
-                items.append((s[pos:m.start()], False, first))
+                items.append((s[pos:m.start()], False, first, False))
                 first = False
-            items.append((m.group(0), True, first))
+            items.append((m.group(0), True, first, False))
             first = False
             pos = m.end()
         if pos < len(s):
-            items.append((s[pos:], False, first))
+            items.append((s[pos:], False, first, False))
     parts: list[tuple[str, bool]] = []  # (text, newline_before)
     used = 0
     cited = 0
@@ -2729,7 +2739,10 @@ def _enforce_concise(content: str, cap: int = 500) -> tuple[str, bool]:
     dropped_cite = False
     dropped_table = False
     truncated = False
-    for item, exempt, nl in items:
+    for item, exempt, nl, is_code in items:
+        if is_code:
+            parts.append((item, nl))  # 代码块整体保留，绝不截断
+            continue
         if exempt:
             if cited + len(item) <= cite_budget:
                 parts.append((item, nl))

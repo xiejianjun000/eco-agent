@@ -68,6 +68,18 @@ def test_sanitize_thinking_keeps_reasoning_over_old_cap():
     assert len(out) > 100
 
 
+def test_enforce_concise_keeps_code_block_whole():
+    # 代码块（```...```）必须整体保留、绝不拦腰截断——否则模型贴的脚本被
+    # 500 字预算切断，输出"乱七八糟的半截代码"（实测 v4-pro 会直接在回答里贴脚本）
+    code = ("import httpx\n" + "url = 'https://air.cnemc.cn:18007/x'\n" * 40
+            + "print('done')\n")
+    answer = "我来实测。\n\n```python\n" + code + "\n```\n"
+    out, cut = _enforce_concise(answer)
+    assert "print('done')" in out          # 代码尾部完整保留
+    assert out.rstrip().endswith("```")     # 闭合围栏在
+    assert "url = 'https://air.cnemc.cn" in out
+
+
 def test_short_text_untouched():
     assert _enforce_concise("一句话回答。") == ("一句话回答。", False)
 
