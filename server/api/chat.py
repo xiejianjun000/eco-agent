@@ -1930,9 +1930,10 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                 messages.append({"role": "assistant", "content": content})
                 messages.append({
                     "role": "user",
-                    "content": "你刚才没有实际调用工具，只输出了预告文字。"
-                               "请直接调用 statute_lookup 或 statute_search 获取条文原文，"
-                               "基于工具返回的真实结果回答，不要再输出预告。",
+                    "content": "你刚才没有实际调用工具，只输出了工具调用格式的文字（<invoke> 或预告）。"
+                               "请直接 function calling 调用合适的工具实际执行：读文件用 file_read、"
+                               "跑命令用 shell_run、查法规条文用 statute_lookup/statute_search，"
+                               "拿到工具真实返回后再回答。禁止输出 <invoke> 这类工具调用格式的文本。",
                 })
                 continue
             # 法规时效红线（机制级确定性闸门，E 维度）：涉及出台/废止/施行/时效
