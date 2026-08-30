@@ -432,11 +432,15 @@ html[data-theme='dark'] .brand-icon { filter: brightness(1.3) drop-shadow(0 1px 
   border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
   overflow: hidden; max-height: calc(100vh - 130px); align-self: stretch;
 }
-.side-tabs { display: flex; border-bottom: 1px solid var(--line); }
+.side-tabs {
+  display: flex; border-bottom: 1px solid var(--line);
+  overflow-x: auto; scrollbar-width: none;
+}
+.side-tabs::-webkit-scrollbar { display: none; }
 .side-tab {
-  flex: 1; border: none; background: transparent; padding: 8px 0;
+  flex: 0 0 auto; border: none; background: transparent; padding: 8px 11px;
   font: inherit; font-size: 12px; font-weight: 600; color: var(--t-sub);
-  cursor: pointer; border-bottom: 2px solid transparent;
+  cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
 }
 .side-tab:hover { color: var(--t-main); }
 .side-tab.active { color: var(--terra-dark); border-bottom-color: var(--terra); }
