@@ -293,10 +293,10 @@ html[data-theme='dark'] .brand-icon { filter: brightness(1.3) drop-shadow(0 1px 
 .msg:hover .msg-toolbar { opacity: 1; }
 .tb-btn {
   border: none; background: transparent; color: var(--t-aux); font-size: 11px;
-  padding: 2px 7px; border-radius: 6px; cursor: pointer;
+  padding: 2px 4px; border-radius: 0; cursor: pointer;
 }
-.tb-btn:hover { background: var(--fill); color: var(--t-main); }
-.tb-btn.active { color: var(--terra); background: var(--terra-soft); }
+.tb-btn:hover { color: var(--t-main); }
+.tb-btn.active { color: var(--terra); }
 
 .branch-tag {
   display: inline-block; align-self: flex-start; margin: 4px 0 6px;
