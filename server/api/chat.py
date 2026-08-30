@@ -1876,6 +1876,10 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                 on_event(ev)
             except Exception:  # noqa: BLE001
                 pass
+    # 首帧即推「思考开始」轨迹事件：请求受理后立刻让前端过程块出现，
+    # 消除「第一轮 LLM 思考期间只显示『正在思考』、看不到任何过程」的死区。
+    _emit({"type": "think", "round": 0, "cost_ms": 0,
+           "thought": "任务受理，正在规划执行路径（调用工具核实数据后再作答）…"})
     round_idx = 0
     for _ in range(max_rounds):
         round_idx += 1
