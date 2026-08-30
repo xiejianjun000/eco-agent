@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from agent_core.approval import get_approval_service
@@ -20,6 +20,17 @@ from agent_core.approval import get_approval_service
 logger = logging.getLogger("eco.api.approvals")
 
 router = APIRouter()
+
+# 审批 API 仅限本机访问（防 CSRF/越权）。answerer 自报需命中授权链，
+# 此处再以客户端 IP 白名单做纵深防御。
+_LOCAL_HOSTS = ("127.0.0.1", "::1", "localhost", "testclient")
+
+
+def _require_local(request: Request) -> None:
+    host = (request.client.host if request.client else "") or ""
+    if host not in _LOCAL_HOSTS:
+        raise HTTPException(status_code=403,
+                            detail="审批 API 仅限本机访问（防 CSRF/越权）")
 
 
 class DecideBody(BaseModel):
@@ -29,14 +40,15 @@ class DecideBody(BaseModel):
 
 
 @router.get("/approvals/pending")
-async def list_pending() -> dict:
+async def list_pending(_: None = Depends(_require_local)) -> dict:
     svc = get_approval_service()
     pending = svc.list_pending()
     return {"pending": pending, "count": len(pending)}
 
 
 @router.post("/approvals/{request_id}/decide")
-async def decide(request_id: str, body: DecideBody) -> dict:
+async def decide(request_id: str, body: DecideBody,
+                 _: None = Depends(_require_local)) -> dict:
     svc = get_approval_service()
     answerer = body.answerer.strip() or "admin"
     result = svc.decide(request_id, allow=body.allow,

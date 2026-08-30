@@ -23,6 +23,7 @@ permissions.py — L1-L4 风险权限模型 + 工具执行闸门（PERMISSION.md
     pending 请求（policy=ask）或维持原拒绝（policy=never），见 agent_core.approval
 """
 
+import contextvars
 import fnmatch
 import logging
 import os
@@ -31,6 +32,19 @@ import sys
 from pathlib import Path
 
 logger = logging.getLogger("permissions")
+
+# 请求级 trace_id（contextvars：async 安全，跨工具/审计决策串联同一请求链路）
+_trace_id_var = contextvars.ContextVar("eco_trace_id", default="")
+
+
+def set_trace_id(trace_id: str) -> None:
+    """设置当前请求的 trace_id（chat 入口调用，供审计决策串联）。"""
+    _trace_id_var.set(trace_id or "")
+
+
+def get_trace_id() -> str:
+    """读取当前请求的 trace_id（无则空串）。"""
+    return _trace_id_var.get()
 
 LEVELS = ("L1", "L2", "L3", "L4")
 LEVEL_LABELS = {"L1": "READ", "L2": "WRITE_LOCAL", "L3": "EXEC", "L4": "EXTERNAL"}
@@ -223,9 +237,13 @@ def _audit_decision(tool_name: str, level: str, decision: str, reason: str):
     """全部闸门决策写 SM3 审计链（source=permission）"""
     try:
         from agent_core.prompt_engine import get_prompt_engine
+        tid = get_trace_id()
+        content = f"{tool_name} [{level}/{LEVEL_LABELS[level]}] -> {decision}: {reason}"
+        if tid:
+            content = f"[{tid}] {content}"
         get_prompt_engine().audit.append(
             source="permission",
-            content=f"{tool_name} [{level}/{LEVEL_LABELS[level]}] -> {decision}: {reason}",
+            content=content,
             phase="permission", accepted=(decision == "allow"), reason=reason)
     except Exception as e:  # noqa: BLE001 — 审计失败不阻断业务
         logger.warning(f"[permissions] 审计写入失败: {e}")

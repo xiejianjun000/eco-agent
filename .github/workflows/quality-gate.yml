@@ -1,0 +1,107 @@
+name: quality-gate
+
+# eco Agent 质量门禁：安全 → 文档 → API 契约 → 视觉回归，全绿才可合并
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: quality-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-and-unit:
+    name: 安全 + 单元测试（门禁 1-5）
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt -q
+
+      - name: lint
+        run: python -m ruff check .
+
+      - name: 安全/性能/文档门禁（无网络，mock 外部服务）
+        run: |
+          python -m pytest tests/test_security/ tests/test_performance/ tests/test_docs/ -q
+
+      - name: 全量单测
+        run: python -m pytest tests/ -q
+
+  doc-consistency:
+    name: 文档与代码一致性
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt -q
+      - name: 异常文档覆盖 + 入口命令 + 无 key 兜底
+        run: python -m pytest tests/test_docs/test_doc_consistency.py -q
+
+  api-contract:
+    name: API 契约（openapi.json 破坏性变更检测）
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt -q
+      - name: 生成 openapi.json 并 diff 主分支
+        run: |
+          python - <<'PY'
+          import json
+          from server.app import create_app
+          spec = create_app().openapi()
+          json.dump(spec, open("openapi.snapshot.json", "w"), ensure_ascii=False, indent=1)
+          print("openapi paths:", len(spec.get("paths", {})))
+          PY
+          git fetch origin main --quiet
+          if git show origin/main:openapi.snapshot.json > /tmp/base.json 2>/dev/null; then
+            python - <<'PY'
+            import json
+            cur = json.load(open("openapi.snapshot.json"))
+            base = json.load(open("/tmp/base.json"))
+            cur_p = set(cur.get("paths", {}))
+            base_p = set(base.get("paths", {}))
+            removed = base_p - cur_p
+            print("新增路径:", sorted(cur_p - base_p))
+            print("删除路径:", sorted(removed))
+            if removed:
+                raise SystemExit(f"⚠️ 破坏性变更：删除了 API 路径 {sorted(removed)}，需人工审批")
+            PY
+          else
+            echo "首次生成基线 openapi.snapshot.json"
+          fi
+
+  visual-regression:
+    name: Web UI 视觉回归
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 构建前端
+        working-directory: web
+        run: |
+          npm ci --cache /tmp/npm-cache
+          npm run build
+      # 视觉回归需服务 + Playwright + 基线截图，体积大；PR 上仅做"前端可构建"兜底，
+      # 完整 pixelmatch 对比在 nightly 流水线执行（见 docs/production-notes.md 说明）
+      - name: 前端可构建检查（视觉回归的轻量兜底）
+        run: test -f web/dist/index.html && echo "前端构建产物就绪"

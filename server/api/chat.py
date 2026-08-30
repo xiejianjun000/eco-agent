@@ -12,6 +12,7 @@ import asyncio
 import json
 import logging
 import re
+import uuid
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -1927,6 +1928,9 @@ def _extract_reply(result: dict) -> str:
 async def chat(req: ChatRequest) -> ChatResponse:
     import time
 
+    # 请求级 trace_id：贯穿本请求的权限决策/工具调用/审计链
+    from agent_core.permissions import set_trace_id
+    set_trace_id(f"req-{uuid.uuid4().hex[:12]}")
 
     # fail-closed 检查点：LLM 请求前会话日志必须持久完整（对标 DSH checkpoint policy）
     _durable_guard(req.session_id, "llm/request")
@@ -3241,6 +3245,10 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
     import asyncio
     import queue
     import time
+
+    # 请求级 trace_id：贯穿本请求的权限决策/工具调用/审计链
+    from agent_core.permissions import set_trace_id
+    set_trace_id(f"req-{uuid.uuid4().hex[:12]}")
 
     # fail-closed 检查点：LLM 请求前会话日志必须持久完整（对标 DSH checkpoint policy）
     _durable_guard(req.session_id, "llm/request")

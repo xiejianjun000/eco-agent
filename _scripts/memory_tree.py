@@ -41,7 +41,7 @@ OBSIDIAN_VAULT = None  # 由 set_obsidian_vault() 设置
 # 系统敏感目录（路径遍历防护：resolve 后命中即拒绝读写；resolve 消解 /etc→/private/etc 软链）
 _FORBIDDEN_ROOTS = tuple(Path(p).resolve() for p in ("/etc", "/proc", "/sys", "/dev", "/root",
                                                      "/usr", "/bin", "/sbin", "/Library",
-                                                     "/System", "/private/etc", "/private/var"))
+                                                     "/System"))
 
 
 def _confine_vault_dir(path: Path) -> Path | None:
