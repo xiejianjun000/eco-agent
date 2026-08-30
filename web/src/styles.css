@@ -782,6 +782,27 @@ details[open] > .think-summary .pt-caret, details[open] > .call-summary .pt-care
 .artifact-group { margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px 8px; }
 .artifact-group-head { font-size: 12px; color: var(--t-sub); font-weight: 600; margin: 2px 4px 6px; }
 .artifact-group .artifact-card { margin-top: 4px; }
+
+/* L4 审批授权卡片 */
+.approval-card {
+  display: flex; align-items: center; gap: 10px; margin-top: 8px;
+  border: 1px solid #f0b429; border-radius: 10px; background: #fffaf0;
+  padding: 10px 12px; max-width: 100%;
+}
+.approval-card.decided { border-color: var(--line); background: var(--fill); opacity: .85; }
+.approval-card-icon { font-size: 18px; flex-shrink: 0; }
+.approval-card-body { flex: 1; min-width: 0; }
+.approval-card-title { font-size: 13px; font-weight: 600; color: var(--t-main); word-break: break-all; }
+.approval-card-sub { font-size: 11.5px; color: var(--t-aux); margin-top: 2px; }
+.approval-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.approval-btn {
+  border: none; border-radius: 7px; padding: 5px 14px; font-size: 13px; font-weight: 600;
+  cursor: pointer; color: #fff;
+}
+.approval-btn.approve { background: var(--terra); }
+.approval-btn.approve:hover { filter: brightness(1.06); }
+.approval-btn.reject { background: #9aa0a6; }
+.approval-btn.reject:hover { filter: brightness(1.06); }
 .artifact-card-body { border-top: 1px solid var(--line); padding: 8px 12px; background: #FFFFFF; }
 .artifact-card-body .bubble { background: transparent; border: none; padding: 4px 0; font-size: 14px; }
 .md-slim .md-p { line-height: 1.55; }

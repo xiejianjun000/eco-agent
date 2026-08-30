@@ -190,6 +190,41 @@ function ArtifactCard({ name, title, size, path }: { name: string; title: string
   );
 }
 
+/** L4 审批授权卡片：工具被权限闸门拦下后，用户可直接批准/拒绝 */
+function ApprovalCard({ name, requestId }: { name: string; requestId: string }): React.ReactElement {
+  const [state, setState] = React.useState<'pending' | 'decided' | 'error'>('pending');
+  const [decision, setDecision] = React.useState<'' | 'allowed' | 'denied'>('');
+
+  const decide = (allow: boolean) => {
+    void api.approvalDecide(requestId, allow)
+      .then((r) => {
+        setDecision(r.allow ? 'allowed' : 'denied');
+        setState('decided');
+      })
+      .catch(() => setState('error'));
+  };
+
+  return (
+    <div className={`approval-card${state === 'decided' ? ' decided' : ''}`}>
+      <div className="approval-card-icon">🔴</div>
+      <div className="approval-card-body">
+        <div className="approval-card-title">需要审批：{name}</div>
+        <div className="approval-card-sub">
+          {state === 'pending' && '该工具为 L4 外部/涉执法操作，需你授权后才能执行'}
+          {state === 'decided' && (decision === 'allowed' ? '✅ 已批准（可让模型重试该工具）' : '🚫 已拒绝')}
+          {state === 'error' && '审批请求失败（请求可能已过期）'}
+        </div>
+      </div>
+      {state === 'pending' && (
+        <div className="approval-card-actions">
+          <button className="approval-btn approve" onClick={() => decide(true)}>批准</button>
+          <button className="approval-btn reject" onClick={() => decide(false)}>拒绝</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function getEventIcon(type: string, name?: string): string {
   if (type === 'think') return '⚙️';
   if (type === 'answer') return '💬';
@@ -803,6 +838,9 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
                   </div>
                 ) : cards;
               })()}
+              {m.role === 'assistant' && (m.trace ?? []).filter((t) => t.type === 'approval' && t.request_id).map((t, ai) => (
+                <ApprovalCard key={`${t.request_id}-${ai}`} name={t.name ?? '工具'} requestId={t.request_id!} />
+              ))}
               {m.role === 'user' && (m.attachments?.length ?? 0) > 0 && (
                 <div className="attach-chips">
                   {m.attachments!.map((a, ai) => (

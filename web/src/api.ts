@@ -53,7 +53,7 @@ export interface ChatUsage {
 }
 
 export interface TraceEvent {
-  type: 'think' | 'think_delta' | 'tool_start' | 'tool' | 'answer' | 'correction' | 'document' | 'card' | 'artifact';
+  type: 'think' | 'think_delta' | 'tool_start' | 'tool' | 'answer' | 'correction' | 'document' | 'card' | 'artifact' | 'approval';
   round?: number;
   name?: string;
   category?: 'read' | 'write' | 'exec';
@@ -77,6 +77,9 @@ export interface TraceEvent {
   /** artifact 事件：完整稿落盘为 MD 产物（点击拉取原文查看） */
   path?: string;
   size?: number;
+  /** approval 事件：L4 工具触发审批栈，前端渲染「批准/拒绝」授权卡片 */
+  request_id?: string;
+  status?: string;
 }
 
 export interface Skill {
@@ -172,6 +175,9 @@ export const api = {
   documents: () => get<{ count: number; files: { name: string; path: string; size_kb: number; modified: number }[]; artifacts?: { name: string; path: string; size_kb: number; modified: number }[] }>('/documents'),
   documentTools: () => get<{ count: number; tools: { name: string; desc: string }[] }>('/documents/tools'),
   artifact: (name: string) => get<{ name: string; path: string; content: string; size: number }>(`/documents/artifact/${encodeURIComponent(name)}`),
+  approvalPending: () => get<{ pending: { id: string; scope: string; detail: unknown; created_ts: string }[]; count: number }>('/approvals/pending'),
+  approvalDecide: (id: string, allow: boolean, reason?: string) =>
+    post<{ id: string; status: string; allow: boolean }>(`/approvals/${encodeURIComponent(id)}/decide`, { allow, reason: reason ?? '', answerer: 'admin' }),
   subagentSpawn: (body: { message: string; history?: { role: string; content: string }[]; background?: boolean; label?: string }) =>
     post<SubagentInfo>('/subagents', body),
   subagentList: () => get<{ agents: SubagentInfo[]; stats: Record<string, number> }>('/subagents'),

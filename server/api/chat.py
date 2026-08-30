@@ -2105,6 +2105,11 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                    "category": _tool_category(name),
                    "args": args, "result_preview": _smart_preview(result),
                    "cost_ms": tool_ms})
+            # L4 审批 pending：额外发 approval 事件，前端渲染「批准/拒绝」授权卡片
+            _am = re.search(r"审批请求\s*pending[:：]\s*(appr-[0-9]+-[0-9a-fA-F]+)", str(result))
+            if _am:
+                _emit({"type": "approval", "round": round_idx, "name": name,
+                       "request_id": _am.group(1), "status": "pending"})
             # chart_render：工具成功即用同一参数确定性重生成 HTML，直接发 card 事件。
             # 模型不接触 HTML（防截断/手写错误），前端沙箱卡片直接渲染离线 SVG。
             if name == "chart_render" and '"ok": true' in str(result):
