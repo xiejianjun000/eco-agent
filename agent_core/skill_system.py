@@ -197,8 +197,13 @@ class AutoLearnEngine:
         min_steps：新技能孵化所需最少步骤数（默认 3；调用方可按 Hatcher 配置传入，
         与 skill_hatcher 的 min_tools 保持一致，避免"配置允许 2 但这里硬卡 3"的不一致）。
         """
+        # 质量门槛：任务描述过短/无意义 → 不孵化（防"去"这类单字垃圾技能）
+        desc = (task_desc or "").strip()
+        if len(desc) < 4:
+            return None
+
         # 检查是否已有相似技能
-        existing = self._registry.find(task_desc)
+        existing = self._registry.find(desc)
         if existing:
             # 更新已有技能
             skill = existing[0]
