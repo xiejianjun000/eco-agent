@@ -63,6 +63,9 @@ function fmtMs(ms?: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+/** 模型计价（元/百万 token，估算口径；按实际 API 价目表调整） */
+const PRICE_PER_M = { input: 4, output: 16 } as const;
+
 /** 统计行：时间 · 用时 · 首响应 · token 速率（DSH 式计量，千分位） */
 function fmtStatRow(m: Msg): string {
   const parts: string[] = [];
@@ -74,6 +77,11 @@ function fmtStatRow(m: Msg): string {
   if (total && durS > 0) {
     parts.push(`${total.toLocaleString('en-US')} tok · ${Math.round(total / durS).toLocaleString('en-US')} tok/s`);
   }
+  // 花费估算（元/百万 token，按 deepseek-v4 系粗估，可调 PRICE_PER_M）
+  const p = m.usage?.prompt_tokens ?? 0;
+  const c = m.usage?.completion_tokens ?? 0;
+  const costYuan = (p * PRICE_PER_M.input + c * PRICE_PER_M.output) / 1_000_000;
+  if (costYuan > 0) parts.push(`≈¥${costYuan.toFixed(3)}`);
   return parts.join(' · ');
 }
 
