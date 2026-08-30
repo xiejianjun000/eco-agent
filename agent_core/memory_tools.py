@@ -114,15 +114,17 @@ def _memory_sync(mode: str = "both", vault_path: str = None) -> str:
 
 
 def _policy_reload() -> str:
-    """热重载 PERMISSION.md 工具风险覆盖与 L3 白名单，无需重启进程。"""
+    """热重载权限策略：重新解析 PERMISSION.md 工具风险覆盖 + L3 白名单 + glob 规则，无需重启进程。"""
     try:
-        from agent_core.permissions import load_overrides, load_l3_whitelist
+        from agent_core.permissions import load_overrides, load_l3_whitelist, load_glob_rules
 
         overrides = load_overrides()
         whitelist = load_l3_whitelist()
+        glob_rules = load_glob_rules()
         return _j({"ok": True, "overrides_count": len(overrides),
                    "l3_whitelist_count": len(whitelist),
-                   "note": "PERMISSION.md tool_risk_overrides 与 L3 白名单已重新解析生效"})
+                   "glob_rules_count": len(glob_rules),
+                   "note": "PERMISSION.md tool_risk_overrides / L3 白名单 / glob 规则已重新解析生效"})
     except Exception as e:  # noqa: BLE001
         return _j({"ok": False, "error": f"{type(e).__name__}: {e}"})
 
