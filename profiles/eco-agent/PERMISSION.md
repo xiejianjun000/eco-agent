@@ -465,4 +465,94 @@ tool_risk_overrides:
   # 腾讯文档 HTML 一键上云（aipage 打包 + COS 上传 + 导入管线，L2 本地写入自动放行）
   - tool: tdocs_upload_html
     level: L2
+
+  # 高德地图 GIS MCP（eco-gis-amap，L1 只读/本地空间计算：地址↔经纬度/POI/路线/静态图/空间分析）
+  - tool: mcp__eco-gis-amap__amap_key_diagnose
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_geocode
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_regeocode
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_search_poi
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_inputtips
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_district
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_weather
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_ip_location
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_route
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_distance
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_static_map
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_coordinate_convert
+    level: L1
+  - tool: mcp__eco-gis-amap__amap_grasp_road
+    level: L1
+  - tool: mcp__eco-gis-amap__spatial_buffer
+    level: L1
+  - tool: mcp__eco-gis-amap__spatial_overlay
+    level: L1
+  - tool: mcp__eco-gis-amap__spatial_points_in_polygon
+    level: L1
+  - tool: mcp__eco-gis-amap__spatial_cluster
+    level: L1
+  - tool: mcp__eco-gis-amap__spatial_interpolate
+    level: L1
+  - tool: mcp__eco-gis-amap__spatial_heatmap
+    level: L1
+  - tool: mcp__eco-gis-amap__spatial_measure
+    level: L1
+  - tool: mcp__eco-gis-amap__spatial_nearest
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_site_scan
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_compliance_check
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_grid_search
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_plume_dispersion
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_trajectory_analyze
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_spatial_join
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_source_apportionment
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_back_trajectory
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_wind_rose
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_timeseries_align
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_anomaly_detect
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_compliance_stats
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_emergency_list
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_static_map
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_interactive_map
+    level: L1
+  - tool: mcp__eco-gis-amap__eco_water_map
+    level: L1
+  - tool: mcp__eco-gis-amap__qgis_run_algorithm
+    level: L1
+  - tool: mcp__eco-gis-amap__qgis_buffer
+    level: L1
+  - tool: mcp__eco-gis-amap__qgis_overlay
+    level: L1
+  - tool: mcp__eco-gis-amap__qgis_reproject
+    level: L1
+  - tool: mcp__eco-gis-amap__qgis_convert
+    level: L1
+  - tool: mcp__eco-gis-amap__qgis_slope
+    level: L1
+  - tool: mcp__eco-gis-amap__qgis_idw_interpolate
+    level: L1
 ```

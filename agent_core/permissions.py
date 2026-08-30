@@ -102,7 +102,7 @@ def load_overrides() -> dict[str, str]:
     tail = text[i:]
     fence = tail.find("```", tail.find("\n") + 1)
     block = tail[:fence] if fence >= 0 else tail
-    for tm in re.finditer(r"-\s*tool:\s*([A-Za-z0-9_]+)\s*\n\s*level:\s*(L[1-4])", block):
+    for tm in re.finditer(r"-\s*tool:\s*([A-Za-z0-9_-]+)\s*\n\s*level:\s*(L[1-4])", block):
         overrides[tm.group(1)] = tm.group(2)
     if overrides:
         logger.info(f"[permissions] PERMISSION.md 覆盖 {len(overrides)} 项工具风险级")
