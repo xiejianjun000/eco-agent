@@ -144,6 +144,15 @@ class GoalStore:
             g["blocked_reason"] = reason
         return self._update(goal_id, m)
 
+    def delete(self, goal_id: str) -> bool:
+        """删除目标（清理已完成/阻塞/测试的陈旧目标）。"""
+        with self._lock:
+            if goal_id not in self._goals:
+                return False
+            del self._goals[goal_id]
+            self._save()
+            return True
+
     # ── 自动延续驱动 ────────────────────────────────────
 
     def run_next_round(self, goal_id: str) -> dict:

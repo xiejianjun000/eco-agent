@@ -83,6 +83,7 @@ async def goal_action(goal_id: str, action: str, body: GoalAction) -> dict:
         "complete": lambda: store.complete(goal_id, body.note),
         "block": lambda: store.block(goal_id, body.reason or "manual"),
         "run": lambda: store.run_next_round(goal_id),
+        "delete": lambda: ({"ok": store.delete(goal_id)}),
     }
     handler = handlers.get(action)
     if handler is None:
