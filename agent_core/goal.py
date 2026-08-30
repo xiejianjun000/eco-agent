@@ -12,7 +12,8 @@ agent_core/goal.py — 跨轮持久化目标系统（对标 DSH packages/goal）
 简化版：驱动点从 'agent idle' 改为 '子代理完成回调'）。
 
 与 DSH 的差异（如实声明）：无事件溯源快照（直接 jsonl 全量读写），
-无 LLM 自动达成判定（completed 由用户/调用方标记，轮上限自动 blocked）。
+无 LLM 自动达成判定（completed 由用户/调用方标记，或由确定性完成信号
+`✅/已完成` 且无待续/失败信号触发完成即停；轮上限兜底自动 blocked）。
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import threading
 import time
 import uuid
@@ -219,8 +221,11 @@ class GoalStore:
             g["history"].append({"time": time.time(), "round": rounds,
                                  "result": result[:500]})
             if agent.status == "done":
-                # 完成但目标未手动 complete：若仍 armed 且未达上限 → 自动下一轮
-                if rounds >= g["max_goal_rounds"]:
+                if _looks_complete(result):
+                    # 完成即停：结果带强完成信号（✅/已完成）且无待续/失败信号 → completed
+                    g["status"] = "completed"
+                    g["armed"] = False
+                elif rounds >= g["max_goal_rounds"]:
                     g["status"] = "blocked"
                     g["armed"] = False
                     g["blocked_reason"] = "round-limit"
@@ -238,7 +243,8 @@ class GoalStore:
         if goal:
             self._notify_event(
                 goal_id,
-                "blocked" if goal["status"] == "blocked" else "round_done",
+                "completed" if goal["status"] == "completed" else
+                ("blocked" if goal["status"] == "blocked" else "round_done"),
                 f"第{rounds}轮 {goal['status']}: {result[:200]}")
         if goal and goal["armed"] and goal["status"] == "active":
             logger.info("goal %s 第 %s 轮完成，自动发起下一轮", goal_id, rounds)
@@ -250,6 +256,28 @@ class GoalStore:
             for g in self._goals.values():
                 by_status[g["status"]] = by_status.get(g["status"], 0) + 1
             return {"goals": len(self._goals), "by_status": by_status}
+
+
+_COMPLETE_SIGNAL = re.compile(r"✅|已完成|完成标准已达成|任务完成")
+_INCOMPLETE_SIGNAL = re.compile(
+    r"要我继续|需要我|待确认|还需|下一步|是否继续|请确认|继续查|尚未完成|未完成|继续执行")
+_FAIL_SIGNAL = re.compile(r"\[eco-server\]|Traceback|失败|报错", re.I)
+
+
+def _looks_complete(result: str) -> bool:
+    """完成即停判定：子代理结果带强完成信号（✅/已完成）且无半途/待续/失败信号时视为达成。
+
+    保守策略：宁可多跑一轮也不误判完成——只要出现"还需/待确认/要我继续"等未完信号
+    或失败信号，就继续到轮上限（保留原 round-limit 兜底），避免简单任务空转满轮。
+    """
+    r = (result or "").strip()
+    if not r:
+        return False
+    if _INCOMPLETE_SIGNAL.search(r):
+        return False
+    if _FAIL_SIGNAL.search(r):
+        return False
+    return bool(_COMPLETE_SIGNAL.search(r))
 
 
 _store: GoalStore | None = None
