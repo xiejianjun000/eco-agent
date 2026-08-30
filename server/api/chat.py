@@ -142,7 +142,6 @@ def _load_codex_skill_rules() -> str:
 def _codex_rules_section() -> str:
     """法典知识 + 工具使用纪律 + 领域边界 + 输出风格（规则片段，DSH 式模块化组装）。
 
-    2026-08-23 精简：20 条 → 8 条（合并同质约束、去重复、压缩表述），
     推理模型规则越少思考越短；末尾附回答风格锚（few-shot 黄金样例）。"""
     from datetime import date
 
@@ -190,7 +189,13 @@ def _codex_rules_section() -> str:
         "生成扫码授权链接=lark-cli auth login --domain all --no-wait --json（返回 "
         "verification_url 即真实可扫链接）；查登录态=lark-cli auth status --json；"
         "发消息=lark-cli im send；建文档=lark-cli docx create。禁止声称'我无法生成扫码链接'"
-        "或甩一个 OAuth 模板 URL 让用户自己拼 app_id/redirect_uri——那是拒单。\n\n"
+        "或甩一个 OAuth 模板 URL 让用户自己拼 app_id/redirect_uri——那是拒单。\n"
+        "11. 【任务一次做完，禁止半途反问】拆解→调工具→拿结果→下结论→一并汇报。"
+        "能自己做的后续步骤（登录/下钻/展开/验证/落盘）全部做完再报告，"
+        "禁止只做第一步就反问'要我继续吗/要我登录哪个吗/需要我展开吗/需要我针对哪一条深挖吗'——"
+        "这些是半途而废，直接把后续步骤做完。只有真正无法自决的分叉（如'查 A 还是 B'二选一）"
+        "才在完整汇报后问一句。回答被要点版截断时，完整稿已自动落盘产物，"
+        "正文引导点「📄 详细版」查看，禁止说'继续'或'回我继续'。\n\n"
         "【回答风格锚——严格模仿】\n"
         "例1（结论+表格）：「✅ 第45条（第三方监测机构数据造假）：《条例》最重罚则。\n"
         "| 对象 | 罚则 |\n|---|---|\n"
