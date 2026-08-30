@@ -67,6 +67,8 @@ class MemoryTree:
         self.db_path = db_path or DEFAULT_DB_PATH
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
+        # BM25 检索索引缓存：节点增删改后置空，下次检索惰性重建（避免每次 O(n) 重建）
+        self._bm25_cache: Any = None
         logger.info(f"Memory Tree 初始化完成: {self.db_path}")
 
     # ── 数据库初始化 ──
@@ -131,6 +133,7 @@ class MemoryTree:
             """)
 
         logger.info(f"节点创建成功: {node_id} ({type}) - {title[:30]}")
+        self._invalidate_bm25()
         return self.get_node(node_id)
 
     def get_node(self, node_id: str) -> dict[str, Any] | None:
@@ -186,6 +189,7 @@ class MemoryTree:
                           updates.get("content", row["content"][:5000]),
                           updates.get("tags", row["tags"])))
 
+        self._invalidate_bm25()
         return self.get_node(node_id)
 
     def delete_node(self, node_id: str, promote_children: bool = True) -> bool:
@@ -205,6 +209,7 @@ class MemoryTree:
             conn.execute("DELETE FROM nodes WHERE id = ?", (node_id,))
             conn.execute("UPDATE metadata SET value = (SELECT COUNT(*) FROM nodes) WHERE key = 'node_count'")
         logger.info(f"节点已删除: {node_id}")
+        self._invalidate_bm25()
         return True
 
     def prune(self, min_score: float | None = None, max_age_days: int | None = None,
@@ -250,6 +255,7 @@ class MemoryTree:
                     conn.execute("DELETE FROM nodes WHERE id = ?", (r["id"],))
                 conn.execute("UPDATE metadata SET value = (SELECT COUNT(*) FROM nodes) "
                              "WHERE key = 'node_count'")
+                self._invalidate_bm25()
             return {
                 "dry_run": dry_run,
                 "deleted": 0 if dry_run else len(to_delete),
@@ -294,6 +300,21 @@ class MemoryTree:
 
     # ── 检索 ──
 
+    def _get_bm25(self):
+        """取 BM25 检索索引（惰性缓存：全量节点建一次，增删改后置空重建）。"""
+        if self._bm25_cache is None:
+            from agent_core.hybrid_retrieval import BM25Index
+            with self._conn() as conn:
+                rows = conn.execute("SELECT id, title, content FROM nodes").fetchall()
+            bm = BM25Index()
+            bm.build([(r["id"], f"{r['title']}\n{r['content']}") for r in rows])
+            self._bm25_cache = bm
+        return self._bm25_cache
+
+    def _invalidate_bm25(self) -> None:
+        """节点增删改后调用：置空 BM25 缓存，下次检索重建。"""
+        self._bm25_cache = None
+
     def search(self, query: str, type: str | None = None,
                max_results: int = 10) -> list[dict[str, Any]]:
         """混合检索（BM25 + 评分排序 + LIKE 降级）"""
@@ -329,18 +350,10 @@ class MemoryTree:
                     pass
 
             # 中文 bigram BM25 检索（词序无关召回：'秸秆禁烧' 可命中 '焚烧秸秆'，
-            # 复用 hybrid_retrieval.BM25Index 的 bigram 分词 + Okapi BM25）
+            # 复用缓存的 BM25Index——全量节点只建一次，避免每次检索 O(n) 重建）
             if has_chinese:
                 try:
-                    from agent_core.hybrid_retrieval import BM25Index
-                    _sql = "SELECT id, title, content FROM nodes"
-                    _params: list[Any] = []
-                    if type:
-                        _sql += " WHERE type = ?"
-                        _params = [type]
-                    _rows = conn.execute(_sql, _params).fetchall()
-                    bm = BM25Index()
-                    bm.build([(r["id"], f"{r['title']}\n{r['content']}") for r in _rows])
+                    bm = self._get_bm25()  # 惰性缓存：增删改后置空重建
                     existing_ids = {r["id"] for r in results}
                     for doc_id, score in bm.score(query):
                         if len(results) >= max_results:
@@ -348,10 +361,11 @@ class MemoryTree:
                         if doc_id in existing_ids:
                             continue
                         node = self.get_node(doc_id)
-                        if node:
-                            node["bm25_score"] = round(score, 3)
-                            results.append(node)
-                            existing_ids.add(doc_id)
+                        if node is None or (type and node.get("type") != type):
+                            continue
+                        node["bm25_score"] = round(score, 3)
+                        results.append(node)
+                        existing_ids.add(doc_id)
                 except Exception:  # noqa: BLE001 — bigram 失败回落 LIKE
                     pass
 
@@ -460,8 +474,9 @@ class MemoryTree:
                                 if node:
                                     by_id[nid] = node
             fused = rrf_fuse([kw_rank] + ([vec_rank] if vec_rank else []))
-        except Exception:
+        except Exception as e:  # noqa: BLE001
             # 混合检索不可用：按关键词通道名次手工计算 RRF 分，保证结果结构一致
+            logger.warning("[memory_tree] 向量检索降级为 BM25: %s", e)
             fused = [(nid, 1.0 / (60 + i)) for i, nid in enumerate(kw_rank, start=1)]
         out = []
         for nid, score in fused:
