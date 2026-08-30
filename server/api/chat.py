@@ -989,6 +989,118 @@ def _codex_tools() -> list[dict]:
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "eco_memory_add",
+                "description": "向记忆树写入一条结构化记忆节点（score/tags/parent_id 树形结构）。用于记住用户偏好/事实锚点/案例要点。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "description": "节点类型：statute/case/benchmark/procedure/session/skill/quality/alert"},
+                        "title": {"type": "string", "description": "记忆标题"},
+                        "content": {"type": "string", "description": "记忆正文"},
+                        "tags": {"type": "array", "items": {"type": "string"}, "description": "标签列表，如 ['env/air','enforcement']"},
+                        "score": {"type": "number", "description": "重要性 0-100（默认 50）"},
+                        "parent_id": {"type": "string", "description": "父节点 id（树形挂载，可选）"},
+                    },
+                    "required": ["title", "content"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "eco_memory_update",
+                "description": "更新记忆树节点（标题/内容/评分/标签/父节点），按 node_id 定位。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "node_id": {"type": "string", "description": "节点 id"},
+                        "title": {"type": "string"},
+                        "content": {"type": "string"},
+                        "score": {"type": "number"},
+                        "tags": {"type": "array", "items": {"type": "string"}},
+                        "parent_id": {"type": "string"},
+                    },
+                    "required": ["node_id"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "eco_memory_delete",
+                "description": "删除记忆树节点（子节点自动提升为根节点）。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"node_id": {"type": "string"}},
+                    "required": ["node_id"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "eco_memory_search",
+                "description": "检索记忆树（BM25 + 向量混合检索，中文降级），返回相关记忆节点及分数。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "检索关键词"},
+                        "type": {"type": "string", "description": "节点类型过滤（可选）"},
+                        "limit": {"type": "integer", "description": "返回条数（默认10）"},
+                    },
+                    "required": ["query"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "eco_memory_stats",
+                "description": "记忆树统计：节点数/边数/类型分布。",
+                "parameters": {"type": "object", "properties": {}, "required": []},
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "eco_memory_prune",
+                "description": "记忆树遗忘维护：按低分（min_score）或长期未访问（max_age_days）清理，security/denied 标签受保护，dry_run 预览。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "min_score": {"type": "number", "description": "分数低于此值删除"},
+                        "max_age_days": {"type": "integer", "description": "未访问超过 N 天删除"},
+                        "dry_run": {"type": "boolean", "description": "true 只预览不删除（默认）"},
+                    },
+                    "required": [],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "eco_memory_sync",
+                "description": "记忆树与 Obsidian 双向同步：to 导出 / from 导入 / both 双向。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {"type": "string", "enum": ["to", "from", "both"], "description": "同步方向"},
+                    },
+                    "required": [],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "eco_policy_reload",
+                "description": "热重载权限策略：重新解析 PERMISSION.md 工具风险覆盖与 L3 白名单，无需重启。",
+                "parameters": {"type": "object", "properties": {}, "required": []},
+            },
+        },
     ]
     # 挂载 govmcp 政务平台只读工具（排污许可/在线监测/国家四平台，L1 闸门）
     _ensure_platform_tools()
@@ -1470,6 +1582,11 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
         attach_mcp_tools()
         result = await execute_tool(name, arguments)
         return result[:4000]
+    if name.startswith("eco_memory_") or name == "eco_policy_reload":
+        # 记忆树 + 策略热更新标准工具（对齐 DSH eco-memory-tree / eco-permission-gate）
+        from agent_core.memory_tools import dispatch_memory_tool
+
+        return dispatch_memory_tool(name, arguments)
     if name == "hunan_case_list":
         return await _hunan_case_query()
     if name == "calculate_carbon_emission":

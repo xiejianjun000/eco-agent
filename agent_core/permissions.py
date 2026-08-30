@@ -23,6 +23,7 @@ permissions.py — L1-L4 风险权限模型 + 工具执行闸门（PERMISSION.md
     pending 请求（policy=ask）或维持原拒绝（policy=never），见 agent_core.approval
 """
 
+import fnmatch
 import logging
 import os
 import re
@@ -123,8 +124,78 @@ def load_l3_whitelist() -> list[str]:
     return wl
 
 
+# ── 声明式通配符规则引擎（v0.3.0，first-match-wins）────────────────────
+
+
+def load_glob_rules() -> list[tuple[str, str]]:
+    """从 PERMISSION.md 解析 tool_glob_rules 有序规则（先匹配先胜）。
+
+    返回 [(match_pattern, level), ...]，顺序即优先级。
+    """
+    text = _load_permission_md()
+    idx = text.find("tool_glob_rules:")
+    if idx == -1:
+        return []
+    block = text[idx:]
+    rules: list[tuple[str, str]] = []
+    for rm in re.finditer(r"-\s*match:\s*\"([^\"]+)\"\s*\n\s*level:\s*(L[1-4])", block):
+        rules.append((rm.group(1), rm.group(2)))
+    return rules
+
+
+def _glob_match(pattern: str, text: str) -> bool:
+    """glob 通配符匹配（支持 * ? [..]），兼容 MCP 工具名 / 命令 / 路径。"""
+    return fnmatch.fnmatchcase(text, pattern)
+
+
+def glob_rule_level(tool_name: str, rules: list[tuple[str, str]] | None = None) -> str | None:
+    """按 first-match-wins 求工具名 glob 规则命中的风险级；无命中返回 None。"""
+    if rules is None:
+        rules = load_glob_rules()
+    for pattern, level in rules:
+        if _glob_match(pattern, tool_name):
+            return level
+    return None
+
+
+# 危险命令 glob（参数级 deny，first-match-wins 命中即拒绝，不可被白名单覆盖）
+_DENY_COMMAND_GLOBS = (
+    "rm -rf*", "rm -fr*", "rm -r *", "mkfs*", "dd if=*", "shutdown*",
+    "reboot*", "halt*", "poweroff*", "> /dev/sd*", "chmod -R 777*",
+    "eval*", ":(){ :|:& };:*",
+)
+
+# 文件操作危险路径 glob（参数级 deny，命中即拒绝写/读）
+_PATH_DENY_GLOBS = (
+    "/etc/passwd*", "/etc/shadow*", "/etc/sudoers*", "~/.ssh/*", "/dev/*",
+    "/proc/*", "/sys/*", "/root/*", "*/id_rsa", "*/id_ed25519",
+)
+
+
+def _deny_command_hit(cmd: str) -> str | None:
+    """参数 glob 危险命令检测：命中返回该模式，否则 None。"""
+    c = cmd.strip()
+    if not c:
+        return None
+    for pat in _DENY_COMMAND_GLOBS:
+        if _glob_match(pat, c):
+            return pat
+    return None
+
+
+def _path_denied(path: str) -> str | None:
+    """路径 glob 危险路径检测：命中返回该模式，否则 None。"""
+    p = path.strip()
+    if not p:
+        return None
+    for pat in _PATH_DENY_GLOBS:
+        if _glob_match(pat, p):
+            return pat
+    return None
+
+
 def tool_risk_level(tool_name: str, overrides: dict[str, str] | None = None) -> str:
-    """判定工具风险等级：覆盖表 > 前缀映射 > 未知默认 L3。
+    """判定工具风险等级：精确覆盖 > glob 规则(first-match) > 前缀映射 > 未知默认 L3。
     注意：mcp__{server}__{tool} 远程工具不按内层名猜测风险——服务端不受信，
     写操作可以伪装成 query_ 前缀命名；MCP 工具一律走默认 L3，
     确需放行的只读工具在 PERMISSION.md tool_risk_overrides 逐名豁免（决策写 SM3 审计链）。"""
@@ -132,6 +203,9 @@ def tool_risk_level(tool_name: str, overrides: dict[str, str] | None = None) -> 
         overrides = load_overrides()
     if tool_name in overrides:
         return overrides[tool_name]
+    glob_level = glob_rule_level(tool_name)
+    if glob_level is not None:
+        return glob_level
     for prefixes, level in _PREFIX_RISK:
         if any(tool_name.startswith(p) for p in prefixes):
             return level
@@ -155,6 +229,27 @@ def _audit_decision(tool_name: str, level: str, decision: str, reason: str):
             phase="permission", accepted=(decision == "allow"), reason=reason)
     except Exception as e:  # noqa: BLE001 — 审计失败不阻断业务
         logger.warning(f"[permissions] 审计写入失败: {e}")
+    # recordDeniedToMemory 联动：拒绝/待审批事件自动写入记忆树（[SECURITY] 前缀 + security/denied/tool 标签）
+    if decision in ("deny", "pending"):
+        _record_denied_to_memory(tool_name, level, decision, reason)
+
+
+def _record_denied_to_memory(tool_name: str, level: str, decision: str, reason: str):
+    """拒绝事件写入记忆树（可选服务：记忆树不可用/未配置时静默降级，不阻断闸门）。"""
+    if os.environ.get("ECO_RECORD_DENIED_MEMORY", "1").strip().lower() not in ("1", "true", "yes"):
+        return
+    try:
+        from _scripts.memory_tree import MemoryTree
+        MemoryTree().create_node(
+            "alert",
+            f"[SECURITY] {decision}: {tool_name} [{level}]",
+            f"工具 {tool_name} 被权限闸门 {decision}：{reason}",
+            tags=["security", "denied", "tool"],
+            score=95.0,  # 安全事件高重要性
+            source="system",
+        )
+    except Exception as e:  # noqa: BLE001 — 记忆树可选服务，失败静默降级
+        logger.debug(f"[permissions] 拒绝事件写记忆树降级: {e}")
 
 
 def _is_interactive() -> bool:
@@ -183,6 +278,20 @@ def gate_tool_call(tool_name: str, args: dict | None = None,
     overrides: 调用方注入的风险覆盖（如插件 manifest 声明），优先级同 load_overrides。
     """
     level = tool_risk_level(tool_name, overrides)
+
+    # 参数 glob：危险命令命中即拒绝（不可被白名单覆盖）
+    cmd_arg = str((args or {}).get("command", "") or (args or {}).get("code", ""))
+    hit = _deny_command_hit(cmd_arg)
+    if hit:
+        _audit_decision(tool_name, level, "deny", f"危险命令 glob 命中: {hit}")
+        return False, level, f"危险命令 glob 命中: {hit}"
+
+    # 路径 glob：危险路径命中即拒绝（读/写系统敏感路径）
+    path_arg = str((args or {}).get("path", "") or (args or {}).get("filename", ""))
+    phit = _path_denied(path_arg)
+    if phit:
+        _audit_decision(tool_name, level, "deny", f"危险路径 glob 命中: {phit}")
+        return False, level, f"危险路径 glob 命中: {phit}"
 
     if level in ("L1", "L2"):
         _audit_decision(tool_name, level, "allow", "自动放行")

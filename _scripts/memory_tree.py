@@ -27,7 +27,7 @@ import hashlib
 import sqlite3
 import logging
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 logger = logging.getLogger("memory_tree")
@@ -167,12 +167,16 @@ class MemoryTree:
 
         return self.get_node(node_id)
 
-    def delete_node(self, node_id: str) -> bool:
-        """删除节点及其关联"""
+    def delete_node(self, node_id: str, promote_children: bool = True) -> bool:
+        """删除节点及其关联。子节点按 promote_children 提升为根节点（对齐记忆维护语义，
+        避免 parent_id 外键约束在删除有子节点时抛 FOREIGN KEY constraint failed）。"""
         with self._conn() as conn:
             row = conn.execute("SELECT rowid FROM nodes WHERE id = ?", (node_id,)).fetchone()
             if not row:
                 return False
+            if promote_children:
+                conn.execute("UPDATE nodes SET parent_id = NULL WHERE parent_id = ?",
+                             (node_id,))
             conn.execute("DELETE FROM nodes_fts WHERE rowid = ?", (row["rowid"],))
             conn.execute("DELETE FROM edges WHERE source_id = ? OR target_id = ?",
                          (node_id, node_id))
@@ -181,6 +185,57 @@ class MemoryTree:
             conn.execute("UPDATE metadata SET value = (SELECT COUNT(*) FROM nodes) WHERE key = 'node_count'")
         logger.info(f"节点已删除: {node_id}")
         return True
+
+    def prune(self, min_score: float | None = None, max_age_days: int | None = None,
+              dry_run: bool = False) -> dict[str, Any]:
+        """遗忘机制：按低分（min_score）或长期未访问（max_age_days）清理节点。
+
+        - security/denied 标签节点始终受保护，绝不删除；
+        - 被删节点的子节点自动提升为根节点；
+        - dry_run=True 时仅预览候选，不实际删除。
+        """
+        with self._conn() as conn:
+            conds: list[str] = []
+            params: list[Any] = []
+            if min_score is not None:
+                conds.append("score < ?")
+                params.append(min_score)
+            if max_age_days is not None:
+                cutoff = (datetime.now() - timedelta(days=max_age_days)).isoformat()
+                conds.append("(accessed_at IS NULL OR accessed_at < ?)")
+                params.append(cutoff)
+            if not conds:
+                return {"dry_run": dry_run, "deleted": 0, "protected": 0, "candidates": []}
+            where = " AND ".join(conds)
+            # 受保护节点：security/denied 标签
+            protected_rows = conn.execute(
+                f"SELECT id FROM nodes WHERE ({where}) AND "
+                f"(tags LIKE '%security%' OR tags LIKE '%denied%')", params).fetchall()
+            protected_ids = {r["id"] for r in protected_rows}
+            candidates = conn.execute(
+                f"SELECT id, title, score, tags, accessed_at FROM nodes WHERE {where}",
+                params).fetchall()
+            to_delete = [dict(r) for r in candidates if r["id"] not in protected_ids]
+            if not dry_run:
+                for r in to_delete:
+                    conn.execute("UPDATE nodes SET parent_id = NULL WHERE parent_id = ?",
+                                 (r["id"],))
+                    conn.execute(
+                        "DELETE FROM nodes_fts WHERE rowid = "
+                        "(SELECT rowid FROM nodes WHERE id = ?)", (r["id"],))
+                    conn.execute("DELETE FROM edges WHERE source_id = ? OR target_id = ?",
+                                 (r["id"], r["id"]))
+                    conn.execute("DELETE FROM sync_log WHERE node_id = ?", (r["id"],))
+                    conn.execute("DELETE FROM nodes WHERE id = ?", (r["id"],))
+                conn.execute("UPDATE metadata SET value = (SELECT COUNT(*) FROM nodes) "
+                             "WHERE key = 'node_count'")
+            return {
+                "dry_run": dry_run,
+                "deleted": 0 if dry_run else len(to_delete),
+                "protected": len(protected_ids),
+                "candidates": [{"id": r["id"], "title": r["title"], "score": r["score"]}
+                               for r in to_delete],
+            }
 
     def list_nodes(self, type: str | None = None, tags: list[str] | None = None,
                    limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:

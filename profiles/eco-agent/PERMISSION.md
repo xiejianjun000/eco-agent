@@ -782,3 +782,23 @@ tool_risk_overrides:
   - tool: mcp__permit_management__permit_login
     level: L4
 ```
+
+### 声明式通配符规则引擎（v0.3.0，first-match-wins）
+
+精确 `tool_risk_overrides` 优先；以下 glob 规则作为兜底（按顺序首个命中生效），
+覆盖工具名通配（如 `mcp__*`）、命令参数 glob（危险命令 deny）、路径 glob（敏感路径 deny）。
+
+```yaml
+tool_glob_rules:
+  # 更具体的规则排在前面（first-match-wins）
+  - match: "mcp__sthjzf__water_*"
+    level: L4
+  # 未显式豁免的 MCP 工具一律 L3 保守（写操作伪装成只读名也不放行）
+  - match: "mcp__*"
+    level: L3
+```
+
+危险命令 glob（参数级 deny，first-match-wins，命中即拒绝、不可被白名单覆盖）：
+`rm -rf*`、`mkfs*`、`dd if=*`、`shutdown*`、`curl*|sh*` 等（见 `agent_core/permissions.py _DENY_COMMAND_GLOBS`）。
+
+敏感路径 glob（参数级 deny）：`/etc/passwd*`、`~/.ssh/*`、`/dev/*`、`*/id_rsa` 等（见 `_PATH_DENY_GLOBS`）。
