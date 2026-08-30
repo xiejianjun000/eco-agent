@@ -33,6 +33,8 @@ SHELL_ALLOWED = {
     "uniq", "sed", "awk", "diff", "basename", "dirname", "which", "test",
     # 开发类（自改自测闭环）：测试/依赖/构建
     "pytest", "pip", "npm", "node", "make",
+    # 飞书/企业微信 CLI（授权登录/发消息/查登录态，本地已认证）
+    "lark-cli",
 }
 
 # 高危第一命令（即使白名单里出现变体也拒绝）
@@ -101,7 +103,8 @@ def run_shell(command: str) -> str:
                                         + "、".join(sorted(SHELL_ALLOWED)) + "）"},
                               ensure_ascii=False)
     _audit("shell", cmd, "allow", "白名单放行")
-    env = {k: v for k, v in os.environ.items() if k in ("PATH", "LANG", "LC_ALL")}
+    env = {k: v for k, v in os.environ.items()
+           if k in ("PATH", "LANG", "LC_ALL", "HOME", "LARK_CLI_HOME")}
     import time
     t0 = time.monotonic()
     try:
