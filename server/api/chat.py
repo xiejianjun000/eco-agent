@@ -1599,11 +1599,41 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
     return f"未知工具: {name}"
 
 
-def _maybe_swarm_reply(message: str):
+def _swarm_stage_event(stage: str, detail: str, elapsed: float) -> dict | None:
+    """RoleSwarm on_stage 阶段 → 前端可渲染的 trace 事件（实时过程块）。"""
+    if stage == "任务分解":
+        return {"type": "think", "round": 1, "cost_ms": 0,
+                "thought": "三角色协作 DAG：巡查 ∥ 法规 → 文书 → 总管合成"}
+    if stage == "巡查 Agent / 法规 Agent 并行执行中":
+        return {"type": "think", "round": 1, "cost_ms": 0,
+                "thought": "巡查 Agent ∥ 法规 Agent 并行执行中…"}
+    if stage == "巡查Agent 完成":
+        return {"type": "tool", "round": 1, "name": "swarm_patrol", "category": "read",
+                "args": {"角色": "巡查Agent"}, "result_preview": detail,
+                "cost_ms": int(elapsed * 1000)}
+    if stage == "法规Agent 完成":
+        return {"type": "tool", "round": 1, "name": "swarm_law", "category": "read",
+                "args": {"角色": "法规Agent"}, "result_preview": detail,
+                "cost_ms": int(elapsed * 1000)}
+    if stage == "文书 Agent 起草中":
+        return {"type": "think", "round": 1, "cost_ms": 0,
+                "thought": "文书 Agent 起草中（基于巡查 + 法规产出）…"}
+    if stage == "文书Agent 完成":
+        return {"type": "tool", "round": 1, "name": "swarm_doc", "category": "write",
+                "args": {"角色": "文书Agent"}, "result_preview": detail,
+                "cost_ms": int(elapsed * 1000)}
+    if stage == "总管合成完成":
+        return {"type": "think", "round": 1, "cost_ms": int(elapsed * 1000),
+                "thought": "总管仲裁合成完成"}
+    return None
+
+
+def _maybe_swarm_reply(message: str, on_event=None):
     """内置三智能体（RoleSwarm 三角色协作）Web 通道接线。
 
     复杂执法任务（is_complex_task 命中）→ 巡查 Agent ∥ 法规 Agent 并行
     → 文书 Agent → 总管合成；返回 {reply, trace, usage}。
+    on_event: 可选回调（参数为轨迹事件 dict），各阶段事件实时推送（stream 端点用）。
     简单问答/任何异常 → 返回 None（回落单循环，不阻断主链路）。
     """
     from agent_core.role_swarm import get_role_swarm, is_complex_task
@@ -1621,26 +1651,25 @@ def _maybe_swarm_reply(message: str):
         return None
     try:
         swarm = get_role_swarm()
-        result = swarm.run(message or "", context="")
+        trace: list[dict] = []
+
+        def _on_stage(stage: str, detail: str = "", elapsed: float = 0.0) -> None:
+            ev = _swarm_stage_event(stage, detail, elapsed)
+            if ev is None:
+                return
+            trace.append(ev)
+            if on_event is not None:
+                try:
+                    on_event(ev)
+                except Exception:  # noqa: BLE001 — 推送失败不影响主流程
+                    pass
+
+        result = swarm.run(message or "", context="", on_stage=_on_stage)
     except Exception:  # noqa: BLE001 — 协作失败回落单循环
         logger.warning("role swarm run failed", exc_info=True)
         return None
     reply = result.get("synthesis") or swarm.format_result(result)
     reply = _strip_swarm_jargon(reply)
-    # 规则16 最终回答洁净：三角色贡献段属于过程，只进轨迹面板，不进最终回答
-    # 轨迹：三角色 DAG + 各角色产出摘要（Web 轨迹面板可见）
-    trace: list[dict] = [
-        {"type": "think", "round": 1,
-         "note": "三角色协作 DAG：巡查 ∥ 法规 → 文书 → 总管合成"}]
-    for role, name in result.get("roles", {}).items():
-        contrib = (result.get("contributions", {}).get(role) or "").strip()
-        trace.append({
-            "type": "tool", "round": 1, "name": f"swarm_{role}",
-            "category": "read",
-            "args": {"role": name},
-            "result_preview": contrib[:200],
-            "cost_ms": 0,
-        })
     if result.get("errors"):
         trace.append({"type": "correction", "round": 1,
                       "note": f"协作异常: {result['errors']}"})
@@ -3031,12 +3060,24 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
             yield f"data: {json.dumps({'done': True, 'usage': {}, 'trace': [], 'ttft_ms': 0, 'duration_ms': 0, 'suggestions': []}, ensure_ascii=False)}\n\n"
             yield "data: [DONE]\n\n"
             return
-        # 三角色协作（内置三智能体）：复杂任务走 RoleSwarm，阶段事件实时推送
-        swarm_out = await asyncio.get_running_loop().run_in_executor(
-            None, lambda: _maybe_swarm_reply(req.message))
+        # 三角色协作（内置三智能体）：复杂任务走 RoleSwarm，阶段事件边跑边推
+        # （非阻塞 future + 事件队列：DAG 运行期间 gen 持续消费阶段事件，避免干等）
+        swarm_fut = asyncio.get_running_loop().run_in_executor(
+            None, lambda: _maybe_swarm_reply(req.message, on_event=on_event))
+        while not swarm_fut.done() or not ev_q.empty():
+            try:
+                ev = ev_q.get_nowait()
+            except queue.Empty:
+                await asyncio.sleep(0.05)
+                continue
+            yield f"data: {json.dumps({'trace_event': ev}, ensure_ascii=False)}\n\n"
+        try:
+            swarm_out = swarm_fut.result()
+        except Exception:  # noqa: BLE001 — 协作异常回落单循环
+            logger.exception("role swarm stream failed")
+            swarm_out = None
         if swarm_out:
-            for ev in swarm_out["trace"]:
-                yield f"data: {json.dumps({'trace_event': ev}, ensure_ascii=False)}\n\n"
+            # 阶段事件已实时推送；done payload 仍带全量 trace（前端收尾以全量为准）
             reply, _ = _enforce_concise(swarm_out["reply"])  # 规则19 同样约束协作路径
             for i in range(0, len(reply), 6):
                 yield f"data: {json.dumps({'delta': reply[i:i + 6]}, ensure_ascii=False)}\n\n"
