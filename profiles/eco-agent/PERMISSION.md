@@ -555,4 +555,230 @@ tool_risk_overrides:
     level: L1
   - tool: mcp__eco-gis-amap__qgis_idw_interpolate
     level: L1
+  - tool: mcp__zfyth__zfyth_status
+    level: L1
+  - tool: mcp__zfyth__zfyth_query
+    level: L1
+  - tool: mcp__zfyth__zfyth_menu
+    level: L1
+  - tool: mcp__zfyth__zfyth_view_config
+    level: L1
+  - tool: mcp__zfyth__zfyth_query_by_name
+    level: L1
+  - tool: mcp__zfyth__zfyth_list_modules
+    level: L1
+  - tool: mcp__zfyth__zfyth_pollution_source
+    level: L1
+  - tool: mcp__zfyth__zfyth_form_get
+    level: L1
+  - tool: mcp__cepc__veto_rules_list
+    level: L1
+  - tool: mcp__cepc__public_project_search
+    level: L1
+  - tool: mcp__cepc__project_list
+    level: L1
+  - tool: mcp__cepc__project_detail
+    level: L1
+  - tool: mcp__cepc__region_statistics
+    level: L1
+  - tool: mcp__cepc__user_info
+    level: L1
+  - tool: mcp__cepc__user_menus
+    level: L1
+  - tool: mcp__cepc__notifications
+    level: L1
+  - tool: mcp__cepc__check_tasks
+    level: L1
+  - tool: mcp__cepc__export_tasks
+    level: L1
+  - tool: mcp__cepc__problem_projects
+    level: L1
+  - tool: mcp__cepc__area_tree
+    level: L1
+  - tool: mcp__cepc__dict_map
+    level: L1
+  - tool: mcp__sthjzf__list_views
+    level: L1
+  - tool: mcp__sthjzf__query_view
+    level: L1
+  - tool: mcp__sthjzf__get_menu
+    level: L1
+  - tool: mcp__sthjzf__get_view_config
+    level: L1
+  - tool: mcp__sthjzf__query_cases
+    level: L1
+  - tool: mcp__sthjzf__list_depts
+    level: L1
+  - tool: mcp__sthjzf__query_case_detail
+    level: L1
+  - tool: mcp__sthjzf__query_case_statistics
+    level: L1
+  - tool: mcp__sthjzf__water_current_user
+    level: L1
+  - tool: mcp__sthjzf__water_task_statistics
+    level: L1
+  - tool: mcp__sthjzf__water_task_list
+    level: L1
+  - tool: mcp__sthjzf__water_supervise_statistics
+    level: L1
+  - tool: mcp__sthjzf__status
+    level: L1
+  - tool: mcp__wryzxjc__status
+    level: L1
+  - tool: mcp__wryzxjc__list_regions
+    level: L1
+  - tool: mcp__wryzxjc__list_pollution_sources
+    level: L1
+  - tool: mcp__wryzxjc__get_pollution_source
+    level: L1
+  - tool: mcp__wryzxjc__list_alarms
+    level: L1
+  - tool: mcp__wryzxjc__list_devices
+    level: L1
+  - tool: mcp__wryzxjc__list_realtime_data
+    level: L1
+  - tool: mcp__wryzxjc__list_jcd_tree
+    level: L1
+  - tool: mcp__wryzxjc__list_history_data
+    level: L1
+  - tool: mcp__permit_enterprise__auth_status
+    level: L1
+  - tool: mcp__permit_enterprise__company_profile
+    level: L1
+  - tool: mcp__permit_enterprise__company_menu
+    level: L1
+  - tool: mcp__permit_enterprise__license_apply_list
+    level: L1
+  - tool: mcp__permit_enterprise__license_reapply_list
+    level: L1
+  - tool: mcp__permit_enterprise__license_change_list
+    level: L1
+  - tool: mcp__permit_enterprise__license_adjust_list
+    level: L1
+  - tool: mcp__permit_enterprise__license_renew_list
+    level: L1
+  - tool: mcp__permit_enterprise__license_reissue_list
+    level: L1
+  - tool: mcp__permit_enterprise__soil_manage_list
+    level: L1
+  - tool: mcp__permit_enterprise__register_list
+    level: L1
+  - tool: mcp__permit_enterprise__disclosure_list
+    level: L1
+  - tool: mcp__permit_enterprise__license_apply_check
+    level: L1
+  - tool: mcp__permit_enterprise__self_acceptance
+    level: L1
+  - tool: mcp__permit_enterprise__report_list
+    level: L1
+  - tool: mcp__permit_enterprise__unified_report_list
+    level: L1
+  - tool: mcp__permit_enterprise__monitor_info
+    level: L1
+  - tool: mcp__permit_enterprise__monitor_month_status
+    level: L1
+  - tool: mcp__permit_enterprise__ledger_list
+    level: L1
+  - tool: mcp__permit_enterprise__auto_monitor
+    level: L1
+  - tool: mcp__permit_enterprise__eia_apply
+    level: L1
+  - tool: mcp__permit_enterprise__carbon_report
+    level: L1
+  - tool: mcp__permit_enterprise__correction_status
+    level: L1
+  - tool: mcp__epxz__xz_user_info
+    level: L1
+  - tool: mcp__epxz__xz_search_reports
+    level: L1
+  - tool: mcp__epxz__xz_search_terms
+    level: L1
+  - tool: mcp__epxz__xz_search_files
+    level: L1
+  - tool: mcp__epxz__xz_search_shares
+    level: L1
+  - tool: mcp__epxz__xz_publicity_list
+    level: L1
+  - tool: mcp__epxz__xz_publicity_detail
+    level: L1
+  - tool: mcp__epxz__xz_communication
+    level: L1
+  - tool: mcp__permit_management__permit_status
+    level: L1
+  - tool: mcp__permit_management__permit_menu
+    level: L1
+  - tool: mcp__permit_management__permit_license_list
+    level: L1
+  - tool: mcp__permit_management__permit_enterprise_list
+    level: L1
+  - tool: mcp__permit_management__permit_jgzf_menu
+    level: L1
+  - tool: mcp__permit_management__permit_jgzf_license_execution
+    level: L1
+  - tool: mcp__permit_management__permit_jgzf_stop_production
+    level: L1
+  - tool: mcp__permit_management__permit_jgzf_enterprise_archive
+    level: L1
+  - tool: mcp__permit_management__permit_area_list
+    level: L1
+  - tool: mcp__permit_management__permit_industry_list
+    level: L1
+  - tool: mcp__zfyth__zfyth_login
+    level: L4
+  - tool: mcp__zfyth__zfyth_case_finish
+    level: L4
+  - tool: mcp__zfyth__zfyth_case_delete
+    level: L4
+  - tool: mcp__zfyth__zfyth_case_assign
+    level: L4
+  - tool: mcp__zfyth__zfyth_form_save
+    level: L4
+  - tool: mcp__zfyth__zfyth_case_save_step
+    level: L4
+  - tool: mcp__zfyth__zfyth_case_start
+    level: L4
+  - tool: mcp__zfyth__zfyth_case_upload
+    level: L4
+  - tool: mcp__zfyth__zfyth_case_upload_delete
+    level: L4
+  - tool: mcp__zfyth__zfyth_case_upload_callback
+    level: L4
+  - tool: mcp__zfyth__zfyth_task_create
+    level: L4
+  - tool: mcp__cepc__cepc_login
+    level: L4
+  - tool: mcp__cepc__project_audit
+    level: L4
+  - tool: mcp__cepc__batch_audit
+    level: L4
+  - tool: mcp__cepc__report_export
+    level: L4
+  - tool: mcp__cepc__export_create
+    level: L4
+  - tool: mcp__cepc__system_config
+    level: L4
+  - tool: mcp__sthjzf__login
+    level: L4
+  - tool: mcp__sthjzf__water_clue_verify
+    level: L4
+  - tool: mcp__sthjzf__water_clue_confirm
+    level: L4
+  - tool: mcp__sthjzf__water_api
+    level: L4
+  - tool: mcp__wryzxjc__login
+    level: L4
+  - tool: mcp__wryzxjc__raw_query
+    level: L4
+  - tool: mcp__permit_enterprise__auth_login
+    level: L4
+  - tool: mcp__permit_enterprise__auth_logout
+    level: L4
+  - tool: mcp__epxz__xz_login
+    level: L4
+  - tool: mcp__epxz__xz_download
+    level: L4
+  - tool: mcp__epxz__xz_raw_call
+    level: L4
+  - tool: mcp__permit_management__permit_login
+    level: L4
 ```
