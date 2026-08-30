@@ -1618,7 +1618,7 @@ def _swarm_stage_event(stage: str, detail: str, elapsed: float) -> dict | None:
     if stage == "文书 Agent 起草中":
         return {"type": "think", "round": 1, "cost_ms": 0,
                 "thought": "文书 Agent 起草中（基于巡查 + 法规产出）…"}
-    if stage == "文书Agent 完成":
+    if stage == "文书 Agent 完成":
         return {"type": "tool", "round": 1, "name": "swarm_doc", "category": "write",
                 "args": {"角色": "文书Agent"}, "result_preview": detail,
                 "cost_ms": int(elapsed * 1000)}
