@@ -927,35 +927,6 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
           </div>
         )}
         <div className="chat-input-row">
-          <div className="input-tools">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              hidden
-              onChange={(e) => {
-                if (e.target.files) void uploadFiles(e.target.files);
-                e.target.value = '';
-              }}
-            />
-            <button
-              className="input-tool-btn"
-              title="上传文件——保存到工作区 uploads/，模型会用 file_read 读取分析"
-              onClick={() => fileInputRef.current?.click()}
-            >📎</button>
-            <button
-              className={`input-tool-btn${voice === 'recording' ? ' recording' : ''}`}
-              title={voice === 'recording' ? '停止录音并转写' : '语音输入——录音后经飞书妙记转写成文字'}
-              onClick={() => void toggleVoice()}
-            >
-              {voice === 'recording' ? '⏹' : '🎤'}
-            </button>
-            <button
-              className={`input-tool-btn${showTerminal ? ' active' : ''}`}
-              title="内置终端（xterm.js + 本机 shell）"
-              onClick={() => setShowTerminal((v) => !v)}
-            >🖥️</button>
-          </div>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -963,37 +934,70 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             placeholder="输入问题，Enter 发送，Shift+Enter 换行"
             rows={2}
           />
-          <select
-            className="model-select"
-            title="选择模型（DSH ui-model-selection）"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-          >
-            <option value="">默认（deepseek-v4-pro）</option>
-            <option value="deepseek-chat">deepseek-chat</option>
-            <option value="deepseek-v4-pro">deepseek-v4-pro（含Think流·推荐）</option>
-            <option value="deepseek-reasoner">deepseek-reasoner（含Think流）</option>
-            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
-            <option value="doubao-plan">doubao-plan（豆包 Agent Plan·火山方舟）</option>
-            <option value="qwen-max">qwen-max</option>
-            <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
-          </select>
-          {(() => {
-            const tok = messages.reduce((s, m) => s + (m.usage?.total_tokens ?? 0), 0);
-            const pct = Math.min(100, Math.round((tok / 65536) * 100));
-            return (
-              <span className="ctx-indicator" title="会话累计 token / 64K 上下文窗口（DSH 上下文计量）">
-                {tok.toLocaleString('en-US')}/64K · {pct}%
-              </span>
-            );
-          })()}
-          <button
-            className="btn"
-            onClick={() => void send()}
-            disabled={busy || (!input.trim() && attachments.length === 0)}
-          >
-            {busy ? '生成中' : '发送'}
-          </button>
+          <div className="input-footer">
+            <div className="input-tools">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={(e) => {
+                  if (e.target.files) void uploadFiles(e.target.files);
+                  e.target.value = '';
+                }}
+              />
+              <button
+                className="input-tool-btn"
+                title="上传文件——保存到工作区 uploads/，模型会用 file_read 读取分析"
+                onClick={() => fileInputRef.current?.click()}
+              >📎</button>
+              <button
+                className={`input-tool-btn${voice === 'recording' ? ' recording' : ''}`}
+                title={voice === 'recording' ? '停止录音并转写' : '语音输入——录音后经飞书妙记转写成文字'}
+                onClick={() => void toggleVoice()}
+              >
+                {voice === 'recording' ? '⏹' : '🎤'}
+              </button>
+              <button
+                className={`input-tool-btn${showTerminal ? ' active' : ''}`}
+                title="内置终端（xterm.js + 本机 shell）"
+                onClick={() => setShowTerminal((v) => !v)}
+              >🖥️</button>
+            </div>
+            <div className="input-modes">
+              <select
+                className="model-select"
+                title="选择模型（DSH ui-model-selection）"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              >
+                <option value="">默认（deepseek-v4-pro）</option>
+                <option value="deepseek-chat">deepseek-chat</option>
+                <option value="deepseek-v4-pro">deepseek-v4-pro（含Think流·推荐）</option>
+                <option value="deepseek-reasoner">deepseek-reasoner（含Think流）</option>
+                <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+                <option value="doubao-plan">doubao-plan（豆包 Agent Plan·火山方舟）</option>
+                <option value="qwen-max">qwen-max</option>
+                <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
+              </select>
+              {(() => {
+                const tok = messages.reduce((s, m) => s + (m.usage?.total_tokens ?? 0), 0);
+                const pct = Math.min(100, Math.round((tok / 65536) * 100));
+                return (
+                  <span className="ctx-indicator" title="会话累计 token / 64K 上下文窗口（DSH 上下文计量）">
+                    {tok.toLocaleString('en-US')}/64K · {pct}%
+                  </span>
+                );
+              })()}
+            </div>
+            <button
+              className="btn"
+              onClick={() => void send()}
+              disabled={busy || (!input.trim() && attachments.length === 0)}
+            >
+              {busy ? '生成中' : '发送'}
+            </button>
+          </div>
         </div>
         {voice === 'recording' && (
           <div className="voice-status">🔴 录音中 {voiceSec}s——再点 🎤 停止并转写</div>

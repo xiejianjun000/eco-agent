@@ -659,12 +659,14 @@ details[open] > .think-summary .pt-caret, details[open] > .call-summary .pt-care
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-.chat-input-row { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); align-items: flex-end; }
+.chat-input-row { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); }
 .chat-input-row textarea {
   flex: 1; resize: none; min-height: 44px; max-height: 160px; padding: 10px 14px;
   border: 1px solid var(--line); border-radius: 10px; font: inherit; background: var(--panel); color: var(--t-main);
 }
 .chat-input-row textarea:focus { outline: none; border-color: var(--terra); box-shadow: 0 0 0 3px var(--terra-soft); }
+.input-footer { display: flex; align-items: center; gap: 8px; }
+.input-modes { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .model-select {
   border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
   color: var(--t-sub); font-size: 12px; padding: 9px 8px; cursor: pointer; max-width: 160px;
@@ -946,8 +948,8 @@ details[open] > .think-summary .pt-caret, details[open] > .call-summary .pt-care
   writing-mode: vertical-rl; font-size: 11px; letter-spacing: 2px; color: var(--t-aux);
 }
 
-/* ── 输入栏工具（DSH 式）：📎 文件上传 + 🎤 语音 ── */
-.input-tools { display: flex; flex-direction: column; gap: 4px; align-self: center; }
+/* ── 输入栏工具（DSH 式）：📎 文件上传 + 🎤 语音 + 🖥️ 终端，横向排列 ── */
+.input-tools { display: flex; flex-direction: row; gap: 6px; align-items: center; }
 .input-tool-btn {
   width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--panel); color: var(--t-sub); font-size: 15px; line-height: 1;
