@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { streamChat, api, type ChatUsage, type TraceEvent, type SubagentInfo } from '../api';
 import { renderMarkdown, escapeHtml } from '../utils/markdown';
 import { renderToolResult } from '../utils/toolResult';
+import TerminalPanel from '../components/Terminal';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -377,6 +378,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
   const [busy, setBusy] = useState(false);
   const [model, setModel] = useState('');
   const [branchTag, setBranchTag] = useState<string | null>(null);
+  const [showTerminal, setShowTerminal] = useState(false);
   const [sideTab, setSideTab] = useState<'trace' | 'context' | 'artifact' | 'doc' | 'task' | 'slot' | 'preview'>('trace');
   const [sysInfo, setSysInfo] = useState<Record<string, unknown> | null>(null);
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
@@ -944,6 +946,11 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             >
               {voice === 'recording' ? '⏹' : '🎤'}
             </button>
+            <button
+              className={`input-tool-btn${showTerminal ? ' active' : ''}`}
+              title="内置终端（xterm.js + 本机 shell）"
+              onClick={() => setShowTerminal((v) => !v)}
+            >🖥️</button>
           </div>
           <textarea
             value={input}
@@ -982,6 +989,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
           <div className="voice-status">⏳ 转写中——飞书妙记正在生成逐字稿（约 20–60 秒）…</div>
         )}
         {voiceError && <div className="voice-status error">{voiceError}</div>}
+        {showTerminal && <TerminalPanel onClose={() => setShowTerminal(false)} />}
       </div>
 
       {/* 右侧「输出产物」面板（DSH Details 栏对标）：可收缩 + 拖拽调宽 */}

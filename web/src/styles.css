@@ -1069,3 +1069,18 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
   white-space: pre-wrap; word-break: break-all;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+/* ── 内置终端（xterm.js，对齐 DSH Web UI 内置终端）── */
+.terminal-panel {
+  display: flex; flex-direction: column; flex-shrink: 0;
+  height: 260px; border-top: 1px solid var(--line); background: #0d1117;
+}
+.terminal-head {
+  display: flex; align-items: center; gap: 10px; padding: 5px 12px;
+  background: #161b22; color: var(--t-sub); font-size: 12px;
+  border-bottom: 1px solid #21262d;
+}
+.terminal-title { font-weight: 600; color: var(--t-main); }
+.terminal-hint { color: var(--t-aux); font-size: 11px; flex: 1; }
+.terminal-body { flex: 1; padding: 6px 10px; overflow: hidden; }
+.terminal-body .xterm { height: 100%; }
