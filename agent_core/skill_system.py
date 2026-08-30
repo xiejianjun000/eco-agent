@@ -190,8 +190,13 @@ class AutoLearnEngine:
         self._registry = registry
 
     def learn_from_task(self, task_desc: str, task_steps: list[str],
-                        task_output: str, score: float) -> str | None:
-        """从单次任务执行中学习"""
+                        task_output: str, score: float,
+                        min_steps: int = 3) -> str | None:
+        """从单次任务执行中学习。
+
+        min_steps：新技能孵化所需最少步骤数（默认 3；调用方可按 Hatcher 配置传入，
+        与 skill_hatcher 的 min_tools 保持一致，避免"配置允许 2 但这里硬卡 3"的不一致）。
+        """
         # 检查是否已有相似技能
         existing = self._registry.find(task_desc)
         if existing:
@@ -203,8 +208,8 @@ class AutoLearnEngine:
                 skill.steps = task_steps
             return skill.id
 
-        # 新技能条件：至少 3 步且有明确输出
-        if len(task_steps) < 3 or not task_output:
+        # 新技能条件：达到最少步骤数且有明确输出
+        if len(task_steps) < min_steps or not task_output:
             return None
 
         # 自动分类

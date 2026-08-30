@@ -82,6 +82,7 @@ class Hatcher:
             task_steps=tools[:6],
             task_output=(reply or "")[:200],
             score=3.0,
+            min_steps=self._min_tools,  # 孵化门槛与 Hatcher.min_tools 一致
         )
         if skill_id:
             logger.info("[skill_hatcher] 孵化技能 %s（工具组合: %s，第 %d 次触发）",
