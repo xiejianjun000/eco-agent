@@ -6,6 +6,9 @@
   config: { ttl_seconds: 1800, interval_seconds: 300 }
   inject: [subagents]
 
+# 权限闸门服务：L1-L4 闸门注册为 cordis 服务，与审计链/记忆树三服务联动
+- plugin: agent_core.cordis_plugins.permission_gate
+
 - plugin: agent_core.cordis_plugins.audit_panel
   inject: [slots, trace_audit]
 
