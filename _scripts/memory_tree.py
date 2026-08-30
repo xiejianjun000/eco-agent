@@ -38,6 +38,27 @@ DEFAULT_DB_PATH = PROJECT_ROOT / "memory-tree" / "data" / "eco_memory.db"
 OBSIDIAN_SYNC_DIR = PROJECT_ROOT / "memory-tree" / "obsidian_sync"
 OBSIDIAN_VAULT = None  # 由 set_obsidian_vault() 设置
 
+# 系统敏感目录（路径遍历防护：resolve 后命中即拒绝读写；resolve 消解 /etc→/private/etc 软链）
+_FORBIDDEN_ROOTS = tuple(Path(p).resolve() for p in ("/etc", "/proc", "/sys", "/dev", "/root",
+                                                     "/usr", "/bin", "/sbin", "/Library",
+                                                     "/System", "/private/etc", "/private/var"))
+
+
+def _confine_vault_dir(path: Path) -> Path | None:
+    """校验 Obsidian 同步目录：expanduser+resolve 消除 ../，命中系统敏感目录返回 None。"""
+    try:
+        p = Path(path).expanduser().resolve()
+    except Exception:  # noqa: BLE001
+        return None
+    for forbidden in _FORBIDDEN_ROOTS:
+        try:
+            p.relative_to(forbidden)
+            logger.warning("[memory_tree] 拒绝访问系统敏感目录: %s", p)
+            return None
+        except ValueError:
+            continue
+    return p
+
 
 class MemoryTree:
     """Memory Tree 核心引擎"""
@@ -284,7 +305,7 @@ class MemoryTree:
         has_chinese = any('一' <= c <= '鿿' for c in query)
 
         with self._conn() as conn:
-            where_type = f"AND n.type = '{type}'" if type else ""
+            where_type = "AND n.type = ?" if type else ""  # 参数化，防 SQL 注入
             results = []
 
             if not has_chinese:
@@ -302,7 +323,7 @@ class MemoryTree:
                         GROUP BY n.id
                         ORDER BY nodes_fts.rank ASC
                         LIMIT ?
-                    """, (fts_query, max_results)).fetchall()
+                    """, ((fts_query, type, max_results) if type else (fts_query, max_results))).fetchall()
                     results = [dict(r) for r in rows]
                 except sqlite3.OperationalError:
                     pass
@@ -343,6 +364,8 @@ class MemoryTree:
                         break
                     exclude_clause = ""
                     params = [f"%{kw}%", f"%{kw}%"]
+                    if type:
+                        params.append(type)
                     if existing_ids:
                         placeholders = ','.join('?' for _ in existing_ids)
                         exclude_clause = f"AND n.id NOT IN ({placeholders})"
@@ -512,6 +535,11 @@ class MemoryTree:
     def sync_to_obsidian(self, vault_path: Path | None = None) -> dict[str, Any]:
         """同步节点到 Obsidian Markdown 文件"""
         target_dir = vault_path or OBSIDIAN_VAULT or OBSIDIAN_SYNC_DIR
+        if target_dir is not None:
+            target_dir = _confine_vault_dir(Path(target_dir))
+            if target_dir is None:
+                return {"synced": 0, "failed": 0,
+                        "errors": ["拒绝写入系统敏感目录（路径遍历防护）"]}
         if not target_dir:
             logger.warning("未设置 Obsidian 同步目标目录")
             return {"synced": 0, "failed": 0, "errors": []}
@@ -599,6 +627,11 @@ updated: {node['updated_at'][:10]}
     def sync_from_obsidian(self, obsidian_dir: Path | None = None) -> dict[str, Any]:
         """从 Obsidian Markdown 文件同步到 SQLite"""
         source_dir = obsidian_dir or OBSIDIAN_VAULT or OBSIDIAN_SYNC_DIR
+        if source_dir is not None:
+            source_dir = _confine_vault_dir(Path(source_dir))
+            if source_dir is None:
+                return {"synced": 0, "failed": 0,
+                        "errors": ["拒绝读取系统敏感目录（路径遍历防护）"]}
         if not source_dir or not source_dir.exists():
             return {"synced": 0, "failed": 0, "errors": ["源目录不存在"]}
 

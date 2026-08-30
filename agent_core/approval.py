@@ -54,7 +54,8 @@ def _default_answerers() -> list[str]:
 
 
 def _new_id() -> str:
-    return f"appr-{datetime.now():%Y%m%d%H%M%S}-{_secrets.token_hex(4)}"
+    # 128 位随机（token_hex(16)）：审批令牌不可枚举，防 request_id 猜测越权
+    return f"appr-{datetime.now():%Y%m%d%H%M%S}-{_secrets.token_hex(16)}"
 
 
 class ApprovalService:
