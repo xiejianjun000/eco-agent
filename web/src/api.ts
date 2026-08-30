@@ -246,6 +246,11 @@ export async function streamChat(
     headers: { 'Content-Type': 'application/json', 'X-ECO-CLIENT': 'web' },
     body: JSON.stringify({ message, history, session_id: sessionId, model }),
   });
+  // HTTP 错误（服务端 500 等）给出明确信息，而非被误读成"连接失败"
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`服务端 HTTP ${res.status}${detail ? `：${detail.slice(0, 200)}` : ''}`);
+  }
   if (!res.body) throw new Error('stream body unavailable');
   const reader = res.body.getReader();
   const decoder = new TextDecoder();

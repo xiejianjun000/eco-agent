@@ -3271,12 +3271,17 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
         # （非阻塞 future + 事件队列：DAG 运行期间 gen 持续消费阶段事件，避免干等）
         swarm_fut = asyncio.get_running_loop().run_in_executor(
             None, lambda: _maybe_swarm_reply(req.message, on_event=on_event))
+        last_emit = time.monotonic()  # SSE 保活计时（长思考期间防连接被掐断）
         while not swarm_fut.done() or not ev_q.empty():
             try:
                 ev = ev_q.get_nowait()
             except queue.Empty:
+                if time.monotonic() - last_emit > 15:
+                    yield ": ping\n\n"  # SSE 注释心跳，前端忽略、代理不掐连接
+                    last_emit = time.monotonic()
                 await asyncio.sleep(0.05)
                 continue
+            last_emit = time.monotonic()
             yield f"data: {json.dumps({'trace_event': ev}, ensure_ascii=False)}\n\n"
         try:
             swarm_out = swarm_fut.result()
@@ -3307,12 +3312,17 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
                                   web_client=(request.headers.get("x-eco-client", "") == "web")))
         streamed = False
         first_delta_ms: int | None = None  # 首个可见输出距请求开始（DSH 首 token 语义）
+        last_emit = time.monotonic()  # SSE 保活计时（长 LLM 思考期间防连接被掐断）
         while not task.done() or not ev_q.empty():
             try:
                 ev = ev_q.get_nowait()
             except queue.Empty:
+                if time.monotonic() - last_emit > 15:
+                    yield ": ping\n\n"  # SSE 注释心跳，前端忽略、代理不掐连接
+                    last_emit = time.monotonic()
                 await asyncio.sleep(0.05)  # 轮询间隔 50ms，实时性足够
                 continue
+            last_emit = time.monotonic()
             if ev.get("type") == "delta":
                 if not streamed:
                     first_delta_ms = int((time.monotonic() - t0) * 1000)

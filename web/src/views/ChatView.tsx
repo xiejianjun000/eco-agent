@@ -720,11 +720,15 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
         onActivity?.();
       });
     } catch (e) {
+      const em = (e as Error).message || '';
+      const isServerErr = /^服务端 HTTP|^HTTP /.test(em);
       setMessages((prev) => {
         const next = [...prev];
         next[next.length - 1] = {
           ...next[next.length - 1],
-          content: `[连接失败] ${(e as Error).message}\n请确认已启动: eco server`,
+          content: isServerErr
+            ? `[服务端错误] ${em}`
+            : `[连接中断] ${em}\n服务可能仍在运行（长思考期间连接易被掐断）——请重发这条消息，或刷新页面后重试。`,
           time: fmtClock(),
         };
         return next;
