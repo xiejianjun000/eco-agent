@@ -307,6 +307,33 @@ class MemoryTree:
                 except sqlite3.OperationalError:
                     pass
 
+            # 中文 bigram BM25 检索（词序无关召回：'秸秆禁烧' 可命中 '焚烧秸秆'，
+            # 复用 hybrid_retrieval.BM25Index 的 bigram 分词 + Okapi BM25）
+            if has_chinese:
+                try:
+                    from agent_core.hybrid_retrieval import BM25Index
+                    _sql = "SELECT id, title, content FROM nodes"
+                    _params: list[Any] = []
+                    if type:
+                        _sql += " WHERE type = ?"
+                        _params = [type]
+                    _rows = conn.execute(_sql, _params).fetchall()
+                    bm = BM25Index()
+                    bm.build([(r["id"], f"{r['title']}\n{r['content']}") for r in _rows])
+                    existing_ids = {r["id"] for r in results}
+                    for doc_id, score in bm.score(query):
+                        if len(results) >= max_results:
+                            break
+                        if doc_id in existing_ids:
+                            continue
+                        node = self.get_node(doc_id)
+                        if node:
+                            node["bm25_score"] = round(score, 3)
+                            results.append(node)
+                            existing_ids.add(doc_id)
+                except Exception:  # noqa: BLE001 — bigram 失败回落 LIKE
+                    pass
+
             # LIKE 降级检索（对中文或 FTS 结果不足时）
             if len(results) < max_results:
                 remaining = max_results - len(results)
