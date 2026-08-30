@@ -24,10 +24,10 @@ jobs:
           cache: pip
 
       - name: 安装依赖
-        run: pip install -r requirements.txt -q
+        run: pip install -r requirements.txt "ruff==0.16.1" "pytest-xdist>=3.6,<4" -q
 
       - name: lint
-        run: python -m ruff check .
+        run: ruff check . --output-format=github
 
       - name: 安全/性能/文档门禁（无网络，mock 外部服务）
         run: |
@@ -63,29 +63,26 @@ jobs:
       - name: 生成 openapi.json 并 diff 主分支
         run: |
           python - <<'PY'
-          import json
+          import json, subprocess
           from server.app import create_app
           spec = create_app().openapi()
           json.dump(spec, open("openapi.snapshot.json", "w"), ensure_ascii=False, indent=1)
           print("openapi paths:", len(spec.get("paths", {})))
+          subprocess.run(["git", "fetch", "origin", "main", "--quiet"], check=False)
+          r = subprocess.run(["git", "show", "origin/main:openapi.snapshot.json"],
+                             capture_output=True, text=True)
+          if r.returncode != 0:
+              print("首次生成基线 openapi.snapshot.json")
+          else:
+              base = json.loads(r.stdout)
+              cur_p = set(spec.get("paths", {}))
+              base_p = set(base.get("paths", {}))
+              removed = base_p - cur_p
+              print("新增路径:", sorted(cur_p - base_p))
+              print("删除路径:", sorted(removed))
+              if removed:
+                  raise SystemExit(f"破坏性变更：删除了 API 路径 {sorted(removed)}，需人工审批")
           PY
-          git fetch origin main --quiet
-          if git show origin/main:openapi.snapshot.json > /tmp/base.json 2>/dev/null; then
-            python - <<'PY'
-            import json
-            cur = json.load(open("openapi.snapshot.json"))
-            base = json.load(open("/tmp/base.json"))
-            cur_p = set(cur.get("paths", {}))
-            base_p = set(base.get("paths", {}))
-            removed = base_p - cur_p
-            print("新增路径:", sorted(cur_p - base_p))
-            print("删除路径:", sorted(removed))
-            if removed:
-                raise SystemExit(f"⚠️ 破坏性变更：删除了 API 路径 {sorted(removed)}，需人工审批")
-            PY
-          else
-            echo "首次生成基线 openapi.snapshot.json"
-          fi
 
   visual-regression:
     name: Web UI 视觉回归

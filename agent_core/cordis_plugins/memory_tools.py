@@ -50,7 +50,11 @@ _SCHEMAS = {
         },
         "required": ["query"],
     },
-    "eco_memory_stats": {"type": "object", "properties": {}, "required": []},
+    "eco_memory_stats": {
+        "type": "object",
+        "properties": {"verbose": {"type": "boolean", "description": "返回详细类型分布（可选）"}},
+        "required": [],
+    },
     "eco_memory_prune": {
         "type": "object",
         "properties": {
@@ -64,7 +68,11 @@ _SCHEMAS = {
         "properties": {"mode": {"type": "string", "enum": ["to", "from", "both"]}},
         "required": [],
     },
-    "eco_policy_reload": {"type": "object", "properties": {}, "required": []},
+    "eco_policy_reload": {
+        "type": "object",
+        "properties": {"verbose": {"type": "boolean", "description": "返回完整覆盖表（可选）"}},
+        "required": [],
+    },
 }
 
 _DESC = {

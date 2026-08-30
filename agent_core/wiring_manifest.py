@@ -103,4 +103,18 @@ CHANNEL_DISPATCHED: list[str] = [
     "hunan_env_monthly_report",
     "tdocs_upload_html",
     "chart_render",
+    # cron 定时调度（handler 在 chat.py _run_tool 的 cron_* 分支）
+    "cron_add",
+    "cron_list",
+    "cron_remove",
+    "cron_run",
+    # 记忆树/策略热更新工具（handler 在 chat.py _run_tool 的 eco_memory_* 分支）
+    "eco_memory_add",
+    "eco_memory_update",
+    "eco_memory_delete",
+    "eco_memory_search",
+    "eco_memory_stats",
+    "eco_memory_prune",
+    "eco_memory_sync",
+    "eco_policy_reload",
 ]
