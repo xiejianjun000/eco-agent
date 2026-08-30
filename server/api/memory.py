@@ -51,7 +51,10 @@ async def search_memory(
         nodes = tree.search_hybrid(q, type=type)
     else:
         nodes = tree.search(q, type=type, max_results=limit)
-    return {"query": q, "count": len(nodes), "nodes": nodes[:limit]}
+    # 结果级 vector_enabled 标志：hybrid 且任一命中走向量通道才为 true（未配置 embedding 时 false）
+    vector_enabled = hybrid and any(n.get("vector_enabled") for n in nodes)
+    return {"query": q, "count": len(nodes), "vector_enabled": vector_enabled,
+            "nodes": nodes[:limit]}
 
 
 @router.get("/memory/nodes/{node_id}")
