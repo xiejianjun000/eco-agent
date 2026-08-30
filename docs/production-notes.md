@@ -41,3 +41,57 @@
 4. **视觉回归**：Playwright 截关键界面，`pixelmatch` 差异 > 1% 告警。
 
 本地跑门禁：`pytest tests/test_security/ tests/test_performance/ tests/test_docs/ -q`
+
+---
+
+## 6. 压测执行（上线前最后一公里）
+
+> 本节对应 `scripts/stress_test.sh` —— 一键完成 A2/C2/D2 三项环境验证。
+
+### 前置条件
+
+- eco Agent 已部署并运行（`python3 -m eco.cli server`）
+- 当前目录为 eco Agent 仓库根目录
+- 已安装 `curl`、`sqlite3`、`timeout`（GNU coreutils 通常自带）
+
+### 执行方式
+
+```bash
+# 全量压测（D2 默认 30 分钟）
+bash scripts/stress_test.sh
+
+# 快速自检模式（D2 缩到 2 分钟，适合开发机快速验证）
+D2_DURATION_SEC=120 bash scripts/stress_test.sh
+
+# 只跑单项（a2 / c2 / d2 三选一）
+ONLY=a2 bash scripts/stress_test.sh
+```
+
+### 执行后产物
+
+脚本运行结束后，会在仓库根目录自动生成 `stress_report.md`，内容包含：
+
+- 每项测试的 **PASS / FAIL** 判定
+- 关键观测数据（RSS 内存增量、integrity_check 结果、会话完成数）
+- **上线结论**（三盏全绿 → ✅ 准许部署；任意红灯 → ❌ 回退）
+
+### 各项通过阈值（脚本已内置，无需人工判断）
+
+| 测试项 | 通过条件 |
+|---|---|
+| A2 并发 | 5 个会话全部收到 `done` + 服务端 RSS < 2GB |
+| C2 崩溃恢复 | `PRAGMA integrity_check` 返回 `ok` + 日志无 `malformed` |
+| D2 长稳内存 | 30 分钟（或 `D2_DURATION_SEC`）RSS 增量 < 200MB |
+
+### 人工复核项（仅 A2）
+
+A2 的 **FPS≥30** 无法通过脚本量化，需测试人员打开 Chrome DevTools 人工记录。脚本会在 `stress_report.md` 中预留占位，执行人手动填入即可。
+
+### 如果红灯
+
+- 把 `stress_report.md` 连同 `logs/` 目录下的相关日志打包，回传开发团队。
+- 修复后重新运行脚本，直到三盏全绿。
+
+### 危险操作警告
+
+> ⚠️ **C2 测试会强制 Kill eco 进程（`kill -9`），仅允许在隔离的 Staging/预发布环境执行，严禁在生产环境运行。**
