@@ -1090,3 +1090,12 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
   font-size: 11px; color: var(--t-aux); white-space: nowrap;
   font-variant-numeric: tabular-nums; align-self: center;
 }
+
+/* ── 记忆树节点标签/摘要（DSH 结构化记忆展示）── */
+.tag-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.tag-chip {
+  font-size: 11px; color: var(--t-sub); background: var(--fill);
+  border: 1px solid var(--line); border-radius: 10px; padding: 1px 8px;
+  white-space: nowrap;
+}
+.snippet { margin-top: 4px; font-size: 12px; line-height: 1.5; }

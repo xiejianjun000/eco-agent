@@ -75,12 +75,32 @@ export default function MemoryView(): React.ReactElement {
         {nodes.length === 0 && <div className="empty">暂无记忆节点——使用系统后，执法案例与知识会自动沉淀到这里。</div>}
         {nodes.map((n) => (
           <div key={n.id} className="row">
-            <div style={{ flex: 1 }}>
-              <div className="title">{n.title || n.id}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="title">
+                {n.title || n.id}
+                {typeof n.channel === 'string' && (
+                  <span className="badge" style={{ marginLeft: 8 }} title="检索通道">
+                    {n.channel === 'hybrid' ? 'BM25+向量' : 'BM25'}
+                  </span>
+                )}
+              </div>
               <div className="desc">
                 {n.type} · 评分 {n.score}
+                {typeof n.rrf_score === 'number' ? ` · rrf ${n.rrf_score}` : ''}
                 {n.updated_at ? ` · 更新 ${String(n.updated_at).slice(0, 10)}` : ''}
               </div>
+              {Array.isArray(n.tags) && (n.tags as string[]).length > 0 && (
+                <div className="tag-chips">
+                  {(n.tags as string[]).slice(0, 5).map((t, i) => (
+                    <span key={i} className="tag-chip">{t}</span>
+                  ))}
+                </div>
+              )}
+              {typeof n.content === 'string' && n.content && (
+                <div className="muted snippet">
+                  {n.content.length > 120 ? `${n.content.slice(0, 120)}…` : n.content}
+                </div>
+              )}
             </div>
             <span className={`badge ${n.score >= 70 ? 'olive' : n.score >= 40 ? 'amber' : ''}`}>
               {n.score >= 70 ? '热' : n.score >= 40 ? '温' : '冷'}
