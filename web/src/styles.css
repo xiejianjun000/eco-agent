@@ -1084,3 +1084,9 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
 .terminal-hint { color: var(--t-aux); font-size: 11px; flex: 1; }
 .terminal-body { flex: 1; padding: 6px 10px; overflow: hidden; }
 .terminal-body .xterm { height: 100%; }
+
+/* ── 上下文窗口指示（DSH 上下文计量）── */
+.ctx-indicator {
+  font-size: 11px; color: var(--t-aux); white-space: nowrap;
+  font-variant-numeric: tabular-nums; align-self: center;
+}

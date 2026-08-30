@@ -420,6 +420,7 @@ class MemoryTree:
                 continue
             node = dict(node)
             node["channel"] = channel
+            node["vector_enabled"] = (channel == "hybrid")
             node["rrf_score"] = round(score, 6)
             out.append(node)
             if len(out) >= max_results:

@@ -235,12 +235,21 @@ def _audit_decision(tool_name: str, level: str, decision: str, reason: str):
 
 
 def _record_denied_to_memory(tool_name: str, level: str, decision: str, reason: str):
-    """拒绝事件写入记忆树（可选服务：记忆树不可用/未配置时静默降级，不阻断闸门）。"""
+    """拒绝事件写入记忆树（可选服务：ctx.get('memory_tree') 读取，未加载静默降级，不阻断闸门）。"""
     if os.environ.get("ECO_RECORD_DENIED_MEMORY", "1").strip().lower() not in ("1", "true", "yes"):
         return
     try:
-        from _scripts.memory_tree import MemoryTree
-        MemoryTree().create_node(
+        tree = None
+        try:
+            # cordis 可选服务优先读取（对齐 DSH 插件 ctx.get() 语义）
+            from agent_core.cordis.boot import get_app_context
+            tree = get_app_context().get("memory_tree")
+        except Exception:  # noqa: BLE001
+            tree = None
+        if tree is None:
+            from _scripts.memory_tree import MemoryTree
+            tree = MemoryTree()
+        tree.create_node(
             "alert",
             f"[SECURITY] {decision}: {tool_name} [{level}]",
             f"工具 {tool_name} 被权限闸门 {decision}：{reason}",

@@ -974,6 +974,15 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
             <option value="qwen-max">qwen-max</option>
             <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
           </select>
+          {(() => {
+            const tok = messages.reduce((s, m) => s + (m.usage?.total_tokens ?? 0), 0);
+            const pct = Math.min(100, Math.round((tok / 65536) * 100));
+            return (
+              <span className="ctx-indicator" title="会话累计 token / 64K 上下文窗口（DSH 上下文计量）">
+                {tok.toLocaleString('en-US')}/64K · {pct}%
+              </span>
+            );
+          })()}
           <button
             className="btn"
             onClick={() => void send()}

@@ -86,9 +86,16 @@ _LEVEL = {
 
 
 def apply(ctx, config: dict | None = None) -> None:
-    """组合装配入口：注册记忆树/策略热更新工具 handler（幂等）。"""
+    """组合装配入口：注册记忆树/策略热更新工具 handler（幂等）+ 提供 memory_tree 服务。"""
     from agent_core.tools_registry import register_external_tool, _HANDLERS
     from agent_core.memory_tools import dispatch_memory_tool
+
+    # 记忆树注册为 cordis 可选服务：权限闸门等通过 ctx.get('memory_tree') 读取，未加载静默降级
+    try:
+        from _scripts.memory_tree import MemoryTree
+        ctx.provide("memory_tree", MemoryTree())
+    except Exception as e:  # noqa: BLE001 — 记忆树服务可选
+        logger.debug("[memory_tools] memory_tree 服务提供失败: %s", e)
 
     registered: list[str] = []
     for name, schema in _SCHEMAS.items():
