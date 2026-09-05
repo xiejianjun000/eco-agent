@@ -13,7 +13,6 @@ agent_core/compaction.py — 上下文压缩（对标 DSH compaction + 验收 D-
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 logger = logging.getLogger("eco.compaction")
 
@@ -45,18 +44,21 @@ def _truncate_summary(messages: list[dict], keep_tail: int = 6) -> list[dict]:
         role = m.get("role", "?")
         content = str(m.get("content", ""))[:60].replace("\n", " ")
         summary_parts.append(f"[{role}] {content}")
-    summary = {"role": "system", "content":
-               "【上下文摘要（截断降级）】早期对话要点：\n" + "\n".join(summary_parts)}
+    summary = {"role": "system", "content": "【上下文摘要（截断降级）】早期对话要点：\n" + "\n".join(summary_parts)}
     return [summary] + tail
 
 
-def compact(messages: list[dict], session_log=None, session_id: str = "",
-            max_tokens: int = 8000) -> dict:
+def compact(messages: list[dict], session_log=None, session_id: str = "", max_tokens: int = 8000) -> dict:
     """压缩消息列表，返回 {messages, summary, tokens_before, tokens_after, method}。"""
     tokens_before = estimate_tokens(messages)
     if not should_compact(messages, max_tokens):
-        return {"messages": messages, "summary": None, "tokens_before": tokens_before,
-                "tokens_after": tokens_before, "method": "noop"}
+        return {
+            "messages": messages,
+            "summary": None,
+            "tokens_before": tokens_before,
+            "tokens_after": tokens_before,
+            "method": "noop",
+        }
 
     summary_text = _llm_summary(messages)
     if summary_text:
@@ -68,20 +70,22 @@ def compact(messages: list[dict], session_log=None, session_id: str = "",
     if method == "llm":
         keep_tail = max(2, len(messages) // 6)
         tail = messages[-keep_tail:]
-        compacted = [{"role": "system",
-                      "content": "【上下文压缩摘要】早期对话要点：\n" + summary_text}] + tail
+        compacted = [{"role": "system", "content": "【上下文压缩摘要】早期对话要点：\n" + summary_text}] + tail
     else:
         compacted = _truncate_summary(messages)
 
     # 记录压缩事件（log-only，不影响对话流）
     if session_log is not None and session_id:
         try:
-            session_log.append("compaction/summary", {
-                "tokens_before": tokens_before,
-                "tokens_after": estimate_tokens(compacted),
-                "method": method,
-                "summary": (summary_text or "")[:500],
-            })
+            session_log.append(
+                "compaction/summary",
+                {
+                    "tokens_before": tokens_before,
+                    "tokens_after": estimate_tokens(compacted),
+                    "method": method,
+                    "summary": (summary_text or "")[:500],
+                },
+            )
         except Exception as e:  # noqa: BLE001 — 日志失败不阻断压缩
             logger.warning("compaction 事件记录失败: %s", e)
 
@@ -103,11 +107,8 @@ def _llm_summary(messages: list[dict], max_head: int = 30) -> str | None:
         if not client.available():
             return None
         head = messages[:max_head]
-        transcript = "\n".join(
-            f"{m.get('role')}: {str(m.get('content'))[:300]}" for m in head)
-        prompt = (
-            "请把以下对话提炼为不超过 200 字的要点摘要，"
-            "保留关键事实、数字、结论与待办：\n\n" + transcript[:6000])
+        transcript = "\n".join(f"{m.get('role')}: {str(m.get('content'))[:300]}" for m in head)
+        prompt = "请把以下对话提炼为不超过 200 字的要点摘要，保留关键事实、数字、结论与待办：\n\n" + transcript[:6000]
         result = client.chat([{"role": "user", "content": prompt}], temperature=0.3)
         if isinstance(result, dict) and result.get("_error"):
             return None

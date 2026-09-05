@@ -27,7 +27,7 @@ KB_SEARCH_TEXT = (
     "📄 laws/大气污染防治法.md\n"
     "18:第九十九条 超标排放大气污染物...\n\n"
     "📄 flowwiki/wiki/skills/Skill_12.md\n"
-    "18:related_laws: [\"[[大气污染防治法]]\"]\n"
+    '18:related_laws: ["[[大气污染防治法]]"]\n'
 )
 
 KB_READ_TEXT = "《大气污染防治法》第九十九条：超过大气污染物排放标准排放大气污染物的，责令改正……"
@@ -86,8 +86,8 @@ def test_retriever_retrieve_flow():
     r = RagRetriever(call_tool=fake)
     hit = r.retrieve("企业向大气超标排放污染物怎么处理？")
     assert hit["files"] == ["laws/大气污染防治法.md", "flowwiki/wiki/skills/Skill_12.md"]
-    assert "第九十九条" in hit["context"]          # kb_read 原文注入
-    assert "检索命中摘要" in hit["context"]          # kb_search 摘要注入
+    assert "第九十九条" in hit["context"]  # kb_read 原文注入
+    assert "检索命中摘要" in hit["context"]  # kb_search 摘要注入
     tools = [c[0] for c in fake.calls]
     assert "kb_search" in tools and "kb_read" in tools
 
@@ -119,7 +119,8 @@ LAW_FULL_TEXT = (
 )
 
 EB01_ITEM = {
-    "id": "EB01", "category": "法条引用",
+    "id": "EB01",
+    "category": "法条引用",
     "question": "企业向大气超标排放污染物，执法人员应依据哪部法律哪一条款进行查处？",
     "required_citations": ["《大气污染防治法》第九十九条"],
     "key_points": ["大气污染防治法", "第九十九条"],
@@ -162,10 +163,12 @@ def test_retrieve_v2_context_length_cap():
     fake = make_fake_call_tool_v2()
     RagRetriever(call_tool=fake)
     big = LAW_FULL_TEXT + "### 第一百零一条\n\n" + "长文。" * 5000
+
     def ct(server, tool, arguments):
         if tool == "kb_read" and "index" not in arguments.get("relative_path", ""):
             return {"success": True, "text": big}
         return fake(server, tool, arguments)
+
     r2 = RagRetriever(call_tool=ct)
     hit = r2.retrieve_v2(EB01_ITEM)
     assert len(hit["context"]) <= 1500
@@ -173,16 +176,22 @@ def test_retrieve_v2_context_length_cap():
 
 def test_retrieve_v2_search_fallback_filters_skills():
     """index 未命中时 kb_search 兜底，且只保留 concepts/ 非 Skill 路径"""
+
     def ct(server, tool, arguments):
         if tool == "kb_read" and arguments.get("relative_path", "").endswith("index.md"):
             return {"success": False, "error": "no index"}
         if tool == "kb_search":
-            return {"success": True, "text": (
-                "📄 flowwiki/wiki/skills/Skill_12.md\n18:x\n\n"
-                "📄 flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md\n18:y\n")}
+            return {
+                "success": True,
+                "text": (
+                    "📄 flowwiki/wiki/skills/Skill_12.md\n18:x\n\n"
+                    "📄 flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md\n18:y\n"
+                ),
+            }
         if tool == "kb_read":
             return {"success": True, "text": LAW_FULL_TEXT}
         return {"success": False}
+
     r = RagRetriever(call_tool=ct)
     hit = r.retrieve_v2(EB01_ITEM)
     assert hit["files"] == ["flowwiki/wiki/concepts/02-中华人民共和国大气污染防治法.md"]
@@ -194,10 +203,10 @@ def test_answer_question_rag2_injects_context():
     client = FakeClient()
     ans, files, articles = answer_question(client, EB01_ITEM, mock=False, retriever=retriever)
     assert "第九十九条" in ans
-    assert files and articles == [99]                       # 命中文件与条款被记录
+    assert files and articles == [99]  # 命中文件与条款被记录
     prompt = client.prompts[0]
     assert "【参考资料】" in prompt and "超过大气污染物排放标准" in prompt
-    assert "汉字数字形式" in prompt                          # v2 提示词要求
+    assert "汉字数字形式" in prompt  # v2 提示词要求
     assert EB01_ITEM["question"] in prompt
 
 

@@ -25,8 +25,7 @@ def _case_digest(title: str, facts: str) -> str:
 
 def load(ctx):
     ctx.register_tool("example_echo", _echo, description="回显输入的文本", risk_level="L1")
-    ctx.register_tool("example_case_digest", _case_digest,
-                      description="案卷要点摘要（演示 L3 工具）", risk_level="L3")
+    ctx.register_tool("example_case_digest", _case_digest, description="案卷要点摘要（演示 L3 工具）", risk_level="L3")
     ctx.log("example plugin loaded")
     return {"ok": True, "tools": sorted(ctx.tools.keys())}
 

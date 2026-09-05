@@ -12,9 +12,9 @@ wecom_bot.py — 企业微信 Bot 集成工具
   python -c "from gateway.platforms.wecom_bot import WecomBot; bot=WecomBot(); bot.send_text('user_id','你好')"
 """
 
+import logging
 import os
 import time
-import logging
 
 try:
     import requests
@@ -59,8 +59,7 @@ class WecomBot:
     def _headers(self) -> dict:
         return {"Content-Type": "application/json"}
 
-    def send_text(self, user_id: str, text: str, to_party: str = "",
-                  to_tag: str = "") -> bool:
+    def send_text(self, user_id: str, text: str, to_party: str = "", to_tag: str = "") -> bool:
         """发送文本消息"""
         token = self._get_token()
         if not token:
@@ -84,8 +83,7 @@ class WecomBot:
         logger.error(f"企业微信消息发送失败: {result}")
         return False
 
-    def send_text_card(self, user_id: str, title: str, description: str,
-                       url: str = "") -> bool:
+    def send_text_card(self, user_id: str, title: str, description: str, url: str = "") -> bool:
         """发送文本卡片消息"""
         token = self._get_token()
         if not token:
@@ -140,8 +138,7 @@ class WecomBot:
             return data
         return None
 
-    def create_approval(self, creator_id: str, approver_id: list[str],
-                        template_id: str, details: dict) -> str | None:
+    def create_approval(self, creator_id: str, approver_id: list[str], template_id: str, details: dict) -> str | None:
         """创建审批申请
 
         返回审批实例 ID
@@ -173,6 +170,7 @@ class WecomBot:
         nonce = query.get("nonce", "")
         echostr = query.get("echostr", "")
         import hashlib
+
         arr = sorted([token, timestamp, nonce, echostr])
         calc_sig = hashlib.sha1("".join(arr).encode()).hexdigest()
         return calc_sig == signature

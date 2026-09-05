@@ -10,6 +10,7 @@
 展示：eco trace --tree <session> 树形渲染；--otel 导出 OTLP JSON（trace v1 资源模型，
 无需真实 collector，导出文件即可，可直接喂给 Jaeger/Tempo 的 OTLP ingest）。
 """
+
 from __future__ import annotations
 
 import json
@@ -88,17 +89,19 @@ class SpanTree:
     def start(self, name: str, kind: str, **attrs) -> str:
         """开启一个 span，嵌套到当前栈顶 span 之下，返回 span_id"""
         sid = uuid.uuid4().hex[:16]
-        self.spans.append({
-            "span_id": sid,
-            "parent_id": self._stack[-1] if self._stack else None,
-            "name": name,
-            "kind": kind,  # session | llm_call | tool_call | dag_step ...
-            "start": time.time(),
-            "start_iso": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
-            "end": None,
-            "duration_ms": None,
-            "attrs": dict(attrs),
-        })
+        self.spans.append(
+            {
+                "span_id": sid,
+                "parent_id": self._stack[-1] if self._stack else None,
+                "name": name,
+                "kind": kind,  # session | llm_call | tool_call | dag_step ...
+                "start": time.time(),
+                "start_iso": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
+                "end": None,
+                "duration_ms": None,
+                "attrs": dict(attrs),
+            }
+        )
         self._stack.append(sid)
         return sid
 
@@ -135,8 +138,7 @@ class SpanTree:
         try:
             d.mkdir(parents=True, exist_ok=True)
             path = d / f"{self.session_id}.json"
-            path.write_text(json.dumps(self.to_dict(), ensure_ascii=False, indent=1),
-                            encoding="utf-8")
+            path.write_text(json.dumps(self.to_dict(), ensure_ascii=False, indent=1), encoding="utf-8")
             return path
         except Exception as e:  # noqa: BLE001 — 落盘失败绝不抛错，仅降级告警
             logger.warning("span tree 落盘失败（%s）: %s", d, e)
@@ -208,8 +210,7 @@ class SpanTree:
             elif isinstance(v, float):
                 val = {"doubleValue": v}
             else:
-                val = {"stringValue": json.dumps(v, ensure_ascii=False)
-                       if isinstance(v, (dict, list)) else str(v)}
+                val = {"stringValue": json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else str(v)}
             return {"key": k, "value": val}
 
         otlp_spans = []
@@ -223,31 +224,35 @@ class SpanTree:
                 "kind": 1,  # SPAN_KIND_INTERNAL
                 "startTimeUnixNano": str(start_ns),
                 "endTimeUnixNano": str(end_ns),
-                "attributes": [_attr(k, v) for k, v in (s.get("attrs") or {}).items()]
-                            + [_attr("eco.span.kind", s["kind"])],
+                "attributes": [_attr(k, v) for k, v in (s.get("attrs") or {}).items()] + [_attr("eco.span.kind", s["kind"])],
                 "status": {"code": 1},
             }
             if s.get("parent_id"):
                 sp["parentSpanId"] = f"{int(s['parent_id'], 16):016x}"
             otlp_spans.append(sp)
         return {
-            "resourceSpans": [{
-                "resource": {"attributes": [
-                    _attr("service.name", "eco-agent"),
-                    _attr("eco.session_id", self.session_id),
-                ]},
-                "scopeSpans": [{
-                    "scope": {"name": "eco.observability", "version": "1.0"},
-                    "spans": otlp_spans,
-                }],
-            }],
+            "resourceSpans": [
+                {
+                    "resource": {
+                        "attributes": [
+                            _attr("service.name", "eco-agent"),
+                            _attr("eco.session_id", self.session_id),
+                        ]
+                    },
+                    "scopeSpans": [
+                        {
+                            "scope": {"name": "eco.observability", "version": "1.0"},
+                            "spans": otlp_spans,
+                        }
+                    ],
+                }
+            ],
         }
 
     def export_otlp(self, path: Path | str) -> Path:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(self.to_otlp(), ensure_ascii=False, indent=1),
-                     encoding="utf-8")
+        p.write_text(json.dumps(self.to_otlp(), ensure_ascii=False, indent=1), encoding="utf-8")
         return p
 
 
@@ -260,8 +265,7 @@ class OTLPExporter:
     绝不抛出、不阻塞主流程。
     """
 
-    def __init__(self, endpoint: str | None = None, timeout: float = 5.0,
-                 fallback_dir: Path | str | None = None):
+    def __init__(self, endpoint: str | None = None, timeout: float = 5.0, fallback_dir: Path | str | None = None):
         ep = endpoint or os.environ.get("ECO_OTLP_ENDPOINT") or DEFAULT_OTLP_ENDPOINT
         self.endpoint = ep.rstrip("/")
         self.timeout = timeout
@@ -274,9 +278,7 @@ class OTLPExporter:
     def export(self, tree: SpanTree) -> bool:
         """导出 span 树到 collector。成功返回 True；失败降级落盘返回 False。"""
         payload = json.dumps(tree.to_otlp(), ensure_ascii=False).encode("utf-8")
-        req = urllib.request.Request(
-            self.traces_url, data=payload,
-            headers={"Content-Type": "application/json"}, method="POST")
+        req = urllib.request.Request(self.traces_url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
         # 内网部署默认不走 http_proxy/https_proxy：collector 多为内网直连
         # （如 http://127.0.0.1:4318），走全局代理反而会连接失败被降级。
         # 显式设 ECO_OTLP_PROXY=1 时才遵循 *_proxy 环境变量经代理导出。

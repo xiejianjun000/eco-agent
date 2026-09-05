@@ -10,11 +10,12 @@ Reads config from ~/.eco/.env:
   ECO_PROVIDER=deepseek|openai|anthropic|kimi|qwen|doubao
   DEEPSEEK_API_KEY=sk-...
 """
+
+import json
+import logging
 import os
 import sys
 import time
-import logging
-import json
 from pathlib import Path
 
 # 抑制 httpx 的 HTTP Request 日志输出
@@ -32,16 +33,28 @@ from agent_core.llm_providers import PROVIDERS as REGISTRY_PROVIDERS  # noqa: E4
 def _legacy_entry(reg_name: str, api_key_env: str = "", embedding_model=None) -> dict:
     """从注册表 ProviderSpec 生成 llm_client 历史 provider 条目"""
     spec = REGISTRY_PROVIDERS[reg_name]
-    return {"base_url": spec.base_url,
-            "api_key_env": api_key_env or spec.env_key,
-            "default_model": spec.default_model,
-            "embedding_model": embedding_model}
+    return {
+        "base_url": spec.base_url,
+        "api_key_env": api_key_env or spec.env_key,
+        "default_model": spec.default_model,
+        "embedding_model": embedding_model,
+    }
 
 
 PROVIDERS = {
     "deepseek": _legacy_entry("deepseek"),  # DeepSeek 无 embedding → 向量通道自动禁用
-    "openai": {"base_url": "https://api.openai.com/v1", "api_key_env": "OPENAI_API_KEY", "default_model": "gpt-4o", "embedding_model": "text-embedding-3-small"},
-    "anthropic": {"base_url": "https://api.anthropic.com/v1", "api_key_env": "ANTHROPIC_API_KEY", "default_model": "claude-sonnet-4-20250514", "embedding_model": None},
+    "openai": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key_env": "OPENAI_API_KEY",
+        "default_model": "gpt-4o",
+        "embedding_model": "text-embedding-3-small",
+    },
+    "anthropic": {
+        "base_url": "https://api.anthropic.com/v1",
+        "api_key_env": "ANTHROPIC_API_KEY",
+        "default_model": "claude-sonnet-4-20250514",
+        "embedding_model": None,
+    },
     "kimi": _legacy_entry("moonshot", api_key_env="KIMI_API_KEY", embedding_model="moonshot-v1-embedding"),
     "qwen": _legacy_entry("qwen", embedding_model="text-embedding-v3"),
     "doubao": _legacy_entry("doubao", api_key_env="DOUBAO_API_KEY"),  # 历史 env 名保持兼容；注册表用 ARK_API_KEY
@@ -60,15 +73,18 @@ def _max_tokens(default: int) -> int:
         return default
 
 
-def record_llm_stat(provider: str, model: str, latency_ms: float,
-                    prompt_tokens=None, completion_tokens=None,
-                    path: str = "", ok: bool = True):
+def record_llm_stat(
+    provider: str, model: str, latency_ms: float, prompt_tokens=None, completion_tokens=None, path: str = "", ok: bool = True
+):
     """每次 LLM 调用追加一条结构化统计到 ~/.eco/stats.jsonl（供 eco doctor 查看）。
     写入失败静默降级（沙箱/权限受限环境不得影响 LLM 调用主链路）。"""
     import datetime as _dt
+
     rec = {
         "ts": _dt.datetime.now().isoformat(timespec="seconds"),
-        "provider": provider, "model": model, "path": path,
+        "provider": provider,
+        "model": model,
+        "path": path,
         "latency_ms": latency_ms,
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
@@ -110,8 +126,10 @@ def summarize_llm_stats(limit: int = 0, stats_file=None) -> dict:
         agg["prompt_tokens"] += r.get("prompt_tokens") or 0
         agg["completion_tokens"] += r.get("completion_tokens") or 0
     return {
-        "calls": total, "errors": errors,
-        "prompt_tokens": ptoks, "completion_tokens": ctoks,
+        "calls": total,
+        "errors": errors,
+        "prompt_tokens": ptoks,
+        "completion_tokens": ctoks,
         "total_tokens": ptoks + ctoks,
         "avg_latency_ms": round(sum(lats) / max(total, 1), 1),
         "by_provider": by_provider,
@@ -136,16 +154,21 @@ class LLMClient:
         try:
             env_file = Path.home() / ".eco" / ".env"
             if env_file.exists():
-                for l in env_file.read_text().splitlines():
-                    if "=" in l:
-                        k, v = l.split("=", 1)
+                for line in env_file.read_text().splitlines():
+                    if "=" in line:
+                        k, v = line.split("=", 1)
                         env[k.strip()] = v.strip()
         except OSError:
             pass  # 读取受限（沙箱等）时降级为纯 os.environ 模式
         self._env = env
-        self._provider_name = (provider
-                               or os.environ.get("ECO_PROVIDER") or os.environ.get("ECO_LLM_PROVIDER")
-                               or env.get("ECO_PROVIDER") or env.get("ECO_LLM_PROVIDER") or "deepseek")
+        self._provider_name = (
+            provider
+            or os.environ.get("ECO_PROVIDER")
+            or os.environ.get("ECO_LLM_PROVIDER")
+            or env.get("ECO_PROVIDER")
+            or env.get("ECO_LLM_PROVIDER")
+            or "deepseek"
+        )
         prov = PROVIDERS.get(self._provider_name, PROVIDERS["deepseek"])
         self._provider = prov
         # 模型覆盖：显式参数 > ECO_MODEL 环境变量（如 deepseek-v4-pro）> provider 默认
@@ -161,7 +184,9 @@ class LLMClient:
         self._gateway_key = os.environ.get("GOVMCP_GATEWAY_KEY", "")
         self._httpx = None
         try:
-            import httpx; self._httpx = httpx
+            import httpx
+
+            self._httpx = httpx
         except ImportError:
             logger.warning("httpx not installed")
 
@@ -192,9 +217,7 @@ class LLMClient:
                     env[k] = v
         except OSError:
             pass
-        key = os.environ.get(self._provider["api_key_env"]) or env.get(
-            self._provider["api_key_env"], ""
-        )
+        key = os.environ.get(self._provider["api_key_env"]) or env.get(self._provider["api_key_env"], "")
         if key:
             self._api_key = key
             logger.info("[llm_client] api key 惰性刷新成功: %s", self._provider["api_key_env"])
@@ -203,14 +226,16 @@ class LLMClient:
             logger.error(
                 "[llm_client] api key 缺失诊断: provider=%s env_key=%s "
                 "os_environ_has_key=%s eco_env_file_has_key=%s cwd=%s python=%s",
-                self._provider_name, self._provider["api_key_env"],
+                self._provider_name,
+                self._provider["api_key_env"],
                 bool(os.environ.get(self._provider["api_key_env"])),
                 bool(env.get(self._provider["api_key_env"])),
-                os.getcwd(), sys.executable if hasattr(sys, "executable") else "?")
+                os.getcwd(),
+                sys.executable if hasattr(sys, "executable") else "?",
+            )
         return self._api_key
 
-    def complete(self, prompt: str, system: str = "", max_tokens: int = 512,
-                 timeout: float = 90.0) -> str:
+    def complete(self, prompt: str, system: str = "", max_tokens: int = 512, timeout: float = 90.0) -> str:
         """Complete interface expected by ReAct++ (L1 micro-action loop)
 
         Args:
@@ -236,20 +261,28 @@ class LLMClient:
             resp = self._httpx.post(
                 f"{self._provider['base_url']}/chat/completions",
                 headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json={"model": self._provider["default_model"], "messages": messages,
-                       "temperature": self._resolve_temperature(self._provider["default_model"], 0.7),
-                       "max_tokens": max_tokens, "stream": False},
+                json={
+                    "model": self._provider["default_model"],
+                    "messages": messages,
+                    "temperature": self._resolve_temperature(self._provider["default_model"], 0.7),
+                    "max_tokens": max_tokens,
+                    "stream": False,
+                },
                 timeout=timeout,
             )
             if resp.status_code == 200:
                 data = resp.json()
                 text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                 try:
-                    record_llm_stat(self._provider_name, self._provider["default_model"],
-                                    round((time.time() - _t0) * 1000, 1),
-                                    (data.get("usage") or {}).get("prompt_tokens"),
-                                    (data.get("usage") or {}).get("completion_tokens"),
-                                    path="complete", ok=True)
+                    record_llm_stat(
+                        self._provider_name,
+                        self._provider["default_model"],
+                        round((time.time() - _t0) * 1000, 1),
+                        (data.get("usage") or {}).get("prompt_tokens"),
+                        (data.get("usage") or {}).get("completion_tokens"),
+                        path="complete",
+                        ok=True,
+                    )
                 except Exception:
                     pass
                 return text.strip()
@@ -258,8 +291,13 @@ class LLMClient:
             kind = "quota" if self._is_quota_error(resp.status_code, body) else "http"
             self._last_error = {"kind": kind, "status": resp.status_code, "detail": body}
             try:
-                record_llm_stat(self._provider_name, self._provider["default_model"],
-                                round((time.time() - _t0) * 1000, 1), path="complete", ok=False)
+                record_llm_stat(
+                    self._provider_name,
+                    self._provider["default_model"],
+                    round((time.time() - _t0) * 1000, 1),
+                    path="complete",
+                    ok=False,
+                )
             except Exception:
                 pass
             return ""
@@ -274,8 +312,7 @@ class LLMClient:
         if status in (402, 429):
             return True
         b = (body or "").lower()
-        return any(k in b for k in ("insufficient", "balance", "quota", "rate_limit",
-                                    "rate limit", "欠费", "余额"))
+        return any(k in b for k in ("insufficient", "balance", "quota", "rate_limit", "rate limit", "欠费", "余额"))
 
     @property
     def last_error(self) -> dict | None:
@@ -312,10 +349,8 @@ class LLMClient:
         base_url = spec.base_url
         model = spec.default_model
         if spec.name == "custom":
-            base_url = (os.environ.get("ECO_CUSTOM_BASE_URL")
-                        or self._env.get("ECO_CUSTOM_BASE_URL", "")).rstrip("/")
-            model = (os.environ.get("ECO_CUSTOM_MODEL")
-                     or self._env.get("ECO_CUSTOM_MODEL", "") or spec.default_model)
+            base_url = (os.environ.get("ECO_CUSTOM_BASE_URL") or self._env.get("ECO_CUSTOM_BASE_URL", "")).rstrip("/")
+            model = os.environ.get("ECO_CUSTOM_MODEL") or self._env.get("ECO_CUSTOM_MODEL", "") or spec.default_model
         key = os.environ.get(spec.env_key) or self._env.get(spec.env_key, "")
         if spec.name == "moonshot" and not key:
             # 历史兼容：KIMI_API_KEY 也可用于 moonshot provider
@@ -325,8 +360,7 @@ class LLMClient:
         if not key or not base_url:
             return False
         self._provider_name = spec.name
-        self._provider = {"base_url": base_url, "api_key_env": spec.env_key,
-                          "default_model": model, "embedding_model": None}
+        self._provider = {"base_url": base_url, "api_key_env": spec.env_key, "default_model": model, "embedding_model": None}
         self._api_key = key
         self._last_error = None
         return True
@@ -337,6 +371,7 @@ class LLMClient:
         找不到名字抛 KeyError（列出可用名）；有名字但没配 key 时返回的 client
         available() 为 False，由调用方决定降级或报错。"""
         from agent_core.llm_providers import get_provider
+
         spec = get_provider(name)
         client = cls()
         if not client._apply_provider_spec(spec):
@@ -344,13 +379,15 @@ class LLMClient:
             base_url = spec.base_url
             model = spec.default_model
             if spec.name == "custom":
-                base_url = (os.environ.get("ECO_CUSTOM_BASE_URL")
-                            or client._env.get("ECO_CUSTOM_BASE_URL", "")).rstrip("/")
-                model = (os.environ.get("ECO_CUSTOM_MODEL")
-                         or client._env.get("ECO_CUSTOM_MODEL", ""))
+                base_url = (os.environ.get("ECO_CUSTOM_BASE_URL") or client._env.get("ECO_CUSTOM_BASE_URL", "")).rstrip("/")
+                model = os.environ.get("ECO_CUSTOM_MODEL") or client._env.get("ECO_CUSTOM_MODEL", "")
             client._provider_name = spec.name
-            client._provider = {"base_url": base_url, "api_key_env": spec.env_key,
-                                "default_model": model, "embedding_model": None}
+            client._provider = {
+                "base_url": base_url,
+                "api_key_env": spec.env_key,
+                "default_model": model,
+                "embedding_model": None,
+            }
             client._api_key = ""
         return client
 
@@ -364,11 +401,17 @@ class LLMClient:
         后端链：GOVMCP 网关（若配置）→ provider 直连 → Kimi 直连兜底（非 kimi provider 时）。
         全部失败返回 {"_error": True, "_error_detail": 完整错误链}。"""
         if self._disabled:
-            return {"_error": True, "_error_detail": "disabled(ECO_LLM_DISABLE)",
-                    "choices": [{"message": {"content": "[LLM unavailable: disabled by ECO_LLM_DISABLE]"}}]}
+            return {
+                "_error": True,
+                "_error_detail": "disabled(ECO_LLM_DISABLE)",
+                "choices": [{"message": {"content": "[LLM unavailable: disabled by ECO_LLM_DISABLE]"}}],
+            }
         if not self.available():
-            return {"_error": True, "_error_detail": "unavailable(no api key or httpx)",
-                    "choices": [{"message": {"content": "[LLM unavailable: Run: eco setup]"}}]}
+            return {
+                "_error": True,
+                "_error_detail": "unavailable(no api key or httpx)",
+                "choices": [{"message": {"content": "[LLM unavailable: Run: eco setup]"}}],
+            }
         if not model:
             model = self._provider["default_model"]
         start = time.time()
@@ -386,10 +429,15 @@ class LLMClient:
                 self._stats["total_elapsed_s"] += time.time() - start
                 try:
                     usage = result.get("usage") or {}
-                    record_llm_stat(self._provider_name, model,
-                                    round((time.time() - start) * 1000, 1),
-                                    usage.get("prompt_tokens"), usage.get("completion_tokens"),
-                                    path=f"chat:{_kind}", ok=True)
+                    record_llm_stat(
+                        self._provider_name,
+                        model,
+                        round((time.time() - start) * 1000, 1),
+                        usage.get("prompt_tokens"),
+                        usage.get("completion_tokens"),
+                        path=f"chat:{_kind}",
+                        ok=True,
+                    )
                 except Exception:
                     pass
                 return result
@@ -397,8 +445,11 @@ class LLMClient:
                 errors.append(err)
         self._stats["errors"] += 1
         self._stats["total_elapsed_s"] += time.time() - start
-        return {"_error": True, "_error_detail": "; ".join(errors),
-                "choices": [{"message": {"content": "[LLM unavailable: all backends failed]"}}]}
+        return {
+            "_error": True,
+            "_error_detail": "; ".join(errors),
+            "choices": [{"message": {"content": "[LLM unavailable: all backends failed]"}}],
+        }
 
     def _call_gateway(self, messages, model, temp) -> tuple:
         """GOVMCP LLM 网关；返回 (result, err)。err 形如 'gateway(url): HTTP 502'"""
@@ -407,8 +458,12 @@ class LLMClient:
             resp = self._httpx.post(
                 url,
                 headers={"Authorization": f"Bearer {self._gateway_key}", "Content-Type": "application/json"},
-                json={"model": model, "messages": messages,
-                      "temperature": self._resolve_temperature(model, temp), "stream": False},
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "temperature": self._resolve_temperature(model, temp),
+                    "stream": False,
+                },
                 timeout=60,
             )
             if resp.status_code == 200:
@@ -425,8 +480,12 @@ class LLMClient:
             resp = self._httpx.post(
                 f"{self._provider['base_url']}/chat/completions",
                 headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json={"model": model, "messages": messages,
-                      "temperature": self._resolve_temperature(model, temp), "stream": False},
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "temperature": self._resolve_temperature(model, temp),
+                    "stream": False,
+                },
                 timeout=60,
             )
             if resp.status_code == 200:
@@ -444,8 +503,12 @@ class LLMClient:
             resp = self._httpx.post(
                 "https://api.moonshot.cn/v1/chat/completions",
                 headers={"Authorization": f"Bearer {kimi_key}"},
-                json={"model": "kimi-k2.5", "messages": messages,
-                      "temperature": self._resolve_temperature("kimi-k2.5", temp), "stream": False},
+                json={
+                    "model": "kimi-k2.5",
+                    "messages": messages,
+                    "temperature": self._resolve_temperature("kimi-k2.5", temp),
+                    "stream": False,
+                },
                 timeout=60,
             )
             if resp.status_code == 200:
@@ -459,7 +522,8 @@ class LLMClient:
         on_chunk(chunk_text: str) is called for each content chunk
         """
         if not self.available():
-            if on_chunk: on_chunk("[LLM not configured. Run: eco setup]")
+            if on_chunk:
+                on_chunk("[LLM not configured. Run: eco setup]")
             return ""
         model = self._provider["default_model"]
         full_text = ""
@@ -468,14 +532,18 @@ class LLMClient:
                 "POST",
                 f"{self._provider['base_url']}/chat/completions",
                 headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json={"model": model, "messages": messages,
-                      "temperature": self._resolve_temperature(model, 0.7), "stream": True},
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "temperature": self._resolve_temperature(model, 0.7),
+                    "stream": True,
+                },
                 timeout=120,
             ) as resp:
                 _last_chunk = ""
                 for line in resp.iter_lines():
                     if line:
-                        line = line.decode('utf-8') if isinstance(line, bytes) else line
+                        line = line.decode("utf-8") if isinstance(line, bytes) else line
                         if line.startswith("data: "):
                             data_str = line[6:]
                             if data_str.strip() == "[DONE]":
@@ -488,17 +556,20 @@ class LLMClient:
                                 if chunk and chunk != _last_chunk:
                                     _last_chunk = chunk
                                     full_text += chunk
-                                    if on_chunk: on_chunk(chunk)
+                                    if on_chunk:
+                                        on_chunk(chunk)
                             except json.JSONDecodeError:
                                 pass
         except Exception as e:
             err = "[Stream error: " + str(e) + "]"
             full_text += err
-            if on_chunk: on_chunk(err)
+            if on_chunk:
+                on_chunk(err)
         if not full_text and on_chunk:
             r = self.chat(messages)
             text = r.get("choices", [{}])[0].get("message", {}).get("content", "")
-            if on_chunk: on_chunk(text)
+            if on_chunk:
+                on_chunk(text)
             return text
         return full_text
 
@@ -511,8 +582,7 @@ class LLMClient:
         # "Bearer " 空头（httpx 会抛 Illegal header value 炸掉调用链）。
         # 先惰性刷新（单例构造早于 envboot 时自愈），仍为空才短路。
         if not self._refresh_key():
-            self._last_error = {"kind": "auth", "status": None,
-                                "detail": "no api key (provider not configured)"}
+            self._last_error = {"kind": "auth", "status": None, "detail": "no api key (provider not configured)"}
             return None, "no api key (provider not configured)"
         body = {
             "model": model,
@@ -538,8 +608,11 @@ class LLMClient:
             )
             if resp.status_code != 200:
                 detail = resp.text[:300] if getattr(resp, "text", None) else ""
-                kind = "quota" if self._is_quota_error(resp.status_code, detail) else (
-                    "auth" if resp.status_code in (401, 403) else "http")
+                kind = (
+                    "quota"
+                    if self._is_quota_error(resp.status_code, detail)
+                    else ("auth" if resp.status_code in (401, 403) else "http")
+                )
                 self._last_error = {"kind": kind, "status": resp.status_code, "detail": detail}
                 self._record_usage(model, None, time.time() - t0, ok=False)
                 return None, f"HTTP {resp.status_code}"
@@ -560,8 +633,7 @@ class LLMClient:
             self._record_usage(model, None, time.time() - t0, ok=False)
             return None, str(e)
 
-    def _call_chat_with_tools_stream(self, model: str, messages: list, tools: list,
-                                     on_chunk=None, on_reasoning=None):
+    def _call_chat_with_tools_stream(self, model: str, messages: list, tools: list, on_chunk=None, on_reasoning=None):
         """真实 SSE 流式 chat_with_tools 调用（stream=True）。
 
         - content delta 即时通过 on_chunk 回调给上层（真流式，非整块切片回放）
@@ -573,8 +645,7 @@ class LLMClient:
         self._last_error = None
         # 空密钥守卫（同 _call_chat_with_tools，先惰性刷新自愈）
         if not self._refresh_key():
-            self._last_error = {"kind": "auth", "status": None,
-                                "detail": "no api key (provider not configured)"}
+            self._last_error = {"kind": "auth", "status": None, "detail": "no api key (provider not configured)"}
             return None, "no api key (provider not configured)"
         body = {
             "model": model,
@@ -610,8 +681,11 @@ class LLMClient:
                         detail = (raw.decode("utf-8", "replace") if isinstance(raw, bytes) else str(raw))[:300]
                     except Exception:
                         detail = ""
-                    kind = "quota" if self._is_quota_error(resp.status_code, detail) else (
-                        "auth" if resp.status_code in (401, 403) else "http")
+                    kind = (
+                        "quota"
+                        if self._is_quota_error(resp.status_code, detail)
+                        else ("auth" if resp.status_code in (401, 403) else "http")
+                    )
                     self._last_error = {"kind": kind, "status": resp.status_code, "detail": detail}
                     self._record_usage(model, None, time.time() - t0, ok=False)
                     return None, f"HTTP {resp.status_code}"
@@ -647,8 +721,8 @@ class LLMClient:
                     for tc in delta.get("tool_calls") or []:
                         idx = tc.get("index", 0)
                         acc = tool_calls_acc.setdefault(
-                            idx, {"id": "", "type": "function",
-                                  "function": {"name": "", "arguments": ""}})
+                            idx, {"id": "", "type": "function", "function": {"name": "", "arguments": ""}}
+                        )
                         if tc.get("id"):
                             acc["id"] = tc["id"]
                         fn = tc.get("function") or {}
@@ -704,16 +778,27 @@ class LLMClient:
         self._last_usage = dict(usage or {})
         try:
             record_llm_stat(
-                provider=self._provider_name, model=model,
+                provider=self._provider_name,
+                model=model,
                 latency_ms=round(elapsed_s * 1000, 1),
                 prompt_tokens=(usage or {}).get("prompt_tokens"),
                 completion_tokens=(usage or {}).get("completion_tokens"),
-                path="chat_with_tools", ok=ok)
+                path="chat_with_tools",
+                ok=ok,
+            )
         except Exception:
             pass
 
-    def chat_with_tools(self, messages: list, tools: list, on_chunk=None, max_tool_rounds: int = 5,
-                        tracer=None, stream: bool = False, spans=None) -> str:
+    def chat_with_tools(
+        self,
+        messages: list,
+        tools: list,
+        on_chunk=None,
+        max_tool_rounds: int = 5,
+        tracer=None,
+        stream: bool = False,
+        spans=None,
+    ) -> str:
         """
         CLAUDE/CODEX/HERMES 风格 Agent 循环：
         1. 发送消息 + 工具定义给 LLM
@@ -734,7 +819,8 @@ class LLMClient:
         """
         if not self.available():
             msg = "[LLM not configured]"
-            if on_chunk: on_chunk(msg)
+            if on_chunk:
+                on_chunk(msg)
             return msg
 
         model = self._provider["default_model"]
@@ -744,6 +830,7 @@ class LLMClient:
         for _round_idx in range(max_tool_rounds + 1):
             if tracer is not None and getattr(tracer, "enabled", False):
                 tracer.round_start(_round_idx + 1)
+
             # 调用 LLM（温度统一走 _resolve_temperature 收口：kimi-k2.x 强制 temp=1）
             # stream=True 走真实 SSE 流式（content delta 即时回调，tool_calls 按 index 拼装）；
             # 失败时按 provider fallback 链降级重试（Kimi 401/429 → DeepSeek 等，流式同样降级）
@@ -752,25 +839,32 @@ class LLMClient:
                     return self._call_chat_with_tools_stream(mdl, msgs, tools, on_chunk=on_chunk)
                 return self._call_chat_with_tools(mdl, msgs, tools)
 
-            llm_span = spans.start(f"round{_round_idx + 1}", "llm_call", model=model,
-                                   provider=self._provider_name) if spans is not None else None
+            llm_span = (
+                spans.start(f"round{_round_idx + 1}", "llm_call", model=model, provider=self._provider_name)
+                if spans is not None
+                else None
+            )
             msg, err = _call(model, current_messages)
             if msg is None:
                 if self._is_recoverable_error(self._last_error or {}) and self._try_failover_provider():
                     model = self._provider["default_model"]
                     logger.warning(f"[chat_with_tools] 主 provider 失败，已降级到 {self._provider_name} 重试")
                     if on_chunk:
-                        on_chunk(f"\n  [提示] 主模型不可用（{self._friendly_error(self._last_error)}），"
-                                 f"已自动切换到备用模型 {model} 重试...\n")
+                        on_chunk(
+                            f"\n  [提示] 主模型不可用（{self._friendly_error(self._last_error)}），"
+                            f"已自动切换到备用模型 {model} 重试...\n"
+                        )
                     msg, err = _call(model, current_messages)
             if msg is None:
                 if spans is not None and llm_span:
-                    spans.end(llm_span, finish_reason="error",
-                              error=self._friendly_error(self._last_error))
-                friendly = (f"[API 错误] {self._friendly_error(self._last_error)}\n"
-                            f"建议：检查 ~/.eco/.env 中的 API Key 是否有效（可运行 eco setup 重新配置），"
-                            f"或切换 ECO_PROVIDER 到其他已配置 Key 的模型。")
-                if on_chunk: on_chunk(friendly)
+                    spans.end(llm_span, finish_reason="error", error=self._friendly_error(self._last_error))
+                friendly = (
+                    f"[API 错误] {self._friendly_error(self._last_error)}\n"
+                    f"建议：检查 ~/.eco/.env 中的 API Key 是否有效（可运行 eco setup 重新配置），"
+                    f"或切换 ECO_PROVIDER 到其他已配置 Key 的模型。"
+                )
+                if on_chunk:
+                    on_chunk(friendly)
                 return friendly
 
             # 检查是否有 tool_calls
@@ -778,21 +872,27 @@ class LLMClient:
             # ── LLM 决策留痕：候选工具数/选中工具/原始 tool_calls 或 stop 原因/prompt 阶段 ──
             try:
                 from agent_core.decisions import record_decision
+
                 record_decision(
                     candidate_tools=len(tools or []),
                     selected_tools=[tc["function"]["name"] for tc in tool_calls] if tool_calls else [],
                     finish_reason="tool_calls" if tool_calls else "stop",
                     raw_tool_calls=tool_calls or [],
-                    model=model, provider=self._provider_name, round_idx=_round_idx + 1)
+                    model=model,
+                    provider=self._provider_name,
+                    round_idx=_round_idx + 1,
+                )
             except Exception:
                 pass  # 留痕失败不影响主流程
             if spans is not None and llm_span:
                 u = self._last_usage or {}
                 # 暂不结束 llm span：tool_call span 需嵌套在其下；
                 # 在工具执行完 / 生成最终回答两个分支分别 end
-                for k, v in (("finish_reason", "tool_calls" if tool_calls else "stop"),
-                             ("prompt_tokens", u.get("prompt_tokens")),
-                             ("completion_tokens", u.get("completion_tokens"))):
+                for k, v in (
+                    ("finish_reason", "tool_calls" if tool_calls else "stop"),
+                    ("prompt_tokens", u.get("prompt_tokens")),
+                    ("completion_tokens", u.get("completion_tokens")),
+                ):
                     span_obj = next((s for s in spans.spans if s["span_id"] == llm_span), None)
                     if span_obj is not None:
                         span_obj["attrs"][k] = v
@@ -815,8 +915,9 @@ class LLMClient:
                         on_chunk(f"\n  → 调用 {fn_name}({args_str})\n")
 
                 # 执行工具
-                from agent_core.tools_registry import execute_tool
                 import asyncio
+
+                from agent_core.tools_registry import execute_tool
 
                 # 追加 assistant 消息（含 tool_calls）
                 assistant_msg = {"role": "assistant", "content": msg.get("content") or None}
@@ -825,10 +926,7 @@ class LLMClient:
                     {
                         "id": tc["id"],
                         "type": "function",
-                        "function": {
-                            "name": tc["function"]["name"],
-                            "arguments": tc["function"]["arguments"]
-                        }
+                        "function": {"name": tc["function"]["name"], "arguments": tc["function"]["arguments"]},
                     }
                     for tc in tool_calls
                 ]
@@ -845,8 +943,7 @@ class LLMClient:
                     _trace_it = tracer is not None and getattr(tracer, "enabled", False)
                     if _trace_it:
                         tracer.tool_call(tool_name, tool_args)
-                    tool_span = spans.start(tool_name, "tool_call",
-                                            args=tool_args) if spans is not None else None
+                    tool_span = spans.start(tool_name, "tool_call", args=tool_args) if spans is not None else None
                     _t0 = __import__("time").time()
                     tool_result = asyncio.run(execute_tool(tool_name, tool_args))
                     _tel = __import__("time").time() - _t0
@@ -855,11 +952,7 @@ class LLMClient:
                     if _trace_it:
                         tracer.tool_result(tool_name, tool_result, _tel)
 
-                    current_messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc["id"],
-                        "content": tool_result
-                    })
+                    current_messages.append({"role": "tool", "tool_call_id": tc["id"], "content": tool_result})
 
                 if spans is not None and llm_span:
                     spans.end(llm_span)
@@ -880,15 +973,17 @@ class LLMClient:
                 # 非流式路径：模拟流式输出（逐段展示）；真流式时内容已随 SSE delta 即时回调
                 chunk_size = 20
                 for i in range(0, len(content), chunk_size):
-                    on_chunk(content[i:i+chunk_size])
+                    on_chunk(content[i : i + chunk_size])
                     import time
+
                     time.sleep(0.01)
 
             return content
 
         # 超过最大工具轮数
         fallback = "[工具调用次数过多，请简化问题]"
-        if on_chunk: on_chunk(fallback)
+        if on_chunk:
+            on_chunk(fallback)
         return fallback
 
     def get_stats(self) -> dict:
@@ -899,26 +994,32 @@ class LLMClient:
         s["has_api_key"] = bool(self._api_key)
         return s
 
+
 _client = None
+
+
 def get_default_client() -> LLMClient:
     global _client
     if _client is None:
         _client = LLMClient()
     return _client
 
+
 def chat(messages: list, **kwargs) -> dict:
     return get_default_client().chat(messages, **kwargs)
 
+
 if __name__ == "__main__":
-    import sys as _sys
     import io
+    import sys as _sys
+
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
     c = get_default_client()
     if c.available():
         r = c.complete("Say hello in 3 words", system="You are helpful.")
         print(f"[OK] complete(): {r}")
-        r2 = c.chat([{"role":"user","content":"Say hello in 5 words"}])
-        t = r2.get("choices",[{}])[0].get("message",{}).get("content","")
+        r2 = c.chat([{"role": "user", "content": "Say hello in 5 words"}])
+        t = r2.get("choices", [{}])[0].get("message", {}).get("content", "")
         print(f"[OK] chat(): {t}")
         print(f"[OK] Stats: {c.get_stats()}")
     else:

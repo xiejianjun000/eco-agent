@@ -11,8 +11,8 @@ openhuman_features.py — ECO AGENT OPENHUMAN 对标补全
   from _scripts.openhuman_features import HybridRetriever, DataIngestion, SubAgentFleet
 """
 
-import time
 import logging
+import time
 from pathlib import Path
 
 logger = logging.getLogger("openhuman")
@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # 1. HybridRetriever — 混合检索
 # ═══════════════════════════════════════
 
+
 class HybridRetriever:
     """Memory Tree 混合检索——BM25+向量+BGE重排序+RRF融合"""
 
@@ -32,7 +33,7 @@ class HybridRetriever:
 
     def search(self, query: str, top_k: int = 10) -> list[dict]:
         """混合检索：多路召回 + RRF 融合"""
-        keywords = query.lower().split()
+        query.lower().split()
 
         # 路 1: BM25 关键词检索（基于词频）
         bm25_results = self._bm25_search(query, top_k * 2)
@@ -52,7 +53,10 @@ class HybridRetriever:
         """BM25 模拟检索"""
         if self._mt:
             return self._mt.search(query, max_results=top_k)
-        return [{"id": f"bm25_{i}", "title": f"BM25 结果{i}", "score": 0.9 - i * 0.1, "snippet": query[:50], "source": "bm25"} for i in range(min(top_k, 5))]
+        return [
+            {"id": f"bm25_{i}", "title": f"BM25 结果{i}", "score": 0.9 - i * 0.1, "snippet": query[:50], "source": "bm25"}
+            for i in range(min(top_k, 5))
+        ]
 
     def _vector_search(self, query: str, top_k: int) -> list[dict]:
         """语义向量检索（基于标题与查询的字面重叠度模拟）"""
@@ -61,7 +65,10 @@ class HybridRetriever:
             for r in results:
                 r["source"] = "vector"
             return results
-        return [{"id": f"vec_{i}", "title": f"Vector 结果{i}", "score": 0.8 - i * 0.1, "snippet": "向量匹配", "source": "vector"} for i in range(min(top_k, 5))]
+        return [
+            {"id": f"vec_{i}", "title": f"Vector 结果{i}", "score": 0.8 - i * 0.1, "snippet": "向量匹配", "source": "vector"}
+            for i in range(min(top_k, 5))
+        ]
 
     def _rrf_fuse(self, result_lists: list[list[dict]], top_k: int, k: int = 60) -> list[dict]:
         """RRF 融合——Reciprocal Rank Fusion"""
@@ -70,7 +77,8 @@ class HybridRetriever:
             for rank, doc in enumerate(results):
                 doc_id = doc.get("id", hash(doc.get("title", "")))
                 scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank + 1)
-                if "scores" not in doc: doc["scores"] = {}
+                if "scores" not in doc:
+                    doc["scores"] = {}
                 doc["scores"]["rrf"] = scores[doc_id]
         return sorted(results, key=lambda d: scores.get(d.get("id", ""), 0), reverse=True)[:top_k]
 
@@ -78,7 +86,7 @@ class HybridRetriever:
         """BGE 重排序——交叉编码器风格重排序"""
         for r in results:
             title = r.get("title", "")
-            snippet = r.get("snippet", "")
+            r.get("snippet", "")
             # 查询与标题/摘要的字符重叠度作为重排分数
             query_chars = set(query.lower())
             title_chars = set(title.lower())
@@ -87,12 +95,14 @@ class HybridRetriever:
         results.sort(key=lambda x: -x.get("rerank_score", 0))
         return results
 
-    def get_stats(self) -> dict: return {"method": "BM25+Vector+RRF+BGE"}
+    def get_stats(self) -> dict:
+        return {"method": "BM25+Vector+RRF+BGE"}
 
 
 # ═══════════════════════════════════════
 # 2. DataIngestion — 自动化数据摄取
 # ═══════════════════════════════════════
+
 
 class DataIngestion:
     """自动化数据摄取引擎——定时轮询/触发式/批量导入"""
@@ -101,8 +111,20 @@ class DataIngestion:
         "mee": {"name": "生态环境部", "url": "https://www.mee.gov.cn", "type": "gov", "interval": 86400, "enabled": True},
         "state_council": {"name": "国务院公报", "url": "https://www.gov.cn", "type": "gov", "interval": 86400, "enabled": True},
         "npc": {"name": "中国人大网", "url": "https://www.npc.gov.cn", "type": "gov", "interval": 86400, "enabled": True},
-        "judicial": {"name": "司法部法规库", "url": "https://flk.npc.gov.cn", "type": "database", "interval": 86400, "enabled": True},
-        "pkulaw": {"name": "北大法宝", "url": "https://www.pkulaw.com", "type": "database", "interval": 43200, "enabled": False},
+        "judicial": {
+            "name": "司法部法规库",
+            "url": "https://flk.npc.gov.cn",
+            "type": "database",
+            "interval": 86400,
+            "enabled": True,
+        },
+        "pkulaw": {
+            "name": "北大法宝",
+            "url": "https://www.pkulaw.com",
+            "type": "database",
+            "interval": 43200,
+            "enabled": False,
+        },
         "cnki": {"name": "中国知网", "url": "https://www.cnki.net", "type": "academic", "interval": 43200, "enabled": False},
     }
 
@@ -116,7 +138,8 @@ class DataIngestion:
         """触发全部启用的数据源"""
         results = {"total": 0, "success": 0, "failed": 0, "items": []}
         for sid, src in self._sources.items():
-            if not src["enabled"]: continue
+            if not src["enabled"]:
+                continue
             results["total"] += 1
             try:
                 items = self._ingest_source(sid, src)
@@ -137,22 +160,34 @@ class DataIngestion:
         if self._mt:
             for item in items[:2]:
                 try:
-                    self._mt.create_node(type="statute", title=item, content=f"from {src['name']}",
-                                        tags=[f"source/{sid}"], score=60, source="import")
-                except Exception: pass
+                    self._mt.create_node(
+                        type="statute",
+                        title=item,
+                        content=f"from {src['name']}",
+                        tags=[f"source/{sid}"],
+                        score=60,
+                        source="import",
+                    )
+                except Exception:
+                    pass
         return items
 
     def add_source(self, source_id: str, config: dict):
         self._sources[source_id] = config
 
     def get_stats(self) -> dict:
-        return {"sources": len(self._sources), "enabled": sum(1 for s in self._sources.values() if s["enabled"]),
-                "ingested": self._ingested, "failed": self._failed}
+        return {
+            "sources": len(self._sources),
+            "enabled": sum(1 for s in self._sources.values() if s["enabled"]),
+            "ingested": self._ingested,
+            "failed": self._failed,
+        }
 
 
 # ═══════════════════════════════════════
 # 3. SubAgentFleet — 三层深度 delegation
 # ═══════════════════════════════════════
+
 
 class SubAgentFleet:
     """3 层深度 delegation + 12 archetype"""
@@ -185,7 +220,9 @@ class SubAgentFleet:
 
         if depth == 1:
             archetype = self._select_archetype(task)
-            fleet = [{"level": 1, "archetype": archetype, "task": task, "delegated_to": self.ARCHETYPES.get(archetype, "general")}]
+            fleet = [
+                {"level": 1, "archetype": archetype, "task": task, "delegated_to": self.ARCHETYPES.get(archetype, "general")}
+            ]
 
         elif depth == 2:
             primary = self._select_archetype(task)
@@ -207,11 +244,16 @@ class SubAgentFleet:
 
     def _select_archetype(self, task: str) -> str:
         t = task.lower()
-        if any(kw in t for kw in ["分析", "研究", "调查", "评估"]): return "analyst"
-        if any(kw in t for kw in ["写", "生成", "制作", "起草"]): return "writer"
-        if any(kw in t for kw in ["设计", "规划", "架构"]): return "architect"
-        if any(kw in t for kw in ["监控", "检查", "审计"]): return "monitor"
-        if any(kw in t for kw in ["协调", "分配", "沟通"]): return "coordinator"
+        if any(kw in t for kw in ["分析", "研究", "调查", "评估"]):
+            return "analyst"
+        if any(kw in t for kw in ["写", "生成", "制作", "起草"]):
+            return "writer"
+        if any(kw in t for kw in ["设计", "规划", "架构"]):
+            return "architect"
+        if any(kw in t for kw in ["监控", "检查", "审计"]):
+            return "monitor"
+        if any(kw in t for kw in ["协调", "分配", "沟通"]):
+            return "coordinator"
         return "consultant"
 
     def get_fleet(self, delegation_id: str) -> list[dict] | None:
@@ -222,6 +264,7 @@ class SubAgentFleet:
 
 
 # ===== 测试 =====
+
 
 def test():
     print("[TEST] OPENHUMAN 三项能力验证", flush=True)
@@ -242,7 +285,7 @@ def test():
     d3 = sf.delegate("起草行政处罚决定书", depth=3)
     print(f"[SubAgentFleet] 3层delegation: L1={d1['fleet_size']}人, L3={d3['fleet_size']}人", flush=True)
 
-    print(f"\n{'='*40}", flush=True)
+    print(f"\n{'=' * 40}", flush=True)
     print("[OK] OPENHUMAN 三项全部完成", flush=True)
 
 

@@ -3,6 +3,7 @@
 运行方式:
     python -m mee_encyclopedia.server
 """
+
 from __future__ import annotations
 
 import json
@@ -55,6 +56,7 @@ mcp = FastMCP(
 
 # ---------------- 读取工具族（核心能力 1） ----------------
 
+
 @mcp.tool()
 def read_web_page(url: str, max_chars: int = 8000) -> dict:
     """读取任意公开网页正文（来源 URL 需为生态环境部系统或用户明确指定）。"""
@@ -70,6 +72,7 @@ def list_web_links(url: str, limit: int = 50) -> dict:
 
 
 # ---------------- 环境质量实时数据 ----------------
+
 
 @mcp.tool()
 def read_air_quality(city: str) -> dict:
@@ -115,6 +118,7 @@ def read_radiation_level(region: str | None = None) -> dict:
 
 # ---------------- 主站动态与政策标准 ----------------
 
+
 @mcp.tool()
 def list_mee_categories() -> dict:
     """列出全部可读栏目分组导览（要闻/政策/业务工作/环境质量/互动/曝光台/核安全局等 60+ 栏目）。"""
@@ -123,7 +127,7 @@ def list_mee_categories() -> dict:
 
 @mcp.tool()
 def read_mee_list(category: str = "要闻动态", limit: int = 20, keyword: str | None = None) -> dict:
-    """读取主站栏目最新列表：支持全部 60+ 栏目（要闻/政策文种/业务工作/环境质量报告/互动/曝光台/党建/专题/核安全局），可选 keyword 过滤标题。"""
+    """读取主站栏目最新列表：支持全部 60+ 栏目（要闻/政策文种/业务工作/环境质量报告/互动/曝光台/党建/专题/核安全局），可选 keyword 过滤标题。"""  # noqa: E501
     audit("read_mee_list", category)
     return news.read_mee_list(FETCHER, CACHE, category, limit=limit, keyword=keyword)
 
@@ -133,6 +137,7 @@ def read_mee_article(url: str) -> dict:
     """读取主站文章正文（要闻/政策/公示详情）。"""
     audit("read_mee_article", url)
     return news.read_mee_article(FETCHER, CACHE, url)
+
 
 @mcp.tool()
 def list_policy_types() -> dict:
@@ -244,6 +249,7 @@ def read_standard(standard_no: str) -> dict:
 
 # ---------------- 业务系统查询（动态/需登录，返回入口与说明） ----------------
 
+
 @mcp.tool()
 def query_eia_credit(name: str) -> dict:
     """查询环评机构信用信息（信用平台为登录后动态系统，返回查询说明与入口）。"""
@@ -266,6 +272,7 @@ def search_waste_category(keyword: str) -> dict:
 
 
 # ---------------- 百科知识域（静态导览） ----------------
+
 
 @mcp.tool()
 def list_domains_meta() -> dict:
@@ -325,6 +332,7 @@ def permit_guide() -> dict:
 
 # ---------------- RAG 知识库 ----------------
 
+
 @mcp.tool()
 def rag_query(question: str, top_k: int = 5) -> dict:
     """在本地 RAG 知识库中检索政策/标准片段并返回带来源的候选答案。"""
@@ -342,6 +350,7 @@ def rag_ingest(doc_id: str, title: str, text: str, source: str = "") -> dict:
 
 # ---------------- 下载工具族（核心能力 2） ----------------
 
+
 @mcp.tool()
 def download_file(url: str, save_dir: str = ".", filename: str | None = None) -> dict:
     """下载公开 URL 文件到本地下载目录（仅 http/https，限制大小）。"""
@@ -356,7 +365,11 @@ def download_standard_pdf(standard_no: str, save_dir: str = "standards") -> dict
     info = standards.read_standard(FETCHER, CACHE, standard_no)
     url = info.get("info", {}).get("url", "")
     if not url:
-        return {"standard_no": standard_no, "success": False, "note": "未在目录页定位到该标准，请先 search_standard 获取 URL 后使用 download_file"}
+        return {
+            "standard_no": standard_no,
+            "success": False,
+            "note": "未在目录页定位到该标准，请先 search_standard 获取 URL 后使用 download_file",
+        }
     return DOWNLOADER.download(url, save_dir=save_dir)
 
 
@@ -369,7 +382,7 @@ def export_mee_list(category: str = "要闻动态", save_dir: str = "exports", f
     if fmt.lower() == "csv":
         lines = ["title,url"]
         for it in items:
-            lines.append(f'"{it.get("title","")}","{it.get("url","")}"')
+            lines.append(f'"{it.get("title", "")}","{it.get("url", "")}"')
         content = "\n".join(lines)
         fname = f"mee_{category}_{len(items)}.csv"
     else:
@@ -389,7 +402,10 @@ def export_air_quality_csv(city: str, save_dir: str = "exports") -> dict:
         return {"city": city, "success": False, "note": data.get("note", "无数据")}
     content = "city,aqi,pm25,pm10,so2,no2,co,o3,level,updated\n"
     for r in rows:
-        content += ",".join(str(r.get(k, "")) for k in ["city", "aqi", "pm25", "pm10", "so2", "no2", "co", "o3", "level", "updated"]) + "\n"
+        content += (
+            ",".join(str(r.get(k, "")) for k in ["city", "aqi", "pm25", "pm10", "so2", "no2", "co", "o3", "level", "updated"])
+            + "\n"
+        )
     saved = DOWNLOADER.download_text(content, f"air_{city}_{len(rows)}.csv", save_dir=save_dir)
     return {"city": city, "rows": len(rows), **saved}
 
@@ -401,6 +417,7 @@ def list_downloads(save_dir: str = ".") -> dict:
     target = base
     if save_dir and save_dir != ".":
         from .core.utils import ensure_within
+
         target = ensure_within(base, Path(save_dir))
     files = []
     for p in sorted(target.rglob("*")):
@@ -421,7 +438,9 @@ def main() -> None:
     )
     args = parser.parse_args()
     setup_logging(os.getenv("MEE_LOG_LEVEL", CONFIG.get("logging", {}).get("level", "INFO")))
-    logger.info("MEE Encyclopedia MCP 启动: transport=%s 领域=%d 下载目录=%s", args.transport, len(list_domains()), DOWNLOADS_DIR)
+    logger.info(
+        "MEE Encyclopedia MCP 启动: transport=%s 领域=%d 下载目录=%s", args.transport, len(list_domains()), DOWNLOADS_DIR
+    )
     mcp.run(transport=args.transport)
 
 

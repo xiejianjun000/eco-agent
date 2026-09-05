@@ -10,11 +10,11 @@ codex_features.py — ECO AGENT CODEX 对标补全
   from _scripts.codex_features import FixPipeline
 """
 
+import importlib.util
 import json
 import logging
-import importlib.util
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("codex")
 
@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # ═══════════════════════════════════════
 # FixPipeline — 批量修复流水线
 # ═══════════════════════════════════════
+
 
 class FixPipeline:
     """批量修复流水线——lint→audit→fix→verify 渐进式"""
@@ -36,8 +37,10 @@ class FixPipeline:
 
     def _load(self):
         if self._fix_log.exists():
-            try: self._history = json.loads(self._fix_log.read_text("utf-8", errors="replace"))
-            except Exception: pass
+            try:
+                self._history = json.loads(self._fix_log.read_text("utf-8", errors="replace"))
+            except Exception:
+                pass
 
     def _save(self):
         self._fix_log.write_text(json.dumps(self._history[-100:], ensure_ascii=False, indent=2), encoding="utf-8")
@@ -91,7 +94,8 @@ class FixPipeline:
         issues = []
         try:
             content = fpath.read_text("utf-8", errors="replace")
-        except Exception: return issues
+        except Exception:
+            return issues
 
         if fpath.suffix == ".md":
             if not content.startswith("---") and fpath.name not in ("README.md", "CHANGELOG.md", "CLAUDE.md", "SCHEMA.md"):
@@ -110,7 +114,8 @@ class FixPipeline:
         fixed = []
         try:
             content = fpath.read_text("utf-8", errors="replace")
-        except Exception: return fixed
+        except Exception:
+            return fixed
 
         for issue in issues:
             if issue["type"] == "missing_shebang" and fpath.suffix == ".py":
@@ -128,13 +133,18 @@ class FixPipeline:
     def get_stats(self) -> dict:
         total_issues = sum(r["issues_found"] for r in self._history)
         total_fixed = sum(r["issues_fixed"] for r in self._history)
-        return {"total_runs": len(self._history), "total_issues": total_issues,
-                "total_fixed": total_fixed, "auto_fix_rate": f"{total_fixed / max(total_issues, 1) * 100:.0f}%"}
+        return {
+            "total_runs": len(self._history),
+            "total_issues": total_issues,
+            "total_fixed": total_fixed,
+            "auto_fix_rate": f"{total_fixed / max(total_issues, 1) * 100:.0f}%",
+        }
 
 
 # ═══════════════════════════════════════
 # MoAJudge — 多模型裁判 (封装 Hermes MoA)
 # ═══════════════════════════════════════
+
 
 class MoAJudge:
     """多模型裁判——用 MoA 做质量裁决"""
@@ -156,8 +166,12 @@ class MoAJudge:
             return {"judgment": "MoA 不可用", "score": 50, "dimension": dimension}
 
         result = self._moa.query(f"请评价以下内容的{dimension}质量并给分", f"内容：{content[:200]}")
-        return {"judgment": result["aggregated"][:200], "score": 75, "dimension": dimension,
-                "providers": len(result["responses"])}
+        return {
+            "judgment": result["aggregated"][:200],
+            "score": 75,
+            "dimension": dimension,
+            "providers": len(result["responses"]),
+        }
 
     def judge_consistency(self, texts: list[str]) -> list[float]:
         """裁判多个回答的一致性"""
@@ -174,6 +188,7 @@ class MoAJudge:
 
 # ===== 测试 =====
 
+
 def test():
     print("[TEST] CODEX 两项能力验证")
 
@@ -187,7 +202,7 @@ def test():
     r = j.judge_quality("《大气污染防治法》是生态环境领域的重要法律", "accuracy")
     print(f"[MoAJudge] 裁判结果: {r['judgment'][:60]}...")
 
-    print(f"\n{'='*40}")
+    print(f"\n{'=' * 40}")
     print("[OK] CODEX 两项全部完成")
 
 

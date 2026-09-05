@@ -37,9 +37,9 @@ class SubagentMessageRequest(BaseModel):
 @router.post("")
 async def spawn_subagent(req: SubagentSpawnRequest) -> dict:
     reg = get_subagent_registry()
-    snap = reg.start(req.message, history=req.history, model=req.model,
-                     background=req.background, label=req.label,
-                     parent_id=req.parent_id)
+    snap = reg.start(
+        req.message, history=req.history, model=req.model, background=req.background, label=req.label, parent_id=req.parent_id
+    )
     if not req.background:
         # 前台：等结果（同步语义，供脚本/测试用）
         agent = reg.get(snap["id"])

@@ -147,7 +147,9 @@ def register_approval(registry: ToolRegistry):
         tags=["approval", "license", "print", "electronic"],
     )
     async def query_license_print(application_id: str) -> str:
-        return json.dumps({"status": "ok", "method": "query_license_print", "application_id": application_id}, ensure_ascii=False)
+        return json.dumps(
+            {"status": "ok", "method": "query_license_print", "application_id": application_id}, ensure_ascii=False
+        )
 
     @govmcp_tool(
         name="approval_submit_appeal",

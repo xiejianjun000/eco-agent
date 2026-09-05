@@ -27,7 +27,7 @@ import zipfile
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-_CONTENT_TYPES = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+_CONTENT_TYPES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
 <Default Extension="xml" ContentType="application/xml"/>
@@ -35,34 +35,34 @@ _CONTENT_TYPES = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 {slides_overrides}
 <Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>
 <Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
-</Types>'''
+</Types>"""
 
-_RELS = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+_RELS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
-</Relationships>'''
+</Relationships>"""
 
-_MASTER = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+_MASTER = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld>
 <p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
 <p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>
-</p:sldMaster>'''
+</p:sldMaster>"""
 
-_MASTER_RELS = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+_MASTER_RELS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
-</Relationships>'''
+</Relationships>"""
 
-_LAYOUT = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+_LAYOUT = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="blank">
 <p:cSld name="Blank"><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld>
-</p:sldLayout>'''
+</p:sldLayout>"""
 
-_LAYOUT_RELS = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+_LAYOUT_RELS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>
-</Relationships>'''
+</Relationships>"""
 
 
 def _slide_xml(title: str, bullets: list[str]) -> str:
@@ -70,29 +70,27 @@ def _slide_xml(title: str, bullets: list[str]) -> str:
     tx_body = (
         f'<p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>'
         f'<p:nvPr><p:ph type="ctrTitle"/></p:nvPr></p:nvSpPr><p:spPr/>'
-        f'<p:txBody><a:bodyPr/><a:lstStyle/>'
+        f"<p:txBody><a:bodyPr/><a:lstStyle/>"
         f'<a:p><a:r><a:rPr lang="zh-CN" sz="2800" b="1"/><a:t>{title}</a:t></a:r></a:p>'
     )
     for b in bullets:
-        tx_body += (
-            f'<a:p><a:r><a:rPr lang="zh-CN" sz="1600"/><a:t>• {escape(b)}</a:t></a:r></a:p>'
-        )
+        tx_body += f'<a:p><a:r><a:rPr lang="zh-CN" sz="1600"/><a:t>• {escape(b)}</a:t></a:r></a:p>'
     tx_body += "</a:txBody></p:sp>"
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
         'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
-        f"<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id=\"1\" name=\"\"/><p:cNvGrpSpPr/><p:nvPr/>"
+        f'<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/>'
         f"</p:nvGrpSpPr><p:grpSpPr/>{tx_body}</p:spTree></p:cSld></p:sld>"
     )
 
 
 def _slide_rels() -> str:
-    return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    return """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
-</Relationships>'''
+</Relationships>"""
 
 
 def build_pptx(slides: list[dict]) -> bytes:
@@ -100,7 +98,8 @@ def build_pptx(slides: list[dict]) -> bytes:
     overrides = "\n".join(
         f'<Override PartName="/ppt/slides/slide{i}.xml" '
         f'ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>'
-        for i in range(1, len(slides) + 1))
+        for i in range(1, len(slides) + 1)
+    )
     pres = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
@@ -109,16 +108,18 @@ def build_pptx(slides: list[dict]) -> bytes:
         '<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>'
         "<p:sldIdLst>"
         + "".join(f'<p:sldId id="{255 + i}" r:id="rId{i + 2}"/>' for i in range(len(slides)))
-        + "</p:sldIdLst><p:sldSz cx=\"9144000\" cy=\"6858000\"/></p:presentation>"
+        + '</p:sldIdLst><p:sldSz cx="9144000" cy="6858000"/></p:presentation>'
     )
     pres_rels = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>'  # noqa: E501
         + "".join(
             f'<Relationship Id="rId{i + 2}" '
             f'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" '
-            f'Target="slides/slide{i + 1}.xml"/>' for i in range(len(slides)))
+            f'Target="slides/slide{i + 1}.xml"/>'
+            for i in range(len(slides))
+        )
         + "</Relationships>"
     )
 
@@ -149,8 +150,7 @@ def main() -> int:
     if args.slides_json:
         slides = json.loads(Path(args.slides_json).read_text(encoding="utf-8"))
     else:
-        slides = [{"title": args.title,
-                   "bullets": [b for b in args.bullets.split("|") if b.strip()]}]
+        slides = [{"title": args.title, "bullets": [b for b in args.bullets.split("|") if b.strip()]}]
 
     data = build_pptx(slides)
     out = Path(args.output)

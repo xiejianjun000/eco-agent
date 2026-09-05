@@ -29,8 +29,9 @@ from eco_agent_sdk.types import (
 class EcoClient:
     """异步客户端。默认连接本地 eco-server（127.0.0.1:8788）。"""
 
-    def __init__(self, base_url: str = "http://127.0.0.1:8788", timeout: float = 60.0,
-                 client: httpx.AsyncClient | None = None) -> None:
+    def __init__(
+        self, base_url: str = "http://127.0.0.1:8788", timeout: float = 60.0, client: httpx.AsyncClient | None = None
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self._client = client or httpx.AsyncClient(base_url=self.base_url, timeout=timeout)
         self._owns_client = client is None
@@ -81,13 +82,15 @@ class EcoClient:
 
     # ── 对话 ──────────────────────────────────────────────
 
-    async def chat(self, message: str, history: list[dict] | None = None,
-                   model: str = "", temperature: float = 0.7) -> ChatResponse:
+    async def chat(
+        self, message: str, history: list[dict] | None = None, model: str = "", temperature: float = 0.7
+    ) -> ChatResponse:
         req = ChatRequest(message=message, history=history, model=model, temperature=temperature)
         return ChatResponse.from_dict(await self._post("/api/v1/chat", req.to_dict()))
 
-    async def chat_stream(self, message: str, history: list[dict] | None = None,
-                          model: str = "", temperature: float = 0.7) -> AsyncIterator[str]:
+    async def chat_stream(
+        self, message: str, history: list[dict] | None = None, model: str = "", temperature: float = 0.7
+    ) -> AsyncIterator[str]:
         """SSE 流式对话，逐块 yield 文本增量。"""
         req = ChatRequest(message=message, history=history, model=model, temperature=temperature)
         try:
@@ -119,16 +122,14 @@ class EcoClient:
         return [SessionInfo.from_dict(s) for s in await self._get("/api/v1/sessions")]
 
     async def create_session(self, user_id: str = "", user_name: str = "") -> SessionInfo:
-        return SessionInfo.from_dict(
-            await self._post("/api/v1/sessions", {"user_id": user_id, "user_name": user_name}))
+        return SessionInfo.from_dict(await self._post("/api/v1/sessions", {"user_id": user_id, "user_name": user_name}))
 
     async def get_session(self, session_id: str) -> SessionInfo:
         return SessionInfo.from_dict(await self._get(f"/api/v1/sessions/{session_id}"))
 
     # ── 记忆 ──────────────────────────────────────────────
 
-    async def memory_nodes(self, limit: int = 50, offset: int = 0,
-                           node_type: str | None = None) -> list[MemoryNode]:
+    async def memory_nodes(self, limit: int = 50, offset: int = 0, node_type: str | None = None) -> list[MemoryNode]:
         params = {"limit": limit, "offset": offset}
         if node_type:
             params["type"] = node_type
@@ -137,8 +138,9 @@ class EcoClient:
     async def memory_hot(self, limit: int = 20) -> list[MemoryNode]:
         return [MemoryNode.from_dict(n) for n in (await self._get("/api/v1/memory/hot", limit=limit))["nodes"]]
 
-    async def memory_search(self, query: str, node_type: str | None = None,
-                            hybrid: bool = False, limit: int = 20) -> list[MemoryNode]:
+    async def memory_search(
+        self, query: str, node_type: str | None = None, hybrid: bool = False, limit: int = 20
+    ) -> list[MemoryNode]:
         params = {"q": query, "limit": limit}
         if node_type:
             params["type"] = node_type

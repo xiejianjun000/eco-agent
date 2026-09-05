@@ -18,8 +18,6 @@ def test_chat_tools_have_handlers():
 
     wired = {t["function"]["name"] for t in _codex_tools()}
     no_handler = [
-        n for n in wired
-        if n not in CHANNEL_DISPATCHED
-        and n not in _HANDLERS and resolve_tool_name(n) not in _HANDLERS
+        n for n in wired if n not in CHANNEL_DISPATCHED and n not in _HANDLERS and resolve_tool_name(n) not in _HANDLERS
     ]
     assert not no_handler, f"聊天清单里的工具没有实现 handler: {no_handler}"

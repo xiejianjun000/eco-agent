@@ -16,10 +16,10 @@ bloodline_compressor.py — ECO AGENT 血统压缩机制
 """
 
 import json
-import re
 import logging
-from pathlib import Path
+import re
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("bloodline_compressor")
@@ -40,9 +40,9 @@ class BloodlineCompressor:
     # 会话摘要生成
     # ═══════════════════════════════════
 
-    def compress_session(self, session_id: str, messages: list[dict[str, Any]],
-                         parent_session_id: str | None = None,
-                         max_tokens: int = 500) -> dict[str, Any]:
+    def compress_session(
+        self, session_id: str, messages: list[dict[str, Any]], parent_session_id: str | None = None, max_tokens: int = 500
+    ) -> dict[str, Any]:
         """压缩会话生成血统记录"""
         logger.info(f"[Bloodline] 压缩会话: {session_id} ({len(messages)} 条消息)")
 
@@ -90,12 +90,12 @@ class BloodlineCompressor:
             except Exception as e:
                 logger.warning(f"Memory Tree 写入失败: {e}")
 
-        logger.info(f"[Bloodline] 压缩完成: {len(messages)} 条 → {len(summary)} 字 "
-                    f"(比率 {lineage_record['compression_ratio']:.1f}x)")
+        logger.info(
+            f"[Bloodline] 压缩完成: {len(messages)} 条 → {len(summary)} 字 (比率 {lineage_record['compression_ratio']:.1f}x)"
+        )
         return lineage_record
 
-    def _generate_summary(self, messages: list[dict[str, Any]],
-                          max_chars: int = 500) -> str:
+    def _generate_summary(self, messages: list[dict[str, Any]], max_chars: int = 500) -> str:
         """生成会话摘要"""
         if not messages:
             return "（空会话）"
@@ -150,10 +150,10 @@ class BloodlineCompressor:
         for msg in messages:
             content = str(msg.get("content", ""))
             # 提取《法规名称》
-            for m in re.finditer(r'《([^》]+)》', content):
+            for m in re.finditer(r"《([^》]+)》", content):
                 entities.add(m.group(1))
             # 提取案号
-            for m in re.finditer(r'[（(]\d{4}[）)][^号]+号', content):
+            for m in re.finditer(r"[（(]\d{4}[）)][^号]+号", content):
                 entities.add(m.group(0)[:20])
         return list(entities)
 
@@ -180,13 +180,12 @@ class BloodlineCompressor:
         for msg in messages:
             content = str(msg.get("content", ""))
             # 中文字符 ≈ 2 tokens，英文 ≈ 1 token
-            chinese_chars = len(re.findall(r'[一-鿿]', content))
+            chinese_chars = len(re.findall(r"[一-鿿]", content))
             other_chars = len(content) - chinese_chars
             total += chinese_chars * 2 + other_chars
         return total
 
-    def _calc_compression_ratio(self, messages: list[dict[str, Any]],
-                                summary: str) -> float:
+    def _calc_compression_ratio(self, messages: list[dict[str, Any]], summary: str) -> float:
         """计算压缩比率"""
         original_tokens = self._estimate_tokens(messages)
         summary_tokens = len(summary) * 1.5  # 近似
@@ -198,8 +197,7 @@ class BloodlineCompressor:
     # 血统链维护
     # ═══════════════════════════════════
 
-    def trace_lineage(self, session_id: str,
-                      max_depth: int = 10) -> list[dict[str, Any]]:
+    def trace_lineage(self, session_id: str, max_depth: int = 10) -> list[dict[str, Any]]:
         """追溯血统链"""
         lineage = []
         current_id = session_id
@@ -245,8 +243,7 @@ class BloodlineCompressor:
     # Token 压缩策略
     # ═══════════════════════════════════
 
-    def compress_content(self, content: str, target_ratio: float = 0.3,
-                         content_type: str = "auto") -> str:
+    def compress_content(self, content: str, target_ratio: float = 0.3, content_type: str = "auto") -> str:
         """内容感知压缩"""
         if not content:
             return content
@@ -284,11 +281,9 @@ class BloodlineCompressor:
         try:
             data = json.loads(content)
             if isinstance(data, dict):
-                compressed = {k[:8] if len(k) > 12 else k: v
-                              for k, v in data.items()
-                              if v is not None and v != "" and v != []}
+                compressed = {k[:8] if len(k) > 12 else k: v for k, v in data.items() if v is not None and v != "" and v != []}
             elif isinstance(data, list):
-                compressed = data[:max(5, int(len(data) * ratio))]
+                compressed = data[: max(5, int(len(data) * ratio))]
             else:
                 compressed = data
             return json.dumps(compressed, ensure_ascii=False)[:2000]
@@ -301,11 +296,13 @@ class BloodlineCompressor:
         compressed = []
         for line in lines:
             # 保留函数定义、类定义、注释
-            if (line.strip().startswith("def ") or
-                line.strip().startswith("class ") or
-                line.strip().startswith("#") or
-                line.strip().startswith("import ") or
-                line.strip().startswith("from ")) or line.strip().startswith(("    def ", "    class ")):
+            if (
+                line.strip().startswith("def ")
+                or line.strip().startswith("class ")
+                or line.strip().startswith("#")
+                or line.strip().startswith("import ")
+                or line.strip().startswith("from ")
+            ) or line.strip().startswith(("    def ", "    class ")):
                 compressed.append(line)
         result = "\n".join(compressed)
         return result if result else content[:1000]
@@ -331,7 +328,7 @@ class BloodlineCompressor:
     def _compress_text(self, content: str, ratio: float) -> str:
         """压缩文本"""
         target_len = int(len(content) * ratio)
-        return content[:max(target_len, 500)]
+        return content[: max(target_len, 500)]
 
     # ═══════════════════════════════════
     # 持久化
@@ -361,23 +358,18 @@ class BloodlineCompressor:
 
     def get_stats(self) -> dict[str, Any]:
         """获取统计"""
-        total_tokens = sum(
-            r.get("token_estimate", 0) for r in self._lineage.values()
-        )
-        total_compressed = sum(
-            len(r.get("summary", "")) for r in self._lineage.values()
-        )
+        total_tokens = sum(r.get("token_estimate", 0) for r in self._lineage.values())
+        total_compressed = sum(len(r.get("summary", "")) for r in self._lineage.values())
         return {
             "total_sessions": len(self._lineage),
             "total_tokens_original": total_tokens,
             "total_tokens_compressed": total_compressed,
-            "avg_compression_ratio": round(
-                total_tokens / max(total_compressed, 1), 1
-            ) if total_compressed else 0,
+            "avg_compression_ratio": round(total_tokens / max(total_compressed, 1), 1) if total_compressed else 0,
         }
 
 
 # ===== 测试 =====
+
 
 def test():
     """测试血统压缩"""
@@ -404,20 +396,21 @@ def test():
 
     # 血统链
     print("\n[TEST] 血统链追踪:")
-    bc.compress_session("session_test_002", messages[:2],
-                        parent_session_id="session_test_001")
+    bc.compress_session("session_test_002", messages[:2], parent_session_id="session_test_001")
     lineage = bc.trace_lineage("session_test_002")
     print(f"  深度: {len(lineage)}")
 
     # Token 压缩
     print("\n[TEST] Token 压缩:")
-    log_content = "\n".join([
-        "INFO: 开始执法检查",
-        "ERROR: 法规引用异常: 大气污染防治法已废止",
-        "WARN: 建议更新裁量基准引用",
-        "INFO: 检查完成",
-        "DEBUG: 耗时120ms",
-    ])
+    log_content = "\n".join(
+        [
+            "INFO: 开始执法检查",
+            "ERROR: 法规引用异常: 大气污染防治法已废止",
+            "WARN: 建议更新裁量基准引用",
+            "INFO: 检查完成",
+            "DEBUG: 耗时120ms",
+        ]
+    )
     compressed = bc.compress_content(log_content, content_type="log")
     print(f"  原始: {len(log_content)} 字符")
     print(f"  压缩: {len(compressed)} 字符")

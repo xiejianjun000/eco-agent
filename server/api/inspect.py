@@ -23,6 +23,7 @@ async def inspect_list() -> dict:
 
 
 @router.get("/inspect/query")
-async def inspect_query(kind: str = Query(..., description="services/plugins/tools/slots"),
-                        name: str = Query(..., description="条目名")) -> dict:
+async def inspect_query(
+    kind: str = Query(..., description="services/plugins/tools/slots"), name: str = Query(..., description="条目名")
+) -> dict:
     return inspect_mod.query(kind, name)

@@ -47,7 +47,7 @@ tools:
     risk_level: L1
 """
 
-GOOD_HANDLER = '''def load(ctx):
+GOOD_HANDLER = """def load(ctx):
     def echo(text: str) -> str:
         return text
     ctx.register_tool("example_echo", echo, description="回显", risk_level="L1")
@@ -55,14 +55,18 @@ GOOD_HANDLER = '''def load(ctx):
 
 def unload(ctx):
     return {"ok": True}
-'''
+"""
 
 
 def test_manifest_parse():
-    m = PluginManifest.from_dict({
-        "name": "x", "version": "1.2.3", "tools": [{"name": "t1", "risk_level": "L1"}],
-        "permissions": {"t1": "L1"},
-    })
+    m = PluginManifest.from_dict(
+        {
+            "name": "x",
+            "version": "1.2.3",
+            "tools": [{"name": "t1", "risk_level": "L1"}],
+            "permissions": {"t1": "L1"},
+        }
+    )
     assert m.name == "x"
     assert m.version == "1.2.3"
     assert m.tools[0].risk_level == "L1"

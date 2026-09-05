@@ -3,6 +3,7 @@
 接口：https://www.mee.gov.cn/searchnew/?searchword=关键词
 仅使用公开只读搜索，不登录、不提交表单之外的数据。
 """
+
 from __future__ import annotations
 
 import logging
@@ -30,8 +31,10 @@ def search_site(fetcher, cache, keyword: str, limit: int = 15) -> dict:
 
         links = parse_links(html, base_url=url, limit=200)
         items = [
-            lk for lk in links
-            if lk["title"] and len(lk["title"]) >= 6
+            lk
+            for lk in links
+            if lk["title"]
+            and len(lk["title"]) >= 6
             and lk["title"].strip() != lk["url"].rstrip("/")
             and any(m in lk["url"] for m in ("mee.gov.cn", "nnsa.mee.gov.cn"))
             and not any(m in lk["url"] for m in ("mail.mee.gov.cn", "english.mee.gov.cn", "zwfw.mee.gov.cn"))

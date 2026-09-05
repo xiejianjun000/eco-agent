@@ -4,6 +4,7 @@
 注入 2000 条节点，验证 BM25 索引缓存生效：热缓存检索 P95 < 500ms。
 （10000 条的完整压测标为 slow，CI 默认跳过，见 test_memory_benchmark_slow）
 """
+
 from __future__ import annotations
 
 import time
@@ -21,9 +22,9 @@ LATENCY_BUDGET_S = 0.5  # 热缓存检索预算（500ms）
 def tree(tmp_path: Path) -> MemoryTree:
     mt = MemoryTree(db_path=tmp_path / "mem.db")
     for i in range(N):
-        mt.create_node("case", f"节点{i} 秸秆禁烧规定",
-                       f"禁止露天焚烧秸秆，违者罚款。第{i}条测试数据。",
-                       tags=["env/air"], score=i % 100)
+        mt.create_node(
+            "case", f"节点{i} 秸秆禁烧规定", f"禁止露天焚烧秸秆，违者罚款。第{i}条测试数据。", tags=["env/air"], score=i % 100
+        )
     return mt
 
 
@@ -40,8 +41,9 @@ def test_warm_search_latency(tree):
         lat.append(time.perf_counter() - t)
     lat.sort()
     p95 = lat[-1]
-    assert p95 < LATENCY_BUDGET_S, \
-        f"热缓存检索 P95 {p95*1000:.0f}ms 超出预算 {LATENCY_BUDGET_S*1000:.0f}ms（索引缓存失效？）"
+    assert p95 < LATENCY_BUDGET_S, (
+        f"热缓存检索 P95 {p95 * 1000:.0f}ms 超出预算 {LATENCY_BUDGET_S * 1000:.0f}ms（索引缓存失效？）"
+    )
 
 
 def test_cache_invalidated_on_write(tree):

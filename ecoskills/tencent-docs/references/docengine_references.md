@@ -1774,6 +1774,7 @@ SAAS_HOST = "saas.docs.qq.com"
 
 # ─── 配置自动发现 ───
 
+
 def discover_tdocs_auth():
     """从 WorkBuddy 连接器配置自动读取腾讯文档的认证 headers。
 
@@ -1838,6 +1839,7 @@ def discover_env_auth():
 
 # ─── MCP 调用 ───
 
+
 def call_tool_direct(mcp_url, headers, tool_name, tool_args):
     """直连腾讯文档 MCP (使用从配置读取的认证头)。"""
     payload = {
@@ -1894,15 +1896,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument("--mcp-url", default="",
-                        help="MCP endpoint URL (必填，如 https://docs.qq.com/api/v6/doc/mcp)")
-    parser.add_argument("--auth", default="",
-                        help="手动传入 Authorization 头 (如 'Bearer xxx')，跳过自动发现")
-    parser.add_argument("--markdown-path", required=True,
-                        help="本地 Markdown 文件绝对路径")
+    parser.add_argument("--mcp-url", default="", help="MCP endpoint URL (必填，如 https://docs.qq.com/api/v6/doc/mcp)")
+    parser.add_argument("--auth", default="", help="手动传入 Authorization 头 (如 'Bearer xxx')，跳过自动发现")
+    parser.add_argument("--markdown-path", required=True, help="本地 Markdown 文件绝对路径")
     parser.add_argument("--title", default="", help="文档标题（可选）")
-    parser.add_argument("--extra-args", default="{}",
-                        help="其它可选参数 JSON（预留）")
+    parser.add_argument("--extra-args", default="{}", help="其它可选参数 JSON（预留）")
     args = parser.parse_args()
 
     # ── 确定 MCP URL ──
@@ -1925,8 +1923,7 @@ def main():
         # 模式 2: 尝试从环境变量读取 (沙箱环境)
         auth_token = discover_env_auth()
         if auth_token:
-            print(f"[*] Mode: env auth (from environment variable) -> {mcp_url}",
-                  file=sys.stderr)
+            print(f"[*] Mode: env auth (from environment variable) -> {mcp_url}", file=sys.stderr)
 
     if auth_token:
         # 使用手动/环境变量模式
@@ -1936,16 +1933,17 @@ def main():
         # 模式 3: 直连模式 (从 WorkBuddy 连接器配置自动发现)
         headers = discover_tdocs_auth()
         if not headers:
-            print("Error: 无法自动发现认证信息。请使用以下任一方式提供认证：\n"
-                  "  1. --auth 手动传入 Authorization token\n"
-                  "  2. 设置环境变量 MCP_AUTH 或 AUTHORIZATION\n"
-                  "  3. 在 WorkBuddy 中连接腾讯文档连接器",
-                  file=sys.stderr)
+            print(
+                "Error: 无法自动发现认证信息。请使用以下任一方式提供认证：\n"
+                "  1. --auth 手动传入 Authorization token\n"
+                "  2. 设置环境变量 MCP_AUTH 或 AUTHORIZATION\n"
+                "  3. 在 WorkBuddy 中连接腾讯文档连接器",
+                file=sys.stderr,
+            )
             sys.exit(1)
         call_fn = call_tool_direct
         call_kwargs = {"mcp_url": mcp_url, "headers": headers}
-        print(f"[*] Mode: direct (auto-auth from WorkBuddy) -> {mcp_url}",
-              file=sys.stderr)
+        print(f"[*] Mode: direct (auto-auth from WorkBuddy) -> {mcp_url}", file=sys.stderr)
 
     # ── 读取 Markdown 并编码 ──
     with open(args.markdown_path, "rb") as f:

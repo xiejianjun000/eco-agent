@@ -48,8 +48,7 @@ def parse_suite(path: Path) -> list[dict]:
                 golden = ln.split(":", 1)[1].strip()
             elif ln.startswith("引用校验:"):
                 citation = ln.split(":", 1)[1].strip()
-        out.append({"question": question, "dimension": dim,
-                    "golden": golden, "citation": citation})
+        out.append({"question": question, "dimension": dim, "golden": golden, "citation": citation})
     return out
 
 
@@ -61,13 +60,12 @@ def mechanical_check(q: dict) -> tuple[bool, str]:
     if c.startswith("article="):
         art = c.split("=", 1)[1].strip()
         try:
-            r = subprocess.run([sys.executable, str(LOOKUP), "article", art],
-                               capture_output=True, text=True, timeout=20)
+            r = subprocess.run([sys.executable, str(LOOKUP), "article", art], capture_output=True, text=True, timeout=20)
             txt = r.stdout.strip()
             if not txt or "检索失败" in txt or "不可用" in txt:
                 return False, f"article={art} 法典库查无"
             data = json.loads(txt)
-            return bool(data.get("text")), f"article={art} 命中 {data.get('file','')}"
+            return bool(data.get("text")), f"article={art} 命中 {data.get('file', '')}"
         except Exception as e:  # noqa: BLE001
             return False, f"article={art} 校验异常: {e}"
     if c.startswith("path="):
@@ -81,12 +79,12 @@ def run_mechanical(suites: list[Path]) -> dict:
     for sp in suites:
         for q in parse_suite(sp):
             ok, note = mechanical_check(q)
-            results.append({"suite": sp.stem, "question": q["question"][:50],
-                            "citation": q["citation"], "ok": ok, "note": note})
+            results.append(
+                {"suite": sp.stem, "question": q["question"][:50], "citation": q["citation"], "ok": ok, "note": note}
+            )
     total = len(results)
     passed = sum(1 for r in results if r["ok"])
-    return {"results": results, "passed": passed, "total": total,
-            "failed": [r for r in results if not r["ok"]]}
+    return {"results": results, "passed": passed, "total": total, "failed": [r for r in results if not r["ok"]]}
 
 
 def run_llm(suites: list[Path], results_dir: Path) -> None:
@@ -106,15 +104,15 @@ def run_llm(suites: list[Path], results_dir: Path) -> None:
                 req = urllib.request.Request(
                     "http://127.0.0.1:8321/api/v1/chat",
                     data=json.dumps({"message": q["question"], "history": []}).encode(),
-                    headers={"Content-Type": "application/json"})
+                    headers={"Content-Type": "application/json"},
+                )
                 with urllib.request.urlopen(req, timeout=300) as r:
                     d = json.loads(r.read())
                 lines.append(d.get("reply", "")[:1500])
             except Exception as e:  # noqa: BLE001
                 lines.append(f"[调用失败] {e}")
             lines.append("")
-        (results_dir / f"{sp.stem}-answers.md").write_text(
-            "\n".join(lines), encoding="utf-8")
+        (results_dir / f"{sp.stem}-answers.md").write_text("\n".join(lines), encoding="utf-8")
         print(f"✅ {sp.stem} → {results_dir / (sp.stem + '-answers.md')}")
 
 

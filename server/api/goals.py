@@ -36,8 +36,7 @@ class GoalAction(BaseModel):
 @router.post("/goals")
 async def create_goal(body: GoalCreate) -> dict:
     store = get_goal_store()
-    return store.create(body.objective, max_goal_rounds=body.max_goal_rounds,
-                        auto_run=body.auto_run, context=body.context)
+    return store.create(body.objective, max_goal_rounds=body.max_goal_rounds, auto_run=body.auto_run, context=body.context)
 
 
 @router.get("/goals")
@@ -93,5 +92,3 @@ async def goal_action(goal_id: str, action: str, body: GoalAction) -> dict:
         if isinstance(result, dict) and result.get("error") and "不存在" not in result["error"]:
             raise HTTPException(status_code=409, detail=result["error"])
     return result or {}
-
-

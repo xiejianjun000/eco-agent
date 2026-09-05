@@ -8,6 +8,7 @@ trace.py - ECO AGENT CLI 可观测轨迹模式（-v/--verbose）
 所有轨迹事件同时写入 prompt_engine SM3 审计链（source=trace）。
 排版使用 rich（克制的样式），Windows 终端经 _safe 降级处理。
 """
+
 from __future__ import annotations
 
 import sys
@@ -16,8 +17,7 @@ import time
 _IS_WINDOWS = sys.platform.startswith("win")
 
 # Windows 旧终端（GBK cmd）无法输出 emoji 时降级为 ASCII 标记
-_FALLBACK = {"💭": "[think]", "🔧": "[tool]", "👁": "[view]",
-             "✅": "[done]", "⏭": "[next]"}
+_FALLBACK = {"💭": "[think]", "🔧": "[tool]", "👁": "[view]", "✅": "[done]", "⏭": "[next]"}
 
 
 def _safe(text: str) -> str:
@@ -40,8 +40,7 @@ def _truncate(text: str, limit: int = 80) -> str:
 class Tracer:
     """CLI 轨迹采集与展示。enabled=False 时零开销（事件全部丢弃）。"""
 
-    def __init__(self, enabled: bool = False, audit: bool = True,
-                 console=None, think_len: int = 120, result_len: int = 100):
+    def __init__(self, enabled: bool = False, audit: bool = True, console=None, think_len: int = 120, result_len: int = 100):
         self.enabled = enabled
         self.think_len = think_len
         self.result_len = result_len
@@ -52,6 +51,7 @@ class Tracer:
         else:
             try:
                 from rich.console import Console
+
                 self._console = Console()
             except ImportError:
                 self._console = None
@@ -75,9 +75,9 @@ class Tracer:
         try:
             if self._audit_chain is None:
                 from agent_core.prompt_engine import get_prompt_engine
+
                 self._audit_chain = get_prompt_engine().audit
-            self._audit_chain.append(source="trace", content=content[:500],
-                                     phase=phase, accepted=True)
+            self._audit_chain.append(source="trace", content=content[:500], phase=phase, accepted=True)
         except Exception:  # 审计失败不影响主流程
             pass
 

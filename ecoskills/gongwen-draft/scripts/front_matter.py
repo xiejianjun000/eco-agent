@@ -6,7 +6,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-
 FRONT_RE = re.compile(r"\A---\s*\n(?P<body>.*?)\n---\s*\n?", re.S)
 
 
@@ -45,7 +44,7 @@ def parse_front_matter(text: str) -> tuple[dict[str, object], str]:
         elif current_key:
             meta[current_key] = line.strip()
 
-    return meta, text[match.end():]
+    return meta, text[match.end() :]
 
 
 def meta_text(meta: dict[str, object], key: str) -> str:

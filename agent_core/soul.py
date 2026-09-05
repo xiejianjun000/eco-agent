@@ -26,6 +26,7 @@ _REPO_PROFILES = Path(__file__).resolve().parent.parent / "profiles"
 
 def _profiles_dirs() -> list[Path]:
     import os
+
     dirs = []
     env = os.environ.get("ECO_PROFILES_DIR", "").strip()
     if env:
@@ -100,8 +101,7 @@ def load_soul(force_reload: bool = False) -> Soul:
     try:
         raw = path.read_text(encoding="utf-8")
         _soul_cache = Soul(raw, source=path)
-        logger.info(f"[soul] SOUL.md 已加载: {path} "
-                    f"(硬边界={'有' if _soul_cache.hard_boundaries else '无'})")
+        logger.info(f"[soul] SOUL.md 已加载: {path} (硬边界={'有' if _soul_cache.hard_boundaries else '无'})")
     except OSError as e:
         logger.warning(f"[soul] SOUL.md 读取失败: {e}，回退硬编码")
         _soul_cache = Soul()

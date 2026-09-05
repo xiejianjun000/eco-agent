@@ -78,21 +78,21 @@ __all__ = [
 ]
 
 try:
-    from govmcp.protocol.server import GovMCPServer
+    from govmcp.protocol.server import GovMCPServer  # noqa: F401
 
     __all__.append("GovMCPServer")
 except ImportError:
     pass
 
 try:
-    from govmcp.tools.registry import ToolRegistry, govmcp_tool
+    from govmcp.tools.registry import ToolRegistry, govmcp_tool  # noqa: F401
 
     __all__.extend(["ToolRegistry", "govmcp_tool"])
 except ImportError:
     pass
 
 try:
-    from govmcp.server.approval import ApprovalFlow, ApprovalStatus
+    from govmcp.server.approval import ApprovalFlow, ApprovalStatus  # noqa: F401
 
     __all__.extend(["ApprovalFlow", "ApprovalStatus"])
 except ImportError:
@@ -100,12 +100,12 @@ except ImportError:
 
 try:
     from govmcp.models import (
-        get_model,
-        list_models,
-        register_model,
-        validate_model,
+        get_model,  # noqa: F401
+        list_models,  # noqa: F401
+        register_model,  # noqa: F401
+        validate_model,  # noqa: F401
     )
-    from govmcp.models.registry import LLMProvider, ModelConfig, ModelRegistry
+    from govmcp.models.registry import LLMProvider, ModelConfig, ModelRegistry  # noqa: F401
 
     __all__.extend(
         [

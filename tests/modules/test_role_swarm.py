@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """role_swarm 三角色协作测试（LLM 层 mock）"""
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import pytest
-from agent_core.role_swarm import RoleSwarm, is_complex_task, ROLES, ROLE_ORDER
+
 from agent_core.prompt_engine import PromptAuditChain
+from agent_core.role_swarm import ROLE_ORDER, ROLES, RoleSwarm, is_complex_task
 
 
 class MockClient:
     """mock LLMClient.chat：按 system 内容回显角色"""
+
     def __init__(self):
         self.calls = []
 
@@ -38,19 +41,25 @@ def swarm(tmp_path):
 
 
 class TestComplexity:
-    @pytest.mark.parametrize("q", [
-        "对合力砖厂做一次全套大气检查",
-        "制定专项执法检查方案并生成检查清单",
-        "联合检查组对园区开展全面排查并出具报告",
-    ])
+    @pytest.mark.parametrize(
+        "q",
+        [
+            "对合力砖厂做一次全套大气检查",
+            "制定专项执法检查方案并生成检查清单",
+            "联合检查组对园区开展全面排查并出具报告",
+        ],
+    )
     def test_complex(self, q):
         assert is_complex_task(q) is True
 
-    @pytest.mark.parametrize("q", [
-        "大气法第二十条是什么",
-        "未批先建怎么处罚",
-        "你好",
-    ])
+    @pytest.mark.parametrize(
+        "q",
+        [
+            "大气法第二十条是什么",
+            "未批先建怎么处罚",
+            "你好",
+        ],
+    )
     def test_simple_not_complex(self, q):
         assert is_complex_task(q) is False
 
@@ -106,6 +115,7 @@ class TestSwarmRun:
                 if "法规核验专家" in messages[0]["content"]:
                     raise RuntimeError("boom")
                 return super().chat(messages, model=model)
+
         sw = RoleSwarm(client=FailClient(), audit_chain=PromptAuditChain(tmp_path / "a.jsonl"))
         r = sw.run("对合力砖厂做一次全套大气检查")
         assert r["errors"].get("law") == "boom"

@@ -13,6 +13,7 @@
 
 eco doctor 汇总视图：summarize_decisions() 给出调用数、工具选择率、Top 工具等。
 """
+
 from __future__ import annotations
 
 import json
@@ -23,12 +24,14 @@ DECISIONS_FILE = Path.home() / ".eco" / "decisions.jsonl"
 
 def get_decision_chain(path: Path | None = None):
     from agent_core.prompt_engine import PromptAuditChain
+
     return PromptAuditChain(path=path or DECISIONS_FILE)
 
 
 def _prompt_phase() -> str:
     try:
         from agent_core.prompt_engine import get_prompt_engine
+
         return get_prompt_engine().phase
     except Exception:
         return ""
@@ -38,16 +41,24 @@ def _current_trace_id() -> str:
     """当前活跃 span 树的 OTLP trace_id（与 ~/.eco/traces 互相关联）；无则空串"""
     try:
         from agent_core.observability import current_trace_id
+
         return current_trace_id()
     except Exception:
         return ""
 
 
-def record_decision(candidate_tools: int, selected_tools: list[str],
-                    finish_reason: str, raw_tool_calls=None,
-                    model: str = "", provider: str = "", prompt_phase: str = "",
-                    round_idx: int = 0, trace_id: str = "",
-                    path: Path | None = None) -> dict:
+def record_decision(
+    candidate_tools: int,
+    selected_tools: list[str],
+    finish_reason: str,
+    raw_tool_calls=None,
+    model: str = "",
+    provider: str = "",
+    prompt_phase: str = "",
+    round_idx: int = 0,
+    trace_id: str = "",
+    path: Path | None = None,
+) -> dict:
     """追加一条 LLM 决策留痕（SM3 链）。返回写入的条目。"""
     payload = {
         "candidate_tools": int(candidate_tools),
@@ -55,14 +66,18 @@ def record_decision(candidate_tools: int, selected_tools: list[str],
         "finish_reason": finish_reason,
         "raw_tool_calls": raw_tool_calls or [],
         "prompt_phase": prompt_phase or _prompt_phase(),
-        "model": model, "provider": provider, "round": round_idx,
+        "model": model,
+        "provider": provider,
+        "round": round_idx,
         "trace_id": trace_id or _current_trace_id(),
     }
     return get_decision_chain(path).append(
         source="llm_decision",
         content=json.dumps(payload, ensure_ascii=False),
-        phase=payload["prompt_phase"], accepted=True,
-        reason=f"finish={finish_reason} selected={','.join(selected_tools) or '-'}")
+        phase=payload["prompt_phase"],
+        accepted=True,
+        reason=f"finish={finish_reason} selected={','.join(selected_tools) or '-'}",
+    )
 
 
 def summarize_decisions(path: Path | None = None) -> dict:

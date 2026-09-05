@@ -1,8 +1,11 @@
 """SecureStore 凭证加密存储测试——加密往返/拒绝降级/密钥来源/错误密钥拒读"""
-import sys
+
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 import pytest
+
 import agent_core.connector_system as cs
 
 

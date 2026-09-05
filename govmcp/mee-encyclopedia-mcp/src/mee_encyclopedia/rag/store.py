@@ -1,4 +1,5 @@
 """轻量 RAG 知识库：倒排索引 + 简单打分，支持本地文档批量入库与检索。"""
+
 from __future__ import annotations
 
 import json
@@ -54,8 +55,11 @@ class RagStore:
 
     def add(self, doc_id: str, title: str, text: str, source: str = "") -> None:
         self._docs[doc_id] = {
-            "id": doc_id, "title": title, "text": text,
-            "source": source, "ts": time.time(),
+            "id": doc_id,
+            "title": title,
+            "text": text,
+            "source": source,
+            "ts": time.time(),
         }
         for tok in _tokenize(title + " " + text):
             self._index.setdefault(tok, [])
@@ -93,10 +97,15 @@ class RagStore:
             if not doc:
                 continue
             snippet = _snippet(doc["text"], query, 500)
-            results.append({
-                "id": doc_id, "title": doc["title"], "source": doc["source"],
-                "score": round(score, 2), "snippet": snippet,
-            })
+            results.append(
+                {
+                    "id": doc_id,
+                    "title": doc["title"],
+                    "source": doc["source"],
+                    "score": round(score, 2),
+                    "snippet": snippet,
+                }
+            )
             if len(results) >= top_k:
                 break
         return results

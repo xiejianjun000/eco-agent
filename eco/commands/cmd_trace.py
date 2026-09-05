@@ -8,10 +8,11 @@ eco trace - 结构化 span 树查看与 OTLP 导出
                                    直接 POST 到 OTel collector（默认 http://localhost:4318，
                                    失败自动降级写本地 span 文件，不阻塞）
 """
+
 import sys
 from pathlib import Path
 
-from agent_core.observability import OTLPExporter, SpanTree, TRACES_DIR
+from agent_core.observability import TRACES_DIR, OTLPExporter, SpanTree
 
 
 def run(args):
@@ -62,9 +63,7 @@ def run(args):
             return 1
         exporter = OTLPExporter(endpoint=endpoint)
         if exporter.export(tree):
-            print(f"\n[trace] 已导出到 OTel collector: {exporter.traces_url}"
-                  f"（trace_id={tree.trace_id}）")
+            print(f"\n[trace] 已导出到 OTel collector: {exporter.traces_url}（trace_id={tree.trace_id}）")
         else:
-            print(f"\n[trace] collector 不可达，已降级写本地: "
-                  f"{exporter.fallback_dir / (tree.session_id + '.otlp.json')}")
+            print(f"\n[trace] collector 不可达，已降级写本地: {exporter.fallback_dir / (tree.session_id + '.otlp.json')}")
     return 0

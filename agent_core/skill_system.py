@@ -12,13 +12,13 @@ Phase 2 核心交付：
 """
 
 import json
-import uuid
 import logging
 import re
-from pathlib import Path
+import uuid
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
-from dataclasses import dataclass, field, asdict
 
 logger = logging.getLogger("skill_system")
 
@@ -32,9 +32,11 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 # 1. Skill Registry
 # ═══════════════════════════════════
 
+
 @dataclass
 class Skill:
     """技能——可复用能力单元"""
+
     id: str = ""
     name: str = ""
     version: str = "0.1.0"
@@ -129,7 +131,8 @@ class SkillRegistry:
                 if age > max_age_days and s.usage_count < min_usage and s.status == "active":
                     s.status = "archived"
                     archived += 1
-            except Exception: pass
+            except Exception:
+                pass
         if archived:
             self._save()
             logger.info(f"[Skill] 归档 {archived} 个低效技能")
@@ -137,7 +140,7 @@ class SkillRegistry:
     def _sync_to_file(self, skill: Skill):
         """同步到技能文件"""
         SKILL_DIR.mkdir(parents=True, exist_ok=True)
-        fname = re.sub(r'[^\w一-鿿]', '_', skill.name)[:40]
+        fname = re.sub(r"[^\w一-鿿]", "_", skill.name)[:40]
         content = f"""---
 name: {skill.name}
 version: {skill.version}
@@ -157,13 +160,13 @@ source: {skill.source}
 - 平均评分: {skill.avg_score:.2f}
 
 ## Triggers
-{chr(10).join(f'- {t}' for t in skill.triggers)}
+{chr(10).join(f"- {t}" for t in skill.triggers)}
 
 ## Steps
-{chr(10).join(f'- {s}' for s in skill.steps)}
+{chr(10).join(f"- {s}" for s in skill.steps)}
 
 ## Examples
-{chr(10).join(f'- {e}' for e in skill.examples)}
+{chr(10).join(f"- {e}" for e in skill.examples)}
 """
         (SKILL_DIR / f"{fname}.md").write_text(content, encoding="utf-8")
 
@@ -183,15 +186,16 @@ source: {skill.source}
 # 2. Auto-Learn Engine
 # ═══════════════════════════════════
 
+
 class AutoLearnEngine:
     """自动学习引擎——从任务执行中提取技能"""
 
     def __init__(self, registry: SkillRegistry):
         self._registry = registry
 
-    def learn_from_task(self, task_desc: str, task_steps: list[str],
-                        task_output: str, score: float,
-                        min_steps: int = 3) -> str | None:
+    def learn_from_task(
+        self, task_desc: str, task_steps: list[str], task_output: str, score: float, min_steps: int = 3
+    ) -> str | None:
         """从单次任务执行中学习。
 
         min_steps：新技能孵化所需最少步骤数（默认 3；调用方可按 Hatcher 配置传入，
@@ -236,16 +240,21 @@ class AutoLearnEngine:
 
     def _classify(self, desc: str) -> str:
         d = desc.lower()
-        if any(kw in d for kw in ["代码", "编程", "开发", "python", "javascript"]): return "coding"
-        if any(kw in d for kw in ["写", "文档", "报告", "文章"]): return "writing"
-        if any(kw in d for kw in ["分析", "研究", "查询", "搜索"]): return "research"
-        if any(kw in d for kw in ["设计", "架构", "规划"]): return "design"
+        if any(kw in d for kw in ["代码", "编程", "开发", "python", "javascript"]):
+            return "coding"
+        if any(kw in d for kw in ["写", "文档", "报告", "文章"]):
+            return "writing"
+        if any(kw in d for kw in ["分析", "研究", "查询", "搜索"]):
+            return "research"
+        if any(kw in d for kw in ["设计", "架构", "规划"]):
+            return "design"
         return "general"
 
 
 # ═══════════════════════════════════
 # 3. Cross-Session Memory
 # ═══════════════════════════════════
+
 
 class CrossSessionMemory:
     """跨会话记忆——四层认知记忆结构"""
@@ -256,8 +265,10 @@ class CrossSessionMemory:
 
     def _load(self) -> dict:
         if self._db_path.exists():
-            try: return json.loads(self._db_path.read_text("utf-8", errors="replace"))
-            except Exception: pass
+            try:
+                return json.loads(self._db_path.read_text("utf-8", errors="replace"))
+            except Exception:
+                pass
         return {"working": [], "episodic": [], "semantic": {}, "procedural": {}}
 
     def _save(self):
@@ -266,27 +277,27 @@ class CrossSessionMemory:
     def store_working(self, key: str, value: Any, ttl_minutes: int = 60):
         """工作记忆——短时"""
         self._memory["working"] = [e for e in self._memory["working"] if e["key"] != key]
-        self._memory["working"].append({
-            "key": key, "value": str(value)[:500],
-            "expires_at": (datetime.now() + timedelta(minutes=ttl_minutes)).isoformat()
-        })
+        self._memory["working"].append(
+            {"key": key, "value": str(value)[:500], "expires_at": (datetime.now() + timedelta(minutes=ttl_minutes)).isoformat()}
+        )
         self._save()
 
     def store_episodic(self, event: str, context: dict):
         """情景记忆——历史事件"""
-        self._memory["episodic"].append({
-            "event": event, "context": context,
-            "timestamp": datetime.now().isoformat(),
-        })
+        self._memory["episodic"].append(
+            {
+                "event": event,
+                "context": context,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         if len(self._memory["episodic"]) > 1000:
             self._memory["episodic"] = self._memory["episodic"][-1000:]
         self._save()
 
     def store_semantic(self, key: str, fact: Any):
         """语义记忆——知识图谱事实"""
-        self._memory["semantic"][key] = {
-            "value": str(fact)[:500], "updated_at": datetime.now().isoformat()
-        }
+        self._memory["semantic"][key] = {"value": str(fact)[:500], "updated_at": datetime.now().isoformat()}
         self._save()
 
     def store_procedural(self, skill_id: str, steps: list[str]):
@@ -303,7 +314,8 @@ class CrossSessionMemory:
                     expires = datetime.fromisoformat(e["expires_at"])
                     if now < expires:
                         return e["value"]
-            except Exception: pass
+            except Exception:
+                pass
         return None
 
     def recall_episodic(self, query: str, limit: int = 5) -> list[dict]:
@@ -326,25 +338,26 @@ class CrossSessionMemory:
 
 # ===== 测试 =====
 
+
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
     print("[TEST] Skill System MVP", flush=True)
 
     # 1. Skill Registry
     registry = SkillRegistry()
-    skill = Skill(name="test-skill", description="测试技能", category="general",
-                  triggers=["test"], steps=["step1", "step2"])
+    skill = Skill(name="test-skill", description="测试技能", category="general", triggers=["test"], steps=["step1", "step2"])
     sid = registry.register(skill)
     found = registry.find("test")
     print(f"[Registry] 注册: {sid}, 查找: {len(found)} 结果", flush=True)
 
     # 2. Auto-Learn
     learner = AutoLearnEngine(registry)
-    result = learner.learn_from_task("编写Python数据分析脚本",
-                                      ["导入数据", "清洗数据", "分析数据", "生成报告"],
-                                      "分析完成", 0.85)
+    result = learner.learn_from_task(
+        "编写Python数据分析脚本", ["导入数据", "清洗数据", "分析数据", "生成报告"], "分析完成", 0.85
+    )
     print(f"[AutoLearn] 学习: {'新技能' if result else '未满足条件'}", flush=True)
 
     # 3. Cross-Session Memory
@@ -359,7 +372,7 @@ def test():
     stats = registry.get_stats()
     print(f"\n[Stats] 技能: {stats['active']} 活跃 / {stats['total']} 总计, 使用: {stats['total_usage']}", flush=True)
     print(f"[Memory Stats] {mem.get_stats()}", flush=True)
-    print(f"\n{'='*30}", flush=True)
+    print(f"\n{'=' * 30}", flush=True)
     print("[OK] Skill System MVP 测试通过", flush=True)
 
 

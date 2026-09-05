@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
+from agent_core.llm_client import LLMClient  # noqa: E402
 from benchmarks.ecobench.run_ecobench import (  # noqa: E402
     BACKUP_PROVIDERS,
     LLM_CALL_TIMEOUT,
@@ -24,17 +25,14 @@ from benchmarks.ecobench.run_ecobench import (  # noqa: E402
     new_bench_state,
     try_failover,
 )
-from agent_core.llm_client import LLMClient  # noqa: E402
 
-ITEM = {"id": "EB01", "category": "法条引用",
-        "question": "企业向大气超标排放污染物，应依据哪条查处？"}
+ITEM = {"id": "EB01", "category": "法条引用", "question": "企业向大气超标排放污染物，应依据哪条查处？"}
 
 
 class FakeClient:
     """按脚本作答的 fake LLM client（脚本元素：答案 str / "" 失败 / None 由超时模拟）"""
 
-    def __init__(self, script, provider="deepseek", error=None, switchable=True,
-                 clear_error_on_switch=True):
+    def __init__(self, script, provider="deepseek", error=None, switchable=True, clear_error_on_switch=True):
         self.script = list(script)
         self.calls = 0
         self._provider_name = provider
@@ -66,6 +64,7 @@ class FakeClient:
 
 # ── 1) 注入长度 1500 ────────────────────────────────────
 
+
 def test_context_cap_is_1500():
     assert RAG_MAX_CONTEXT_CHARS == 1500
 
@@ -78,11 +77,12 @@ def test_article_window_priority_over_file_head():
     assert hit == [99]
     assert "目标条款正文" in snippet
     assert "前一条。" in snippet and "后一条。" in snippet  # ±1 条上下文保留
-    assert "文件头无关内容" not in snippet                 # 不是文件头截断
+    assert "文件头无关内容" not in snippet  # 不是文件头截断
     assert len(snippet) <= 1500
 
 
 # ── 2) 时限与重试 ───────────────────────────────────────
+
 
 def test_timeouts_are_90s():
     assert PER_QUESTION_TIMEOUT == 90.0
@@ -91,8 +91,9 @@ def test_timeouts_are_90s():
 
 def test_retry_once_then_success():
     state = new_bench_state()
-    client = FakeClient(["", "依据《大气污染防治法》第九十九条。"],
-                        error={"kind": "network", "status": None, "detail": "reset"})
+    client = FakeClient(
+        ["", "依据《大气污染防治法》第九十九条。"], error={"kind": "network", "status": None, "detail": "reset"}
+    )
     ans, _, _ = answer_question(client, ITEM, mock=False, state=state)
     assert "第九十九条" in ans
     assert client.calls == 2 and state["retries"] == 1 and state["errors"] == 0
@@ -109,6 +110,7 @@ def test_retry_once_then_error():
 def test_timeout_retry_then_error(monkeypatch):
     """墙钟超时：重试 1 次后仍超时计 error，timeouts=2"""
     import benchmarks.ecobench.run_ecobench as m
+
     monkeypatch.setattr(m, "_call_with_timeout", lambda c, q, timeout=None: None)
     state = new_bench_state()
     client = FakeClient([], error=None)
@@ -119,11 +121,14 @@ def test_timeout_retry_then_error(monkeypatch):
 
 # ── 3) 429/余额切换 ────────────────────────────────────
 
+
 def test_quota_error_switches_provider_and_records():
     state = new_bench_state()
-    client = FakeClient(["", "依据《大气污染防治法》第九十九条。"],
-                        provider="deepseek",
-                        error={"kind": "quota", "status": 429, "detail": "rate limit"})
+    client = FakeClient(
+        ["", "依据《大气污染防治法》第九十九条。"],
+        provider="deepseek",
+        error={"kind": "quota", "status": 429, "detail": "rate limit"},
+    )
     ans, _, _ = answer_question(client, ITEM, mock=False, state=state)
     assert "第九十九条" in ans
     assert client.switched_to == ["kimi"]
@@ -135,9 +140,9 @@ def test_quota_error_switches_provider_and_records():
 def test_both_providers_down_aborts():
     """备用 provider 也无密钥/切换失败 → 置 aborted，已得题目保留（由主循环 break）"""
     state = new_bench_state()
-    client = FakeClient([""], provider="deepseek",
-                        error={"kind": "quota", "status": 402, "detail": "Insufficient Balance"},
-                        switchable=False)
+    client = FakeClient(
+        [""], provider="deepseek", error={"kind": "quota", "status": 402, "detail": "Insufficient Balance"}, switchable=False
+    )
     ans, _, _ = answer_question(client, ITEM, mock=False, state=state)
     assert ans.startswith("[error] aborted")
     assert state["aborted"] is True and "EB01" in state["abort_reason"]
@@ -146,9 +151,12 @@ def test_both_providers_down_aborts():
 def test_no_double_switch_back():
     """备用 provider 也 429 时不再切回原 provider，直接中止"""
     state = new_bench_state()
-    client = FakeClient(["", ""], provider="deepseek",
-                        error={"kind": "quota", "status": 429, "detail": "rate limit"},
-                        clear_error_on_switch=False)  # 备用 provider 同样 429
+    client = FakeClient(
+        ["", ""],
+        provider="deepseek",
+        error={"kind": "quota", "status": 429, "detail": "rate limit"},
+        clear_error_on_switch=False,
+    )  # 备用 provider 同样 429
     ans, _, _ = answer_question(client, ITEM, mock=False, state=state)
     assert ans.startswith("[error] aborted")
     assert client.switched_to == ["kimi"]  # 只切一次
@@ -164,6 +172,7 @@ def test_try_failover_no_backup_for_unknown_provider():
 
 # ── LLMClient 层 ───────────────────────────────────────
 
+
 def test_llm_client_quota_detection():
     assert LLMClient._is_quota_error(429, "")
     assert LLMClient._is_quota_error(402, "")
@@ -177,6 +186,7 @@ def test_llm_client_switch_provider():
     c._env = {"DEEPSEEK_API_KEY": "k1", "KIMI_API_KEY": "k2"}
     c._provider_name = "deepseek"
     from agent_core.llm_client import PROVIDERS
+
     c._provider = PROVIDERS["deepseek"]
     c._api_key = "k1"
     c._last_error = {"kind": "quota"}

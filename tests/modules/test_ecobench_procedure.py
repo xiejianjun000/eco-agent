@@ -33,10 +33,7 @@ PROC_TEXT = (
     "第十一条 实施查封、扣押前应当向环境保护主管部门负责人报告并经批准。\n"
     "第十二条 查封、扣押决定书应当当场交付排污者负责人或者受委托人签收。\n"
 )
-PENALTY_TEXT = (
-    "# 生态环境行政处罚办法\n\n"
-    "### 第五十九条 行政处罚决定书应当载明当事人的基本情况、违法事实和证据……\n"
-)
+PENALTY_TEXT = "# 生态环境行政处罚办法\n\n### 第五十九条 行政处罚决定书应当载明当事人的基本情况、违法事实和证据……\n"
 
 
 def fake_call_tool_factory():
@@ -71,12 +68,13 @@ def test_extract_procedure_window_anchors_keyword():
     assert "查封" in win and len(win) <= 200
     # 空文本 / 无锚点
     assert extract_procedure_window("", q) == ""
-    assert extract_procedure_window("无关内容" * 50, "毫无关联的问题") .startswith("无关内容")
+    assert extract_procedure_window("无关内容" * 50, "毫无关联的问题").startswith("无关内容")
 
 
 def test_retrieve_v2_dual_window_for_procedure():
     item = {
-        "id": "EB33", "category": "执法程序",
+        "id": "EB33",
+        "category": "执法程序",
         "question": "生态环境部门实施查封、扣押的程序要求是什么？",
         "required_citations": ["《行政强制法》第十八条"],
         "key_points": ["出示证件", "负责人批准"],
@@ -92,9 +90,11 @@ def test_retrieve_v2_dual_window_for_procedure():
 
 def test_retrieve_v2_no_procedure_segment_for_other_category():
     item = {
-        "id": "EB01", "category": "法条引用",
+        "id": "EB01",
+        "category": "法条引用",
         "question": "超标排放大气污染物的法律责任是什么？",
-        "required_citations": [], "key_points": [],
+        "required_citations": [],
+        "key_points": [],
     }
     r = RagRetriever(call_tool=fake_call_tool_factory())
     hit = r.retrieve_v2(item)

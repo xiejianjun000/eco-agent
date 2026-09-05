@@ -1,11 +1,11 @@
 """SOUL 接线 + L1-L4 权限闸门测试（离线，mock LLM/审计链）"""
+
 import json
 
 import pytest
 
-from agent_core.prompt_engine import (PromptAuditChain, PromptEngine,
-                                      SAFETY_LAYER, _reset_engine_for_test)
 from agent_core import soul as soul_mod
+from agent_core.prompt_engine import SAFETY_LAYER, PromptAuditChain, PromptEngine, _reset_engine_for_test
 
 
 @pytest.fixture(autouse=True)
@@ -15,9 +15,12 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setenv("ECO_PERMISSION_GATE", "1")
     monkeypatch.setenv("ECO_NONINTERACTIVE", "1")
     from agent_core import approval as approval_mod
-    monkeypatch.setattr(approval_mod, "_service",
-                        approval_mod.ApprovalService(policy="ask", answerers=["tester"],
-                                                     path=tmp_path / "approvals.jsonl"))
+
+    monkeypatch.setattr(
+        approval_mod,
+        "_service",
+        approval_mod.ApprovalService(policy="ask", answerers=["tester"], path=tmp_path / "approvals.jsonl"),
+    )
     soul_mod._reset_for_test()
     _reset_engine_for_test()
     yield
@@ -31,6 +34,7 @@ def _engine(tmp_path) -> PromptEngine:
 
 # ── SOUL 接线 ─────────────────────────────────────────────
 
+
 class TestSoulLoading:
     def test_soul_file_found_and_parsed(self):
         s = soul_mod.load_soul()
@@ -42,10 +46,10 @@ class TestSoulLoading:
     def test_system_prompt_contains_persona_and_boundaries(self, tmp_path):
         eng = _engine(tmp_path)
         prompt = eng.build_system_prompt()
-        assert prompt.startswith("【安全准则")          # 安全层首位不可动摇
-        assert "SOUL 硬边界" in prompt                   # 硬边界并入安全层
-        assert "置信度" in prompt                        # 人格层进入系统提示词
-        assert SAFETY_LAYER in prompt                    # 硬编码兜底仍在
+        assert prompt.startswith("【安全准则")  # 安全层首位不可动摇
+        assert "SOUL 硬边界" in prompt  # 硬边界并入安全层
+        assert "置信度" in prompt  # 人格层进入系统提示词
+        assert SAFETY_LAYER in prompt  # 硬编码兜底仍在
 
     def test_missing_soul_fallback(self, tmp_path, monkeypatch):
         """SOUL.md 缺失：回退硬编码，不崩"""
@@ -75,22 +79,25 @@ class TestSoulLoading:
 
     def test_cmd_chat_uses_prompt_engine(self, tmp_path):
         from eco.commands.cmd_chat import _build_messages
+
         msgs = _build_messages([], "测试问题")
         system = msgs[0]["content"]
         assert system.startswith("【安全准则")
         assert "置信度" in system
 
     def test_role_swarm_merges_agent_soul(self):
-        from agent_core.role_swarm import RoleSwarm, ROLES
+        from agent_core.role_swarm import ROLES, RoleSwarm
+
         swarm = RoleSwarm.__new__(RoleSwarm)  # 不触发 LLM client
         prompt = swarm._role_system_prompt("patrol")
         assert "searcher" in ROLES["patrol"]["soul"]
-        assert "角色人格 searcher_soul" in prompt     # soul 文件内容已合并
-        assert ROLES["patrol"]["brief"] in prompt     # 硬编码 brief 兜底保留
+        assert "角色人格 searcher_soul" in prompt  # soul 文件内容已合并
+        assert ROLES["patrol"]["brief"] in prompt  # 硬编码 brief 兜底保留
         assert "【安全准则" in prompt
 
     def test_role_swarm_fallback_when_soul_missing(self, monkeypatch):
-        from agent_core.role_swarm import RoleSwarm, ROLES
+        from agent_core.role_swarm import ROLES, RoleSwarm
+
         monkeypatch.setattr(soul_mod, "_find_file", lambda rel: None)
         prompt = RoleSwarm.__new__(RoleSwarm)._role_system_prompt("law")
         assert "角色人格" not in prompt
@@ -99,9 +106,11 @@ class TestSoulLoading:
 
 # ── 权限闸门 ─────────────────────────────────────────────
 
+
 class TestPermissions:
     def test_default_risk_mapping(self):
         from agent_core.permissions import tool_risk_level
+
         assert tool_risk_level("query_air_quality") == "L1"
         assert tool_risk_level("search_regulation") == "L1"
         assert tool_risk_level("generate_carbon_emission_report") == "L2"
@@ -112,6 +121,7 @@ class TestPermissions:
 
     def test_permission_md_override(self):
         from agent_core.permissions import load_overrides, tool_risk_level
+
         overrides = load_overrides()
         assert overrides.get("execute_code") == "L3"
         assert overrides.get("generate_approval_document") == "L4"
@@ -121,6 +131,7 @@ class TestPermissions:
         eng = _engine(tmp_path)
         monkeypatch.setattr("agent_core.prompt_engine._engine", eng)
         from agent_core.permissions import gate_tool_call
+
         ok, level, reason = gate_tool_call("query_air_quality", {"city": "北京"})
         assert ok and level == "L1"
         entries = eng.audit.tail(1)
@@ -133,6 +144,7 @@ class TestPermissions:
         eng = _engine(tmp_path)
         monkeypatch.setattr("agent_core.prompt_engine._engine", eng)
         from agent_core.permissions import gate_tool_call
+
         ok, level, reason = gate_tool_call("apply_invoice", {"company": "X"})
         assert not ok and level == "L4"
         assert "审批请求" in reason and "pending:" in reason
@@ -149,6 +161,7 @@ class TestPermissions:
         monkeypatch.setattr("agent_core.prompt_engine._engine", eng)
         monkeypatch.setenv("ECO_NONINTERACTIVE", "0")
         import agent_core.permissions as perm
+
         monkeypatch.setattr(perm, "_is_interactive", lambda: True)
         monkeypatch.setattr("builtins.input", lambda prompt="": "y")
         ok, _, reason = perm.gate_tool_call("apply_invoice", {})
@@ -163,6 +176,7 @@ class TestPermissions:
         eng = _engine(tmp_path)
         monkeypatch.setattr("agent_core.prompt_engine._engine", eng)
         from agent_core.permissions import gate_tool_call
+
         ok, _, reason = gate_tool_call("execute_code", {"command": "git status"})
         assert ok and "白名单" in reason
         ok, _, _ = gate_tool_call("execute_code", {"command": "rm -rf /"})
@@ -170,24 +184,29 @@ class TestPermissions:
 
     def test_execute_tool_gate_blocks_l4(self, tmp_path, monkeypatch):
         import asyncio
+
         eng = _engine(tmp_path)
         monkeypatch.setattr("agent_core.prompt_engine._engine", eng)
         from agent_core.tools_registry import execute_tool
+
         result = json.loads(asyncio.run(execute_tool("apply_invoice", {"company": "X"})))
         assert "permission denied" in result["error"]
         assert result["permission"]["level"] == "L4"
 
     def test_execute_tool_gate_passes_l1(self, tmp_path, monkeypatch):
         import asyncio
+
         eng = _engine(tmp_path)
         monkeypatch.setattr("agent_core.prompt_engine._engine", eng)
         from agent_core.tools_registry import execute_tool
+
         result = json.loads(asyncio.run(execute_tool("query_air_quality", {"city": "北京"})))
         assert "permission denied" not in json.dumps(result, ensure_ascii=False)
 
     def test_risk_table_covers_all_tools(self):
-        from agent_core.permissions import risk_table, LEVELS
         from agent_core import tools_registry as tr
+        from agent_core.permissions import LEVELS, risk_table
+
         table = risk_table()
         # 覆盖全部 LLM 可见工具（白名单瘦身后 5 内置 + 外部注册）
         visible = tr.get_tool_names()

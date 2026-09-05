@@ -71,11 +71,11 @@ ngrok http 7070
 ### 使用方式
 ```python
 from agent_core.channels import get_channel
+
 ch = get_channel("feishu")
 ch.reply("open_id", "消息内容")
 # 审批交互卡片（actions 含 approve/reject 回调 value）
-ch.send_card("open_id", "审批标题", "详情内容",
-             approve_callback="cb-1", reject_callback="cb-2")
+ch.send_card("open_id", "审批标题", "详情内容", approve_callback="cb-1", reject_callback="cb-2")
 ```
 
 ---
@@ -116,6 +116,7 @@ ch.send_card("open_id", "审批标题", "详情内容",
 ### 使用方式
 ```python
 from agent_core.channels import get_channel
+
 ch = get_channel("wecom")
 ch.reply("user_id", "消息内容")
 # 或发送卡片消息
@@ -162,6 +163,7 @@ ch.create_approval("creator_id", ["approver_id"], "template_id", {"contents": []
 ### 使用方式
 ```python
 from agent_core.channels import get_channel
+
 ch = get_channel("dingtalk")
 ch.send_text("user_id", "消息内容")
 # 或发送群消息
@@ -200,6 +202,7 @@ ch.query_approval("process_instance_id")
 ```python
 # 公众号统一走 r15 适配器 agent_core.channels.wechat_oa
 from agent_core.channels import get_channel
+
 ch = get_channel("wechat_oa")
 ch.reply("open_id", "消息内容")
 # 旧 gateway/platforms/wechat_bot.py 已归档至 _deprecated/gateway-platforms/（未迁移）

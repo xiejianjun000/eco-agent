@@ -1,16 +1,19 @@
 """记忆系统 + Token 压缩测试——真实数据内容断言，RAG 准确率如实计算"""
-import sys
+
 import os
 import re
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 import pytest
+
 import agent_core.memory_viz as mv_mod
 from agent_core.data_sync import TokenCompressor
 from agent_core.memory_viz import MemoryViz
 
 
 def _keywords(t):
-    return set(re.findall(r'[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}', t))
+    return set(re.findall(r"[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}", t))
 
 
 class TestTokenCompression:

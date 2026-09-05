@@ -50,6 +50,7 @@ class TestHelpAndBanner:
 
     def test_analyze_document_handler_reads_txt(self, tmp_path):
         from agent_core.tools_registry import _HANDLERS
+
         f = tmp_path / "note.txt"
         text = "违法线索：暗管偷排"
         f.write_text(text, encoding="utf-8")
@@ -62,9 +63,7 @@ class TestHelpAndBanner:
         # PDF 现已原生支持（PyMuPDF），假 PDF 应报解析失败而非"仅支持纯文本"。
         # 无 PyMuPDF 环境（CI）报"依赖未安装"，有依赖报"解析失败"——两者都是正确的优雅降级。
         pdf_err = h(file_path=str(pdf))
-        assert "error" in pdf_err and (
-            "PDF 解析失败" in pdf_err["error"]
-            or "PyMuPDF" in pdf_err["error"])
+        assert "error" in pdf_err and ("PDF 解析失败" in pdf_err["error"] or "PyMuPDF" in pdf_err["error"])
 
     def test_status_bar_format(self):
         bar = cmd_chat._status_bar([{"role": "user", "content": "你好 eco"}])
@@ -113,10 +112,10 @@ class TestTraceCommand:
     def test_otlp_export(self, tmp_path, monkeypatch, capsys):
         tree = self._make_session(tmp_path, monkeypatch)
         out_path = tmp_path / "out.otlp.json"
-        assert cmd_trace.run(self.Args(session=tree.session_id, tree=True,
-                                       otel=str(out_path))) == 0
+        assert cmd_trace.run(self.Args(session=tree.session_id, tree=True, otel=str(out_path))) == 0
         assert out_path.exists()
         import json
+
         data = json.loads(out_path.read_text(encoding="utf-8"))
         assert data["resourceSpans"][0]["scopeSpans"][0]["spans"]
         assert "OTLP" in capsys.readouterr().out

@@ -22,9 +22,9 @@ import logging
 import os
 import threading
 import time
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from collections.abc import Iterator
 
 logger = logging.getLogger("eco.session_log")
 
@@ -100,10 +100,7 @@ class SessionEventLog:
             if not self._buffer:
                 return 0
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            lines = [
-                json.dumps(e, ensure_ascii=False, separators=(",", ":")) + "\n"
-                for e in self._buffer
-            ]
+            lines = [json.dumps(e, ensure_ascii=False, separators=(",", ":")) + "\n" for e in self._buffer]
             with self.path.open("a", encoding="utf-8") as f:
                 f.writelines(lines)
                 f.flush()
@@ -154,21 +151,18 @@ class SessionEventLog:
                 truncated += 1
                 break  # 尾部截断，停止
             if e.get("seq") != expected_seq:
-                return {"ok": False, "error": f"seq 断裂: 期望 {expected_seq} 实得 {e.get('seq')}",
-                        "events": len(events)}
-            payload = json.dumps({k: e[k] for k in ("seq", "time", "type", "data", "prev_hash")},
-                                 ensure_ascii=False, separators=(",", ":"))
+                return {"ok": False, "error": f"seq 断裂: 期望 {expected_seq} 实得 {e.get('seq')}", "events": len(events)}
+            payload = json.dumps(
+                {k: e[k] for k in ("seq", "time", "type", "data", "prev_hash")}, ensure_ascii=False, separators=(",", ":")
+            )
             if hashlib.sha256(payload.encode("utf-8")).hexdigest() != e.get("hash"):
-                return {"ok": False, "error": f"hash 校验失败 @ seq {e.get('seq')}",
-                        "events": len(events)}
+                return {"ok": False, "error": f"hash 校验失败 @ seq {e.get('seq')}", "events": len(events)}
             if e.get("prev_hash") != prev_hash:
-                return {"ok": False, "error": f"prev_hash 链断裂 @ seq {e.get('seq')}",
-                        "events": len(events)}
+                return {"ok": False, "error": f"prev_hash 链断裂 @ seq {e.get('seq')}", "events": len(events)}
             prev_hash = e["hash"]
             expected_seq += 1
             events.append(e)
-        return {"ok": True, "events": len(events), "truncated": truncated,
-                "last_seq": events[-1]["seq"] if events else 0}
+        return {"ok": True, "events": len(events), "truncated": truncated, "last_seq": events[-1]["seq"] if events else 0}
 
     def repair_torn_tail(self) -> dict:
         """断尾修复（对标 DSH torn-tail repair）：崩溃可能留下半行/损坏行，
@@ -189,13 +183,9 @@ class SessionEventLog:
         if not broken:
             return {"repaired": False, "note": "no torn tail"}
         with self._lock:
-            self.path.write_text("\n".join(good) + ("\n" if good else ""),
-                                 encoding="utf-8")
-        self.append("system/repair", {
-            "dropped_lines": len(lines) - len(good),
-            "note": "torn tail repaired"})
-        return {"repaired": True, "dropped_lines": len(lines) - len(good),
-                "last_seq": self.verify().get("last_seq", 0)}
+            self.path.write_text("\n".join(good) + ("\n" if good else ""), encoding="utf-8")
+        self.append("system/repair", {"dropped_lines": len(lines) - len(good), "note": "torn tail repaired"})
+        return {"repaired": True, "dropped_lines": len(lines) - len(good), "last_seq": self.verify().get("last_seq", 0)}
 
     def repair_seq_gap(self) -> dict:
         """seq 跳变修复（对标 DSH 尾部损坏恢复）：扫描到第一个 seq 不连续
@@ -219,15 +209,11 @@ class SessionEventLog:
             expected += 1
         if cut_at is None:
             return {"repaired": False, "note": "no seq gap"}
-        good = [l for l in lines[:cut_at] if l.strip()]
+        good = [line for line in lines[:cut_at] if line.strip()]
         with self._lock:
-            self.path.write_text("\n".join(good) + ("\n" if good else ""),
-                                 encoding="utf-8")
-        self.append("system/repair", {
-            "dropped_lines": len(lines) - len(good),
-            "note": "seq gap repaired (tail truncated)"})
-        return {"repaired": True, "dropped_lines": len(lines) - len(good),
-                "last_seq": expected - 1}
+            self.path.write_text("\n".join(good) + ("\n" if good else ""), encoding="utf-8")
+        self.append("system/repair", {"dropped_lines": len(lines) - len(good), "note": "seq gap repaired (tail truncated)"})
+        return {"repaired": True, "dropped_lines": len(lines) - len(good), "last_seq": expected - 1}
 
     def durable(self) -> tuple[bool, dict]:
         """持久性检查：链完整（无断尾、无 hash/seq 断裂）即可安全 checkpoint。
@@ -249,8 +235,7 @@ class SessionEventLog:
 
     # ── 内部 ─────────────────────────────────────────────
 
-    def _build_event(self, event_type: str, data: dict[str, Any],
-                     seq: int, prev_hash: str) -> dict:
+    def _build_event(self, event_type: str, data: dict[str, Any], seq: int, prev_hash: str) -> dict:
         """构造带 hash 的完整事件（seq/time/type/data/prev_hash 五元组签名）。"""
         event = {
             "seq": seq,

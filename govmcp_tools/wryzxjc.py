@@ -34,13 +34,8 @@ from govmcp.tools.registry import ToolRegistry, govmcp_tool
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE = os.environ.get(
-    "WRYZXJC_BASE", "http://218.77.102.213:12369/wryzxjc"
-).rstrip("/")
-UA = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-)
+BASE = os.environ.get("WRYZXJC_BASE", "http://218.77.102.213:12369/wryzxjc").rstrip("/")
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 
 # 行政区划（区县代码）
 REGIONS = {
@@ -89,10 +84,7 @@ def _save_session() -> None:
     if not _session or not path:
         return
     try:
-        cookies = [
-            {"name": c.name, "value": c.value, "domain": c.domain, "path": c.path}
-            for c in _session.cookies
-        ]
+        cookies = [{"name": c.name, "value": c.value, "domain": c.domain, "path": c.path} for c in _session.cookies]
         state = {"username": _login_user, "password": _last_password, "cookies": cookies}
         with open(path, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False)
@@ -141,9 +133,7 @@ def _do_login(username: str, password: str) -> bool:
     s.headers.update({"User-Agent": UA})
     try:
         r = s.get(BASE + "/", timeout=20)
-        token = re.search(
-            r'name="org\.apache\.struts\.taglib\.html\.TOKEN" value="([^"]+)"', r.text
-        )
+        token = re.search(r'name="org\.apache\.struts\.taglib\.html\.TOKEN" value="([^"]+)"', r.text)
         if not token:
             return False
         data = {
@@ -177,13 +167,11 @@ def _need_login() -> str | None:
     env_p = os.environ.get("WRYZXJC_PASSWORD", "")
     if env_u and env_p and _do_login(env_u, env_p):
         return None
-    return (
-        "未登录，请先调用 wryzxjc_login 工具，或设置环境变量 "
-        "WRYZXJC_USERNAME / WRYZXJC_PASSWORD"
-    )
+    return "未登录，请先调用 wryzxjc_login 工具，或设置环境变量 WRYZXJC_USERNAME / WRYZXJC_PASSWORD"
 
 
 # ─── HTML 解析（与原 MCP 一致）────────────────────────────────
+
 
 def _strip(tag: str) -> str:
     return re.sub(r"<[^>]+>", "", tag).replace("&nbsp;", "").strip()
@@ -225,14 +213,20 @@ def _get_total(html: str) -> int:
     return int(m.group(1)) if m else 0
 
 
-def _query_list(jsp_path: str, params: dict | None = None,
-                page: int = 1, pagesize: int = 50) -> tuple[list, int, str]:
+def _query_list(jsp_path: str, params: dict | None = None, page: int = 1, pagesize: int = 50) -> tuple[list, int, str]:
     """通用列表查询: POST 列表JSP (method=query) → 解析 rows + total。"""
     data = {
-        "FROM_SELF": "true", "EXPORT_FLAG": "false", "q_SEARCH_HEIGHT": "44",
-        "q_cloumnhide": "", "q_SHENG": "43", "q_SHI": "4313", "q_QX": "",
-        "q_MORE": "NO", "method": "query",
-        "P_CURRENT": str(page), "P_PAGESIZE": str(pagesize),
+        "FROM_SELF": "true",
+        "EXPORT_FLAG": "false",
+        "q_SEARCH_HEIGHT": "44",
+        "q_cloumnhide": "",
+        "q_SHENG": "43",
+        "q_SHI": "4313",
+        "q_QX": "",
+        "q_MORE": "NO",
+        "method": "query",
+        "P_CURRENT": str(page),
+        "P_PAGESIZE": str(pagesize),
     }
     if params:
         data.update(params)
@@ -250,7 +244,7 @@ TAGS = ["执法平台", "在线监测", "污染源", "自动监控", "博安达"
 
 @govmcp_tool(
     name="wryzxjc_login",
-    description="登录娄底市污染源在线监测系统(明文密码,无验证码)。账号密码可通过参数传入,或设置环境变量 WRYZXJC_USERNAME/WRYZXJC_PASSWORD",
+    description="登录娄底市污染源在线监测系统(明文密码,无验证码)。账号密码可通过参数传入,或设置环境变量 WRYZXJC_USERNAME/WRYZXJC_PASSWORD",  # noqa: E501
     category=CATEGORY,
     tags=TAGS + ["auth"],
 )
@@ -259,8 +253,7 @@ def wryzxjc_login(username: str = "", password: str = "") -> dict:
     username = username or os.environ.get("WRYZXJC_USERNAME", "")
     password = password or os.environ.get("WRYZXJC_PASSWORD", "")
     if not username or not password:
-        return {"success": False,
-                "message": "请提供账号密码，或设置环境变量 WRYZXJC_USERNAME/WRYZXJC_PASSWORD"}
+        return {"success": False, "message": "请提供账号密码，或设置环境变量 WRYZXJC_USERNAME/WRYZXJC_PASSWORD"}
     global _logged_in
     with _lock:
         ok = _do_login(username, password)
@@ -295,8 +288,7 @@ def wryzxjc_list_regions(parent_code: str = "4313") -> dict:
     if err:
         return {"success": False, "error": err}
     try:
-        r = _session.post(BASE + "/pages/queryXzqh.do",
-                          data={"parentCode": parent_code}, timeout=20)
+        r = _session.post(BASE + "/pages/queryXzqh.do", data={"parentCode": parent_code}, timeout=20)
         return {"success": True, "rows": r.json()}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -308,17 +300,26 @@ def wryzxjc_list_regions(parent_code: str = "4313") -> dict:
     category=CATEGORY,
     tags=TAGS,
 )
-def wryzxjc_list_pollution_sources(qx: str = "", wrymc: str = "", jgjb: str = "",
-                                   hylx: str = "", page: int = 1, pagesize: int = 50) -> dict:
+def wryzxjc_list_pollution_sources(
+    qx: str = "", wrymc: str = "", jgjb: str = "", hylx: str = "", page: int = 1, pagesize: int = 50
+) -> dict:
     """污染源列表（重点排污企业基本信息）。"""
     err = _need_login()
     if err:
         return {"success": False, "error": err}
     params = {"q_QX": qx, "q_WRYMC": wrymc, "q_JGJB": jgjb, "q_HYLX": hylx, "q_SFYX": "YES"}
-    rows, total, _ = _query_list("/pages/zxjc/wry/jbxx/TZxjcWryJbxxList.jsp",
-                                 params, page, pagesize)
-    cols = ["污染源名称", "行政区划", "单位地址", "监管级别", "法人代表",
-            "联系电话", "环保联系人", "环保联系人电话", "企业状态"]
+    rows, total, _ = _query_list("/pages/zxjc/wry/jbxx/TZxjcWryJbxxList.jsp", params, page, pagesize)
+    cols = [
+        "污染源名称",
+        "行政区划",
+        "单位地址",
+        "监管级别",
+        "法人代表",
+        "联系电话",
+        "环保联系人",
+        "环保联系人电话",
+        "企业状态",
+    ]
     result = []
     for r in rows:
         cells = r["cells"]
@@ -326,8 +327,7 @@ def wryzxjc_list_pollution_sources(qx: str = "", wrymc: str = "", jgjb: str = ""
         for i, c in enumerate(cols):
             item[c] = cells[i] if i < len(cells) else ""
         result.append(item)
-    return {"success": True, "total": total, "page": page,
-            "count": len(result), "rows": result}
+    return {"success": True, "total": total, "page": page, "count": len(result), "rows": result}
 
 
 @govmcp_tool(
@@ -344,8 +344,7 @@ def wryzxjc_get_pollution_source(xh: str = "") -> dict:
     if not xh:
         return {"success": False, "error": "请提供 xh(污染源编号, 先调用 wryzxjc_list_pollution_sources 获取)"}
     try:
-        r = _session.get(BASE + "/pages/zxjc/wry/jbxx/TZxjcWryJbxxView.jsp",
-                         params={"XH": xh}, timeout=25)
+        r = _session.get(BASE + "/pages/zxjc/wry/jbxx/TZxjcWryJbxxView.jsp", params={"XH": xh}, timeout=25)
         pairs = re.findall(r"<td[^>]*>([^<]{2,30})</td>\s*<td[^>]*>(.*?)</td>", r.text, re.S)
         info = {}
         for k, v in pairs:
@@ -363,8 +362,7 @@ def wryzxjc_get_pollution_source(xh: str = "") -> dict:
     category=CATEGORY,
     tags=TAGS + ["执法证据"],
 )
-def wryzxjc_list_alarms(qx: str = "", sjzt: str = "", pwlx: str = "",
-                        page: int = 1, pagesize: int = 50) -> dict:
+def wryzxjc_list_alarms(qx: str = "", sjzt: str = "", pwlx: str = "", page: int = 1, pagesize: int = 50) -> dict:
     """预警报警台账（超标/异常数据，执法核心证据）。"""
     err = _need_login()
     if err:
@@ -374,10 +372,8 @@ def wryzxjc_list_alarms(qx: str = "", sjzt: str = "", pwlx: str = "",
         params["q_SJZT"] = sjzt
     if pwlx:
         params["q_PWLX"] = pwlx
-    rows, total, _ = _query_list("/pages/zxjc/yjbj/yjbjt/TZxjcYjbjYjbjtList.jsp",
-                                 params, page, pagesize)
-    cols = ["污染源名称", "监测点", "行政区划", "监测时间", "污染物名称",
-            "监测值", "标准值", "单位"]
+    rows, total, _ = _query_list("/pages/zxjc/yjbj/yjbjt/TZxjcYjbjYjbjtList.jsp", params, page, pagesize)
+    cols = ["污染源名称", "监测点", "行政区划", "监测时间", "污染物名称", "监测值", "标准值", "单位"]
     result = []
     for r in rows:
         cells = r["cells"]
@@ -394,8 +390,7 @@ def wryzxjc_list_alarms(qx: str = "", sjzt: str = "", pwlx: str = "",
     category=CATEGORY,
     tags=TAGS + ["执法证据"],
 )
-def wryzxjc_list_devices(qx: str = "", wrymc: str = "", sbzt: str = "",
-                         page: int = 1, pagesize: int = 100) -> dict:
+def wryzxjc_list_devices(qx: str = "", wrymc: str = "", sbzt: str = "", page: int = 1, pagesize: int = 100) -> dict:
     """自动监控设备列表（断线=干扰自动监测线索）。"""
     err = _need_login()
     if err:
@@ -403,8 +398,7 @@ def wryzxjc_list_devices(qx: str = "", wrymc: str = "", sbzt: str = "",
     params = {"q_QX": qx, "q_WRYMC": wrymc}
     if sbzt:
         params["q_SBZT"] = sbzt
-    rows, total, _ = _query_list("/pages/zxjc/ssjk/sbssjk/TZxjcWrySbxxList.jsp",
-                                 params, page, pagesize)
+    rows, total, _ = _query_list("/pages/zxjc/ssjk/sbssjk/TZxjcWrySbxxList.jsp", params, page, pagesize)
     cols = ["污染源名称", "监测点", "行政区划", "设备MN号", "设备状态"]
     result = []
     for r in rows:
@@ -422,20 +416,17 @@ def wryzxjc_list_devices(qx: str = "", wrymc: str = "", sbzt: str = "",
     category=CATEGORY,
     tags=TAGS,
 )
-def wryzxjc_list_realtime_data(pwkzl: str = "FS", qx: str = "", wrymc: str = "",
-                               page: int = 1, pagesize: int = 50) -> dict:
+def wryzxjc_list_realtime_data(pwkzl: str = "FS", qx: str = "", wrymc: str = "", page: int = 1, pagesize: int = 50) -> dict:
     """实时监测数据（废水/废气，最近 1 小时）。"""
     err = _need_login()
     if err:
         return {"success": False, "error": err}
     params = {"q_PWKZL": pwkzl, "q_QX": qx, "q_WRYMC": wrymc}
-    rows, total, raw = _query_list("/pages/zxjc/ssjk/ssjksj/TZxjcWrySsjksjList.jsp",
-                                   params, page, pagesize)
+    rows, total, raw = _query_list("/pages/zxjc/ssjk/ssjksj/TZxjcWrySsjksjList.jsp", params, page, pagesize)
     result = [r["cells"] for r in rows]
     head_cols = re.findall(r'column="([^"]+)"[^>]*>([^<]{1,40})<', raw)
     factors = [h[1].replace("\n", "").strip() for h in head_cols if h[0] != "XM"]
-    return {"success": True, "total": total, "pwkzl": pwkzl,
-            "factor_columns": factors, "count": len(result), "rows": result}
+    return {"success": True, "total": total, "pwkzl": pwkzl, "factor_columns": factors, "count": len(result), "rows": result}
 
 
 @govmcp_tool(
@@ -450,10 +441,8 @@ def wryzxjc_list_jcd_tree(yzlx: str = "", qx: str = "", wrymc: str = "") -> dict
     if err:
         return {"success": False, "error": err}
     try:
-        data = {"method": "generateJcdTree3", "YHID": _login_user or "",
-                "QX": qx, "YZLX": yzlx, "WRYMC": wrymc, "WRYXH": "#"}
-        r = _session.post(BASE + "/pages/zxjc/ssjk/sssjview/jcdProcessor.jsp",
-                          data=data, timeout=25)
+        data = {"method": "generateJcdTree3", "YHID": _login_user or "", "QX": qx, "YZLX": yzlx, "WRYMC": wrymc, "WRYXH": "#"}
+        r = _session.post(BASE + "/pages/zxjc/ssjk/sssjview/jcdProcessor.jsp", data=data, timeout=25)
         return {"success": True, "tree": r.json()}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -461,40 +450,59 @@ def wryzxjc_list_jcd_tree(yzlx: str = "", qx: str = "", wrymc: str = "") -> dict
 
 @govmcp_tool(
     name="wryzxjc_list_history_data",
-    description="查询单个监测点的历史监测数据(分钟/时/日)。jcdxh监测点序号,jcdlx类型(FS废水/FQ废气),sjlx数据类型(FZSJ分钟/SSJ时/RSJ日),quick快捷时段(如-24近24小时),或start_time/end_time自定义时间(格式'yyyy-MM-dd HH',需配合quick='GD')。返回该排放口各污染物历史监测值",
+    description="查询单个监测点的历史监测数据(分钟/时/日)。jcdxh监测点序号,jcdlx类型(FS废水/FQ废气),sjlx数据类型(FZSJ分钟/SSJ时/RSJ日),quick快捷时段(如-24近24小时),或start_time/end_time自定义时间(格式'yyyy-MM-dd HH',需配合quick='GD')。返回该排放口各污染物历史监测值",  # noqa: E501
     category=CATEGORY,
     tags=TAGS,
 )
-def wryzxjc_list_history_data(jcdxh: str = "", jcdlx: str = "FQ", sjlx: str = "SSJ",
-                              quick: str = "-24", start_time: str = "", end_time: str = "",
-                              pagesize: int = 200) -> dict:
+def wryzxjc_list_history_data(
+    jcdxh: str = "",
+    jcdlx: str = "FQ",
+    sjlx: str = "SSJ",
+    quick: str = "-24",
+    start_time: str = "",
+    end_time: str = "",
+    pagesize: int = 200,
+) -> dict:
     """单监测点历史监测数据（分钟/时/日）。"""
     err = _need_login()
     if err:
         return {"success": False, "error": err}
     if not jcdxh:
-        return {"success": False,
-                "error": "请提供 jcdxh(监测点序号, 从 wryzxjc_list_jcd_tree 或实时数据列表获取)"}
+        return {"success": False, "error": "请提供 jcdxh(监测点序号, 从 wryzxjc_list_jcd_tree 或实时数据列表获取)"}
     url = BASE + "/pages/zxjc/ssjk/sssjview/TZxjcWryLssjListNew.jsp"
-    data = {"FROM_SELF": "true", "EXPORT_FLAG": "false", "q_SEARCH_HEIGHT": "44",
-            "q_cloumnhide": "", "q_SJLX": sjlx, "q_JCSJ": quick,
-            "q_startTime": start_time, "q_endTime": end_time,
-            "method": "query", "P_CURRENT": "1", "P_PAGESIZE": str(pagesize)}
+    data = {
+        "FROM_SELF": "true",
+        "EXPORT_FLAG": "false",
+        "q_SEARCH_HEIGHT": "44",
+        "q_cloumnhide": "",
+        "q_SJLX": sjlx,
+        "q_JCSJ": quick,
+        "q_startTime": start_time,
+        "q_endTime": end_time,
+        "method": "query",
+        "P_CURRENT": "1",
+        "P_PAGESIZE": str(pagesize),
+    }
     try:
-        r = _session.post(url, params={"JCDXH": jcdxh, "JCDLX": jcdlx},
-                          data=data, timeout=60)
+        r = _session.post(url, params={"JCDXH": jcdxh, "JCDLX": jcdlx}, data=data, timeout=60)
         rows = _parse_rows(r.text)
         total = _get_total(r.text)
-        return {"success": True, "jcdxh": jcdxh, "jcdlx": jcdlx, "sjlx": sjlx,
-                "total": total, "count": len(rows),
-                "rows": [row["cells"] for row in rows]}
+        return {
+            "success": True,
+            "jcdxh": jcdxh,
+            "jcdlx": jcdlx,
+            "sjlx": sjlx,
+            "total": total,
+            "count": len(rows),
+            "rows": [row["cells"] for row in rows],
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 @govmcp_tool(
     name="wryzxjc_raw_query",
-    description="调用平台任意接口(仅已登录会话内只读调用)。path传完整路径(如 /pages/queryXzqh.do 或 /pages/zxjc/xxx/xxxProcessor.jsp)。method仅GET/POST。POST参数用form_data传JSON字符串",
+    description="调用平台任意接口(仅已登录会话内只读调用)。path传完整路径(如 /pages/queryXzqh.do 或 /pages/zxjc/xxx/xxxProcessor.jsp)。method仅GET/POST。POST参数用form_data传JSON字符串",  # noqa: E501
     category=CATEGORY,
     tags=TAGS + ["raw"],
 )
@@ -520,10 +528,17 @@ def wryzxjc_raw_query(path: str, method: str = "GET", form_data: str = "{}") -> 
 # ─── 注册入口 ────────────────────────────────────────────────
 
 _TOOLS: list[Any] = [
-    wryzxjc_login, wryzxjc_status, wryzxjc_list_regions,
-    wryzxjc_list_pollution_sources, wryzxjc_get_pollution_source,
-    wryzxjc_list_alarms, wryzxjc_list_devices, wryzxjc_list_realtime_data,
-    wryzxjc_list_jcd_tree, wryzxjc_list_history_data, wryzxjc_raw_query,
+    wryzxjc_login,
+    wryzxjc_status,
+    wryzxjc_list_regions,
+    wryzxjc_list_pollution_sources,
+    wryzxjc_get_pollution_source,
+    wryzxjc_list_alarms,
+    wryzxjc_list_devices,
+    wryzxjc_list_realtime_data,
+    wryzxjc_list_jcd_tree,
+    wryzxjc_list_history_data,
+    wryzxjc_raw_query,
 ]
 
 
@@ -552,7 +567,7 @@ CHAT_TOOLS: dict[str, dict] = {
         "handler": wryzxjc_list_regions,
     },
     "wryzxjc_list_pollution_sources": {
-        "description": "娄底市污染源在线监测系统-重点排污企业列表(名称/地址/监管级别/法人/联系人)。qx区县(冷水江=431381)，wrymc名称模糊查询，jgjb监管级别(国控/省控/市控)。",
+        "description": "娄底市污染源在线监测系统-重点排污企业列表(名称/地址/监管级别/法人/联系人)。qx区县(冷水江=431381)，wrymc名称模糊查询，jgjb监管级别(国控/省控/市控)。",  # noqa: E501
         "parameters": _p(
             {
                 "qx": {"type": "string", "description": "区县代码(冷水江市=431381,空=娄底全市)"},
@@ -574,7 +589,7 @@ CHAT_TOOLS: dict[str, dict] = {
         "handler": wryzxjc_get_pollution_source,
     },
     "wryzxjc_list_alarms": {
-        "description": "娄底市污染源在线监测系统-预警报警台账(超标/异常监测数据,执法核心证据)。sjzt数据状态(超标/异常/正常),pwlx排放类型(废水/废气)。",
+        "description": "娄底市污染源在线监测系统-预警报警台账(超标/异常监测数据,执法核心证据)。sjzt数据状态(超标/异常/正常),pwlx排放类型(废水/废气)。",  # noqa: E501
         "parameters": _p(
             {
                 "qx": {"type": "string", "description": "区县代码(冷水江市=431381)"},
@@ -602,7 +617,7 @@ CHAT_TOOLS: dict[str, dict] = {
         "handler": wryzxjc_list_devices,
     },
     "wryzxjc_list_realtime_data": {
-        "description": "娄底市污染源在线监测系统-实时监测数据(最近1小时)。pwkzl排污口种类(FS废水/FQ废气)。返回各监测因子浓度与超标标记。",
+        "description": "娄底市污染源在线监测系统-实时监测数据(最近1小时)。pwkzl排污口种类(FS废水/FQ废气)。返回各监测因子浓度与超标标记。",  # noqa: E501
         "parameters": _p(
             {
                 "pwkzl": {"type": "string", "description": "排污口种类(FS废水/FQ废气)"},
@@ -628,7 +643,7 @@ CHAT_TOOLS: dict[str, dict] = {
         "handler": wryzxjc_list_jcd_tree,
     },
     "wryzxjc_list_history_data": {
-        "description": "娄底市污染源在线监测系统-单监测点历史监测数据。sjlx数据类型(FZSJ分钟/SSJ时/RSJ日)，quick快捷时段(如-24近24小时/GD自定义)。返回各污染物历史监测值。",
+        "description": "娄底市污染源在线监测系统-单监测点历史监测数据。sjlx数据类型(FZSJ分钟/SSJ时/RSJ日)，quick快捷时段(如-24近24小时/GD自定义)。返回各污染物历史监测值。",  # noqa: E501
         "parameters": _p(
             {
                 "jcdxh": {"type": "string", "description": "监测点序号(从监测点树获取)"},

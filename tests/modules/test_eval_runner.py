@@ -1,4 +1,5 @@
 """test_eval_runner.py - evals/runner.py 打分/门控/baseline 对比单测（全 mock，不调真实 LLM）"""
+
 import json
 import sys
 from pathlib import Path
@@ -31,18 +32,14 @@ class MockLLM:
 
 def _write_dataset(tmp_path, records):
     p = tmp_path / "ds.jsonl"
-    p.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in records),
-                 encoding="utf-8")
+    p.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in records), encoding="utf-8")
     return p
 
 
 SAMPLES = [
-    {"id": "T-001", "category": "法规依据", "question": "q1",
-     "expected_points": ["第四十五条", "罚款"]},
-    {"id": "T-002", "category": "裁量计算", "question": "q2",
-     "expected_points": ["60万", "按日连续处罚"]},
-    {"id": "T-003", "category": "注入抗性", "question": "raise q3",
-     "expected_points": ["拒绝"]},
+    {"id": "T-001", "category": "法规依据", "question": "q1", "expected_points": ["第四十五条", "罚款"]},
+    {"id": "T-002", "category": "裁量计算", "question": "q2", "expected_points": ["60万", "按日连续处罚"]},
+    {"id": "T-003", "category": "注入抗性", "question": "raise q3", "expected_points": ["拒绝"]},
 ]
 
 
@@ -74,14 +71,12 @@ class TestLoadDataset:
             runner.load_dataset(tmp_path / "nope.jsonl")
 
     def test_load_missing_field(self, tmp_path):
-        p = _write_dataset(tmp_path, [{"id": "X", "category": "法规依据",
-                                       "question": "q"}])
+        p = _write_dataset(tmp_path, [{"id": "X", "category": "法规依据", "question": "q"}])
         with pytest.raises(ValueError):
             runner.load_dataset(p)
 
     def test_load_bad_category(self, tmp_path):
-        p = _write_dataset(tmp_path, [{"id": "X", "category": "不存在的类目",
-                                       "question": "q", "expected_points": ["a"]}])
+        p = _write_dataset(tmp_path, [{"id": "X", "category": "不存在的类目", "question": "q", "expected_points": ["a"]}])
         with pytest.raises(ValueError):
             runner.load_dataset(p)
 
@@ -106,8 +101,7 @@ class TestScoring:
 
 class TestRunEval:
     def test_run_eval_mock(self):
-        client = MockLLM(mapping={"q1": "依据第四十五条并处罚款",
-                                  "q2": "按日连续处罚合计60万"})
+        client = MockLLM(mapping={"q1": "依据第四十五条并处罚款", "q2": "按日连续处罚合计60万"})
         report = runner.run_eval(SAMPLES, client)
         assert report["total"] == 3
         assert len(client.calls) == 3
@@ -149,8 +143,7 @@ class TestBaseline:
     def test_main_baseline_missing_file(self, monkeypatch, tmp_path):
         monkeypatch.setenv("ECO_EVAL", "1")
         ds = _write_dataset(tmp_path, SAMPLES[:1])
-        rc = runner.main(["--dataset", str(ds),
-                          "--baseline", str(tmp_path / "absent.json")])
+        rc = runner.main(["--dataset", str(ds), "--baseline", str(tmp_path / "absent.json")])
         assert rc == 2
 
     def test_main_with_mock_llm_and_baseline(self, monkeypatch, tmp_path):
@@ -158,19 +151,18 @@ class TestBaseline:
         ds = _write_dataset(tmp_path, SAMPLES[:2])
         # 注入 mock LLMClient，避免真实 HTTP
         import agent_core.llm_client as lc
-        monkeypatch.setattr(lc, "LLMClient",
-                            lambda: MockLLM(mapping={"q1": "第四十五条 罚款",
-                                                     "q2": "按日连续处罚"}))
+
+        monkeypatch.setattr(lc, "LLMClient", lambda: MockLLM(mapping={"q1": "第四十五条 罚款", "q2": "按日连续处罚"}))
         report_path = tmp_path / "r.json"
         rc1 = runner.main(["--dataset", str(ds), "--report", str(report_path)])
         assert rc1 == 0 and report_path.exists()
         # 基线（更高分）对比 → 回归 exit 1
-        base = {"overall_score": 1.0,
-                "category_avg": {"法规依据": 1.0, "裁量计算": 1.0}}
+        base = {"overall_score": 1.0, "category_avg": {"法规依据": 1.0, "裁量计算": 1.0}}
         bp = tmp_path / "base.json"
         bp.write_text(json.dumps(base, ensure_ascii=False), encoding="utf-8")
-        rc2 = runner.main(["--dataset", str(ds), "--report", str(tmp_path / "r2.json"),
-                           "--baseline", str(bp), "--threshold", "0.01"])
+        rc2 = runner.main(
+            ["--dataset", str(ds), "--report", str(tmp_path / "r2.json"), "--baseline", str(bp), "--threshold", "0.01"]
+        )
         assert rc2 == 1
         r2 = json.loads((tmp_path / "r2.json").read_text(encoding="utf-8"))
         assert r2["baseline_compare"]["regressed"] is True

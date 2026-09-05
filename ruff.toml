@@ -24,3 +24,5 @@ exclude = [
 # 无法用行内 noqa（注释会混入渲染文本）；模板字符串无 AST 风险，整文件豁免 E501。
 [lint.per-file-ignores]
 "server/app.py" = ["E501"]
+# scripts/gen_pptx.py 与 server/app.py 同构：内嵌 OOXML/XML 模板为三引号长字符串，无法行内 noqa，整文件豁免 E501。
+"scripts/gen_pptx.py" = ["E501"]

@@ -67,18 +67,32 @@ def _audit(tool: str, args: dict, result: str, duration_ms: int) -> None:
         from govmcp.crypto.audit import AuditChain
 
         chain = AuditChain()
-        chain.add_entry(operation=f"mcp_call:{tool}", operator="radiation-mcp",
-                        input_data=json.dumps(args, ensure_ascii=False).encode("utf-8"),
-                        output_data=(str(result)[:300]).encode("utf-8"),
-                        approval_status="approved")
+        chain.add_entry(
+            operation=f"mcp_call:{tool}",
+            operator="radiation-mcp",
+            input_data=json.dumps(args, ensure_ascii=False).encode("utf-8"),
+            output_data=(str(result)[:300]).encode("utf-8"),
+            approval_status="approved",
+        )
         audit_file = ROOT / "memory-tree" / "data" / "audit" / "radiation_mcp_audit.jsonl"
         audit_file.parent.mkdir(parents=True, exist_ok=True)
         entry = chain.entries[-1]
         with audit_file.open("a", encoding="utf-8") as f:
-            f.write(json.dumps({"when": time.time(), "tool": tool, "args": args,
-                                "result_preview": str(result)[:200],
-                                "cost": f"{duration_ms}ms", "prev_hash": entry.prev_hash,
-                                "current_hash": entry.current_hash}, ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "when": time.time(),
+                        "tool": tool,
+                        "args": args,
+                        "result_preview": str(result)[:200],
+                        "cost": f"{duration_ms}ms",
+                        "prev_hash": entry.prev_hash,
+                        "current_hash": entry.current_hash,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
     except Exception:  # noqa: BLE001
         pass
 
@@ -109,11 +123,15 @@ def _provinces_raw() -> list[dict]:
         val = re.search(r'class="label">\s*([\d.]+)\s*nGy/h', item)
         t = re.search(r'class="showtime">\s*([\d-]+)', item)
         if link and val:
-            out.append({"province": link.group(2).strip().split("(")[0].strip(),
-                        "station": (link.group(2).strip().split("(")[1].rstrip(")").strip()
-                                    if "(" in link.group(2) else ""),
-                        "code": link.group(1), "dose_rate_nGyh": float(val.group(1)),
-                        "date": t.group(1) if t else ""})
+            out.append(
+                {
+                    "province": link.group(2).strip().split("(")[0].strip(),
+                    "station": (link.group(2).strip().split("(")[1].rstrip(")").strip() if "(" in link.group(2) else ""),
+                    "code": link.group(1),
+                    "dose_rate_nGyh": float(val.group(1)),
+                    "date": t.group(1) if t else "",
+                }
+            )
     with _cache_lock:
         _province_cache["ts"] = time.time()
         _province_cache["data"] = out
@@ -134,9 +152,9 @@ def _stations_raw(code: str) -> list[dict]:
         val = re.search(r'class="label">\s*([\d.]+)\s*nGy/h', item)
         t = re.search(r'class="showtime">\s*([\d-]+)', item)
         if name and val:
-            out.append({"station": name.group(1).strip(),
-                        "dose_rate_nGyh": float(val.group(1)),
-                        "date": t.group(1) if t else ""})
+            out.append(
+                {"station": name.group(1).strip(), "dose_rate_nGyh": float(val.group(1)), "date": t.group(1) if t else ""}
+            )
     with _cache_lock:
         _station_cache[key] = {"ts": time.time(), "data": out}
     return out
@@ -158,9 +176,7 @@ def _radiation_provinces() -> dict:
     t0 = time.monotonic()
     try:
         provinces = _provinces_raw()
-        result = {"count": len(provinces), "unit": "nGy/h",
-                  "baseline_range": BASELINE_RANGE,
-                  "provinces": provinces}
+        result = {"count": len(provinces), "unit": "nGy/h", "baseline_range": BASELINE_RANGE, "provinces": provinces}
     except Exception as e:  # noqa: BLE001
         result = {"error": f"辐射数据获取失败: {e}"}
     _audit("radiation_provinces", {}, result, int((time.monotonic() - t0) * 1000))
@@ -175,12 +191,10 @@ def _radiation_stations(province: str) -> dict:
     else:
         try:
             stations = _stations_raw(code)
-            result = {"province": province, "code": code, "unit": "nGy/h",
-                      "count": len(stations), "stations": stations}
+            result = {"province": province, "code": code, "unit": "nGy/h", "count": len(stations), "stations": stations}
         except Exception as e:  # noqa: BLE001
             result = {"error": f"站点数据获取失败: {e}"}
-    _audit("radiation_stations", {"province": province}, result,
-           int((time.monotonic() - t0) * 1000))
+    _audit("radiation_stations", {"province": province}, result, int((time.monotonic() - t0) * 1000))
     return result
 
 
@@ -188,8 +202,8 @@ def _radiation_baseline() -> dict:
     result = {
         "baseline_range": BASELINE_RANGE,
         "note": "全国空气吸收剂量率单位为 nGy/h；本底范围 39.3-403.5 nGy/h，"
-                "各站读数在本底范围内属正常。数据来源：生态环境部辐射环境监测技术中心"
-                "（data.rmtc.org.cn，依据环保部 2015 年实时发布通知）。",
+        "各站读数在本底范围内属正常。数据来源：生态环境部辐射环境监测技术中心"
+        "（data.rmtc.org.cn，依据环保部 2015 年实时发布通知）。",
     }
     _audit("radiation_baseline", {}, result, 0)
     return result
@@ -204,12 +218,19 @@ def handle_request(request: dict) -> dict:
     params = request.get("params", {})
 
     if method == "initialize":
-        return {"jsonrpc": "2.0", "id": req_id, "result": {
-            "protocolVersion": params.get("protocolVersion", "2024-11-05"),
-            "capabilities": {"tools": {}},
-            "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION,
-                           "title": "全国辐射环境监测 govMCP（官方直连，SM3 审计）"},
-        }}
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": params.get("protocolVersion", "2024-11-05"),
+                "capabilities": {"tools": {}},
+                "serverInfo": {
+                    "name": SERVER_NAME,
+                    "version": SERVER_VERSION,
+                    "title": "全国辐射环境监测 govMCP（官方直连，SM3 审计）",
+                },
+            },
+        }
     if method in ("tools/list", "mcp.list_tools"):
         return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": TOOLS}}
     if method in ("tools/call", "mcp.call_tool"):
@@ -222,15 +243,17 @@ def handle_request(request: dict) -> dict:
             data = _radiation_baseline()
         else:
             data = {"error": f"未知工具: {name}"}
-        return {"jsonrpc": "2.0", "id": req_id, "result": {
-            "content": [{"type": "text", "text": json.dumps(data, ensure_ascii=False)}],
-            "isError": "error" in data,
-        }}
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "content": [{"type": "text", "text": json.dumps(data, ensure_ascii=False)}],
+                "isError": "error" in data,
+            },
+        }
     if method in ("ping", "mcp.ping"):
-        return {"jsonrpc": "2.0", "id": req_id,
-                "result": {"status": "ok", "timestamp": datetime.now().isoformat()}}
-    return {"jsonrpc": "2.0", "id": req_id,
-            "error": {"code": -32601, "message": f"Method '{method}' not found"}}
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"status": "ok", "timestamp": datetime.now().isoformat()}}
+    return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Method '{method}' not found"}}
 
 
 def main() -> int:
@@ -244,10 +267,19 @@ def main() -> int:
         print(json.dumps(_radiation_stations("湖南"), ensure_ascii=False, indent=1)[:500])
         return 0
 
-    sys.stderr.write(json.dumps({
-        "event": "mcp.startup", "server_name": SERVER_NAME,
-        "version": SERVER_VERSION, "tools_count": len(TOOLS),
-        "audit": "govmcp SM3 链（等保）"}, ensure_ascii=False) + "\n")
+    sys.stderr.write(
+        json.dumps(
+            {
+                "event": "mcp.startup",
+                "server_name": SERVER_NAME,
+                "version": SERVER_VERSION,
+                "tools_count": len(TOOLS),
+                "audit": "govmcp SM3 链（等保）",
+            },
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
     sys.stderr.flush()
 
     for line in sys.stdin:
@@ -257,8 +289,9 @@ def main() -> int:
         try:
             request = json.loads(line)
         except json.JSONDecodeError:
-            sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": None,
-                                         "error": {"code": -32700, "message": "Parse error"}}) + "\n")
+            sys.stdout.write(
+                json.dumps({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}}) + "\n"
+            )
             sys.stdout.flush()
             continue
         if "id" not in request:

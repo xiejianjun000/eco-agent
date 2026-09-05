@@ -15,9 +15,9 @@ observer.py — Eco Agent 观察 Agent
   result = observer.verify("task_id", output_data)
 """
 
-import time
 import logging
 import re
+import time
 from pathlib import Path
 
 logger = logging.getLogger("observer")
@@ -86,8 +86,8 @@ class Observer:
             issues.append("输出为空值")
 
         # 任务相关性
-        task_keywords = set(re.findall(r'\w+', task_desc.lower()))
-        output_keywords = set(re.findall(r'\w+', output.lower()))
+        task_keywords = set(re.findall(r"\w+", task_desc.lower()))
+        output_keywords = set(re.findall(r"\w+", output.lower()))
         overlap = len(task_keywords & output_keywords) / max(len(task_keywords), 1)
         if overlap < 0.1 and len(task_keywords) > 3:
             issues.append("输出与任务描述相关性低")
@@ -117,23 +117,26 @@ class Observer:
             return {"total": 0, "pass_rate": "N/A"}
         passed = sum(1 for r in self._history if r["passed"])
         return {
-            "total": total, "pass_rate": f"{passed/total*100:.0f}%",
+            "total": total,
+            "pass_rate": f"{passed / total * 100:.0f}%",
             "avg_score": round(sum(r["final_score"] for r in self._history) / total, 2),
         }
 
+
 # ===== 测试 =====
+
 
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
     print("[TEST] Observer Agent", flush=True)
 
     obs = Observer()
 
     # 测试通过场景
-    r1 = obs.verify("编写一个Python函数计算两个数的和",
-                    "def add(a, b): return a + b")
+    r1 = obs.verify("编写一个Python函数计算两个数的和", "def add(a, b): return a + b")
     print(f"  通过场景: {'PASS' if r1['passed'] else 'FAIL'} score={r1['final_score']}", flush=True)
 
     # 测试失败场景
@@ -146,7 +149,7 @@ def test():
 
     stats = obs.get_stats()
     print(f"\n[Stats] 总验证: {stats['total']}, 通过率: {stats['pass_rate']}", flush=True)
-    print(f"\n{'='*40}", flush=True)
+    print(f"\n{'=' * 40}", flush=True)
     print("[OK] Observer Agent 测试通过", flush=True)
 
 

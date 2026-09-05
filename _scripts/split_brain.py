@@ -17,12 +17,12 @@ split_brain.py — ECO AGENT Split Brain 三重架构
   brain.subconscious.start()            # 启动后台
 """
 
-import sys
-import time
-import threading
 import logging
-from pathlib import Path
+import sys
+import threading
+import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("split_brain")
@@ -33,6 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # ═══════════════════════════════════════
 # Reflex — 快速反应层
 # ═══════════════════════════════════════
+
 
 class Reflex:
     """快速反应层——秒级响应常规查询"""
@@ -80,7 +81,7 @@ class Reflex:
             },
             "status": {
                 "type": "text",
-                "content": f"ECO AGENT 运行中\n版本: v3.x\n脑层: Reflex/Reasoning/Subconscious\n时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                "content": f"ECO AGENT 运行中\n版本: v3.x\n脑层: Reflex/Reasoning/Subconscious\n时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}",  # noqa: E501
                 "processing_time_ms": 10,
             },
         }
@@ -93,6 +94,7 @@ class Reflex:
 # ═══════════════════════════════════════
 # Reasoning — 深度推理层
 # ═══════════════════════════════════════
+
 
 class Reasoning:
     """深度推理层——复杂案件分析、多法综合、裁量建议"""
@@ -158,6 +160,7 @@ class Reasoning:
 # Subconscious — 后台监控层
 # ═══════════════════════════════════════
 
+
 class Subconscious:
     """后台监控层——持续运行，主动服务"""
 
@@ -212,10 +215,11 @@ class Subconscious:
             try:
                 sys.path.insert(0, str(ROOT))
                 import importlib.util
+
                 spec = importlib.util.spec_from_file_location("sw", str(ROOT / "_scripts" / "subconscious_watcher.py"))
                 mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(mod)
-                watcher = mod.StatuteWatcher(self._mt if hasattr(self, '_mt') else None)
+                watcher = mod.StatuteWatcher(self._mt if hasattr(self, "_mt") else None)
                 result = watcher.check_all()
                 logger.info(f"[Subconscious] 法规检查: {result['total_statutes']} 部, {result['alert_count']} 项告警")
             except Exception as e:
@@ -234,13 +238,17 @@ class Subconscious:
         return {
             "running": self._running,
             "cycles": self._cycle_count,
-            "tasks": {k: {"name": v["name"], "enabled": v["enabled"], "last_run": v["last_run"][:16] if v["last_run"] else "never"} for k, v in self._tasks.items()},
+            "tasks": {
+                k: {"name": v["name"], "enabled": v["enabled"], "last_run": v["last_run"][:16] if v["last_run"] else "never"}
+                for k, v in self._tasks.items()
+            },
         }
 
 
 # ═══════════════════════════════════════
 # SplitBrain — 三脑整合
 # ═══════════════════════════════════════
+
 
 class SplitBrain:
     """Split Brain 三重架构整合"""
@@ -284,6 +292,7 @@ class SplitBrain:
 
 # ===== 测试 =====
 
+
 def test():
     brain = SplitBrain()
 
@@ -295,7 +304,9 @@ def test():
     print(f"[Reflex] 帮助 -> {r2['layer']} ({r2['elapsed_ms']:.0f}ms)")
 
     # 测试 Reasoning
-    r3 = brain.process("某某企业超标排放大气污染物", {"category": "大气", "facts": "烧结机头排放口二氧化硫浓度150mg/m³超限值50mg/m³"})
+    r3 = brain.process(
+        "某某企业超标排放大气污染物", {"category": "大气", "facts": "烧结机头排放口二氧化硫浓度150mg/m³超限值50mg/m³"}
+    )
     print(f"[Reasoning] 复杂查询 -> {r3['layer']} ({r3['elapsed_ms']:.0f}ms)")
     print(f"  分析结果: {r3['response']['result']['summary']}")
 

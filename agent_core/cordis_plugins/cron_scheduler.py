@@ -52,5 +52,4 @@ def apply(ctx, config: dict | None = None) -> None:
     # 卸载回收：停止调度线程
     ctx.effect(lambda: scheduler.stop(), label="cron_scheduler.stop")
 
-    logger.info("[cron_scheduler] 通电: running=%s, 任务数=%d",
-                scheduler._running, len(scheduler.list_jobs()))  # noqa: SLF001
+    logger.info("[cron_scheduler] 通电: running=%s, 任务数=%d", scheduler._running, len(scheduler.list_jobs()))  # noqa: SLF001

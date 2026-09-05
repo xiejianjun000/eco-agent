@@ -34,23 +34,34 @@ SERVER_VERSION = "1.0.0"
 
 # 城市 → 101 代码表（湖南执法辖区优先，可扩展）
 CITY_CODES = {
-    "长沙": "101250101", "娄底": "101250801", "双峰": "101250802",
-    "冷水江": "101250803", "涟源": "101250804", "新化": "101250805",
-    "北京": "101010100", "广州": "101280101",
+    "长沙": "101250101",
+    "娄底": "101250801",
+    "双峰": "101250802",
+    "冷水江": "101250803",
+    "涟源": "101250804",
+    "新化": "101250805",
+    "北京": "101010100",
+    "广州": "101280101",
 }
 
 # 城市 → 经纬度（Open-Meteo 历史天气用）
 CITY_COORDS = {
-    "长沙": (28.20, 112.98), "娄底": (27.70, 111.99), "冷水江": (27.69, 111.44),
-    "双峰": (27.46, 112.19), "涟源": (27.69, 111.67), "新化": (27.73, 111.33),
-    "北京": (39.90, 116.41), "广州": (23.13, 113.26),
+    "长沙": (28.20, 112.98),
+    "娄底": (27.70, 111.99),
+    "冷水江": (27.69, 111.44),
+    "双峰": (27.46, 112.19),
+    "涟源": (27.69, 111.67),
+    "新化": (27.73, 111.33),
+    "北京": (39.90, 116.41),
+    "广州": (23.13, 113.26),
 }
 
 _BASE = "http://d1.weather.com.cn"
 _HEADERS = {
     "Referer": "http://www.weather.com.cn/",
-    "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                   "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
 }
 
 TOOLS = [
@@ -75,7 +86,7 @@ TOOLS = [
     {
         "name": "weather_history",
         "description": "查询城市历史天气（Open-Meteo 存档）：逐日最高/最低气温、降水量、最大风速。"
-                       "执法用途：案发当日气象条件佐证、重污染天气应急复盘。",
+        "执法用途：案发当日气象条件佐证、重污染天气应急复盘。",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -99,18 +110,32 @@ def _audit(tool: str, args: dict, result: str, duration_ms: int) -> None:
         from govmcp.crypto.audit import AuditChain
 
         chain = AuditChain()
-        chain.add_entry(operation=f"mcp_call:{tool}", operator="weather-mcp",
-                        input_data=json.dumps(args, ensure_ascii=False).encode("utf-8"),
-                        output_data=(str(result)[:300]).encode("utf-8"),
-                        approval_status="approved")
+        chain.add_entry(
+            operation=f"mcp_call:{tool}",
+            operator="weather-mcp",
+            input_data=json.dumps(args, ensure_ascii=False).encode("utf-8"),
+            output_data=(str(result)[:300]).encode("utf-8"),
+            approval_status="approved",
+        )
         audit_file = ROOT / "memory-tree" / "data" / "audit" / "weather_mcp_audit.jsonl"
         audit_file.parent.mkdir(parents=True, exist_ok=True)
         entry = chain.entries[-1]
         with audit_file.open("a", encoding="utf-8") as f:
-            f.write(json.dumps({"when": time.time(), "tool": tool, "args": args,
-                                "result_preview": str(result)[:200],
-                                "cost": f"{duration_ms}ms", "prev_hash": entry.prev_hash,
-                                "current_hash": entry.current_hash}, ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "when": time.time(),
+                        "tool": tool,
+                        "args": args,
+                        "result_preview": str(result)[:200],
+                        "cost": f"{duration_ms}ms",
+                        "prev_hash": entry.prev_hash,
+                        "current_hash": entry.current_hash,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
     except Exception:  # noqa: BLE001 — 审计失败不阻断数据服务
         pass
 
@@ -143,12 +168,18 @@ def _weather_now(city: str) -> dict:
                 result = {"error": "天气数据解析失败"}
             else:
                 result = {
-                    "city": data.get("cityname", city), "code": data.get("city", code),
-                    "temp_c": data.get("temp"), "humidity": data.get("SD"),
-                    "wind_dir": data.get("WD"), "wind_level": data.get("WS"),
-                    "visibility_km": data.get("njd"), "pressure_hpa": data.get("qy"),
-                    "rain_mm": data.get("rain"), "rain24h_mm": data.get("rain24h"),
-                    "aqi": data.get("aqi"), "aqi_pm25": data.get("aqi_pm25"),
+                    "city": data.get("cityname", city),
+                    "code": data.get("city", code),
+                    "temp_c": data.get("temp"),
+                    "humidity": data.get("SD"),
+                    "wind_dir": data.get("WD"),
+                    "wind_level": data.get("WS"),
+                    "visibility_km": data.get("njd"),
+                    "pressure_hpa": data.get("qy"),
+                    "rain_mm": data.get("rain"),
+                    "rain24h_mm": data.get("rain24h"),
+                    "aqi": data.get("aqi"),
+                    "aqi_pm25": data.get("aqi_pm25"),
                     "weather": data.get("weather"),
                     "updated": data.get("date", "") + " " + data.get("time", ""),
                 }
@@ -170,9 +201,14 @@ def _weather_forecast(city: str) -> dict:
             data = json.loads(m.group(1)) if m else {}
             info = data.get("weatherinfo", {})
             result = {
-                "city": info.get("city", city), "code": code,
-                "today": {"weather": info.get("weather"), "temp_high": info.get("temp"),
-                          "temp_low": info.get("tempn"), "wind": info.get("wd") + " " + info.get("ws", "")},
+                "city": info.get("city", city),
+                "code": code,
+                "today": {
+                    "weather": info.get("weather"),
+                    "temp_high": info.get("temp"),
+                    "temp_low": info.get("tempn"),
+                    "wind": info.get("wd") + " " + info.get("ws", ""),
+                },
                 "forecast_time": info.get("fctime", ""),
             }
         except Exception as e:  # noqa: BLE001
@@ -193,41 +229,54 @@ def _weather_history(city: str, start_date: str, end_date: str) -> dict:
     coords = CITY_COORDS.get(city.strip())
     if not coords:
         result = {"error": f"未知城市: {city}（内置城市见 weather_city_list）"}
-        _audit("weather_history", {"city": city, "start_date": start_date, "end_date": end_date},
-               result, int((time.monotonic() - t0) * 1000))
+        _audit(
+            "weather_history",
+            {"city": city, "start_date": start_date, "end_date": end_date},
+            result,
+            int((time.monotonic() - t0) * 1000),
+        )
         return result
     try:
         import urllib.parse
         import urllib.request
 
         lat, lon = coords
-        params = urllib.parse.urlencode({
-            "latitude": lat, "longitude": lon,
-            "start_date": start_date, "end_date": end_date,
-            "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max",
-            "timezone": "Asia/Shanghai",
-        })
+        params = urllib.parse.urlencode(
+            {
+                "latitude": lat,
+                "longitude": lon,
+                "start_date": start_date,
+                "end_date": end_date,
+                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max",
+                "timezone": "Asia/Shanghai",
+            }
+        )
         req = urllib.request.Request(
-            f"https://archive-api.open-meteo.com/v1/archive?{params}",
-            headers={"User-Agent": "eco-agent-weather-mcp/1.0"})
+            f"https://archive-api.open-meteo.com/v1/archive?{params}", headers={"User-Agent": "eco-agent-weather-mcp/1.0"}
+        )
         with urllib.request.urlopen(req, timeout=25) as resp:
             raw = json.loads(resp.read().decode("utf-8"))
         daily = raw.get("daily", {})
         days = []
         for i, date in enumerate(daily.get("time", [])):
-            days.append({
-                "date": date,
-                "temp_max_c": daily.get("temperature_2m_max", [None] * (i + 1))[i],
-                "temp_min_c": daily.get("temperature_2m_min", [None] * (i + 1))[i],
-                "precipitation_mm": daily.get("precipitation_sum", [None] * (i + 1))[i],
-                "wind_max_kmh": daily.get("wind_speed_10m_max", [None] * (i + 1))[i],
-            })
-        result = {"city": city, "lat": lat, "lon": lon,
-                  "source": "open-meteo-archive", "days": days}
+            days.append(
+                {
+                    "date": date,
+                    "temp_max_c": daily.get("temperature_2m_max", [None] * (i + 1))[i],
+                    "temp_min_c": daily.get("temperature_2m_min", [None] * (i + 1))[i],
+                    "precipitation_mm": daily.get("precipitation_sum", [None] * (i + 1))[i],
+                    "wind_max_kmh": daily.get("wind_speed_10m_max", [None] * (i + 1))[i],
+                }
+            )
+        result = {"city": city, "lat": lat, "lon": lon, "source": "open-meteo-archive", "days": days}
     except Exception as e:  # noqa: BLE001
         result = {"error": f"历史天气获取失败: {e}", "city": city}
-    _audit("weather_history", {"city": city, "start_date": start_date, "end_date": end_date},
-           result, int((time.monotonic() - t0) * 1000))
+    _audit(
+        "weather_history",
+        {"city": city, "start_date": start_date, "end_date": end_date},
+        result,
+        int((time.monotonic() - t0) * 1000),
+    )
     return result
 
 
@@ -240,12 +289,19 @@ def handle_request(request: dict) -> dict:
     params = request.get("params", {})
 
     if method == "initialize":
-        return {"jsonrpc": "2.0", "id": req_id, "result": {
-            "protocolVersion": params.get("protocolVersion", "2024-11-05"),
-            "capabilities": {"tools": {}},
-            "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION,
-                           "title": "气象 govMCP（中国天气网公开数据，SM3 审计）"},
-        }}
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": params.get("protocolVersion", "2024-11-05"),
+                "capabilities": {"tools": {}},
+                "serverInfo": {
+                    "name": SERVER_NAME,
+                    "version": SERVER_VERSION,
+                    "title": "气象 govMCP（中国天气网公开数据，SM3 审计）",
+                },
+            },
+        }
     if method in ("tools/list", "mcp.list_tools"):
         return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": TOOLS}}
     if method in ("tools/call", "mcp.call_tool"):
@@ -255,22 +311,22 @@ def handle_request(request: dict) -> dict:
         elif name == "weather_forecast":
             data = _weather_forecast(str(args.get("city", "")))
         elif name == "weather_history":
-            data = _weather_history(str(args.get("city", "")),
-                                    str(args.get("start_date", "")),
-                                    str(args.get("end_date", "")))
+            data = _weather_history(str(args.get("city", "")), str(args.get("start_date", "")), str(args.get("end_date", "")))
         elif name == "weather_city_list":
             data = _city_list()
         else:
             data = {"error": f"未知工具: {name}"}
-        return {"jsonrpc": "2.0", "id": req_id, "result": {
-            "content": [{"type": "text", "text": json.dumps(data, ensure_ascii=False)}],
-            "isError": "error" in data,
-        }}
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "content": [{"type": "text", "text": json.dumps(data, ensure_ascii=False)}],
+                "isError": "error" in data,
+            },
+        }
     if method in ("ping", "mcp.ping"):
-        return {"jsonrpc": "2.0", "id": req_id,
-                "result": {"status": "ok", "timestamp": datetime.now().isoformat()}}
-    return {"jsonrpc": "2.0", "id": req_id,
-            "error": {"code": -32601, "message": f"Method '{method}' not found"}}
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"status": "ok", "timestamp": datetime.now().isoformat()}}
+    return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Method '{method}' not found"}}
 
 
 def main() -> int:
@@ -286,10 +342,19 @@ def main() -> int:
             print(json.dumps(_weather_forecast(c), ensure_ascii=False, indent=2))
         return 0
 
-    sys.stderr.write(json.dumps({
-        "event": "mcp.startup", "server_name": SERVER_NAME,
-        "version": SERVER_VERSION, "tools_count": len(TOOLS),
-        "audit": "govmcp SM3 链（等保）"}, ensure_ascii=False) + "\n")
+    sys.stderr.write(
+        json.dumps(
+            {
+                "event": "mcp.startup",
+                "server_name": SERVER_NAME,
+                "version": SERVER_VERSION,
+                "tools_count": len(TOOLS),
+                "audit": "govmcp SM3 链（等保）",
+            },
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
     sys.stderr.flush()
 
     for line in sys.stdin:
@@ -299,8 +364,9 @@ def main() -> int:
         try:
             request = json.loads(line)
         except json.JSONDecodeError:
-            sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": None,
-                                         "error": {"code": -32700, "message": "Parse error"}}) + "\n")
+            sys.stdout.write(
+                json.dumps({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}}) + "\n"
+            )
             sys.stdout.flush()
             continue
         if "id" not in request:

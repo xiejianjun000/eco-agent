@@ -25,7 +25,8 @@ from benchmarks.ecobench.run_ecobench import (  # noqa: E402
 )
 
 ITEM = {
-    "id": "EB01", "category": "法条引用",
+    "id": "EB01",
+    "category": "法条引用",
     "question": "企业向大气超标排放污染物，应依据哪条查处？",
     "required_citations": ["《大气污染防治法》第九十九条"],
     "key_points": ["大气污染防治法", "第九十九条", "超标排放"],
@@ -53,7 +54,7 @@ def test_score_item_arabic_answer_hits_hanzi_gold():
     """答案用阿拉伯数字条款号，金标准用汉字数字：归一化后必须命中"""
     sc = score_item("应依据《大气污染防治法》第99条，超标排放责令改正。", ITEM)
     assert sc["citation_hit"] == 1.0
-    assert sc["citation_hit_raw"] == 0.0   # 归一化前不命中，形成对照
+    assert sc["citation_hit_raw"] == 0.0  # 归一化前不命中，形成对照
     assert sc["keypoint_f1"] > sc["keypoint_f1_raw"]
 
 
@@ -80,5 +81,4 @@ def test_score_item_wrong_article_number_not_overcredited():
 def test_extract_law_names_and_articles():
     assert extract_law_names(ITEM) == ["大气污染防治法"]
     assert extract_article_nums(ITEM) == [99]
-    assert extract_law_names({"required_citations": [], "question": "噪声扰民如何处罚？"}) \
-        == ["噪声污染防治法"]
+    assert extract_law_names({"required_citations": [], "question": "噪声扰民如何处罚？"}) == ["噪声污染防治法"]

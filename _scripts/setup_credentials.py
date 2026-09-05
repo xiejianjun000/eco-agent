@@ -128,13 +128,20 @@ def _set_github_token(env_path: Path, token: str) -> None:
             s.setdefault("env", {})["GITHUB_PERSONAL_ACCESS_TOKEN"] = token
             break
     else:
-        servers.append({"name": "github", "transport": "stdio",
-                        "command": ["node", "github-server-dist"], "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": token}})
+        servers.append(
+            {
+                "name": "github",
+                "transport": "stdio",
+                "command": ["node", "github-server-dist"],
+                "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": token},
+            }
+        )
     _save_servers(env_path, servers, idx, lines)
 
 
 def _set_tdocs_token(env_path: Path, token: str) -> None:
     from _scripts.setup_tencent_docs import set_token as tdocs_set  # noqa: E402 本地脚本复用
+
     tdocs_set(env_path, token)
 
 
@@ -169,9 +176,11 @@ def check(env_path: Path) -> dict:
         ("腾讯文档 Token", td_token(), "tencent_docs MCP Authorization"),
     ]
     missing = [f"({i + 1}) {name}" for i, (name, ok, _) in enumerate(rows) if not ok]
-    return {"rows": [{"name": n, "ok": o, "loc": l} for n, o, l in rows],
-            "missing": missing,
-            "summary": f"配置完整度 {sum(1 for _, o, _ in rows if o)}/{len(rows)}"}
+    return {
+        "rows": [{"name": n, "ok": o, "loc": line} for n, o, line in rows],
+        "missing": missing,
+        "summary": f"配置完整度 {sum(1 for _, o, _ in rows if o)}/{len(rows)}",
+    }
 
 
 def run_interactive(env_path: Path, item: str | None = None) -> None:
@@ -186,8 +195,10 @@ def run_interactive(env_path: Path, item: str | None = None) -> None:
         except (EOFError, KeyboardInterrupt):
             # 无交互终端（管道/代理执行环境）：getpass 无法安全读取密码，
             # 直接退出并提示——凭证必须在本机真实终端里输入（不回显机制依赖终端）
-            print("\n[提示] 本命令需要在**你自己的终端窗口**里运行（密码/Token 输入需要"
-                  "真实终端的不回显机制，且凭证不应经过聊天/管道传递）。")
+            print(
+                "\n[提示] 本命令需要在**你自己的终端窗口**里运行（密码/Token 输入需要"
+                "真实终端的不回显机制，且凭证不应经过聊天/管道传递）。"
+            )
             return
         item = None
         if choice == "q":

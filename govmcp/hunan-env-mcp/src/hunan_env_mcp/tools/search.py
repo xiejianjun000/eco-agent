@@ -1,4 +1,5 @@
 """站群全文检索工具（湖南政府统一搜索平台，站点 ID 115000000）。"""
+
 from __future__ import annotations
 
 from urllib.parse import urljoin

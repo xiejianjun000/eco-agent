@@ -7,6 +7,7 @@
 - 主动发消息：应用 message/send API（需 access_token，带缓存）
 - 出站扩展：文本卡片 / 图文消息 / OA 审批申请（oa/applyevent）
 """
+
 from __future__ import annotations
 
 import base64
@@ -15,12 +16,10 @@ import os
 import struct
 import time
 import xml.etree.ElementTree as ET
-from typing import Optional
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .base import (BLOCK_TEXT, Channel, InboundMessage, body_bytes, body_json,
-                   http_get_json, http_post_json)
+from .base import BLOCK_TEXT, Channel, InboundMessage, body_bytes, body_json, http_get_json, http_post_json
 
 SEND_URL = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={token}"
 TOKEN_URL = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={cid}&corpsecret={secret}"
@@ -49,13 +48,12 @@ class WeComCrypto:
         pad = plain[-1]
         plain = plain[:-pad]
         msg_len = struct.unpack("!I", plain[16:20])[0]
-        msg = plain[20:20 + msg_len].decode("utf-8")
-        receiveid = plain[20 + msg_len:].decode("utf-8")
+        msg = plain[20 : 20 + msg_len].decode("utf-8")
+        receiveid = plain[20 + msg_len :].decode("utf-8")
         return msg, receiveid
 
     def encrypt(self, msg: str, receiveid: str) -> str:
-        plain = os.urandom(16) + struct.pack("!I", len(msg.encode("utf-8"))) \
-            + msg.encode("utf-8") + receiveid.encode("utf-8")
+        plain = os.urandom(16) + struct.pack("!I", len(msg.encode("utf-8"))) + msg.encode("utf-8") + receiveid.encode("utf-8")
         pad = 32 - len(plain) % 32
         plain += bytes([pad]) * pad
         cipher = Cipher(algorithms.AES(self.key), modes.CBC(self.iv))
@@ -74,15 +72,13 @@ def _xml_get(xml_text: str, tag: str) -> str:
 
 class WeComChannel(Channel):
     name = "wecom"
-    env_keys = ("WECOM_TOKEN", "WECOM_ENCODING_AES_KEY", "WECOM_CORP_ID",
-                "WECOM_AGENT_ID", "WECOM_SECRET")
+    env_keys = ("WECOM_TOKEN", "WECOM_ENCODING_AES_KEY", "WECOM_CORP_ID", "WECOM_AGENT_ID", "WECOM_SECRET")
 
     def _token(self) -> str:
         return self.config.get("token") or os.environ.get("WECOM_TOKEN", "")
 
     def _crypto(self) -> WeComCrypto:
-        key = self.config.get("encoding_aes_key") \
-            or os.environ.get("WECOM_ENCODING_AES_KEY", "")
+        key = self.config.get("encoding_aes_key") or os.environ.get("WECOM_ENCODING_AES_KEY", "")
         return WeComCrypto(key)
 
     def verify(self, request: dict) -> bool:
@@ -109,8 +105,7 @@ class WeComChannel(Channel):
                 plain, _rid = self._crypto().decrypt(request["args"]["echostr"])
             except Exception:
                 return None
-            return InboundMessage(channel=self.name, user_id="", text=plain,
-                                  extras={"type": "url_verify"})
+            return InboundMessage(channel=self.name, user_id="", text=plain, extras={"type": "url_verify"})
         xml_text = _xml_get(body_bytes(request).decode("utf-8", "ignore"), "Encrypt")
         if not xml_text:
             return None
@@ -155,22 +150,26 @@ class WeComChannel(Channel):
 
     def reply(self, user_id: str, text: str, **kw) -> bool:
         token = kw.get("access_token") or self.get_access_token()
-        payload = {"touser": user_id, "msgtype": "text",
-                   "agentid": self._agent_id(), "text": {"content": text}}
+        payload = {"touser": user_id, "msgtype": "text", "agentid": self._agent_id(), "text": {"content": text}}
         resp = http_post_json(SEND_URL.format(token=token), payload)
         return resp.get("errcode") == 0
 
-    def send_text_card(self, user_id: str, title: str, description: str,
-                       url: str = "") -> bool:
+    def send_text_card(self, user_id: str, title: str, description: str, url: str = "") -> bool:
         """发送文本卡片消息。"""
         token = self.get_access_token()
         if not token:
             return False
-        payload = {"touser": user_id, "msgtype": "textcard",
-                   "agentid": self._agent_id(),
-                   "textcard": {"title": title, "description": description,
-                                "url": url or "https://work.weixin.qq.com",
-                                "btntxt": "查看详情"}}
+        payload = {
+            "touser": user_id,
+            "msgtype": "textcard",
+            "agentid": self._agent_id(),
+            "textcard": {
+                "title": title,
+                "description": description,
+                "url": url or "https://work.weixin.qq.com",
+                "btntxt": "查看详情",
+            },
+        }
         resp = http_post_json(SEND_URL.format(token=token), payload)
         return resp.get("errcode") == 0
 
@@ -179,23 +178,22 @@ class WeComChannel(Channel):
         token = self.get_access_token()
         if not token:
             return False
-        payload = {"touser": user_id, "msgtype": "news",
-                   "agentid": self._agent_id(),
-                   "news": {"articles": articles}}
+        payload = {"touser": user_id, "msgtype": "news", "agentid": self._agent_id(), "news": {"articles": articles}}
         resp = http_post_json(SEND_URL.format(token=token), payload)
         return resp.get("errcode") == 0
 
-    def create_approval(self, creator_id: str, approver_id: list[str],
-                        template_id: str, details: dict) -> str | None:
+    def create_approval(self, creator_id: str, approver_id: list[str], template_id: str, details: dict) -> str | None:
         """创建 OA 审批申请，成功返回审批实例 ID（sp_no）。"""
         token = self.get_access_token()
         if not token:
             return None
-        payload = {"creator_userid": creator_id,
-                   "template_id": template_id,
-                   "use_template_approver": 0,
-                   "approver": [{"attr": 0, "userid": approver_id}],
-                   "apply_data": details}
+        payload = {
+            "creator_userid": creator_id,
+            "template_id": template_id,
+            "use_template_approver": 0,
+            "approver": [{"attr": 0, "userid": approver_id}],
+            "apply_data": details,
+        }
         resp = http_post_json(APPROVAL_URL.format(token=token), payload)
         if resp.get("errcode") == 0:
             return resp.get("sp_no", "")

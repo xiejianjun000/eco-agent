@@ -35,15 +35,16 @@ def _gen_pptx(slides: list, title: str = "未命名", filename: str = "") -> str
     safe_name = (filename or title).replace("/", "_").replace(" ", "_")[:40]
     path = out_dir / f"{safe_name}.pptx"
     path.write_bytes(data)
-    return json.dumps({"ok": True, "path": str(path), "bytes": len(data),
-                       "slides": len(slides)}, ensure_ascii=False)
+    return json.dumps({"ok": True, "path": str(path), "bytes": len(data), "slides": len(slides)}, ensure_ascii=False)
 
 
 def load(ctx):
     ctx.register_tool(
-        "generate_pptx", _gen_pptx,
+        "generate_pptx",
+        _gen_pptx,
         description="生成 PowerPoint 演示文稿（.pptx 真实文件）——输入每页标题与要点",
-        risk_level="L2")
+        risk_level="L2",
+    )
 
     # 注册进 LLM 可见工具表
     from agent_core.tools_registry import register_external_tool

@@ -7,6 +7,7 @@
 - tenant_access_token 获取（带缓存）与发消息（im/v1/messages）
 - 出站扩展：send_card 审批交互卡片（actions 含 approve/reject 回调 value）
 """
+
 from __future__ import annotations
 
 import base64
@@ -14,7 +15,6 @@ import hashlib
 import json
 import os
 import time
-from typing import Optional
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -42,12 +42,10 @@ class FeishuCrypto:
 
 class FeishuChannel(Channel):
     name = "feishu"
-    env_keys = ("FEISHU_APP_ID", "FEISHU_APP_SECRET", "FEISHU_ENCRYPT_KEY",
-                "FEISHU_VERIFICATION_TOKEN")
+    env_keys = ("FEISHU_APP_ID", "FEISHU_APP_SECRET", "FEISHU_ENCRYPT_KEY", "FEISHU_VERIFICATION_TOKEN")
 
     def _verification_token(self) -> str:
-        return self.config.get("verification_token") \
-            or os.environ.get("FEISHU_VERIFICATION_TOKEN", "")
+        return self.config.get("verification_token") or os.environ.get("FEISHU_VERIFICATION_TOKEN", "")
 
     def _decrypt_body(self, request: dict) -> dict:
         """若 body 为加密格式 {"encrypt": ...}，先解密。"""
@@ -74,9 +72,12 @@ class FeishuChannel(Channel):
             return None
         if data.get("type") == "url_verification":
             # challenge 应答：registry.handle_inbound 读取 extras["challenge"] 直接回包
-            return InboundMessage(channel=self.name, user_id="", text="",
-                                  extras={"type": "url_verification",
-                                          "challenge": data.get("challenge", "")})
+            return InboundMessage(
+                channel=self.name,
+                user_id="",
+                text="",
+                extras={"type": "url_verification", "challenge": data.get("challenge", "")},
+            )
         header = data.get("header") or {}
         event = data.get("event") or {}
         message = event.get("message") or {}
@@ -94,8 +95,7 @@ class FeishuChannel(Channel):
             user_id=sender.get("open_id", ""),
             text=text,
             msg_id=message.get("message_id", ""),
-            extras={"event_id": header.get("event_id", ""),
-                    "chat_id": message.get("chat_id", "")},
+            extras={"event_id": header.get("event_id", ""), "chat_id": message.get("chat_id", "")},
         )
 
     def __init__(self, config: dict | None = None):
@@ -108,28 +108,33 @@ class FeishuChannel(Channel):
         token, expires_at = self._token_cache
         if token and time.time() < expires_at - 60:
             return token
-        resp = http_post_json(TOKEN_URL, {
-            "app_id": self.config.get("app_id") or os.environ.get("FEISHU_APP_ID", ""),
-            "app_secret": self.config.get("app_secret")
-                          or os.environ.get("FEISHU_APP_SECRET", ""),
-        })
+        resp = http_post_json(
+            TOKEN_URL,
+            {
+                "app_id": self.config.get("app_id") or os.environ.get("FEISHU_APP_ID", ""),
+                "app_secret": self.config.get("app_secret") or os.environ.get("FEISHU_APP_SECRET", ""),
+            },
+        )
         token = resp.get("tenant_access_token", "")
         if token:
             self._token_cache = (token, time.time() + resp.get("expire", 7200))
         return token
 
     def reply(self, user_id: str, text: str, **kw) -> bool:
-        token = kw.get("tenant_access_token") or self.config.get("tenant_access_token") \
-            or self.get_tenant_access_token()
-        payload = {"receive_id": user_id, "msg_type": "text",
-                   "content": json.dumps({"text": text}, ensure_ascii=False)}
-        resp = http_post_json(SEND_URL, payload,
-                              headers={"Authorization": f"Bearer {token}"})
+        token = kw.get("tenant_access_token") or self.config.get("tenant_access_token") or self.get_tenant_access_token()
+        payload = {"receive_id": user_id, "msg_type": "text", "content": json.dumps({"text": text}, ensure_ascii=False)}
+        resp = http_post_json(SEND_URL, payload, headers={"Authorization": f"Bearer {token}"})
         return resp.get("code") == 0
 
-    def send_card(self, receive_id: str, title: str, content: str,
-                  approve_callback: str = "", reject_callback: str = "",
-                  id_type: str = "open_id") -> bool:
+    def send_card(
+        self,
+        receive_id: str,
+        title: str,
+        content: str,
+        approve_callback: str = "",
+        reject_callback: str = "",
+        id_type: str = "open_id",
+    ) -> bool:
         """发送交互卡片（审批场景：可带批准/拒绝回调按钮）。"""
         card: dict = {
             "config": {"wide_screen_mode": True},
@@ -140,27 +145,29 @@ class FeishuChannel(Channel):
             "elements": [{"tag": "markdown", "content": content}],
         }
         if approve_callback and reject_callback:
-            card["elements"].append({
-                "tag": "action",
-                "actions": [
-                    {"tag": "button",
-                     "text": {"tag": "plain_text", "content": "✅ 批准"},
-                     "type": "primary",
-                     "value": {"action": "approve", "callback": approve_callback}},
-                    {"tag": "button",
-                     "text": {"tag": "plain_text", "content": "❌ 拒绝"},
-                     "type": "danger",
-                     "value": {"action": "reject", "callback": reject_callback}},
-                ],
-            })
-        token = self.config.get("tenant_access_token") \
-            or self.get_tenant_access_token()
+            card["elements"].append(
+                {
+                    "tag": "action",
+                    "actions": [
+                        {
+                            "tag": "button",
+                            "text": {"tag": "plain_text", "content": "✅ 批准"},
+                            "type": "primary",
+                            "value": {"action": "approve", "callback": approve_callback},
+                        },
+                        {
+                            "tag": "button",
+                            "text": {"tag": "plain_text", "content": "❌ 拒绝"},
+                            "type": "danger",
+                            "value": {"action": "reject", "callback": reject_callback},
+                        },
+                    ],
+                }
+            )
+        token = self.config.get("tenant_access_token") or self.get_tenant_access_token()
         if not token:
             return False
-        url = ("https://open.feishu.cn/open-apis/im/v1/messages"
-               f"?receive_id_type={id_type}")
-        payload = {"receive_id": receive_id, "msg_type": "interactive",
-                   "content": json.dumps(card, ensure_ascii=False)}
-        resp = http_post_json(url, payload,
-                              headers={"Authorization": f"Bearer {token}"})
+        url = f"https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type={id_type}"
+        payload = {"receive_id": receive_id, "msg_type": "interactive", "content": json.dumps(card, ensure_ascii=False)}
+        resp = http_post_json(url, payload, headers={"Authorization": f"Bearer {token}"})
         return resp.get("code") == 0

@@ -31,8 +31,10 @@ _SCHEMAS = {
         "type": "object",
         "properties": {
             "node_id": {"type": "string"},
-            "title": {"type": "string"}, "content": {"type": "string"},
-            "score": {"type": "number"}, "tags": {"type": "array", "items": {"type": "string"}},
+            "title": {"type": "string"},
+            "content": {"type": "string"},
+            "score": {"type": "number"},
+            "tags": {"type": "array", "items": {"type": "string"}},
             "parent_id": {"type": "string"},
         },
         "required": ["node_id"],
@@ -46,7 +48,8 @@ _SCHEMAS = {
         "type": "object",
         "properties": {
             "query": {"type": "string"},
-            "type": {"type": "string"}, "limit": {"type": "integer"},
+            "type": {"type": "string"},
+            "limit": {"type": "integer"},
         },
         "required": ["query"],
     },
@@ -58,7 +61,8 @@ _SCHEMAS = {
     "eco_memory_prune": {
         "type": "object",
         "properties": {
-            "min_score": {"type": "number"}, "max_age_days": {"type": "integer"},
+            "min_score": {"type": "number"},
+            "max_age_days": {"type": "integer"},
             "dry_run": {"type": "boolean"},
         },
         "required": [],
@@ -87,20 +91,26 @@ _DESC = {
 }
 
 _LEVEL = {
-    "eco_memory_add": "L2", "eco_memory_update": "L2", "eco_memory_delete": "L2",
-    "eco_memory_search": "L1", "eco_memory_stats": "L1", "eco_memory_prune": "L2",
-    "eco_memory_sync": "L2", "eco_policy_reload": "L1",
+    "eco_memory_add": "L2",
+    "eco_memory_update": "L2",
+    "eco_memory_delete": "L2",
+    "eco_memory_search": "L1",
+    "eco_memory_stats": "L1",
+    "eco_memory_prune": "L2",
+    "eco_memory_sync": "L2",
+    "eco_policy_reload": "L1",
 }
 
 
 def apply(ctx, config: dict | None = None) -> None:
     """组合装配入口：注册记忆树/策略热更新工具 handler（幂等）+ 提供 memory_tree 服务。"""
-    from agent_core.tools_registry import register_external_tool, _HANDLERS
     from agent_core.memory_tools import dispatch_memory_tool
+    from agent_core.tools_registry import _HANDLERS, register_external_tool
 
     # 记忆树注册为 cordis 可选服务：权限闸门等通过 ctx.get('memory_tree') 读取，未加载静默降级
     try:
         from _scripts.memory_tree import MemoryTree
+
         ctx.provide("memory_tree", MemoryTree())
     except Exception as e:  # noqa: BLE001 — 记忆树服务可选
         logger.debug("[memory_tools] memory_tree 服务提供失败: %s", e)
@@ -111,11 +121,14 @@ def apply(ctx, config: dict | None = None) -> None:
             continue  # 幂等跳过
         try:
             register_external_tool(
-                name, _DESC[name], schema,
-                (lambda n: (lambda **kw: dispatch_memory_tool(n, kw)))(name),
-                risk_level=_LEVEL[name], source="memory_tree")
+                name,
+                _DESC[name],
+                schema,
+                (lambda n: lambda **kw: dispatch_memory_tool(n, kw))(name),
+                risk_level=_LEVEL[name],
+                source="memory_tree",
+            )
             registered.append(name)
         except Exception as e:  # noqa: BLE001 — 幂等注册
             logger.debug("[memory_tools] %s 注册跳过: %s", name, e)
-    logger.info("[memory_tools] 组合装配注册 %d 个记忆/策略工具: %s",
-                len(registered), registered)
+    logger.info("[memory_tools] 组合装配注册 %d 个记忆/策略工具: %s", len(registered), registered)

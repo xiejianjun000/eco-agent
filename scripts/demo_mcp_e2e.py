@@ -32,8 +32,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from agent_core.llm_client import get_default_client
-from agent_core.mcp_connector import MCPConnectorManager, MCPServerConfig
+from agent_core.llm_client import get_default_client  # noqa: E402
+from agent_core.mcp_connector import MCPConnectorManager, MCPServerConfig  # noqa: E402
 
 QUESTION = "娄底今天空气怎么样？砖厂巡查要注意什么？"
 
@@ -80,8 +80,7 @@ class CallChain:
         }
         self.steps.append(entry)
         mark = "✓" if entry["success"] else "✗"
-        print(f"  [{step}] {mark} MCP:{server} → {tool} "
-              f"({entry['elapsed_ms']}ms)")
+        print(f"  [{step}] {mark} MCP:{server} → {tool} ({entry['elapsed_ms']}ms)")
         text = result.get("text") or result.get("error", "")
         summary = " ".join(str(text).split())[:160]
         print(f"       摘要: {summary}")
@@ -92,8 +91,7 @@ class CallChain:
         for i, s in enumerate(self.steps, 1):
             ms = s["elapsed_ms"] if isinstance(s["elapsed_ms"], int) else 0
             total += ms
-            print(f"  {i}. [{s['step']}] {s['server']}.{s['tool']} "
-                  f"— {'成功' if s['success'] else '失败'} {s['elapsed_ms']}ms")
+            print(f"  {i}. [{s['step']}] {s['server']}.{s['tool']} — {'成功' if s['success'] else '失败'} {s['elapsed_ms']}ms")
         print(f"  MCP 调用总耗时: {total}ms")
 
 
@@ -103,9 +101,7 @@ def llm_plan(available_tools: list[dict]) -> list[dict] | None:
     if not llm.available():
         print("  [L1] LLM 不可用，降级为固定流程顺序调用")
         return None
-    tools_desc = "\n".join(
-        f"- {t['server']}.{t['name']}: {t['description']}" for t in available_tools
-    )
+    tools_desc = "\n".join(f"- {t['server']}.{t['name']}: {t['description']}" for t in available_tools)
     prompt = (
         f"你是生态环境执法智能体的规划模块。用户问题：「{QUESTION}」\n"
         f"可用 MCP 工具：\n{tools_desc}\n"
@@ -121,10 +117,9 @@ def llm_plan(available_tools: list[dict]) -> list[dict] | None:
         return None
     try:
         start = text.index("[")
-        plan = json.loads(text[start:text.rindex("]") + 1])
+        plan = json.loads(text[start : text.rindex("]") + 1])
         assert isinstance(plan, list) and plan
-        print(f"  [L1] Kimi 规划 {len(plan)} 步: "
-              + ", ".join(f"{p.get('server')}.{p.get('tool')}" for p in plan))
+        print(f"  [L1] Kimi 规划 {len(plan)} 步: " + ", ".join(f"{p.get('server')}.{p.get('tool')}" for p in plan))
         return plan
     except Exception as e:
         print(f"  [L1] LLM 计划解析失败({e})，降级为固定流程顺序调用")
@@ -133,12 +128,9 @@ def llm_plan(available_tools: list[dict]) -> list[dict] | None:
 
 def fixed_plan() -> list[dict]:
     return [
-        {"server": "govmcp", "tool": "query_air_quality",
-         "arguments": {"region": "娄底"}},
-        {"server": "ehs_kb", "tool": "kb_search",
-         "arguments": {"query": "砖瓦工业", "limit": 5}},
-        {"server": "ehs_kb", "tool": "kb_search",
-         "arguments": {"query": "现场检查", "limit": 5}},
+        {"server": "govmcp", "tool": "query_air_quality", "arguments": {"region": "娄底"}},
+        {"server": "ehs_kb", "tool": "kb_search", "arguments": {"query": "砖瓦工业", "limit": 5}},
+        {"server": "ehs_kb", "tool": "kb_search", "arguments": {"query": "现场检查", "limit": 5}},
     ]
 
 
@@ -187,8 +179,7 @@ def main() -> int:
         status = mgr.connect_all()
         for name, ok in status.items():
             tools = [t["name"] for t in mgr.list_tools(name)]
-            print(f"  {'✓' if ok else '✗'} {name}: "
-                  f"{'已连接，工具: ' + ', '.join(tools) if ok else '连接失败（降级）'}")
+            print(f"  {'✓' if ok else '✗'} {name}: {'已连接，工具: ' + ', '.join(tools) if ok else '连接失败（降级）'}")
         print(f"  连接耗时: {int((time.time() - t0) * 1000)}ms\n")
         if not any(status.values()):
             print("所有 MCP server 均不可用，demo 终止（Agent 仍可跑规则模式）")

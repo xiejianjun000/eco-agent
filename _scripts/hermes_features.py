@@ -12,12 +12,12 @@ hermes_features.py — ECO AGENT Hermes 对标补全
 """
 
 import json
-import time
 import logging
-import threading
 import sqlite3
-from pathlib import Path
+import threading
+import time
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("hermes")
 
@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # ═══════════════════════════════════════
 # 1. MoA (Mixture of Agents)
 # ═══════════════════════════════════════
+
 
 class MoA:
     """多模型聚合——4 模型并发调用 + 聚合器裁决"""
@@ -71,6 +72,7 @@ class MoA:
 # ═══════════════════════════════════════
 # 2. PromptCache — 3 层系统提示词
 # ═══════════════════════════════════════
+
 
 class PromptCache:
     """三层次提示词缓存——Stable/Context/Volatile"""
@@ -120,14 +122,19 @@ class PromptCache:
 
     def get_stats(self) -> dict:
         total = self._hits + self._misses
-        return {"cached_items": len(self._cache), "hits": self._hits, "misses": self._misses,
-                "hit_rate": f"{self._hits / max(total, 1) * 100:.0f}%",
-                "by_tier": {t: sum(1 for e in self._cache.values() if e["tier"] == t) for t in self.TIERS}}
+        return {
+            "cached_items": len(self._cache),
+            "hits": self._hits,
+            "misses": self._misses,
+            "hit_rate": f"{self._hits / max(total, 1) * 100:.0f}%",
+            "by_tier": {t: sum(1 for e in self._cache.values() if e["tier"] == t) for t in self.TIERS},
+        }
 
 
 # ═══════════════════════════════════════
 # 3. Kaban — 跨进程编排
 # ═══════════════════════════════════════
+
 
 class Kaban:
     """看板编排——跨进程任务协调 + SQLite 持久化"""
@@ -172,14 +179,24 @@ class Kaban:
         wf_id = f"wf_{int(time.time())}_{hash(name) % 10000:04d}"
         now = datetime.now().isoformat()
         with sqlite3.connect(self._db_path) as conn:
-            conn.execute("INSERT INTO workflows (id, name, status, created_at, total_tasks) VALUES (?,?,?,?,?)",
-                        (wf_id, name, "active", now, len(tasks)))
+            conn.execute(
+                "INSERT INTO workflows (id, name, status, created_at, total_tasks) VALUES (?,?,?,?,?)",
+                (wf_id, name, "active", now, len(tasks)),
+            )
             for t in tasks:
                 tid = f"{wf_id}_{t.get('name', 'task')}"
-                conn.execute("INSERT INTO tasks (id, workflow, status, agent, input, created_at, depends_on) VALUES (?,?,?,?,?,?,?)",
-                            (tid, wf_id, t.get("status", "pending"), t.get("agent", ""),
-                             json.dumps(t.get("input", {}), ensure_ascii=False), now,
-                             json.dumps(t.get("depends_on", []))))
+                conn.execute(
+                    "INSERT INTO tasks (id, workflow, status, agent, input, created_at, depends_on) VALUES (?,?,?,?,?,?,?)",
+                    (
+                        tid,
+                        wf_id,
+                        t.get("status", "pending"),
+                        t.get("agent", ""),
+                        json.dumps(t.get("input", {}), ensure_ascii=False),
+                        now,
+                        json.dumps(t.get("depends_on", [])),
+                    ),
+                )
         logger.info(f"[Kaban] 创建工作流: {wf_id} ({name}, {len(tasks)} 任务)")
         return wf_id
 
@@ -188,7 +205,9 @@ class Kaban:
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
             if agent_name:
-                rows = conn.execute("SELECT * FROM tasks WHERE status='pending' AND agent=? ORDER BY created_at LIMIT 1", (agent_name,)).fetchall()
+                rows = conn.execute(
+                    "SELECT * FROM tasks WHERE status='pending' AND agent=? ORDER BY created_at LIMIT 1", (agent_name,)
+                ).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM tasks WHERE status='pending' ORDER BY created_at LIMIT 1").fetchall()
             if rows:
@@ -211,8 +230,11 @@ class Kaban:
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
             wf = conn.execute("SELECT * FROM workflows WHERE id=?", (wf_id,)).fetchone()
-            if not wf: return None
-            tasks = conn.execute("SELECT status, COUNT(*) as cnt FROM tasks WHERE workflow=? GROUP BY status", (wf_id,)).fetchall()
+            if not wf:
+                return None
+            tasks = conn.execute(
+                "SELECT status, COUNT(*) as cnt FROM tasks WHERE workflow=? GROUP BY status", (wf_id,)
+            ).fetchall()
             return dict(wf) | {"tasks": {r["status"]: r["cnt"] for r in tasks}}
 
     def get_stats(self) -> dict:
@@ -232,6 +254,7 @@ kaban = Kaban()
 
 # ===== 测试 =====
 
+
 def test():
     print("[TEST] Hermes 三项能力验证")
 
@@ -250,18 +273,21 @@ def test():
 
     # 3. Kaban
     k = Kaban()
-    wf_id = k.create_workflow("执法问答", [
-        {"name": "检索法规", "agent": "searcher", "input": {"query": "大气污染防治法"}},
-        {"name": "审查条款", "agent": "reviewer", "input": {}, "depends_on": ["检索法规"]},
-        {"name": "生成回答", "agent": "writer", "input": {}, "depends_on": ["审查条款"]},
-    ])
+    wf_id = k.create_workflow(
+        "执法问答",
+        [
+            {"name": "检索法规", "agent": "searcher", "input": {"query": "大气污染防治法"}},
+            {"name": "审查条款", "agent": "reviewer", "input": {}, "depends_on": ["检索法规"]},
+            {"name": "生成回答", "agent": "writer", "input": {}, "depends_on": ["审查条款"]},
+        ],
+    )
     next_task = k.get_next_task()
     print(f"[Kaban] 工作流: {wf_id}, 下一个任务: {next_task['id'] if next_task else '无'}")
     k.complete_task(next_task["id"], "完成" if next_task else "")
     status = k.get_workflow_status(wf_id)
     print(f"[Kaban] 状态: {status['tasks'] if status else '?'}")
 
-    print(f"\n{'='*40}")
+    print(f"\n{'=' * 40}")
     print("[OK] Hermes 三项全部完成")
 
 

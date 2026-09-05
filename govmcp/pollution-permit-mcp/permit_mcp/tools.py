@@ -10,9 +10,15 @@ from fastmcp import FastMCP
 
 from . import config
 from .client import PermitClient
-from .parser import (decrypt_point_data, parse_announce_list, parse_license_detail,
-                     parse_license_list, parse_laws_list, parse_news_detail,
-                     parse_news_list)
+from .parser import (
+    decrypt_point_data,
+    parse_announce_list,
+    parse_laws_list,
+    parse_license_detail,
+    parse_license_list,
+    parse_news_detail,
+    parse_news_list,
+)
 
 _client: PermitClient | None = None
 
@@ -58,10 +64,14 @@ def register_tools(mcp: FastMCP) -> None:
         已下线，传任何值均返回 0）；按地区统计请用 unit_name 关键字 + management 组合。
         """
         data = {
-            "province": province, "city": city, "management": management,
-            "registerentername": unit_name, "xkznum": license_no,
+            "province": province,
+            "city": city,
+            "management": management,
+            "registerentername": unit_name,
+            "xkznum": license_no,
             "publishtime": publish_time,
-            "page.pageNo": page, "pageSize": 20,
+            "page.pageNo": page,
+            "pageSize": 20,
         }
         if temp_report_key:
             data["tempReportKey"] = temp_report_key
@@ -100,6 +110,7 @@ def register_tools(mcp: FastMCP) -> None:
         """
         html = c.get(config.URL_LICENSE_IMAGE_LIST, params={"dataid": dataid})
         from bs4 import BeautifulSoup
+
         soup = BeautifulSoup(html, "html.parser")
         img_count = soup.find("input", {"id": "imgCount"})
         pkid = soup.find("input", {"id": "pkid"})
@@ -120,9 +131,9 @@ def register_tools(mcp: FastMCP) -> None:
             datafileid: 形如 <pkid>_<页码> 的文件 ID（get_license_pages 返回）
             output_path: 保存图片的绝对路径
         """
-        content = c.download(config.URL_LICENSE_IMAGE_PAGE,
-                             params={"datafileid": datafileid, "fileType": "pdffile",
-                                     "dataid": dataid})
+        content = c.download(
+            config.URL_LICENSE_IMAGE_PAGE, params={"datafileid": datafileid, "fileType": "pdffile", "dataid": dataid}
+        )
         with open(output_path, "wb") as f:
             f.write(content)
         return _out({"saved": output_path, "bytes": len(content)})
@@ -147,23 +158,24 @@ def register_tools(mcp: FastMCP) -> None:
             dataid: 数据 ID
         """
         import datetime
+
         reports = []
         now_year = datetime.date.today().year
         for year in range(now_year, now_year - 3, -1):
-            resp = c.post(config.URL_ZXBG_YEAR,
-                          data={"reportYear": str(year), "dataid": dataid})
+            resp = c.post(config.URL_ZXBG_YEAR, data={"reportYear": str(year), "dataid": dataid})
             try:
                 rows = json.loads(resp)
             except Exception:  # noqa: BLE001
                 rows = []
             for r in rows:
-                reports.append({"year": str(year), "type": r.get("type"),
-                                "report_time": r.get("reportTime"), "doc_url": r.get("docUrl")})
-        result = {"execution_reports": reports, "supervision": [],
-                  "monitoring_url": None}
+                reports.append(
+                    {"year": str(year), "type": r.get("type"), "report_time": r.get("reportTime"), "doc_url": r.get("docUrl")}
+                )
+        result = {"execution_reports": reports, "supervision": [], "monitoring_url": None}
         # 自行监测入口（详情页 iframe）
         html = c.get(config.URL_LICENSE_DETAIL, params={"xkgk": "getxxgkContent", "dataid": dataid})
         import re
+
         m = re.search(r'<iframe[^>]+src="(https://wryjc\.mee\.gov\.cn[^"]+)"', html)
         if m:
             result["monitoring_url"] = m.group(1)
@@ -180,8 +192,7 @@ def register_tools(mcp: FastMCP) -> None:
             unit_name: 企业名称
             page: 页码
         """
-        data = {"province": province, "registerentername": unit_name,
-                "page.pageNo": page, "pageSize": 20}
+        data = {"province": province, "registerentername": unit_name, "page.pageNo": page, "pageSize": 20}
         html = c.post(config.URL_RECTIFY_LIST, data=data)
         return _out(parse_news_list(html))
 
@@ -252,8 +263,10 @@ def register_tools(mcp: FastMCP) -> None:
         """
         html = c.get(config.URL_LICENSE_DETAIL, params={"xkgk": "getxxgkContent", "dataid": dataid})
         import re
+
         m = re.search(r'<iframe[^>]+src="(https://wryjc\.mee\.gov\.cn[^"]+)"', html)
         if m:
-            return _out({"monitoring_url": m.group(1),
-                         "note": "实时排放数据属自动监控专网，公开端不直接提供；请通过该平台查询"})
+            return _out(
+                {"monitoring_url": m.group(1), "note": "实时排放数据属自动监控专网，公开端不直接提供；请通过该平台查询"}
+            )
         return _out({"monitoring_url": None, "note": "该企业未配置自行监测信息"})

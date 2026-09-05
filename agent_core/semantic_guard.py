@@ -18,6 +18,7 @@
 env ``ECO_SEMANTIC_GUARD=1`` 时调用 get_semantic_guard().semantic_check，
 默认关闭，不改变现有确定性层行为。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -25,7 +26,8 @@ import json
 import logging
 import threading
 from collections import OrderedDict
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +59,9 @@ class SemanticGuard:
     judge_fn 为 None 时守卫不生效（直接放行并记 debug 日志）。
     """
 
-    def __init__(self, judge_fn=None, timeout_ms: int = 5000,
-                 cache_size: int = 1024, fail_open: bool = False,
-                 on_timeout: str = "allow"):
+    def __init__(
+        self, judge_fn=None, timeout_ms: int = 5000, cache_size: int = 1024, fail_open: bool = False, on_timeout: str = "allow"
+    ):
         """
         timeout_ms: judge 超时阈值。默认 5000ms（对齐真实 LLM 秒级延迟）；
             生产建议按上游 p95 显式装配（10s~60s）或异步化。
@@ -119,25 +121,22 @@ class SemanticGuard:
         except (FuturesTimeout, TimeoutError):
             # 超时视为「judge 不可用」，走独立策略（与 judge 明确判定注入区分）
             if self.on_timeout == "allow":
-                logger.warning("semantic_guard judge 超时（>%dms），judge 不可用，"
-                               "按超时策略放行（WARN）", self.timeout_ms)
+                logger.warning("semantic_guard judge 超时（>%dms），judge 不可用，按超时策略放行（WARN）", self.timeout_ms)
                 return True, "语义层 judge 不可用（超时），按超时策略放行"
             if self.on_timeout == "fail-open" or self.fail_open:
-                logger.warning("semantic_guard judge 超时（>%dms），按 fail-open 策略放行",
-                               self.timeout_ms)
+                logger.warning("semantic_guard judge 超时（>%dms），按 fail-open 策略放行", self.timeout_ms)
                 return True, ""
-            logger.warning("semantic_guard judge 超时（>%dms），按 fail-closed 策略拦截",
-                           self.timeout_ms)
+            logger.warning("semantic_guard judge 超时（>%dms），按 fail-closed 策略拦截", self.timeout_ms)
             return False, "语义层判定超时: 按 fail-closed 策略拦截（可疑）"
         except Exception as exc:  # noqa: BLE001 — judge 任何异常都按策略降级
-            logger.warning("semantic_guard judge 异常（%s），按 %s 策略处理",
-                           exc, "fail-open" if self.fail_open else "fail-closed")
+            logger.warning(
+                "semantic_guard judge 异常（%s），按 %s 策略处理", exc, "fail-open" if self.fail_open else "fail-closed"
+            )
             if self.fail_open:
                 return True, ""
             return False, "语义层判定异常: 按 fail-closed 策略拦截（可疑）"
         if is_injection and confidence >= INJECTION_CONFIDENCE_THRESHOLD:
-            return False, (f"语义层判定为提示词注入 "
-                           f"(confidence={confidence:.2f}≥{INJECTION_CONFIDENCE_THRESHOLD})")
+            return False, (f"语义层判定为提示词注入 (confidence={confidence:.2f}≥{INJECTION_CONFIDENCE_THRESHOLD})")
         return True, ""
 
     # ---- 对外接口 ----

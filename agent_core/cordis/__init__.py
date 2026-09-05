@@ -24,10 +24,9 @@ from __future__ import annotations
 import importlib
 import logging
 import threading
-import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
-from collections.abc import Callable
 
 logger = logging.getLogger("eco.cordis")
 
@@ -62,8 +61,7 @@ class _Timer:
         self._repeat = repeat
         self._stop = threading.Event()
         self.label = label
-        self._thread = threading.Thread(target=self._loop, daemon=True,
-                                        name=f"eco-cordis-timer-{label or id(self)}")
+        self._thread = threading.Thread(target=self._loop, daemon=True, name=f"eco-cordis-timer-{label or id(self)}")
         self._thread.start()
 
     def _loop(self) -> None:
@@ -119,8 +117,7 @@ class Context:
             raise AttributeError(name)
         svc = self._services.get(name)
         if svc is None:
-            raise AttributeError(
-                f"服务 '{name}' 未提供——请用 ctx.get('{name}') 做可选读取")
+            raise AttributeError(f"服务 '{name}' 未提供——请用 ctx.get('{name}') 做可选读取")
         return svc
 
     # ── 事件 ─────────────────────────────────────────────
@@ -164,8 +161,8 @@ class Context:
         if label and label in self._isolates:
             return self._isolates[label]
         child = Context(name=f"{self.name}.iso", parent=self)  # type: ignore[call-arg]
-        child._services.update(self._services)   # noqa: SLF001
-        child._plugins.update(self._plugins)     # noqa: SLF001
+        child._services.update(self._services)  # noqa: SLF001
+        child._plugins.update(self._plugins)  # noqa: SLF001
         if label:
             self._isolates[label] = child
         return child
@@ -207,8 +204,7 @@ class Context:
         except ValueError:
             pass
 
-    def _register_handler(self, event: str, handler: Callable,
-                          *, once: bool, global_: bool) -> Disposable:
+    def _register_handler(self, event: str, handler: Callable, *, once: bool, global_: bool) -> Disposable:
         fiber_id = None if global_ else (self._fiber.plugin_id if self._fiber else "root")
         entry = (fiber_id, handler, once)
         self._handlers.setdefault(event, []).append(entry)
@@ -251,8 +247,7 @@ class Context:
 
     # ── 插件生命周期 ─────────────────────────────────────
 
-    def plugin(self, plugin: Any, config: dict | None = None,
-               plugin_id: str | None = None) -> Callable[[], Any]:
+    def plugin(self, plugin: Any, config: dict | None = None, plugin_id: str | None = None) -> Callable[[], Any]:
         """加载插件：返回 dispose 函数（卸载该插件及其全部副作用）。"""
         pid = plugin_id or getattr(plugin, "__name__", plugin.__class__.__name__)
         if pid in self._plugins:
@@ -340,8 +335,8 @@ class _Fiber:
 
 # ── 组合加载 ─────────────────────────────────────────────
 
-def load_composition(path: str | Path, ctx: Context | None = None,
-                     base_dir: str | Path | None = None) -> Context:
+
+def load_composition(path: str | Path, ctx: Context | None = None, base_dir: str | Path | None = None) -> Context:
     """从 YAML 组合文件装配实例（对标 DSH cordis.yml）。
 
     条目格式：
@@ -354,7 +349,6 @@ def load_composition(path: str | Path, ctx: Context | None = None,
     import yaml
 
     ctx = ctx or Context(name=Path(path).stem)
-    base = Path(base_dir) if base_dir else Path(path).parent
     with open(path, encoding="utf-8") as f:
         entries = yaml.safe_load(f) or []
     for entry in entries:
@@ -371,8 +365,7 @@ def load_composition(path: str | Path, ctx: Context | None = None,
             # 模块内声明 inject 的类 → 自动实例化（插件类约定）
             for attr_name in dir(module):
                 obj = getattr(module, attr_name)
-                if (isinstance(obj, type) and obj.__module__ == module.__name__
-                        and hasattr(obj, "inject")):
+                if isinstance(obj, type) and obj.__module__ == module.__name__ and hasattr(obj, "inject"):
                     plugin = obj()
                     break
         if inject:

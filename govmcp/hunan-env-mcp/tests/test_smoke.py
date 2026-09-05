@@ -2,6 +2,7 @@
 
 覆盖：配置栏目表完整性、URL 构造、详情页正则、HTML 列表解析、空气数据归一化。
 """
+
 from __future__ import annotations
 
 import re

@@ -17,17 +17,26 @@ lint.py — ECO AGENT 项目健康检查工具
   python _scripts/lint.py --verbose    # 详细输出
 """
 
-import re
 import argparse
-from pathlib import Path
+import re
 from datetime import datetime
-
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # 扫描时跳过的目录（依赖/构建产物/生成垃圾，不属于项目健康检查对象）
-SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__",
-             ".playwright-cli", ".pytest_cache", ".ruff_cache", "worktrees", ".libs"}
+SKIP_DIRS = {
+    ".git",
+    "node_modules",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".playwright-cli",
+    ".pytest_cache",
+    ".ruff_cache",
+    "worktrees",
+    ".libs",
+}
 
 
 def _iter_md():
@@ -42,15 +51,18 @@ def _is_knowledge(f: Path) -> bool:
     """知识层文件判定：memory-tree/skills/ecoskills/任意 kb 目录。
     原文指针与 frontmatter 检查只对知识层文件生效，不套用工程文档。"""
     rel = f.relative_to(PROJECT_ROOT).as_posix()
-    return (rel.startswith("memory-tree/") or rel.startswith("skills/")
-            or rel.startswith("ecoskills/") or "/kb/" in rel)
+    return rel.startswith("memory-tree/") or rel.startswith("skills/") or rel.startswith("ecoskills/") or "/kb/" in rel
 
 
 def check_file_integrity():
     """检查必备文件是否存在"""
     required = [
-        "CLAUDE.md", "SCHEMA.md", "CHANGELOG.md", "README.md",
-        "开发实施方案.md", "项目说明书.md",
+        "CLAUDE.md",
+        "SCHEMA.md",
+        "CHANGELOG.md",
+        "README.md",
+        "开发实施方案.md",
+        "项目说明书.md",
         "_scripts/eco-knowledge-mcp.py",
         "profiles/eco-agent/config.yaml",
         "profiles/eco-agent/SOUL.md",
@@ -74,7 +86,7 @@ def check_broken_links():
 
     for f in sorted(_iter_md()):
         content = f.read_text(encoding="utf-8", errors="ignore")
-        links = re.findall(r'\[\[([^\]|#]+?)(?:[|#][^\]]*)?\]\]', content)
+        links = re.findall(r"\[\[([^\]|#]+?)(?:[|#][^\]]*)?\]\]", content)
         for link in links:
             link_name = link.strip()
             if link_name not in all_stems:
@@ -90,7 +102,7 @@ def check_source_pointers():
         if f.name == "README.md" or not _is_knowledge(f):
             continue
         content = f.read_text(encoding="utf-8", errors="ignore")
-        if not re.search(r'##\s*原文指针', content):
+        if not re.search(r"##\s*原文指针", content):
             rel = f.relative_to(PROJECT_ROOT)
             missing_pointer.append(str(rel.as_posix()))
     return missing_pointer
@@ -132,10 +144,13 @@ def check_large_files():
 def check_git_status():
     """检查 Git 未提交文件"""
     import subprocess
+
     try:
         status = subprocess.run(
             ["git", "-C", str(PROJECT_ROOT), "status", "--short"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         ).stdout.strip()
     except Exception:
         status = ""
@@ -165,7 +180,7 @@ def print_section(title, items, ok_msg="[OK] 全部通过"):
             else:
                 print(f"  [!] {item}")
         if len(items) > 10:
-            print(f"  ... 还有 {len(items)-10} 项")
+            print(f"  ... 还有 {len(items) - 10} 项")
 
 
 def main():
@@ -186,7 +201,7 @@ def main():
 
     # 2. 断链检测
     broken = check_broken_links()
-    print_section("[LINK] 断链检测", [f"{f}  [[{l}]]" for f, l in broken])
+    print_section("[LINK] 断链检测", [f"{f}  [[{line}]]" for f, line in broken])
 
     # 3. 原文指针
     no_pointer = check_source_pointers()
@@ -199,7 +214,7 @@ def main():
 
     # 5. 大文件
     large = check_large_files()
-    print_section("[BIG] 大文件检测", [f"{f} ({s/1024:.0f}KB)" for f, s in large])
+    print_section("[BIG] 大文件检测", [f"{f} ({s / 1024:.0f}KB)" for f, s in large])
 
     # 6. Git 状态
     untracked, modified = check_git_status()

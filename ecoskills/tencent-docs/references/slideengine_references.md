@@ -613,13 +613,11 @@ CONNECTORS_DIR = os.path.join(WORKBUDDY_HOME, "connectors")
 # SaaS 端点特征 (用于判断工具名是否需要 slide. 前缀)
 SAAS_HOST = "saas.docs.qq.com"
 
-DEFAULT_COOKIE = (
-    "env_name=feature/seperate_from_tencent_docs_skill; "
-    "env_id=sit-f93f7f10;"
-)
+DEFAULT_COOKIE = "env_name=feature/seperate_from_tencent_docs_skill; env_id=sit-f93f7f10;"
 
 
 # ─── 配置自动发现 ───
+
 
 def discover_tdocs_auth():
     """从 WorkBuddy 连接器配置自动读取腾讯文档的认证 headers。"""
@@ -658,6 +656,7 @@ def discover_tdocs_auth():
 
 
 # ─── MCP 调用 ───
+
 
 def call_tool_direct(mcp_url, headers, tool_name, tool_args, cookie=""):
     """直连腾讯文档 MCP (使用从配置读取的认证头)。"""
@@ -706,18 +705,12 @@ def call_tool_manual(mcp_url, auth, tool_name, tool_args, cookie=""):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mcp-url", default="",
-                        help="MCP endpoint URL (必填，如 https://docs.qq.com/api/v6/slide/mcp)")
-    parser.add_argument("--auth", default="",
-                        help="手动传入 Authorization 头 (如 'Bearer xxx')，跳过自动发现")
+    parser.add_argument("--mcp-url", default="", help="MCP endpoint URL (必填，如 https://docs.qq.com/api/v6/slide/mcp)")
+    parser.add_argument("--auth", default="", help="手动传入 Authorization 头 (如 'Bearer xxx')，跳过自动发现")
     parser.add_argument("--image-path", required=True, help="本地图片绝对路径")
-    parser.add_argument("--tool-name", default="",
-                        help="MCP 工具名，默认为空时自动根据 --mcp-url 判断；"
-                             "手动指定则直接使用")
-    parser.add_argument("--tool-args", default="{}",
-                        help="工具入参 JSON（content 字段会被脚本自动覆盖）")
-    parser.add_argument("--cookie", default=DEFAULT_COOKIE,
-                        help="请求 Cookie 头，默认带 sit 测试环境染色 (env_name + env_id)")
+    parser.add_argument("--tool-name", default="", help="MCP 工具名，默认为空时自动根据 --mcp-url 判断；手动指定则直接使用")
+    parser.add_argument("--tool-args", default="{}", help="工具入参 JSON（content 字段会被脚本自动覆盖）")
+    parser.add_argument("--cookie", default=DEFAULT_COOKIE, help="请求 Cookie 头，默认带 sit 测试环境染色 (env_name + env_id)")
     args = parser.parse_args()
 
     # ── 确定调用模式 ──
@@ -739,9 +732,7 @@ def main():
     else:
         headers = discover_tdocs_auth()
         if not headers:
-            print("Error: 无法自动发现认证信息。请使用 --auth 手动传入，"
-                  "或在 WorkBuddy 中连接腾讯文档连接器",
-                  file=sys.stderr)
+            print("Error: 无法自动发现认证信息。请使用 --auth 手动传入，或在 WorkBuddy 中连接腾讯文档连接器", file=sys.stderr)
             sys.exit(1)
         call_fn = call_tool_direct
         call_kwargs = {"mcp_url": mcp_url, "headers": headers, "cookie": args.cookie}
@@ -2113,13 +2104,11 @@ CONNECTORS_DIR = os.path.join(WORKBUDDY_HOME, "connectors")
 # SaaS 端点特征 (用于判断工具名是否需要 slide. 前缀)
 SAAS_HOST = "saas.docs.qq.com"
 
-DEFAULT_COOKIE = (
-    "env_name=feature/seperate_from_tencent_docs_skill; "
-    "env_id=sit-f93f7f10;"
-)
+DEFAULT_COOKIE = "env_name=feature/seperate_from_tencent_docs_skill; env_id=sit-f93f7f10;"
 
 
 # ─── 配置自动发现 ───
+
 
 def discover_tdocs_auth():
     """从 WorkBuddy 连接器配置自动读取腾讯文档的认证 headers。"""
@@ -2158,6 +2147,7 @@ def discover_tdocs_auth():
 
 
 # ─── MCP 调用 ───
+
 
 def call_tool_direct(mcp_url, headers, tool_name, tool_args, cookie=""):
     """直连腾讯文档 MCP (使用从配置读取的认证头)。"""
@@ -2206,18 +2196,12 @@ def call_tool_manual(mcp_url, auth, tool_name, tool_args, cookie=""):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mcp-url", default="",
-                        help="MCP endpoint URL (必填，如 https://docs.qq.com/api/v6/slide/mcp)")
-    parser.add_argument("--auth", default="",
-                        help="手动传入 Authorization 头 (如 'Bearer xxx')，跳过自动发现")
+    parser.add_argument("--mcp-url", default="", help="MCP endpoint URL (必填，如 https://docs.qq.com/api/v6/slide/mcp)")
+    parser.add_argument("--auth", default="", help="手动传入 Authorization 头 (如 'Bearer xxx')，跳过自动发现")
     parser.add_argument("--design-path", required=True, help="本地 DESIGN.md 绝对路径")
-    parser.add_argument("--tool-name", default="",
-                        help="MCP 工具名，默认为空时自动根据 --mcp-url 判断；"
-                             "手动指定则直接使用")
-    parser.add_argument("--tool-args", default="{}",
-                        help="工具入参 JSON（design_md 字段会被脚本自动覆盖）")
-    parser.add_argument("--cookie", default=DEFAULT_COOKIE,
-                        help="请求 Cookie 头，默认带 sit 测试环境染色 (env_name + env_id)")
+    parser.add_argument("--tool-name", default="", help="MCP 工具名，默认为空时自动根据 --mcp-url 判断；手动指定则直接使用")
+    parser.add_argument("--tool-args", default="{}", help="工具入参 JSON（design_md 字段会被脚本自动覆盖）")
+    parser.add_argument("--cookie", default=DEFAULT_COOKIE, help="请求 Cookie 头，默认带 sit 测试环境染色 (env_name + env_id)")
     args = parser.parse_args()
 
     # ── 确定调用模式 ──
@@ -2239,9 +2223,7 @@ def main():
     else:
         headers = discover_tdocs_auth()
         if not headers:
-            print("Error: 无法自动发现认证信息。请使用 --auth 手动传入，"
-                  "或在 WorkBuddy 中连接腾讯文档连接器",
-                  file=sys.stderr)
+            print("Error: 无法自动发现认证信息。请使用 --auth 手动传入，或在 WorkBuddy 中连接腾讯文档连接器", file=sys.stderr)
             sys.exit(1)
         call_fn = call_tool_direct
         call_kwargs = {"mcp_url": mcp_url, "headers": headers, "cookie": args.cookie}

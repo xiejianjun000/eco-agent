@@ -1,11 +1,11 @@
 """Task A — os_sandbox 测试：策略构造、bwrap 拼装、降级、env 清洗、网络白名单。"""
+
 import os
 import subprocess
 from unittest import mock
 
-
 from agent_core import os_sandbox
-from agent_core.os_sandbox import SandboxPolicy, run_in_sandbox, build_bwrap_cmd, scrub_env
+from agent_core.os_sandbox import SandboxPolicy, build_bwrap_cmd, run_in_sandbox, scrub_env
 
 
 def _cp(rc=0, out="ok", err=""):
@@ -21,9 +21,13 @@ class TestPolicy:
         assert p.max_output_bytes == 1024 * 1024
 
     def test_custom(self):
-        p = SandboxPolicy(allowed_paths=["/tmp/w"], readonly_paths=["/data"],
-                          network_allowlist=["api.example.com"], max_seconds=5,
-                          max_output_bytes=128)
+        p = SandboxPolicy(
+            allowed_paths=["/tmp/w"],
+            readonly_paths=["/data"],
+            network_allowlist=["api.example.com"],
+            max_seconds=5,
+            max_output_bytes=128,
+        )
         assert p.allowed_paths == ["/tmp/w"]
         assert p.readonly_paths == ["/data"]
         assert p.network_allowlist == ["api.example.com"]
@@ -33,8 +37,7 @@ class TestPolicy:
 # ─── env 清洗 ─────────────────────────────────
 class TestScrubEnv:
     def test_strips_sensitive(self):
-        env = {"PATH": "/bin", "OPENAI_API_KEY": "x", "GH_TOKEN": "y",
-               "APP_SECRET": "z", "NORMAL": "1"}
+        env = {"PATH": "/bin", "OPENAI_API_KEY": "x", "GH_TOKEN": "y", "APP_SECRET": "z", "NORMAL": "1"}
         out = scrub_env(env)
         assert out == {"PATH": "/bin", "NORMAL": "1"}
 
@@ -88,9 +91,8 @@ class TestBwrapCmd:
         with mock.patch("os.path.exists", return_value=True):
             cmd = build_bwrap_cmd(["x"], p)
         i = cmd.index("--bind")
-        assert cmd[i + 1:i + 3] == ["/rw", "/rw"]
-        pairs = [(cmd[i], cmd[i + 1], cmd[i + 2])
-                 for i in range(len(cmd) - 2) if cmd[i] in ("--bind", "--ro-bind")]
+        assert cmd[i + 1 : i + 3] == ["/rw", "/rw"]
+        pairs = [(cmd[i], cmd[i + 1], cmd[i + 2]) for i in range(len(cmd) - 2) if cmd[i] in ("--bind", "--ro-bind")]
         assert ("--ro-bind", "/ro", "/ro") in pairs
         assert ("--bind", "/rw", "/rw") in pairs
 
@@ -106,9 +108,12 @@ class TestBwrapCmd:
 # ─── run_in_sandbox 主路径 ────────────────────
 class TestRunInSandbox:
     def test_non_linux_degrades_with_warning(self, caplog):
-        with mock.patch.object(os_sandbox.platform, "system", return_value="Darwin"), \
-             mock.patch("subprocess.run", return_value=_cp()) as run:
+        with (
+            mock.patch.object(os_sandbox.platform, "system", return_value="Darwin"),
+            mock.patch("subprocess.run", return_value=_cp()) as run,
+        ):
             import logging
+
             with caplog.at_level(logging.WARNING, logger="os_sandbox"):
                 r = run_in_sandbox(["echo", "hi"], SandboxPolicy())
         assert r.returncode == 0
@@ -118,18 +123,24 @@ class TestRunInSandbox:
 
     def test_linux_no_bwrap_degrades(self, caplog):
         import logging
-        with mock.patch.object(os_sandbox, "is_linux", return_value=True), \
-             mock.patch.object(os_sandbox, "bwrap_available", return_value=False), \
-             mock.patch("subprocess.run", return_value=_cp()) as run, caplog.at_level(logging.WARNING, logger="os_sandbox"):
+
+        with (
+            mock.patch.object(os_sandbox, "is_linux", return_value=True),
+            mock.patch.object(os_sandbox, "bwrap_available", return_value=False),
+            mock.patch("subprocess.run", return_value=_cp()) as run,
+            caplog.at_level(logging.WARNING, logger="os_sandbox"),
+        ):
             run_in_sandbox(["ls"], SandboxPolicy())
         assert "bwrap" in caplog.text
         assert run.call_args[0][0] == ["ls"]
 
     def test_linux_with_bwrap_wraps(self):
-        with mock.patch.object(os_sandbox, "is_linux", return_value=True), \
-             mock.patch.object(os_sandbox, "bwrap_available", return_value=True), \
-             mock.patch.object(os_sandbox.shutil, "which", return_value=None), \
-             mock.patch("subprocess.run", return_value=_cp()) as run:
+        with (
+            mock.patch.object(os_sandbox, "is_linux", return_value=True),
+            mock.patch.object(os_sandbox, "bwrap_available", return_value=True),
+            mock.patch.object(os_sandbox.shutil, "which", return_value=None),
+            mock.patch("subprocess.run", return_value=_cp()) as run,
+        ):
             run_in_sandbox(["ls", "/"], SandboxPolicy(max_seconds=7))
         called = run.call_args[0][0]
         assert called[0] == "bwrap"
@@ -137,44 +148,55 @@ class TestRunInSandbox:
         assert run.call_args[1]["timeout"] == 7
 
     def test_bwrap_env_is_scrubbed(self):
-        with mock.patch.object(os_sandbox, "is_linux", return_value=True), \
-             mock.patch.object(os_sandbox, "bwrap_available", return_value=True), \
-             mock.patch("subprocess.run", return_value=_cp()) as run, \
-             mock.patch.dict(os.environ, {"MY_API_KEY": "k", "X": "1"}, clear=False):
+        with (
+            mock.patch.object(os_sandbox, "is_linux", return_value=True),
+            mock.patch.object(os_sandbox, "bwrap_available", return_value=True),
+            mock.patch("subprocess.run", return_value=_cp()) as run,
+            mock.patch.dict(os.environ, {"MY_API_KEY": "k", "X": "1"}, clear=False),
+        ):
             run_in_sandbox(["ls"], SandboxPolicy())
         env = run.call_args[1]["env"]
         assert "MY_API_KEY" not in env and env.get("X") == "1"
 
     def test_output_truncation(self):
         big = "A" * 5000
-        with mock.patch.object(os_sandbox, "is_linux", return_value=True), \
-             mock.patch.object(os_sandbox, "bwrap_available", return_value=True), \
-             mock.patch("subprocess.run", return_value=_cp(out=big, err=big)):
+        with (
+            mock.patch.object(os_sandbox, "is_linux", return_value=True),
+            mock.patch.object(os_sandbox, "bwrap_available", return_value=True),
+            mock.patch("subprocess.run", return_value=_cp(out=big, err=big)),
+        ):
             r = run_in_sandbox(["ls"], SandboxPolicy(max_output_bytes=100))
         assert len(r.stdout) == 100 and len(r.stderr) == 100
 
     def test_degraded_truncation_and_timeout(self):
         big = "B" * 999
-        with mock.patch.object(os_sandbox, "is_linux", return_value=False), \
-             mock.patch("subprocess.run", return_value=_cp(out=big)) as run:
+        with (
+            mock.patch.object(os_sandbox, "is_linux", return_value=False),
+            mock.patch("subprocess.run", return_value=_cp(out=big)) as run,
+        ):
             r = run_in_sandbox(["ls"], SandboxPolicy(max_output_bytes=10, max_seconds=3))
         assert r.stdout == "B" * 10
         assert run.call_args[1]["timeout"] == 3
 
     def test_default_policy_when_none(self):
-        with mock.patch.object(os_sandbox, "is_linux", return_value=True), \
-             mock.patch.object(os_sandbox, "bwrap_available", return_value=True), \
-             mock.patch("subprocess.run", return_value=_cp()) as run:
+        with (
+            mock.patch.object(os_sandbox, "is_linux", return_value=True),
+            mock.patch.object(os_sandbox, "bwrap_available", return_value=True),
+            mock.patch("subprocess.run", return_value=_cp()) as run,
+        ):
             run_in_sandbox(["true"])
         assert run.call_args[1]["timeout"] == 30
 
     def test_allowlist_without_slirp_warns(self, caplog):
         import logging
-        with mock.patch.object(os_sandbox, "is_linux", return_value=True), \
-             mock.patch.object(os_sandbox, "bwrap_available", return_value=True), \
-             mock.patch.object(os_sandbox.shutil, "which",
-                               side_effect=lambda x: "/usr/bin/bwrap" if x == "bwrap" else None), \
-             mock.patch("subprocess.run", return_value=_cp()), caplog.at_level(logging.WARNING, logger="os_sandbox"):
+
+        with (
+            mock.patch.object(os_sandbox, "is_linux", return_value=True),
+            mock.patch.object(os_sandbox, "bwrap_available", return_value=True),
+            mock.patch.object(os_sandbox.shutil, "which", side_effect=lambda x: "/usr/bin/bwrap" if x == "bwrap" else None),
+            mock.patch("subprocess.run", return_value=_cp()),
+            caplog.at_level(logging.WARNING, logger="os_sandbox"),
+        ):
             run_in_sandbox(["ls"], SandboxPolicy(network_allowlist=["a.com"]))
         assert "slirp4netns" in caplog.text
 
@@ -183,14 +205,17 @@ class TestRunInSandbox:
 class TestDegradedLimits:
     def test_preexec_sets_rlimits(self):
         import resource
+
         calls = []
 
         def fake_setrlimit(res, lim):
             calls.append((res, lim))
 
-        with mock.patch.object(os_sandbox, "is_linux", return_value=False), \
-             mock.patch.object(resource, "setrlimit", side_effect=fake_setrlimit), \
-             mock.patch("subprocess.run", return_value=_cp()) as run:
+        with (
+            mock.patch.object(os_sandbox, "is_linux", return_value=False),
+            mock.patch.object(resource, "setrlimit", side_effect=fake_setrlimit),
+            mock.patch("subprocess.run", return_value=_cp()) as run,
+        ):
             run_in_sandbox(["x"], SandboxPolicy(max_seconds=9))
             preexec = run.call_args[1]["preexec_fn"]
             preexec()
@@ -206,12 +231,12 @@ class TestDegradedLimits:
 class TestSandboxIntegration:
     def test_execute_prefers_os_sandbox(self):
         import asyncio
+
         from agent_core import sandbox
 
         sb = sandbox.DockerSandbox()
         sb._available = False
-        with mock.patch.object(sandbox.os_sandbox, "run_in_sandbox",
-                               return_value=_cp(rc=0, out="hello", err="")) as ris:
+        with mock.patch.object(sandbox.os_sandbox, "run_in_sandbox", return_value=_cp(rc=0, out="hello", err="")) as ris:
             r = asyncio.run(sb.execute("print('hi')", "python"))
         assert ris.called
         assert r["success"] and r["stdout"] == "hello"
@@ -219,22 +244,22 @@ class TestSandboxIntegration:
 
     def test_execute_falls_back_to_local_on_error(self):
         import asyncio
+
         from agent_core import sandbox
 
         sb = sandbox.DockerSandbox()
         sb._available = False
-        with mock.patch.object(sandbox.os_sandbox, "run_in_sandbox",
-                               side_effect=RuntimeError("boom")):
+        with mock.patch.object(sandbox.os_sandbox, "run_in_sandbox", side_effect=RuntimeError("boom")):
             r = asyncio.run(sb.execute("result=1+1", "python"))
         assert r["sandbox"] == "local" and r["success"]
 
     def test_os_sandbox_timeout_result(self):
         import asyncio
+
         from agent_core import sandbox
 
         sb = sandbox.DockerSandbox(timeout=3)
         sb._available = False
-        with mock.patch.object(sandbox.os_sandbox, "run_in_sandbox",
-                               side_effect=subprocess.TimeoutExpired("x", 3)):
+        with mock.patch.object(sandbox.os_sandbox, "run_in_sandbox", side_effect=subprocess.TimeoutExpired("x", 3)):
             r = asyncio.run(sb.execute("print(1)", "python"))
         assert not r["success"] and "Timeout" in r["stderr"]

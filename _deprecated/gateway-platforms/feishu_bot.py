@@ -11,12 +11,12 @@ feishu_bot.py — 飞书 Bot 集成工具
   python -c "from gateway.platforms.feishu_bot import FeishuBot; bot=FeishuBot(); bot.send_text('open_id','你好')"
 """
 
-import os
-import json
-import time
-import hashlib
 import base64
+import hashlib
+import json
 import logging
+import os
+import time
 
 try:
     import requests
@@ -83,9 +83,15 @@ class FeishuBot:
         logger.error(f"飞书消息发送失败: {result}")
         return False
 
-    def send_card(self, receive_id: str, title: str, content: str,
-                  approve_callback: str = "", reject_callback: str = "",
-                  id_type: str = "open_id") -> bool:
+    def send_card(
+        self,
+        receive_id: str,
+        title: str,
+        content: str,
+        approve_callback: str = "",
+        reject_callback: str = "",
+        id_type: str = "open_id",
+    ) -> bool:
         """发送交互卡片消息（用于审批）"""
         if not self._get_tenant_token():
             return False
@@ -104,23 +110,25 @@ class FeishuBot:
 
         # 审批按钮
         if approve_callback and reject_callback:
-            card["elements"].append({
-                "tag": "action",
-                "actions": [
-                    {
-                        "tag": "button",
-                        "text": {"tag": "plain_text", "content": "✅ 批准"},
-                        "type": "primary",
-                        "value": {"action": "approve", "callback": approve_callback},
-                    },
-                    {
-                        "tag": "button",
-                        "text": {"tag": "plain_text", "content": "❌ 拒绝"},
-                        "type": "danger",
-                        "value": {"action": "reject", "callback": reject_callback},
-                    },
-                ],
-            })
+            card["elements"].append(
+                {
+                    "tag": "action",
+                    "actions": [
+                        {
+                            "tag": "button",
+                            "text": {"tag": "plain_text", "content": "✅ 批准"},
+                            "type": "primary",
+                            "value": {"action": "approve", "callback": approve_callback},
+                        },
+                        {
+                            "tag": "button",
+                            "text": {"tag": "plain_text", "content": "❌ 拒绝"},
+                            "type": "danger",
+                            "value": {"action": "reject", "callback": reject_callback},
+                        },
+                    ],
+                }
+            )
 
         body = {
             "receive_id": receive_id,

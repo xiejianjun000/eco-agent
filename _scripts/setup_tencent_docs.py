@@ -147,6 +147,7 @@ def main() -> None:
 
     try:
         import getpass
+
         token = getpass.getpass("粘贴腾讯文档 Token（输入不回显，直接粘贴后回车）: ").strip()
     except (EOFError, KeyboardInterrupt):
         print("\n已取消。")

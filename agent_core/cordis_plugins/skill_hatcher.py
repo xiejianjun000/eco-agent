@@ -42,7 +42,7 @@ class Hatcher:
 
     def _engine_ready(self):
         if self._engine is None:
-            from agent_core.skill_system import SkillRegistry, AutoLearnEngine
+            from agent_core.skill_system import AutoLearnEngine, SkillRegistry
 
             self._engine = AutoLearnEngine(SkillRegistry())
         return self._engine
@@ -85,13 +85,11 @@ class Hatcher:
             min_steps=self._min_tools,  # 孵化门槛与 Hatcher.min_tools 一致
         )
         if skill_id:
-            logger.info("[skill_hatcher] 孵化技能 %s（工具组合: %s，第 %d 次触发）",
-                        skill_id, sig, self._threshold)
+            logger.info("[skill_hatcher] 孵化技能 %s（工具组合: %s，第 %d 次触发）", skill_id, sig, self._threshold)
         return skill_id
 
     def stats(self) -> dict:
-        return {"threshold": self._threshold, "min_tools": self._min_tools,
-                "counter": dict(self._counter)}
+        return {"threshold": self._threshold, "min_tools": self._min_tools, "counter": dict(self._counter)}
 
 
 def apply(ctx, config: dict | None = None) -> None:

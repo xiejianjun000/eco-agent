@@ -21,21 +21,21 @@ eco-gateway-server.py — ECO AGENT 统一网关服务
   各平台的凭证信息
 """
 
+import argparse
+import base64
+import hashlib
+import hmac
+import json
+import logging
 import os
 import sys
-import json
-import hmac
-import hashlib
-import base64
-import logging
-import argparse
 from datetime import datetime
 
 # ===== 条件导入 FastAPI =====
 try:
-    from fastapi import FastAPI, Request, HTTPException
-    from fastapi.responses import JSONResponse, Response
     import uvicorn
+    from fastapi import FastAPI, HTTPException, Request
+    from fastapi.responses import JSONResponse, Response
 except ImportError:
     print("[ERROR] 缺少依赖：pip install fastapi uvicorn")
     sys.exit(1)
@@ -83,6 +83,7 @@ CONFIG = {
 }
 
 # ===== ECO AGENT 消息处理核心 =====
+
 
 class ECOAgentHandler:
     """ECO AGENT 消息处理核心"""
@@ -190,13 +191,17 @@ class ECOAgentHandler:
         """解析命令"""
         msg = msg.strip().lower()
         commands = {
-            "帮助": "help", "help": "help", "h": "help",
-            "开始": "start", "start": "start",
-            "状态": "status", "status": "status",
+            "帮助": "help",
+            "help": "help",
+            "h": "help",
+            "开始": "start",
+            "start": "start",
+            "状态": "status",
+            "status": "status",
         }
         for key, cmd in commands.items():
             if msg == key or msg.startswith(key + " ") or msg == f"/{key}":
-                args = msg[len(key):].strip() if msg != key else ""
+                args = msg[len(key) :].strip() if msg != key else ""
                 return cmd, args
         return "query", msg
 
@@ -255,9 +260,8 @@ class ECOAgentHandler:
         try:
             # 直接调用 eco-knowledge-mcp 的搜索逻辑
             sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-            from _scripts.eco_knowledge_mcp import (
-                find_vault_path, search_in_files, collect_wiki_files
-            )
+            from _scripts.eco_knowledge_mcp import collect_wiki_files, find_vault_path, search_in_files
+
             vault = find_vault_path()
             if not vault.exists():
                 return None
@@ -355,6 +359,7 @@ async def healthz():
 
 # ===== 通用渠道入站（agent_core.channels 注册表：webhook/qqbot/wechat_oa 等） =====
 
+
 @app.api_route("/channels/{name}", methods=["GET", "POST"])
 async def channel_inbound(name: str, request: Request):
     """统一渠道回调入口（D4）。
@@ -365,16 +370,17 @@ async def channel_inbound(name: str, request: Request):
     验签失败/注入拦截按 registry 语义回 200 固定话术。
     """
     from agent_core.channels.http_server import dispatch_request
+
     body = await request.body()
     status, content_type, payload = dispatch_request(
-        request.method, name,
-        headers=dict(request.headers.items()),
-        args=dict(request.query_params), body=body)
+        request.method, name, headers=dict(request.headers.items()), args=dict(request.query_params), body=body
+    )
     media_type = content_type.split(";")[0]
     return Response(content=payload, status_code=status, media_type=media_type)
 
 
 # ===== 飞书 Webhook =====
+
 
 @app.post(CONFIG["feishu"]["path"])
 async def feishu_webhook(request: Request):
@@ -404,12 +410,13 @@ def _build_feishu_reply(result: dict) -> dict:
             "data": {
                 "content": json.dumps({"text": result["content"]}, ensure_ascii=False),
                 "msg_type": "text",
-            }
+            },
         }
     return {"code": 0}
 
 
 # ===== 企业微信 Webhook =====
+
 
 @app.post(CONFIG["wecom"]["path"])
 async def wecom_webhook(request: Request):
@@ -455,6 +462,7 @@ def _build_wecom_reply(result: dict) -> dict:
 
 # ===== 钉钉 Webhook =====
 
+
 @app.post(CONFIG["dingtalk"]["path"])
 async def dingtalk_webhook(request: Request):
     body = await request.json()
@@ -481,9 +489,7 @@ def verify_dingtalk_sign(timestamp: str, sign: str) -> bool:
     if not secret or not timestamp or not sign:
         return True
     string_to_sign = f"{timestamp}\n{secret}"
-    hmac_code = hmac.new(
-        secret.encode(), string_to_sign.encode(), hashlib.sha256
-    ).digest()
+    hmac_code = hmac.new(secret.encode(), string_to_sign.encode(), hashlib.sha256).digest()
     calc_sign = base64.b64encode(hmac_code).decode()
     return calc_sign == sign
 
@@ -496,6 +502,7 @@ def _build_dingtalk_reply(result: dict) -> dict:
 
 
 # ===== 微信公众平台 Webhook =====
+
 
 @app.post(CONFIG["wechat"]["path"])
 async def wechat_webhook(request: Request):
@@ -511,6 +518,7 @@ async def wechat_webhook(request: Request):
     xml_data = body.decode("utf-8")
     # 简易 XML 解析
     import re
+
     msg_type = re.search(r"<MsgType><!\[CDATA\[(.*?)\]\]></MsgType>", xml_data)
     content = re.search(r"<Content><!\[CDATA\[(.*?)\]\]></Content>", xml_data)
     from_user = re.search(r"<FromUserName><!\[CDATA\[(.*?)\]\]></FromUserName>", xml_data)
@@ -555,6 +563,7 @@ def _build_wechat_reply(result: dict, data: dict) -> str:
 
 
 # ===== 启动服务 =====
+
 
 def main():
     parser = argparse.ArgumentParser(description="ECO AGENT 网关服务")

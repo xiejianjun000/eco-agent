@@ -9,13 +9,13 @@ heartbeat.py — Eco Agent L3 后台心跳循环 (Autonomous Pulse)
 """
 
 import json
-import os
-import time
 import logging
+import os
 import threading
-from pathlib import Path
-from datetime import datetime
+import time
 from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("heartbeat")
 
@@ -32,7 +32,7 @@ class PulseLoop:
         self._thread: threading.Thread | None = None
         self._pulse_count = 0
         self._interval = 600  # 默认10分钟
-        self._min_interval = 300   # 5分钟
+        self._min_interval = 300  # 5分钟
         self._max_interval = 1200  # 20分钟
         self._load_aware = True
         self._listeners: dict[str, Callable] = {}
@@ -72,12 +72,15 @@ class PulseLoop:
                     logger.warning(f"[Pulse] {name}: {e}")
 
             elapsed = time.time() - start_time
-            self._pulse_log.append({
-                "id": pulse_id, "count": self._pulse_count,
-                "timestamp": datetime.now().isoformat(),
-                "elapsed_s": round(elapsed, 2),
-                "results": results,
-            })
+            self._pulse_log.append(
+                {
+                    "id": pulse_id,
+                    "count": self._pulse_count,
+                    "timestamp": datetime.now().isoformat(),
+                    "elapsed_s": round(elapsed, 2),
+                    "results": results,
+                }
+            )
             if len(self._pulse_log) > 100:
                 self._pulse_log = self._pulse_log[-100:]
 
@@ -136,6 +139,7 @@ class PulseLoop:
 # PulseSteps — 五步骤真实实现
 # ═══════════════════════════════════
 
+
 class PulseSteps:
     """L3 心跳五步骤真实实现（路径全部可注入，离线测试安全）
 
@@ -146,13 +150,17 @@ class PulseSteps:
     suggestions → 基于其他步骤结果生成建议；一切正常返回 None（静默原则）
     """
 
-    def __init__(self, vault_path: Path | None = None, watch_dirs: list | None = None,
-                 state_file: Path | None = None, db_paths: list | None = None,
-                 stale_days: int = 90):
+    def __init__(
+        self,
+        vault_path: Path | None = None,
+        watch_dirs: list | None = None,
+        state_file: Path | None = None,
+        db_paths: list | None = None,
+        stale_days: int = 90,
+    ):
         self._vault = Path(vault_path) if vault_path else None
         self._watch = [Path(d) for d in (watch_dirs or [])]
-        self._state_file = Path(state_file) if state_file else (
-            DATA_DIR / "pulse_state.json")
+        self._state_file = Path(state_file) if state_file else (DATA_DIR / "pulse_state.json")
         self._dbs = [Path(d) for d in (db_paths or [])]
         self._stale_days = stale_days
 
@@ -180,9 +188,9 @@ class PulseSteps:
 
     def _save_snapshot(self, files: dict[str, float]):
         self._state_file.parent.mkdir(parents=True, exist_ok=True)
-        self._state_file.write_text(json.dumps(
-            {"files": files, "taken_at": datetime.now().isoformat()},
-            ensure_ascii=False), encoding="utf-8")
+        self._state_file.write_text(
+            json.dumps({"files": files, "taken_at": datetime.now().isoformat()}, ensure_ascii=False), encoding="utf-8"
+        )
 
     # ── 五步骤 ──
 
@@ -206,19 +214,18 @@ class PulseSteps:
         changed = [p for p, mt in cur.items() if p not in old or old[p] < mt]
         deleted = [p for p in old if p not in cur]
         self._save_snapshot(cur)
-        return {"changed": len(changed) + len(deleted), "files": sorted(changed),
-                "deleted": len(deleted)}
+        return {"changed": len(changed) + len(deleted), "files": sorted(changed), "deleted": len(deleted)}
 
     def step_rule_engine(self) -> dict:
         """STEP 3: 规则触发——知识保鲜：超期未更新文件触发提醒（D10 知识新鲜度）"""
         cutoff = time.time() - self._stale_days * 86400
         triggered = [p for p, mt in self._scan().items() if mt < cutoff]
-        return {"rule": "knowledge_freshness", "stale_days": self._stale_days,
-                "triggered": sorted(triggered)}
+        return {"rule": "knowledge_freshness", "stale_days": self._stale_days, "triggered": sorted(triggered)}
 
     def step_mem_cron(self) -> dict:
         """STEP 4: 内存整理——SQLite VACUUM + 完整性检查（DB 不存在跳过不崩）"""
         import sqlite3
+
         vacuumed = 0
         integrity = "ok"
         for db in self._dbs:
@@ -257,6 +264,7 @@ class PulseSteps:
         """
         try:
             import sys
+
             if str(ROOT) not in sys.path:
                 sys.path.insert(0, str(ROOT))
             from _scripts.verify_ops import run_checks
@@ -304,7 +312,8 @@ pulse = PulseLoop()
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     p = PulseLoop()
     p.register_listener("sync", lambda: "已同步3个平台")
@@ -317,8 +326,7 @@ def test():
     p.stop()
 
     stats = p.get_stats()
-    print(f"[Pulse] 心跳: {stats['pulse_count']}次, 运行中: {stats['running']}, "
-          f"监听器: {stats['listeners']}个", flush=True)
+    print(f"[Pulse] 心跳: {stats['pulse_count']}次, 运行中: {stats['running']}, 监听器: {stats['listeners']}个", flush=True)
     print("[OK] L3 Heartbeat 测试通过", flush=True)
 
 

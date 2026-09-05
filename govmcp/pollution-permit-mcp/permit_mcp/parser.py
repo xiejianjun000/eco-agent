@@ -36,17 +36,19 @@ def parse_license_list(html: str) -> dict:
             if link and link.get("href"):
                 m = re.search(r"dataid=([0-9a-f]{32})", link["href"])
                 dataid = m.group(1) if m else None
-            rows.append({
-                "province": tds[0].get_text(strip=True),
-                "city": tds[1].get_text(strip=True),
-                "license_no": tds[2].get_text(strip=True),
-                "company_name": tds[3].get_text(strip=True),
-                "industry": tds[4].get_text(strip=True),
-                "valid_period": tds[5].get_text(strip=True),
-                "issue_date": tds[6].get_text(strip=True),
-                "manage_type": tds[7].get_text(strip=True),
-                "dataid": dataid,
-            })
+            rows.append(
+                {
+                    "province": tds[0].get_text(strip=True),
+                    "city": tds[1].get_text(strip=True),
+                    "license_no": tds[2].get_text(strip=True),
+                    "company_name": tds[3].get_text(strip=True),
+                    "industry": tds[4].get_text(strip=True),
+                    "valid_period": tds[5].get_text(strip=True),
+                    "issue_date": tds[6].get_text(strip=True),
+                    "manage_type": tds[7].get_text(strip=True),
+                    "dataid": dataid,
+                }
+            )
     # 总页数
     total_pages = None
     m = re.search(r"共(\d+)页", html)
@@ -84,20 +86,29 @@ def parse_license_detail(html: str) -> dict:
             for tr in table.find_all("tr")[1:]:
                 tds = [td.get_text(strip=True) for td in tr.find_all("td")]
                 if len(tds) >= 5:
-                    versions.append({
-                        "license_no": tds[0],
-                        "biz_type": tds[1],
-                        "version": tds[2],
-                        "finish_date": tds[3],
-                        "valid_period": tds[4],
-                    })
+                    versions.append(
+                        {
+                            "license_no": tds[0],
+                            "biz_type": tds[1],
+                            "version": tds[2],
+                            "finish_date": tds[3],
+                            "valid_period": tds[4],
+                        }
+                    )
             break
 
     # 副本摘要
     summary = {}
-    for label in ["主要污染物类别", "大气主要污染物种类", "大气污染物排放规律",
-                  "大气污染物排放执行标准", "废水主要污染物种类", "废水污染物排放规律",
-                  "废水污染物排放执行标准", "排污权使用和交易信息"]:
+    for label in [
+        "主要污染物类别",
+        "大气主要污染物种类",
+        "大气污染物排放规律",
+        "大气污染物排放执行标准",
+        "废水主要污染物种类",
+        "废水污染物排放规律",
+        "废水污染物排放执行标准",
+        "排污权使用和交易信息",
+    ]:
         m = re.search(re.escape(label) + r"[:：]\s*(.*?)(?:\|)", text)
         if m:
             summary[label] = m.group(1).strip()
@@ -111,10 +122,14 @@ def parse_license_detail(html: str) -> dict:
         "longitude": hidden_val("longitude"),
         "latitude": hidden_val("latitude"),
         "lng_dms": {
-            "d": hidden_val("opelngd"), "f": hidden_val("opelngf"), "m": hidden_val("opelngm"),
+            "d": hidden_val("opelngd"),
+            "f": hidden_val("opelngf"),
+            "m": hidden_val("opelngm"),
         },
         "lat_dms": {
-            "d": hidden_val("opelatd"), "f": hidden_val("opelatf"), "m": hidden_val("opelatm"),
+            "d": hidden_val("opelatd"),
+            "f": hidden_val("opelatf"),
+            "m": hidden_val("opelatm"),
         },
         "versions": versions,
         "summary": summary,
@@ -259,12 +274,13 @@ def parse_news_detail(html: str) -> dict:
     for a in soup.find_all("a", href=True):
         href = a["href"]
         if re.search(r"\.(pdf|doc|docx|wps|txt)(\?|$)", href, re.I):
-            attachments.append({
-                "name": a.get_text(strip=True) or href.split("/")[-1],
-                "url": href if href.startswith("http") else "https://permit.mee.gov.cn" + href,
-            })
-    return {"title": title, "publish_date": pub_date,
-            "attachments": attachments, "content": body_text}
+            attachments.append(
+                {
+                    "name": a.get_text(strip=True) or href.split("/")[-1],
+                    "url": href if href.startswith("http") else "https://permit.mee.gov.cn" + href,
+                }
+            )
+    return {"title": title, "publish_date": pub_date, "attachments": attachments, "content": body_text}
 
 
 # ---------- 法规标准列表 ----------

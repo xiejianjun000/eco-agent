@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 
 from font_guard import build_font_config, ensure_required_fonts, install_assets_for_missing
-from front_matter import parse_front_matter, meta_text
+from front_matter import meta_text, parse_front_matter
 
 try:
     from docx import Document
@@ -16,10 +16,7 @@ try:
     from docx.oxml.ns import qn
     from docx.shared import Mm, Pt, RGBColor
 except ImportError as exc:  # pragma: no cover - user environment dependent
-    raise SystemExit(
-        "Missing dependency: python-docx. Install it with `pip install python-docx`."
-    ) from exc
-
+    raise SystemExit("Missing dependency: python-docx. Install it with `pip install python-docx`.") from exc
 
 
 def set_run_font(
@@ -211,11 +208,7 @@ def truthy(value: object, *, default: bool = False) -> bool:
 def add_document_header(doc: Document, meta: dict[str, object], fonts: dict[str, str]) -> None:
     issuer_mark = meta_text(meta, "issuer_mark")
     doc_number = meta_text(meta, "doc_number")
-    issue_person = (
-        meta_text(meta, "issue_person")
-        or meta_text(meta, "signatory")
-        or meta_text(meta, "issuer_person")
-    )
+    issue_person = meta_text(meta, "issue_person") or meta_text(meta, "signatory") or meta_text(meta, "issuer_person")
     preface_items = [
         meta_text(meta, "copy_number"),
         meta_text(meta, "secret_level"),

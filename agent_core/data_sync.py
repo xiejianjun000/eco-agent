@@ -7,12 +7,12 @@ D-03: 10万字压缩<50% Token, RAG准确率>=90%
 """
 
 import json
-import time
 import logging
-import threading
 import re
-from pathlib import Path
+import threading
+import time
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("data_sync")
 ROOT = Path(__file__).resolve().parent.parent
@@ -25,6 +25,7 @@ SYNC_LOG.parent.mkdir(parents=True, exist_ok=True)
 # D-02 自动数据同步
 # ═══════════════════════════════════
 
+
 class DataSync:
     """D-02 自动数据同步——每20分钟全量拉取"""
 
@@ -36,7 +37,8 @@ class DataSync:
         self._sync_count = 0
 
     def start(self):
-        if self._running: return
+        if self._running:
+            return
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
@@ -83,6 +85,7 @@ class DataSync:
 # D-03 Token 压缩引擎
 # ═══════════════════════════════════
 
+
 class TokenCompressor:
     """D-03 Token 压缩引擎——10万字压缩<50% Token"""
 
@@ -95,25 +98,30 @@ class TokenCompressor:
         original_tokens = self._estimate_tokens(text)
 
         if original_chars < 500:
-            return {"compressed": text, "original_chars": original_chars, "compressed_chars": original_chars,
-                    "ratio": 1.0, "method": "skip"}
+            return {
+                "compressed": text,
+                "original_chars": original_chars,
+                "compressed_chars": original_chars,
+                "ratio": 1.0,
+                "method": "skip",
+            }
 
         # 多策略压缩
         # 策略1: 代码块保留结构
-        text = re.sub(r'```[\s\S]*?```', lambda m: self._compress_code_block(m.group()), text)
+        text = re.sub(r"```[\s\S]*?```", lambda m: self._compress_code_block(m.group()), text)
         # 策略2: 长段落保留首尾句
-        text = re.sub(r'(?<!\n)\n{3,}', '\n\n', text)
+        text = re.sub(r"(?<!\n)\n{3,}", "\n\n", text)
         # 策略3: 移除连续空白
-        text = re.sub(r'[ \t]{2,}', ' ', text)
+        text = re.sub(r"[ \t]{2,}", " ", text)
         # 策略4: 超长行截断
-        lines = text.split('\n')
+        lines = text.split("\n")
         compressed_lines = []
         for line in lines:
             if len(line) > 500:
                 compressed_lines.append(line[:250] + "\n... [压缩] ..." + line[-200:])
             else:
                 compressed_lines.append(line)
-        text = '\n'.join(compressed_lines)
+        text = "\n".join(compressed_lines)
 
         compressed_chars = len(text)
         compressed_tokens = self._estimate_tokens(text)
@@ -121,17 +129,25 @@ class TokenCompressor:
 
         self._total_saved += original_tokens - compressed_tokens
 
-        return {"compressed": text, "original_chars": original_chars, "compressed_chars": compressed_chars,
-                "original_tokens": original_tokens, "compressed_tokens": compressed_tokens,
-                "ratio": round(ratio, 3), "saved": original_tokens - compressed_tokens, "method": "multi"}
+        return {
+            "compressed": text,
+            "original_chars": original_chars,
+            "compressed_chars": compressed_chars,
+            "original_tokens": original_tokens,
+            "compressed_tokens": compressed_tokens,
+            "ratio": round(ratio, 3),
+            "saved": original_tokens - compressed_tokens,
+            "method": "multi",
+        }
 
     def _compress_code_block(self, block: str) -> str:
-        lines = block.split('\n')
-        if len(lines) <= 6: return block
-        return '\n'.join(lines[:3] + ['  ... (代码压缩 ' + str(len(lines)-4) + ' 行) ...'] + lines[-2:])
+        lines = block.split("\n")
+        if len(lines) <= 6:
+            return block
+        return "\n".join(lines[:3] + ["  ... (代码压缩 " + str(len(lines) - 4) + " 行) ..."] + lines[-2:])
 
     def _estimate_tokens(self, text: str) -> int:
-        chinese = len(re.findall(r'[一-鿿]', text))
+        chinese = len(re.findall(r"[一-鿿]", text))
         other = len(text) - chinese
         return chinese * 2 + other
 
@@ -140,8 +156,10 @@ class TokenCompressor:
 
         返回 1.0 仅当原文无关键词或全部保留；返回 0.0 表示关键词全部丢失。
         """
+
         def extract_keywords(t):
-            return set(re.findall(r'[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}', t))
+            return set(re.findall(r"[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}", t))
+
         orig_kw = extract_keywords(original)
         comp_kw = extract_keywords(compressed)
         if not orig_kw:
@@ -154,28 +172,31 @@ class TokenCompressor:
 
 # ===== 测试 =====
 
+
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     # D-03 测试
     tc = TokenCompressor()
     long_text = "测试" * 50000  # 10万字
     long_text += "\n".join(f"这是第{i}段重要的法规条文内容，包含关键信息{i}" for i in range(100))
     result = tc.compress(long_text)
-    ratio = result['ratio']
-    print(f"[D-03] 压缩比: {ratio*100:.1f}% (需<50%)", flush=True)
+    ratio = result["ratio"]
+    print(f"[D-03] 压缩比: {ratio * 100:.1f}% (需<50%)", flush=True)
     assert ratio < 0.5, f"FAIL: 压缩比{ratio}>=0.5"
     print(f"[D-03] 原始: {result['original_chars']}字 → 压缩: {result['compressed_chars']}字", flush=True)
 
     # RAG 准确率——如实计算，无封顶无保底；与独立重算结果一致才通过
-    accuracy = tc.rag_accuracy(long_text, result['compressed'])
+    accuracy = tc.rag_accuracy(long_text, result["compressed"])
     import re as _re
-    kw_o = set(_re.findall(r'[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}', long_text))
-    kw_c = set(_re.findall(r'[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}', result['compressed']))
+
+    kw_o = set(_re.findall(r"[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}", long_text))
+    kw_c = set(_re.findall(r"[一-鿿]{2,4}|\d+|[a-zA-Z]{3,}", result["compressed"]))
     expected = round(len(kw_o & kw_c) / len(kw_o), 4) if kw_o else 1.0
-    print(f"[D-03] RAG准确率(真实): {accuracy*100:.1f}%", flush=True)
+    print(f"[D-03] RAG准确率(真实): {accuracy * 100:.1f}%", flush=True)
     assert accuracy == expected, f"FAIL: RAG准确率计算不一致 {accuracy} != {expected}"
     # 全丢失场景必须如实返回 0，不得有保底
     assert tc.rag_accuracy("甲乙丙丁 12345", "完全无关的英文 unrelated") == 0.0
@@ -187,7 +208,7 @@ def test():
     time.sleep(2.5)
     ds.stop()
     print(f"[D-02] 同步次数: {ds.get_stats()['sync_count']} (需≥1)", flush=True)
-    assert ds.get_stats()['sync_count'] >= 1
+    assert ds.get_stats()["sync_count"] >= 1
 
     print("\n[PASS] D-02 + D-03 全部通过", flush=True)
 

@@ -30,10 +30,13 @@ class AuditPanel:
                 "stats": stats,
             }
 
-        slots.register("side.tab", {
-            "id": "audit-panel",
-            "title": "审计链",
-            "description": "govmcp SM3 审计链：完整性校验 + 调用统计",
-            "provider": provider,
-        })
+        slots.register(
+            "side.tab",
+            {
+                "id": "audit-panel",
+                "title": "审计链",
+                "description": "govmcp SM3 审计链：完整性校验 + 调用统计",
+                "provider": provider,
+            },
+        )
         logger.info("audit_panel 面板已注册 side.tab")

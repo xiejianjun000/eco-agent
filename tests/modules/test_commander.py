@@ -1,7 +1,9 @@
 """L2 任务执行循环 + Agent 协作测试——状态转移与数据结构断言"""
-import sys
+
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from agent_core.commander_v2 import CommanderV2, DAGValidator, Negotiator, TaskStatus
 
 
@@ -49,28 +51,28 @@ class TestCommander:
 class TestDAG:
     def test_cycle_detection_exact_nodes(self):
         tasks = [
-            type('T', (), {'id': 'a', 'depends_on': ['b']})(),
-            type('T', (), {'id': 'b', 'depends_on': ['c']})(),
-            type('T', (), {'id': 'c', 'depends_on': ['a']})(),
+            type("T", (), {"id": "a", "depends_on": ["b"]})(),
+            type("T", (), {"id": "b", "depends_on": ["c"]})(),
+            type("T", (), {"id": "c", "depends_on": ["a"]})(),
         ]
         cycle = DAGValidator.has_cycle(tasks)
         assert cycle is not None
-        assert set(cycle) <= {'a', 'b', 'c'} and len(cycle) >= 2
+        assert set(cycle) <= {"a", "b", "c"} and len(cycle) >= 2
 
     def test_cycle_free_chain(self):
         tasks = [
-            type('T', (), {'id': 'a', 'depends_on': []})(),
-            type('T', (), {'id': 'b', 'depends_on': ['a']})(),
-            type('T', (), {'id': 'c', 'depends_on': ['b']})(),
+            type("T", (), {"id": "a", "depends_on": []})(),
+            type("T", (), {"id": "b", "depends_on": ["a"]})(),
+            type("T", (), {"id": "c", "depends_on": ["b"]})(),
         ]
         assert DAGValidator.has_cycle(tasks) is None
 
     def test_break_cycle_removes_cycle(self):
         """破环后必须无环（真实副作用断言）"""
         tasks = [
-            type('T', (), {'id': 'a', 'depends_on': ['b']})(),
-            type('T', (), {'id': 'b', 'depends_on': ['c']})(),
-            type('T', (), {'id': 'c', 'depends_on': ['a']})(),
+            type("T", (), {"id": "a", "depends_on": ["b"]})(),
+            type("T", (), {"id": "b", "depends_on": ["c"]})(),
+            type("T", (), {"id": "c", "depends_on": ["a"]})(),
         ]
         fixed = DAGValidator.break_cycle(tasks)
         assert DAGValidator.has_cycle(fixed) is None

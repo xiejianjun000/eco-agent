@@ -1,15 +1,33 @@
 """模块 A：provider 注册表 + llm_client 集成 + CLI model 子命令测试（全部 mock，禁止真实外呼）"""
+
 import pytest
 
 from agent_core.llm_providers import (
-    PROVIDERS, ProviderSpec, available_providers, get_provider,
-    list_providers, resolve_provider,
+    PROVIDERS,
+    ProviderSpec,
+    available_providers,
+    get_provider,
+    list_providers,
+    resolve_provider,
 )
 
 EXPECTED = {
-    "moonshot", "deepseek", "zhipu", "qwen", "wenxin", "doubao", "doubao_plan",
-    "hunyuan", "spark", "minimax", "stepfun", "baichuan", "sensenova", "ollama",
-    "openrouter", "custom",
+    "moonshot",
+    "deepseek",
+    "zhipu",
+    "qwen",
+    "wenxin",
+    "doubao",
+    "doubao_plan",
+    "hunyuan",
+    "spark",
+    "minimax",
+    "stepfun",
+    "baichuan",
+    "sensenova",
+    "ollama",
+    "openrouter",
+    "custom",
 }
 CAPS_ALL = {"tools", "stream", "json", "vision"}
 
@@ -59,8 +77,7 @@ class TestResolve:
         assert resolve_provider(None, {"KIMI_API_KEY": "k"}).name == "moonshot"
         assert resolve_provider(None, {"MOONSHOT_API_KEY": "k"}).name == "moonshot"
         assert resolve_provider(None, {"DEEPSEEK_API_KEY": "k"}).name == "deepseek"
-        assert resolve_provider(
-            None, {"KIMI_API_KEY": "k", "DEEPSEEK_API_KEY": "k"}).name == "moonshot"
+        assert resolve_provider(None, {"KIMI_API_KEY": "k", "DEEPSEEK_API_KEY": "k"}).name == "moonshot"
 
     def test_first_available_fallback(self):
         spec = resolve_provider(None, {"HUNYUAN_API_KEY": "k"})
@@ -70,8 +87,7 @@ class TestResolve:
         assert resolve_provider(None, {}).name == "deepseek"
 
     def test_invalid_env_name_falls_through(self):
-        assert resolve_provider(None, {"ECO_LLM_PROVIDER": "bogus",
-                                       "DEEPSEEK_API_KEY": "k"}).name == "deepseek"
+        assert resolve_provider(None, {"ECO_LLM_PROVIDER": "bogus", "DEEPSEEK_API_KEY": "k"}).name == "deepseek"
 
 
 class TestAvailable:
@@ -92,6 +108,7 @@ class TestAvailable:
 class TestLLMClientIntegration:
     def test_legacy_providers_dict_backward_compat(self):
         from agent_core.llm_client import PROVIDERS as LEGACY
+
         assert LEGACY["deepseek"]["base_url"] == "https://api.deepseek.com/v1"
         assert LEGACY["deepseek"]["default_model"] == "deepseek-v4-pro"
         assert LEGACY["kimi"]["base_url"] == "https://api.moonshot.cn/v1"
@@ -104,6 +121,7 @@ class TestLLMClientIntegration:
 
     def test_from_provider(self, monkeypatch):
         from agent_core.llm_client import LLMClient
+
         monkeypatch.setenv("ZHIPU_API_KEY", "sk-test-zhipu")
         c = LLMClient.from_provider("zhipu")
         assert c._provider_name == "zhipu"
@@ -113,11 +131,13 @@ class TestLLMClientIntegration:
 
     def test_from_provider_unknown_raises(self):
         from agent_core.llm_client import LLMClient
+
         with pytest.raises(KeyError):
             LLMClient.from_provider("nope")
 
     def test_from_provider_moonshot_kimi_key_compat(self, monkeypatch):
         from agent_core.llm_client import LLMClient
+
         monkeypatch.delenv("MOONSHOT_API_KEY", raising=False)
         monkeypatch.setenv("KIMI_API_KEY", "sk-kimi")
         c = LLMClient.from_provider("moonshot")
@@ -125,6 +145,7 @@ class TestLLMClientIntegration:
 
     def test_from_provider_custom(self, monkeypatch):
         from agent_core.llm_client import LLMClient
+
         monkeypatch.setenv("ECO_CUSTOM_BASE_URL", "http://10.0.0.1:9000/v1/")
         monkeypatch.setenv("ECO_CUSTOM_API_KEY", "sk-c")
         monkeypatch.setenv("ECO_CUSTOM_MODEL", "my-model")
@@ -134,6 +155,7 @@ class TestLLMClientIntegration:
 
     def test_from_provider_no_key_unavailable(self, monkeypatch):
         from agent_core.llm_client import LLMClient
+
         monkeypatch.delenv("HUNYUAN_API_KEY", raising=False)
         c = LLMClient.from_provider("hunyuan")
         assert c._api_key == ""
@@ -141,6 +163,7 @@ class TestLLMClientIntegration:
 
     def test_switch_provider_accepts_registry_names(self, monkeypatch):
         from agent_core.llm_client import LLMClient
+
         monkeypatch.setenv("SPARK_API_KEY", "sk-spark")
         c = LLMClient()
         assert c.switch_provider("spark")
@@ -150,6 +173,7 @@ class TestLLMClientIntegration:
 
     def test_resolve_temperature_kept(self):
         from agent_core.llm_client import LLMClient
+
         assert LLMClient._resolve_temperature("kimi-k2.5", 0.7) == 1
         assert LLMClient._resolve_temperature("Kimi-K2-0905", 0.3) == 1
         assert LLMClient._resolve_temperature("deepseek-chat", 0.7) == 0.7
@@ -160,6 +184,7 @@ class TestLLMClientIntegration:
 # ---------------------------------------------------------------------------
 def _args(**kw):
     import argparse
+
     defaults = dict(action="model", key=None, value=None)
     defaults.update(kw)
     return argparse.Namespace(**defaults)
@@ -169,19 +194,21 @@ class TestCLIModel:
     def test_model_list_table(self, capsys, monkeypatch):
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-x")
         from eco.commands import cmd_config
+
         rc = cmd_config.run(_args(key="list"))
         out = capsys.readouterr().out
         assert rc == 0
         for name in EXPECTED:
             assert name in out
         # deepseek 有 key 标 ✅；无 key 的行标 ❌
-        line = [l for l in out.splitlines() if l.startswith("deepseek")][0]
+        line = [ln for ln in out.splitlines() if ln.startswith("deepseek")][0]
         assert "✅" in line
-        line = [l for l in out.splitlines() if l.startswith("hunyuan")][0]
+        line = [ln for ln in out.splitlines() if ln.startswith("hunyuan")][0]
         assert "❌" in line
 
     def test_model_use_writes_config(self, tmp_path, monkeypatch, capsys):
         from eco.commands import cmd_config
+
         monkeypatch.setattr(cmd_config, "ENV_FILE", tmp_path / ".env")
         rc = cmd_config.run(_args(key="use", value="zhipu"))
         assert rc == 0
@@ -190,14 +217,16 @@ class TestCLIModel:
 
     def test_model_use_unknown_name(self, tmp_path, monkeypatch, capsys):
         from eco.commands import cmd_config
+
         monkeypatch.setattr(cmd_config, "ENV_FILE", tmp_path / ".env")
         rc = cmd_config.run(_args(key="use", value="bogus"))
         assert rc == 2
         assert "可用" in capsys.readouterr().out
 
     def test_model_test_success(self, tmp_path, monkeypatch, capsys):
-        from eco.commands import cmd_config
         from agent_core.llm_client import LLMClient
+        from eco.commands import cmd_config
+
         monkeypatch.setattr(cmd_config, "ENV_FILE", tmp_path / ".env")
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
         calls = {}
@@ -206,6 +235,7 @@ class TestCLIModel:
             calls["prompt"] = prompt
             calls["url"] = self._provider["base_url"]
             return "pong"
+
         monkeypatch.setattr(LLMClient, "complete", fake_complete)
         rc = cmd_config.run(_args(key="test", value="deepseek"))
         out = capsys.readouterr().out
@@ -216,6 +246,7 @@ class TestCLIModel:
 
     def test_model_test_no_key_clear_error(self, tmp_path, monkeypatch, capsys):
         from eco.commands import cmd_config
+
         monkeypatch.setattr(cmd_config, "ENV_FILE", tmp_path / ".env")
         monkeypatch.delenv("HUNYUAN_API_KEY", raising=False)
         rc = cmd_config.run(_args(key="test", value="hunyuan"))
@@ -224,14 +255,16 @@ class TestCLIModel:
         assert "HUNYUAN_API_KEY" in out
 
     def test_model_test_failure_shows_friendly_error(self, tmp_path, monkeypatch, capsys):
-        from eco.commands import cmd_config
         from agent_core.llm_client import LLMClient
+        from eco.commands import cmd_config
+
         monkeypatch.setattr(cmd_config, "ENV_FILE", tmp_path / ".env")
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
 
         def fake_complete(self, prompt, system="", max_tokens=512, timeout=90.0):
             self._last_error = {"kind": "auth", "status": 401, "detail": "bad key"}
             return ""
+
         monkeypatch.setattr(LLMClient, "complete", fake_complete)
         rc = cmd_config.run(_args(key="test", value="deepseek"))
         out = capsys.readouterr().out
@@ -240,21 +273,24 @@ class TestCLIModel:
 
     def test_model_test_default_resolve(self, tmp_path, monkeypatch, capsys):
         """不带 name 时按注册表回退链解析（KIMI_API_KEY → moonshot）"""
-        from eco.commands import cmd_config
         from agent_core.llm_client import LLMClient
+        from eco.commands import cmd_config
+
         monkeypatch.setattr(cmd_config, "ENV_FILE", tmp_path / ".env")
         for k in ("MOONSHOT_API_KEY", "DEEPSEEK_API_KEY", "ECO_LLM_PROVIDER", "ECO_PROVIDER"):
             monkeypatch.delenv(k, raising=False)
         monkeypatch.setenv("KIMI_API_KEY", "sk-kimi")
         seen = {}
-        monkeypatch.setattr(LLMClient, "complete",
-                            lambda self, prompt, **kw: seen.setdefault("url", self._provider["base_url"]) or "ok")
+        monkeypatch.setattr(
+            LLMClient, "complete", lambda self, prompt, **kw: seen.setdefault("url", self._provider["base_url"]) or "ok"
+        )
         rc = cmd_config.run(_args(key="test"))
         assert rc == 0
         assert seen["url"] == "https://api.moonshot.cn/v1"
 
     def test_config_legacy_actions(self, tmp_path, monkeypatch, capsys):
         from eco.commands import cmd_config
+
         monkeypatch.setattr(cmd_config, "ENV_FILE", tmp_path / ".env")
         assert cmd_config.run(_args(action="init")) == 0
         assert cmd_config.run(_args(action="set", key="FOO", value="bar")) == 0

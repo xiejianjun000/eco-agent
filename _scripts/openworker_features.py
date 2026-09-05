@@ -11,10 +11,10 @@ openworker_features.py — ECO AGENT OPENWORKER 对标补全
   from _scripts.openworker_features import OperatingModes, AgentTypes, Connectors
 """
 
-import time
 import logging
-from pathlib import Path
+import time
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("openworker")
 
@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # ═══════════════════════════════════════
 # 1. OperatingModes — 5 种模式
 # ═══════════════════════════════════════
+
 
 class OperatingModes:
     """5 种 Operating Modes——discuss/plan/interactive/auto/custom"""
@@ -95,6 +96,7 @@ class OperatingModes:
 # 2. AgentTypes — 5 种 Agent
 # ═══════════════════════════════════════
 
+
 class AgentTypes:
     """5 种 Agent Type——chat/code/cowork/myhelper/ops"""
 
@@ -143,7 +145,13 @@ class AgentTypes:
         if agent_type not in self.TYPES:
             return {"error": f"未知 Agent 类型: {agent_type}, 可选: {list(self.TYPES.keys())}"}
         agent_id = f"agent_{agent_type}_{int(time.time())}"
-        instance = {"id": agent_id, "type": agent_type, **self.TYPES[agent_type], "config": config or {}, "spawned_at": datetime.now().isoformat()}
+        instance = {
+            "id": agent_id,
+            "type": agent_type,
+            **self.TYPES[agent_type],
+            "config": config or {},
+            "spawned_at": datetime.now().isoformat(),
+        }
         self._active[agent_id] = instance
         return instance
 
@@ -154,13 +162,17 @@ class AgentTypes:
         return list(self._active.values())
 
     def get_stats(self) -> dict:
-        return {"types": len(self.TYPES), "active": len(self._active),
-                "by_type": {t: sum(1 for a in self._active.values() if a["type"] == t) for t in self.TYPES}}
+        return {
+            "types": len(self.TYPES),
+            "active": len(self._active),
+            "by_type": {t: sum(1 for a in self._active.values() if a["type"] == t) for t in self.TYPES},
+        }
 
 
 # ═══════════════════════════════════════
 # 3. Connectors — 25+ 连接器框架
 # ═══════════════════════════════════════
+
 
 class Connectors:
     """25+ 外部服务连接器——统一接口"""
@@ -218,7 +230,8 @@ class Connectors:
     def list_by_type(self, connector_type: str = None) -> list[dict]:
         results = []
         for name, info in self.CONNECTOR_REGISTRY.items():
-            if connector_type and info["type"] != connector_type: continue
+            if connector_type and info["type"] != connector_type:
+                continue
             results.append({"name": name, **info, "active": name in self._active_connections})
         return results
 
@@ -230,11 +243,16 @@ class Connectors:
         active_by_status = {}
         for info in self.CONNECTOR_REGISTRY.values():
             active_by_status[info["status"]] = active_by_status.get(info["status"], 0) + 1
-        return {"total_connectors": total, "by_type": by_type, "by_status": active_by_status,
-                "active_connections": len(self._active_connections)}
+        return {
+            "total_connectors": total,
+            "by_type": by_type,
+            "by_status": active_by_status,
+            "active_connections": len(self._active_connections),
+        }
 
 
 # ===== 测试 =====
+
 
 def test():
     print("[TEST] OPENWORKER 三项能力验证", flush=True)
@@ -247,9 +265,9 @@ def test():
 
     # 2. AgentTypes
     at = AgentTypes()
-    a1 = at.spawn("chat")
-    a2 = at.spawn("cowork")
-    a3 = at.spawn("code")
+    at.spawn("chat")
+    at.spawn("cowork")
+    at.spawn("code")
     print(f"[AgentTypes] 已生成: {at.get_stats()['active']} 个", flush=True)
 
     # 3. Connectors
@@ -259,7 +277,7 @@ def test():
     print(f"[Connectors] 按类型: {stats['by_type']}", flush=True)
     print(f"[Connectors] 按状态: {stats['by_status']}", flush=True)
 
-    print(f"\n{'='*40}", flush=True)
+    print(f"\n{'=' * 40}", flush=True)
     print("[OK] OPENWORKER 三项全部完成", flush=True)
 
 

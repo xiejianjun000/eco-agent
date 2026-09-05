@@ -8,7 +8,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 FRONT_KEYS = [
     "red_head",
     "font_profile",

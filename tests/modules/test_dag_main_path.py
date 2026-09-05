@@ -1,4 +1,5 @@
 """DAG 接 chat 主路径测试：复杂任务生成 todos、步骤完成勾选更新、-v 展示 DAG 边"""
+
 import pytest
 
 from agent_core.workspace import WorkspaceManager
@@ -22,13 +23,13 @@ class FakeSwarm:
         def s(stage, detail="", elapsed=0.0):
             if on_stage:
                 on_stage(stage, detail, elapsed)
+
         s("任务分解", "巡查Agent ∥ 法规Agent 并行 → 文书Agent → 总管合成")
         s("巡查Agent 完成", "现场要点", 1.0)
         s("法规Agent 完成", "法条核验", 1.0)
         s("文书Agent 完成", "记录框架", 1.0)
         s("总管合成完成", "最终答复", 1.0)
-        return {"contributions": {"patrol": "P", "law": "L", "doc": "D"},
-                "synthesis": "最终检查清单"}
+        return {"contributions": {"patrol": "P", "law": "L", "doc": "D"}, "synthesis": "最终检查清单"}
 
     def format_result(self, result):
         return result["synthesis"]
@@ -44,6 +45,7 @@ COMPLEX_Q = "对合力砖厂开展全面检查，出具检查清单和现场检�
 
 def test_complex_task_generates_and_completes_todos(ws, fake_swarm, capsys):
     from agent_core.role_swarm import is_complex_task
+
     assert is_complex_task(COMPLEX_Q)
     answer = cmd_chat._maybe_swarm(COMPLEX_Q)
     assert answer == "最终检查清单"
@@ -59,6 +61,7 @@ def test_complex_task_generates_and_completes_todos(ws, fake_swarm, capsys):
 
 def test_dag_edges_shown_in_verbose(ws, fake_swarm):
     from eco.trace import get_tracer, set_verbose
+
     set_verbose(True)
     try:
         cmd_chat._maybe_swarm(COMPLEX_Q, tracer=get_tracer())
@@ -78,14 +81,14 @@ def test_simple_task_no_dag(ws, fake_swarm):
 
 def test_partial_failure_keeps_unchecked(ws, monkeypatch):
     """某 DAG 步骤失败：对应 todo 不勾选，保留未完成状态"""
+
     class FailSwarm(FakeSwarm):
         def run(self, task, context="", on_stage=None):
             if on_stage:
                 on_stage("巡查Agent 完成", "", 0.5)
                 on_stage("法规Agent 完成", "", 0.5)
                 on_stage("总管合成完成", "", 0.5)
-            return {"contributions": {"patrol": "P", "law": "L", "doc": ""},
-                    "synthesis": "部分结果"}
+            return {"contributions": {"patrol": "P", "law": "L", "doc": ""}, "synthesis": "部分结果"}
 
     monkeypatch.setattr("agent_core.role_swarm.get_role_swarm", lambda: FailSwarm())
     cmd_chat._maybe_swarm(COMPLEX_Q)

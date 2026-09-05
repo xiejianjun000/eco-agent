@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """corrections 纠错采集/注入/管理 测试"""
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import pytest
+
 from agent_core.corrections import CorrectionStore, detect_correction
-from agent_core.prompt_engine import PromptEngine, PromptAuditChain
+from agent_core.prompt_engine import PromptAuditChain, PromptEngine
 
 
 @pytest.fixture()
@@ -16,12 +18,15 @@ def store(tmp_path):
 
 
 class TestDetect:
-    @pytest.mark.parametrize("text,expect", [
-        ("/correct 正确说法是超标排放适用大气法第九十九条", "正确说法是超标排放适用大气法第九十九条"),
-        ("/correct: 条款号是第八十三条", "条款号是第八十三条"),
-        ("不对，应该是《水污染防治法》第八十三条", "《水污染防治法》第八十三条"),
-        ("错了，正确的是罚款十万元以上一百万元以下", "罚款十万元以上一百万元以下"),
-    ])
+    @pytest.mark.parametrize(
+        "text,expect",
+        [
+            ("/correct 正确说法是超标排放适用大气法第九十九条", "正确说法是超标排放适用大气法第九十九条"),
+            ("/correct: 条款号是第八十三条", "条款号是第八十三条"),
+            ("不对，应该是《水污染防治法》第八十三条", "《水污染防治法》第八十三条"),
+            ("错了，正确的是罚款十万元以上一百万元以下", "罚款十万元以上一百万元以下"),
+        ],
+    )
     def test_detect(self, text, expect):
         assert detect_correction(text) == expect
 

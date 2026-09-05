@@ -46,7 +46,7 @@ def _ngram_vec(text: str) -> Counter[int]:
         if len(t) < n:
             continue
         for i in range(len(t) - n + 1):
-            h = int(hashlib.md5(t[i:i + n].encode("utf-8")).hexdigest()[:6], 16)
+            h = int(hashlib.md5(t[i : i + n].encode("utf-8")).hexdigest()[:6], 16)
             vec[h % DIM] += w
     return vec
 
@@ -111,8 +111,7 @@ class MemoryIndex:
             except OSError as e:  # pragma: no cover — 落盘失败不影响业务
                 logger.warning("[memory] 落盘失败: %s", e)
 
-    def search(self, query: str, k: int = 5,
-               exclude_recent: int = 0) -> list[dict]:
+    def search(self, query: str, k: int = 5, exclude_recent: int = 0) -> list[dict]:
         """语义检索 top-k 条记忆。优先混合检索（BM25 中文 bigram + 向量 RRF 融合，
         hybrid_retrieval.py 已实现但此前未通电接入）；失败/无结果优雅降级字符 n-gram。
         exclude_recent：跳过最近 N 条（避免把"当前正在进行的对话"当回忆）。"""
@@ -124,8 +123,8 @@ class MemoryIndex:
         # 通电：混合检索（BM25 bigram + 向量，RRF 融合）——比纯字符 n-gram 对中文更准
         try:
             from agent_core.hybrid_retrieval import hybrid_search
-            events = [{"id": r.get("hash", ""), "content": r.get("content", ""),
-                       "kind": r.get("role", "")} for r in items]
+
+            events = [{"id": r.get("hash", ""), "content": r.get("content", ""), "kind": r.get("role", "")} for r in items]
             hits = hybrid_search(events, q, top_k=k, namespace="memory", embed=True)
             if hits:
                 by_id = {r.get("hash", ""): r for r in items}
@@ -135,9 +134,14 @@ class MemoryIndex:
                     rid = str(h.get("id", "")).rsplit(":", 1)[-1]
                     r = by_id.get(rid)
                     if r:
-                        out.append({"role": r.get("role", ""), "content": r.get("content", ""),
-                                    "score": round(h.get("score", 0.0), 3),
-                                    "channel": h.get("channel", "")})
+                        out.append(
+                            {
+                                "role": r.get("role", ""),
+                                "content": r.get("content", ""),
+                                "score": round(h.get("score", 0.0), 3),
+                                "channel": h.get("channel", ""),
+                            }
+                        )
                 if out:
                     return out
         except Exception:  # noqa: BLE001 — hybrid 失败/缺依赖降级 n-gram
@@ -150,13 +154,11 @@ class MemoryIndex:
             if s > 0.08:
                 scored.append((s, rec))
         scored.sort(key=lambda x: -x[0])
-        return [{"role": r.get("role", ""), "content": r.get("content", ""),
-                 "score": round(s, 3)} for s, r in scored[:k]]
+        return [{"role": r.get("role", ""), "content": r.get("content", ""), "score": round(s, 3)} for s, r in scored[:k]]
 
     def stats(self) -> dict:
         with self._lock:
-            return {"records": len(self._records),
-                    "file": str(self._path)}
+            return {"records": len(self._records), "file": str(self._path)}
 
 
 _mem: MemoryIndex | None = None

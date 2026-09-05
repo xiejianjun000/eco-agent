@@ -30,13 +30,13 @@ govmcp_tools/permit_management.py
 
 from __future__ import annotations
 
+import datetime
 import hashlib
 import json
 import os
 import re
-import time
-import datetime
 import threading
+import time
 from typing import Any
 
 import requests
@@ -50,10 +50,7 @@ CHUNK = 126
 JGZF_VERSION = "1.0"
 JGZF_KEY = os.environ.get("PERMIT_JGZF_KEY", "")
 
-UA = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-)
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 HEADERS = {
     "User-Agent": UA,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -83,6 +80,7 @@ def _session_file() -> str | None:
 
 # ─── RSA 加密（复现前端 RSAUtils.encryptedString: raw RSA no padding）──
 
+
 def rsa_encrypt(pwd: str, modulus: str) -> str:
     """RSA-1024 raw 无 padding，指数 0x10001，chunk 126，小端字节序 pow()。"""
     m = int(modulus, 16)
@@ -105,8 +103,7 @@ def extract_modulus(html: str) -> str | None:
 def extract_error(html: str) -> str:
     """提取登录页红色错误提示。"""
     for color in ("#FF0000", "red"):
-        m = re.search(r'<font[^>]*color\s*=\s*["\']' + color + r'["\'][^>]*>\s*(.*?)\s*</font>',
-                      html, re.S)
+        m = re.search(r'<font[^>]*color\s*=\s*["\']' + color + r'["\'][^>]*>\s*(.*?)\s*</font>', html, re.S)
         if m:
             return re.sub(r"<[^>]+>", "", m.group(1)).strip()
     return ""
@@ -121,6 +118,7 @@ def jgzf_sign(token: str, data_string: str) -> dict:
 
 
 # ─── 平台客户端 ──────────────────────────────────────────────
+
 
 class PermitClient:
     """排污许可平台客户端（主系统 + 实施监管系统 SSO）。"""
@@ -142,13 +140,14 @@ class PermitClient:
         if not path:
             return
         try:
-            cookies = [
-                {"name": ck.name, "value": ck.value, "domain": ck.domain, "path": ck.path}
-                for ck in self.s.cookies
-            ]
-            data = {"username": self.username, "password": self.password,
-                    "cookies": cookies, "jgzf_token": self.jgzf_token,
-                    "jgzf_user": self.jgzf_user}
+            cookies = [{"name": ck.name, "value": ck.value, "domain": ck.domain, "path": ck.path} for ck in self.s.cookies]
+            data = {
+                "username": self.username,
+                "password": self.password,
+                "cookies": cookies,
+                "jgzf_token": self.jgzf_token,
+                "jgzf_user": self.jgzf_user,
+            }
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False)
         except Exception:
@@ -166,8 +165,7 @@ class PermitClient:
             self.jgzf_token = data.get("jgzf_token")
             self.jgzf_user = data.get("jgzf_user")
             for ck in data.get("cookies", []):
-                self.s.cookies.set(ck.get("name"), ck.get("value"),
-                                   domain=ck.get("domain"), path=ck.get("path"))
+                self.s.cookies.set(ck.get("name"), ck.get("value"), domain=ck.get("domain"), path=ck.get("path"))
             if self._verify_session():
                 self.logged_in = True
         except Exception:
@@ -195,17 +193,23 @@ class PermitClient:
             try:
                 r = self.s.get(self.base + "/ValidateCodeLoginImageServlet", timeout=20)
                 import ddddocr
+
                 code = ddddocr.DdddOcr(show_ad=False).classification(r.content).strip()
             except Exception:
                 return {"success": False, "error": "验证码识别组件不可用"}
             if not code or len(code) != 4:
                 time.sleep(0.5)
                 continue
-            data = {"actionType": "login", "pwd": rsa_encrypt(password, modulus),
-                    "cmd": "", "usercode": username, "pwds": "", "verCode": code}
+            data = {
+                "actionType": "login",
+                "pwd": rsa_encrypt(password, modulus),
+                "cmd": "",
+                "usercode": username,
+                "pwds": "",
+                "verCode": code,
+            }
             try:
-                r = self.s.post(self.base + "/LoginAction.do", data=data,
-                                timeout=30, allow_redirects=True)
+                r = self.s.post(self.base + "/LoginAction.do", data=data, timeout=30, allow_redirects=True)
             except Exception as e:
                 return {"success": False, "error": str(e)}
             err = extract_error(r.text)
@@ -214,8 +218,7 @@ class PermitClient:
 
             if "超过五次" in err or "后再登录" in err:
                 m = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", err)
-                return {"success": False, "locked": True, "error": err,
-                        "until": m.group(1) if m else None}
+                return {"success": False, "locked": True, "error": err, "until": m.group(1) if m else None}
             if "验证码" in err:
                 time.sleep(0.3)
                 continue
@@ -227,11 +230,14 @@ class PermitClient:
                 mod2 = extract_modulus(r.text)
                 if not mod2:
                     continue
-                data2 = {"actionType": "updated", "cmd": "", "id": username,
-                         "pwdRSA": rsa_encrypt(password, mod2),
-                         "newpwdRSA": rsa_encrypt(password, mod2)}
-                r2 = self.s.post(self.base + "/LoginAction.do", data=data2,
-                                 timeout=30, allow_redirects=True)
+                data2 = {
+                    "actionType": "updated",
+                    "cmd": "",
+                    "id": username,
+                    "pwdRSA": rsa_encrypt(password, mod2),
+                    "newpwdRSA": rsa_encrypt(password, mod2),
+                }
+                r2 = self.s.post(self.base + "/LoginAction.do", data=data2, timeout=30, allow_redirects=True)
                 err2 = extract_error(r2.text)
                 title2_m = re.search(r"<title>([^<]*)</title>", r2.text)
                 title2 = title2_m.group(1) if title2_m else ""
@@ -240,14 +246,24 @@ class PermitClient:
                 self.logged_in = True
                 self.username, self.password = username, password
                 self.save_session()
-                return {"success": True, "username": username, "changed_password": True,
-                        "session": self.s.cookies.get("JSESSIONID", ""), "attempts": attempt}
+                return {
+                    "success": True,
+                    "username": username,
+                    "changed_password": True,
+                    "session": self.s.cookies.get("JSESSIONID", ""),
+                    "attempts": attempt,
+                }
 
             self.logged_in = True
             self.username, self.password = username, password
             self.save_session()
-            return {"success": True, "username": username, "changed_password": False,
-                    "session": self.s.cookies.get("JSESSIONID", ""), "attempts": attempt}
+            return {
+                "success": True,
+                "username": username,
+                "changed_password": False,
+                "session": self.s.cookies.get("JSESSIONID", ""),
+                "attempts": attempt,
+            }
         return {"success": False, "error": "验证码识别失败次数过多"}
 
     def ensure_logged_in(self) -> bool:
@@ -267,15 +283,13 @@ class PermitClient:
     # ---------- 实施监管系统 SSO ----------
     def jgzf_sso_login(self) -> dict:
         try:
-            r = self.s.get(self.base + "/jgzf/jgzf!jgzf.action",
-                           timeout=30, allow_redirects=False)
+            r = self.s.get(self.base + "/jgzf/jgzf!jgzf.action", timeout=30, allow_redirects=False)
         except Exception as e:
             return {"success": False, "error": str(e)}
         location = r.headers.get("Location", "")
         if not location:
             try:
-                r2 = self.s.get(self.base + "/jgzf/jgzf!jgzf.action",
-                                timeout=30, allow_redirects=True)
+                r2 = self.s.get(self.base + "/jgzf/jgzf!jgzf.action", timeout=30, allow_redirects=True)
                 location = str(r2.url or "")
             except Exception:
                 location = ""
@@ -296,8 +310,7 @@ class PermitClient:
         headers = jgzf_sign("", data_string)
         headers.update({"Content-Type": "application/json", "User-Agent": UA})
         try:
-            r2 = requests.post(JGZF_BASE + "/law/api/login/v1/autoLogin",
-                               data=data_string, headers=headers, timeout=30)
+            r2 = requests.post(JGZF_BASE + "/law/api/login/v1/autoLogin", data=data_string, headers=headers, timeout=30)
             j = r2.json()
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -308,18 +321,16 @@ class PermitClient:
             return {"success": True, "token": self.jgzf_token, "user": j["data"]}
         return {"success": False, "error": j.get("msg", "SSO 登录失败")}
 
-    def jgzf_call(self, path: str, token: str | None = None, data: dict | None = None,
-                  method: str = "POST", params: dict | None = None) -> requests.Response:
+    def jgzf_call(
+        self, path: str, token: str | None = None, data: dict | None = None, method: str = "POST", params: dict | None = None
+    ) -> requests.Response:
         token = token or self.jgzf_token
-        data_string = (json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-                       if data is not None else "")
+        data_string = json.dumps(data, ensure_ascii=False, separators=(",", ":")) if data is not None else ""
         headers = jgzf_sign(token or "", data_string)
         headers.update({"Content-Type": "application/json", "User-Agent": UA})
         if method.upper() == "GET":
-            return requests.get(JGZF_BASE + path, params=params,
-                                headers=headers, timeout=30)
-        return requests.post(JGZF_BASE + path, data=data_string,
-                             headers=headers, timeout=30)
+            return requests.get(JGZF_BASE + path, params=params, headers=headers, timeout=30)
+        return requests.post(JGZF_BASE + path, data=data_string, headers=headers, timeout=30)
 
     def jgzf_ensure(self) -> dict:
         if not self.jgzf_token:
@@ -346,6 +357,7 @@ class PermitClient:
 
 # ─── 全局会话 ────────────────────────────────────────────────
 
+
 def _get_client() -> PermitClient:
     global _client
     if _client is None:
@@ -365,9 +377,11 @@ def _not_configured() -> str | None:
     if not os.environ.get("PERMIT_PASSWORD"):
         missing.append("PERMIT_PASSWORD")
     if missing:
-        return (f"排污许可平台未配置环境变量: {', '.join(missing)}。"
-                "平台为内网系统，需本机直连内网并配置后使用（也可先调用 permit_login 传入账号密码，"
-                "但 PERMIT_BASE/PERMIT_JGZF_BASE 必须先配置）")
+        return (
+            f"排污许可平台未配置环境变量: {', '.join(missing)}。"
+            "平台为内网系统，需本机直连内网并配置后使用（也可先调用 permit_login 传入账号密码，"
+            "但 PERMIT_BASE/PERMIT_JGZF_BASE 必须先配置）"
+        )
     return None
 
 
@@ -409,7 +423,7 @@ TAGS = ["执法平台", "排污许可", "许可证核发", "实施与监管", "�
 
 @govmcp_tool(
     name="permit_login",
-    description="登录排污许可管理平台。输入账号密码即可登录(自动破解4位验证码+RSA加密)。登录成功后自动打通实施与监管系统SSO。账号密码也可通过环境变量 PERMIT_USERNAME/PERMIT_PASSWORD 提供",
+    description="登录排污许可管理平台。输入账号密码即可登录(自动破解4位验证码+RSA加密)。登录成功后自动打通实施与监管系统SSO。账号密码也可通过环境变量 PERMIT_USERNAME/PERMIT_PASSWORD 提供",  # noqa: E501
     category=CATEGORY,
     tags=TAGS + ["auth"],
 )
@@ -421,8 +435,7 @@ def permit_login(username: str = "", password: str = "") -> dict:
     u = username or os.environ.get("PERMIT_USERNAME", "")
     p = password or os.environ.get("PERMIT_PASSWORD", "")
     if not u or not p:
-        return {"success": False,
-                "error": "请提供账号密码：permit_login(username, password) 或设置环境变量"}
+        return {"success": False, "error": "请提供账号密码：permit_login(username, password) 或设置环境变量"}
     with _lock:
         result = c.login(u, p)
     if result.get("success"):
@@ -430,8 +443,9 @@ def permit_login(username: str = "", password: str = "") -> dict:
         result["jgzf_sso"] = sso.get("success", False)
         if not sso.get("success"):
             result["jgzf_sso_error"] = sso.get("error", "")
-        result["tip"] = ("登录成功。可用工具：permit_menu / permit_license_list / "
-                         "permit_enterprise_list / permit_jgzf_license_execution 等")
+        result["tip"] = (
+            "登录成功。可用工具：permit_menu / permit_license_list / permit_enterprise_list / permit_jgzf_license_execution 等"
+        )
     return result
 
 
@@ -459,16 +473,19 @@ def permit_menu(systemid: str = "") -> dict:
     except RuntimeError as e:
         return {"success": False, "error": str(e)}
     systems = {
-        "ywsh": "业务审核", "xkzan": "许可证档案",
-        "pwxkxgzl": "资料附件", "xinxiopen": "信息维护",
+        "ywsh": "业务审核",
+        "xkzan": "许可证档案",
+        "pwxkxgzl": "资料附件",
+        "xinxiopen": "信息维护",
     }
     if systemid:
         systems = {systemid: systems.get(systemid, systemid)}
     result = {}
     try:
         for sysid, sysname in systems.items():
-            r = c.s.get(c.base + f"/AjaxAction.do?actionType=outlook&systemid={sysid}"
-                        f"&timestamp={int(time.time()*1000)}", timeout=20)
+            r = c.s.get(
+                c.base + f"/AjaxAction.do?actionType=outlook&systemid={sysid}&timestamp={int(time.time() * 1000)}", timeout=20
+            )
             result[sysname] = r.text
         return {"success": True, "menus": result}
     except Exception as e:
@@ -481,21 +498,17 @@ def permit_menu(systemid: str = "") -> dict:
     category=CATEGORY,
     tags=TAGS,
 )
-def permit_license_list(nameuserd: str = "", xkznum: str = "", treadcode: str = "",
-                        page_no: int = 1) -> dict:
+def permit_license_list(nameuserd: str = "", xkznum: str = "", treadcode: str = "", page_no: int = 1) -> dict:
     """排污许可证库列表。"""
     try:
         c = _ensure_logged_in()
     except RuntimeError as e:
         return {"success": False, "error": str(e)}
-    data = {"nameuserd": nameuserd, "xkznum": xkznum,
-            "treadcode": treadcode, "pageNo": str(page_no)}
+    data = {"nameuserd": nameuserd, "xkznum": xkznum, "treadcode": treadcode, "pageNo": str(page_no)}
     try:
         r = c.s.post(c.base + "/syssp/xkzda/xkzda!list.action", data=data, timeout=30)
         title_m = re.search(r"<title>([^<]*)</title>", r.text)
-        return {"success": True, "http": r.status_code,
-                "title": title_m.group(1) if title_m else "",
-                "page_len": len(r.text)}
+        return {"success": True, "http": r.status_code, "title": title_m.group(1) if title_m else "", "page_len": len(r.text)}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -506,22 +519,17 @@ def permit_license_list(nameuserd: str = "", xkznum: str = "", treadcode: str = 
     category=CATEGORY,
     tags=TAGS,
 )
-def permit_enterprise_list(nameuserd: str = "", xkznum: str = "", treadcode: str = "",
-                           page_no: int = 1) -> dict:
+def permit_enterprise_list(nameuserd: str = "", xkznum: str = "", treadcode: str = "", page_no: int = 1) -> dict:
     """企业库列表。"""
     try:
         c = _ensure_logged_in()
     except RuntimeError as e:
         return {"success": False, "error": str(e)}
-    data = {"nameuserd": nameuserd, "xkznum": xkznum,
-            "treadcode": treadcode, "pageNo": str(page_no)}
+    data = {"nameuserd": nameuserd, "xkznum": xkznum, "treadcode": treadcode, "pageNo": str(page_no)}
     try:
-        r = c.s.post(c.base + "/syssp/xkzda/xkzda!listEnter.action",
-                     data=data, timeout=30)
+        r = c.s.post(c.base + "/syssp/xkzda/xkzda!listEnter.action", data=data, timeout=30)
         title_m = re.search(r"<title>([^<]*)</title>", r.text)
-        return {"success": True, "http": r.status_code,
-                "title": title_m.group(1) if title_m else "",
-                "page_len": len(r.text)}
+        return {"success": True, "http": r.status_code, "title": title_m.group(1) if title_m else "", "page_len": len(r.text)}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -551,9 +559,9 @@ def permit_jgzf_menu(user_id: str = "") -> dict:
     category=CATEGORY,
     tags=TAGS,
 )
-def permit_jgzf_license_execution(enter_name: str = "", xkznum: str = "",
-                                  report_type: str = "year", report_year: str = "",
-                                  page: int = 1, page_size: int = 20) -> dict:
+def permit_jgzf_license_execution(
+    enter_name: str = "", xkznum: str = "", report_type: str = "year", report_year: str = "", page: int = 1, page_size: int = 20
+) -> dict:
     """许可执行情况（年报/季报/月报提交情况）。"""
     try:
         c = _ensure_jgzf()
@@ -562,24 +570,46 @@ def permit_jgzf_license_execution(enter_name: str = "", xkznum: str = "",
     if not report_year:
         report_year = str(datetime.datetime.now().year - 1)
     params = {
-        "industryName": "", "industryCode": [], "xkznum": xkznum,
-        "enterName": enter_name, "reportType": report_type, "reportTime": "",
-        "fzETime": "", "fzSTime": "", "submitStatus": "", "enterStatus": "",
-        "urgeFlag": "", "searchRange": "", "currPage": page, "pageSize": page_size,
+        "industryName": "",
+        "industryCode": [],
+        "xkznum": xkznum,
+        "enterName": enter_name,
+        "reportType": report_type,
+        "reportTime": "",
+        "fzETime": "",
+        "fzSTime": "",
+        "submitStatus": "",
+        "enterStatus": "",
+        "urgeFlag": "",
+        "searchRange": "",
+        "currPage": page,
+        "pageSize": page_size,
         "provinceCode": (c.jgzf_user or {}).get("provinceCode", ""),
         "cityCode": (c.jgzf_user or {}).get("cityCode", ""),
         "countyCode": (c.jgzf_user or {}).get("countyCode", "") or "",
-        "reportMonth": "", "reportYear": report_year, "reportQuarter": "",
-        "handleFlag": "", "overSubmitFlag": "", "submitSTime": "",
-        "submitETime": "", "stopFlag": "", "businessType": "ENV", "promptType": "",
+        "reportMonth": "",
+        "reportYear": report_year,
+        "reportQuarter": "",
+        "handleFlag": "",
+        "overSubmitFlag": "",
+        "submitSTime": "",
+        "submitETime": "",
+        "stopFlag": "",
+        "businessType": "ENV",
+        "promptType": "",
     }
     try:
         r = c.jgzf_call("/law/api/licenseExecution/v1/list", data=params)
         j = r.json()
         if j.get("code") == 1:
             d = j.get("data") or {}
-            return {"success": True, "total": d.get("totalCount"), "page": page,
-                    "count": len(d.get("list", [])), "rows": d.get("list", [])}
+            return {
+                "success": True,
+                "total": d.get("totalCount"),
+                "page": page,
+                "count": len(d.get("list", [])),
+                "rows": d.get("list", []),
+            }
         return {"success": False, "error": j.get("msg")}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -591,8 +621,7 @@ def permit_jgzf_license_execution(enter_name: str = "", xkznum: str = "",
     category=CATEGORY,
     tags=TAGS,
 )
-def permit_jgzf_stop_production(enter_name: str = "", page: int = 1,
-                                page_size: int = 20) -> dict:
+def permit_jgzf_stop_production(enter_name: str = "", page: int = 1, page_size: int = 20) -> dict:
     """停产管理列表。"""
     try:
         c = _ensure_jgzf()
@@ -604,8 +633,7 @@ def permit_jgzf_stop_production(enter_name: str = "", page: int = 1,
         j = r.json()
         if j.get("code") == 1:
             d = j.get("data") or {}
-            return {"success": True, "total": d.get("totalCount"),
-                    "rows": d.get("list", d.get("rows", []))}
+            return {"success": True, "total": d.get("totalCount"), "rows": d.get("list", d.get("rows", []))}
         return {"success": False, "error": j.get("msg")}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -617,8 +645,7 @@ def permit_jgzf_stop_production(enter_name: str = "", page: int = 1,
     category=CATEGORY,
     tags=TAGS,
 )
-def permit_jgzf_enterprise_archive(enter_name: str = "", page: int = 1,
-                                   page_size: int = 20) -> dict:
+def permit_jgzf_enterprise_archive(enter_name: str = "", page: int = 1, page_size: int = 20) -> dict:
     """企业实施档案。"""
     try:
         c = _ensure_jgzf()
@@ -630,8 +657,7 @@ def permit_jgzf_enterprise_archive(enter_name: str = "", page: int = 1,
         j = r.json()
         if j.get("code") == 1:
             d = j.get("data") or {}
-            return {"success": True, "total": d.get("totalCount"),
-                    "rows": d.get("list", d.get("rows", []))}
+            return {"success": True, "total": d.get("totalCount"), "rows": d.get("list", d.get("rows", []))}
         return {"success": False, "error": j.get("msg")}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -647,12 +673,10 @@ def permit_area_list(area_level: str = "province") -> dict:
     """行政区划维度列表。"""
     try:
         c = _ensure_jgzf()
-        r = c.jgzf_call("/law/api/dimInfo/v1/areaList", data=None,
-                        method="GET", params={"areaLevel": area_level})
+        r = c.jgzf_call("/law/api/dimInfo/v1/areaList", data=None, method="GET", params={"areaLevel": area_level})
         j = r.json()
         if j.get("code") == 1:
-            return {"success": True, "count": len(j.get("data", [])),
-                    "rows": j.get("data", [])}
+            return {"success": True, "count": len(j.get("data", [])), "rows": j.get("data", [])}
         return {"success": False, "error": j.get("msg")}
     except RuntimeError as e:
         return {"success": False, "error": str(e)}
@@ -675,8 +699,7 @@ def permit_industry_list(keyword: str = "") -> dict:
         if j.get("code") == 1:
             rows = j.get("data", [])
             if keyword:
-                rows = [row for row in rows
-                        if keyword in json.dumps(row, ensure_ascii=False)]
+                rows = [row for row in rows if keyword in json.dumps(row, ensure_ascii=False)]
             return {"success": True, "count": len(rows), "rows": rows}
         return {"success": False, "error": j.get("msg")}
     except RuntimeError as e:
@@ -688,10 +711,17 @@ def permit_industry_list(keyword: str = "") -> dict:
 # ─── 注册入口 ────────────────────────────────────────────────
 
 _TOOLS: list[Any] = [
-    permit_login, permit_status, permit_menu, permit_license_list,
-    permit_enterprise_list, permit_jgzf_menu, permit_jgzf_license_execution,
-    permit_jgzf_stop_production, permit_jgzf_enterprise_archive,
-    permit_area_list, permit_industry_list,
+    permit_login,
+    permit_status,
+    permit_menu,
+    permit_license_list,
+    permit_enterprise_list,
+    permit_jgzf_menu,
+    permit_jgzf_license_execution,
+    permit_jgzf_stop_production,
+    permit_jgzf_enterprise_archive,
+    permit_area_list,
+    permit_industry_list,
 ]
 
 
@@ -713,13 +743,18 @@ CHAT_TOOLS: dict[str, dict] = {
     "permit_menu": {
         "description": "排污许可管理平台-主系统完整菜单树(业务审核/许可证档案/资料附件等模块)。",
         "parameters": _p(
-            {"systemid": {"type": "string", "description": "可选，指定单模块(ywsh业务审核/xkzan许可证档案/pwxkxgzl资料附件/xinxiopen信息维护,空=全部)"}},
+            {
+                "systemid": {
+                    "type": "string",
+                    "description": "可选，指定单模块(ywsh业务审核/xkzan许可证档案/pwxkxgzl资料附件/xinxiopen信息维护,空=全部)",
+                }
+            },
             [],
         ),
         "handler": permit_menu,
     },
     "permit_license_list": {
-        "description": "排污许可管理平台-排污许可证库列表查询。nameuserd单位名称模糊查询，xkznum许可证编号，treadcode行业代码。",
+        "description": "排污许可管理平台-排污许可证库列表查询。nameuserd单位名称模糊查询，xkznum许可证编号，treadcode行业代码。",  # noqa: E501
         "parameters": _p(
             {
                 "nameuserd": {"type": "string", "description": "单位名称模糊查询"},

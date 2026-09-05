@@ -12,7 +12,6 @@ agent_core/inspect.py — Inspect 契约目录（对标 DSH Inspect Provider）
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 logger = logging.getLogger("eco.inspect")
 
@@ -47,8 +46,7 @@ def list_plugins() -> list[dict]:
 
         snap = get_app_context().snapshot()
         for name, status in snap.get("plugins", {}).items():
-            out.append({"name": name, "status": status,
-                        "description": _PLUGIN_DESCRIPTIONS.get(name, "")})
+            out.append({"name": name, "status": status, "description": _PLUGIN_DESCRIPTIONS.get(name, "")})
     except Exception as e:  # noqa: BLE001
         logger.warning("inspect plugins failed: %s", e)
     return out
@@ -61,11 +59,13 @@ def list_tools() -> list[dict]:
 
         for tool in _codex_tools():
             fn = tool.get("function", {})
-            out.append({
-                "name": fn.get("name", ""),
-                "description": fn.get("description", ""),
-                "schema": fn.get("parameters"),
-            })
+            out.append(
+                {
+                    "name": fn.get("name", ""),
+                    "description": fn.get("description", ""),
+                    "schema": fn.get("parameters"),
+                }
+            )
     except Exception as e:  # noqa: BLE001
         logger.warning("inspect tools failed: %s", e)
     return out
@@ -109,8 +109,6 @@ _SERVICE_DESCRIPTIONS = {
 }
 
 _PLUGIN_DESCRIPTIONS = {
-    "agent_core.cordis_plugins.subagent_cleaner":
-        "定时清理已结束超过 TTL 的子代理（config: ttl_seconds/interval_seconds）",
-    "agent_core.cordis_plugins.audit_panel":
-        "注册'审计链'侧栏面板（SM3 审计链 verify + 调用统计）",
+    "agent_core.cordis_plugins.subagent_cleaner": "定时清理已结束超过 TTL 的子代理（config: ttl_seconds/interval_seconds）",
+    "agent_core.cordis_plugins.audit_panel": "注册'审计链'侧栏面板（SM3 审计链 verify + 调用统计）",
 }

@@ -127,15 +127,12 @@ from markitdown import MarkItDown
 from openai import OpenAI
 
 # Initialize OpenRouter client (OpenAI-compatible API)
-client = OpenAI(
-    api_key="your-openrouter-api-key",
-    base_url="https://openrouter.ai/api/v1"
-)
+client = OpenAI(api_key="your-openrouter-api-key", base_url="https://openrouter.ai/api/v1")
 
 md = MarkItDown(
     llm_client=client,
     llm_model="anthropic/claude-opus-4.5",  # recommended for scientific vision
-    llm_prompt="Describe this image in detail for scientific documentation"
+    llm_prompt="Describe this image in detail for scientific documentation",
 )
 
 result = md.convert("presentation.pptx")
@@ -250,15 +247,12 @@ from markitdown import MarkItDown
 from openai import OpenAI
 
 # Use OpenRouter for access to multiple AI models
-client = OpenAI(
-    api_key="your-openrouter-api-key",
-    base_url="https://openrouter.ai/api/v1"
-)
+client = OpenAI(api_key="your-openrouter-api-key", base_url="https://openrouter.ai/api/v1")
 
 md = MarkItDown(
     llm_client=client,
     llm_model="anthropic/claude-opus-4.5",  # recommended for presentations
-    llm_prompt="Describe this slide image in detail, focusing on key visual elements and data"
+    llm_prompt="Describe this slide image in detail, focusing on key visual elements and data",
 )
 
 result = md.convert("presentation.pptx")
@@ -275,12 +269,7 @@ from pathlib import Path
 md = MarkItDown()
 
 # Files to convert
-files = [
-    "document.pdf",
-    "spreadsheet.xlsx",
-    "presentation.pptx",
-    "notes.docx"
-]
+files = ["document.pdf", "spreadsheet.xlsx", "presentation.pptx", "notes.docx"]
 
 for file in files:
     try:
@@ -371,7 +360,7 @@ md = MarkItDown()
 result = md.convert("document.pdf")
 
 # Clean up extra whitespace
-clean_text = re.sub(r'\n{3,}', '\n\n', result.text_content)
+clean_text = re.sub(r"\n{3,}", "\n\n", result.text_content)
 clean_text = clean_text.strip()
 
 print(clean_text)
@@ -394,28 +383,23 @@ output_dir.mkdir(exist_ok=True)
 
 for paper in papers_dir.glob("*.pdf"):
     result = md.convert(str(paper))
-    
+
     # Save with metadata
     output_file = output_dir / f"{paper.stem}.md"
     content = f"# {paper.stem}\n\n"
     content += f"**Source**: {paper.name}\n\n"
     content += "---\n\n"
     content += result.text_content
-    
+
     output_file.write_text(content)
 
 # For AI-enhanced conversion with figures
 from openai import OpenAI
 
-client = OpenAI(
-    api_key="your-openrouter-api-key",
-    base_url="https://openrouter.ai/api/v1"
-)
+client = OpenAI(api_key="your-openrouter-api-key", base_url="https://openrouter.ai/api/v1")
 
 md_ai = MarkItDown(
-    llm_client=client,
-    llm_model="anthropic/claude-opus-4.5",
-    llm_prompt="Describe scientific figures with technical precision"
+    llm_client=client, llm_model="anthropic/claude-opus-4.5", llm_prompt="Describe scientific figures with technical precision"
 )
 ```
 

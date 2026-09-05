@@ -7,10 +7,10 @@ handle_inbound(name, request) 全流程：
   - 飞书 url_verification → 回 {"challenge": ...} JSON 字符串
   - 企业微信/公众号 URL 验证(GET) → 回解密后的 echostr
 """
+
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 from .base import BLOCK_TEXT, VERIFY_FAIL_TEXT, Channel
 from .dingtalk import DingTalkChannel
@@ -21,8 +21,7 @@ from .wechat_oa import WeChatOAChannel
 from .wecom import WeComChannel
 
 CHANNELS: dict[str, type[Channel]] = {
-    c.name: c for c in (WeComChannel, DingTalkChannel, FeishuChannel,
-                        QQBotChannel, WeChatOAChannel, WebhookChannel)
+    c.name: c for c in (WeComChannel, DingTalkChannel, FeishuChannel, QQBotChannel, WeChatOAChannel, WebhookChannel)
 }
 
 #: 进程级渠道实例缓存（config 不变时复用）
@@ -33,8 +32,7 @@ def get_channel(name: str, config: dict | None = None) -> Channel:
     """按名取渠道实例；找不到抛 KeyError 并列出可用名。"""
     cls = CHANNELS.get(name)
     if cls is None:
-        raise KeyError(
-            f"未知渠道: {name!r}，可用: {', '.join(sorted(CHANNELS))}")
+        raise KeyError(f"未知渠道: {name!r}，可用: {', '.join(sorted(CHANNELS))}")
     if config is not None:
         return cls(config)
     if name not in _instances:
@@ -42,8 +40,7 @@ def get_channel(name: str, config: dict | None = None) -> Channel:
     return _instances[name]
 
 
-def handle_inbound(name: str, request: dict,
-                   config: dict | None = None) -> str:
+def handle_inbound(name: str, request: dict, config: dict | None = None) -> str:
     """全流程入口：verify → parse → 注入检查 → 返回待回复文本。"""
     ch = get_channel(name, config)
     if not ch.verify(request):
@@ -52,10 +49,9 @@ def handle_inbound(name: str, request: dict,
     if msg is None:
         return ""
     # 平台握手类消息：不进 chat 管道、不做注入检查，直接回握手应答
-    if msg.extras.get("type") == "url_verification":      # 飞书 challenge
-        return json.dumps({"challenge": msg.extras.get("challenge", "")},
-                          ensure_ascii=False)
-    if msg.extras.get("type") == "url_verify":            # 企业微信/公众号 echostr
+    if msg.extras.get("type") == "url_verification":  # 飞书 challenge
+        return json.dumps({"challenge": msg.extras.get("challenge", "")}, ensure_ascii=False)
+    if msg.extras.get("type") == "url_verify":  # 企业微信/公众号 echostr
         return msg.text
     # 用户消息：注入检查，拦截回固定话术
     if not ch.check_injection(msg):
@@ -63,5 +59,4 @@ def handle_inbound(name: str, request: dict,
     return msg.text
 
 
-__all__ = ["CHANNELS", "get_channel", "handle_inbound", "BLOCK_TEXT",
-           "VERIFY_FAIL_TEXT"]
+__all__ = ["CHANNELS", "get_channel", "handle_inbound", "BLOCK_TEXT", "VERIFY_FAIL_TEXT"]

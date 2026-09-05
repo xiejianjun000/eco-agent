@@ -9,17 +9,18 @@ MCP 协议（JSON-RPC 2.0 over stdio）实现。
 """
 
 import json
-import sys
 import os
 import re
+import sys
 import time
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # rag_score 忠实度核验（vendored，agent_core 内；numpy 缺失时优雅降级）
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 try:
     from agent_core.rag_score import RAGScorer
+
     _SCORER = RAGScorer()
 except Exception:
     _SCORER = None
@@ -52,29 +53,21 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "搜索关键词（支持多个用空格分隔）"
-                },
+                "query": {"type": "string", "description": "搜索关键词（支持多个用空格分隔）"},
                 "scope": {
                     "type": "string",
                     "enum": ["all", "wiki", "raw"],
                     "description": "搜索范围：wiki（知识层）、raw（原文层）、all（全部）",
-                    "default": "all"
+                    "default": "all",
                 },
-                "max_results": {
-                    "type": "integer",
-                    "description": "最大返回结果数",
-                    "default": 10,
-                    "maximum": 30
-                },
+                "max_results": {"type": "integer", "description": "最大返回结果数", "default": 10, "maximum": 30},
                 "env_tag": {
                     "type": "string",
                     "description": "环境要素过滤（如 env/air, env/water, env/soil）",
-                }
+                },
             },
-            "required": ["query"]
-        }
+            "required": ["query"],
+        },
     },
     {
         "name": "eco_retrieve",
@@ -82,16 +75,13 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "path": {
-                    "type": "string",
-                    "description": "文件路径（相对 vault 根目录，如 wiki/01_生态环境/大气污染防治.md）"
-                },
+                "path": {"type": "string", "description": "文件路径（相对 vault 根目录，如 wiki/01_生态环境/大气污染防治.md）"},
                 "statute_name": {
                     "type": "string",
-                    "description": "法规名称（如 大气污染防治法、生态环境法典），与 path 二选一"
-                }
-            }
-        }
+                    "description": "法规名称（如 大气污染防治法、生态环境法典），与 path 二选一",
+                },
+            },
+        },
     },
     {
         "name": "eco_statute_query",
@@ -99,17 +89,11 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "statute": {
-                    "type": "string",
-                    "description": "法规名称（如 大气污染防治法）"
-                },
-                "article": {
-                    "type": "string",
-                    "description": "条文号（如 第X条、第X章、第X节），可选"
-                }
+                "statute": {"type": "string", "description": "法规名称（如 大气污染防治法）"},
+                "article": {"type": "string", "description": "条文号（如 第X条、第X章、第X节），可选"},
             },
-            "required": ["statute"]
-        }
+            "required": ["statute"],
+        },
     },
     {
         "name": "eco_graph_query",
@@ -117,19 +101,16 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "node": {
-                    "type": "string",
-                    "description": "知识图谱节点名称（如法规名、要素名）"
-                },
+                "node": {"type": "string", "description": "知识图谱节点名称（如法规名、要素名）"},
                 "relation_type": {
                     "type": "string",
                     "enum": ["all", "references", "referenced_by", "related"],
                     "description": "关联类型",
-                    "default": "all"
-                }
+                    "default": "all",
+                },
             },
-            "required": ["node"]
-        }
+            "required": ["node"],
+        },
     },
     {
         "name": "eco_list_statutes",
@@ -137,45 +118,26 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "category": {
-                    "type": "string",
-                    "description": "分类（如 大气、水、土壤、固废、噪声、放射性、生态保护、海洋）"
-                },
-                "scope": {
-                    "type": "string",
-                    "enum": ["raw", "wiki"],
-                    "default": "raw"
-                }
+                "category": {"type": "string", "description": "分类（如 大气、水、土壤、固废、噪声、放射性、生态保护、海洋）"},
+                "scope": {"type": "string", "enum": ["raw", "wiki"], "default": "raw"},
             },
-            "required": ["category"]
-        }
+            "required": ["category"],
+        },
     },
     {
         "name": "eco_faithfulness_check",
-        "description": "答案忠实度核验：对照法规原文检查答案是否有原文支撑，输出忠实度/幻觉风险评分（幻觉预警，D12 反幻觉抓手）",
+        "description": "答案忠实度核验：对照法规原文检查答案是否有原文支撑，输出忠实度/幻觉风险评分（幻觉预警，D12 反幻觉抓手）",  # noqa: E501
         "input_schema": {
             "type": "object",
             "properties": {
-                "answer": {
-                    "type": "string",
-                    "description": "待核验的答案文本"
-                },
-                "source": {
-                    "type": "string",
-                    "description": "对照原文（直接给文本）；与 statute 二选一"
-                },
-                "statute": {
-                    "type": "string",
-                    "description": "法规名称（如 大气污染防治法），自动从 vault 取原文对照"
-                },
-                "query": {
-                    "type": "string",
-                    "description": "原始问题（可选，用于相关性/完整性评分）"
-                }
+                "answer": {"type": "string", "description": "待核验的答案文本"},
+                "source": {"type": "string", "description": "对照原文（直接给文本）；与 statute 二选一"},
+                "statute": {"type": "string", "description": "法规名称（如 大气污染防治法），自动从 vault 取原文对照"},
+                "query": {"type": "string", "description": "原始问题（可选，用于相关性/完整性评分）"},
             },
-            "required": ["answer"]
-        }
-    }
+            "required": ["answer"],
+        },
+    },
 ]
 
 # ===== 核心检索函数 =====
@@ -235,7 +197,7 @@ def search_in_files(file_paths, query, max_results=10):
             break
         if any(kw in fpath.stem.lower() for kw in keywords):
             try:
-                with open(fpath, encoding='utf-8', errors='ignore') as f:
+                with open(fpath, encoding="utf-8", errors="ignore") as f:
                     results.append(_make_hit(fpath, f.read(50000), boost=1.0))
             except OSError:
                 pass
@@ -246,7 +208,7 @@ def search_in_files(file_paths, query, max_results=10):
         if len(results) >= max_results:
             break
         try:
-            with open(fpath, encoding='utf-8', errors='ignore') as f:
+            with open(fpath, encoding="utf-8", errors="ignore") as f:
                 content = f.read(50000)
             if not any(kw in content.lower() for kw in keywords):
                 continue
@@ -261,7 +223,7 @@ def search_in_files(file_paths, query, max_results=10):
 
 def extract_snippet(content, keywords, max_length=300):
     """提取关键词周围的上下文片段"""
-    content_lower = content.lower()
+    content.lower()
     # 跳过 frontmatter
     body_start = content.find("---", 2)
     if body_start != -1:
@@ -308,9 +270,9 @@ def extract_frontmatter(content):
                         try:
                             value = json.loads(value)
                         except json.JSONDecodeError:
-                            value = [v.strip().strip('"\'') for v in value.strip("[]").split(",")]
+                            value = [v.strip().strip("\"'") for v in value.strip("[]").split(",")]
                     else:
-                        value = value.strip('"\'')
+                        value = value.strip("\"'")
                     fm[key] = value
     return fm
 
@@ -386,8 +348,10 @@ def extract_article(content, article=None):
 
 def _std_tools() -> list:
     """标准 MCP 工具表：官方 SDK 识别 inputSchema 键（本服务内部沿用 input_schema）"""
-    return [{"name": t["name"], "description": t["description"],
-             "inputSchema": t.get("input_schema") or t.get("inputSchema") or {}} for t in TOOLS]
+    return [
+        {"name": t["name"], "description": t["description"], "inputSchema": t.get("input_schema") or t.get("inputSchema") or {}}
+        for t in TOOLS
+    ]
 
 
 def handle_request(request):
@@ -408,11 +372,7 @@ def handle_request(request):
         }
 
     elif method in ("tools/list", "mcp.list_tools"):
-        return {
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "result": {"tools": _std_tools()}
-        }
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": _std_tools()}}
 
     elif method in ("tools/call", "mcp.call_tool"):
         tool_name = params.get("name", "")
@@ -420,18 +380,10 @@ def handle_request(request):
         return handle_tool_call(req_id, tool_name, tool_args)
 
     elif method in ("ping", "mcp.ping"):
-        return {
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "result": {"status": "ok", "timestamp": datetime.now().isoformat()}
-        }
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"status": "ok", "timestamp": datetime.now().isoformat()}}
 
     else:
-        return {
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "error": {"code": -32601, "message": f"Method '{method}' not found"}
-        }
+        return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Method '{method}' not found"}}
 
 
 def handle_tool_call(req_id, tool_name, args):
@@ -474,14 +426,14 @@ def handle_tool_call(req_id, tool_name, args):
                     "content": [
                         {
                             "type": "text",
-                            "text": json.dumps({
-                                "query": query,
-                                "total_results": len(results),
-                                "results": results
-                            }, ensure_ascii=False, indent=2)
+                            "text": json.dumps(
+                                {"query": query, "total_results": len(results), "results": results},
+                                ensure_ascii=False,
+                                indent=2,
+                            ),
                         }
                     ]
-                }
+                },
             }
 
         elif tool_name == "eco_retrieve":
@@ -503,11 +455,11 @@ def handle_tool_call(req_id, tool_name, args):
                 return {
                     "jsonrpc": "2.0",
                     "id": req_id,
-                    "error": {"code": -32000, "message": f"未找到: {file_path or statute_name}"}
+                    "error": {"code": -32000, "message": f"未找到: {file_path or statute_name}"},
                 }
 
             try:
-                with open(target_path, encoding='utf-8', errors='ignore') as f:
+                with open(target_path, encoding="utf-8", errors="ignore") as f:
                     content = f.read()
                 return {
                     "jsonrpc": "2.0",
@@ -516,17 +468,13 @@ def handle_tool_call(req_id, tool_name, args):
                         "content": [
                             {
                                 "type": "text",
-                                "text": f"## {target_path.name}\n\n```markdown\n{content[:10000]}\n```\n\n*（显示前 10000 字符，全文共 {len(content)} 字符）*"
+                                "text": f"## {target_path.name}\n\n```markdown\n{content[:10000]}\n```\n\n*（显示前 10000 字符，全文共 {len(content)} 字符）*",  # noqa: E501
                             }
                         ]
-                    }
+                    },
                 }
             except OSError as e:
-                return {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "error": {"code": -32000, "message": f"读取失败: {e}"}
-                }
+                return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32000, "message": f"读取失败: {e}"}}
 
         elif tool_name == "eco_statute_query":
             # 容错：模型常误传 keyword/query 作法规名，兜底兼容
@@ -535,13 +483,9 @@ def handle_tool_call(req_id, tool_name, args):
 
             target_path = find_statute_file(vault, statute)
             if not target_path:
-                return {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "error": {"code": -32000, "message": f"未找到法规: {statute}"}
-                }
+                return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32000, "message": f"未找到法规: {statute}"}}
 
-            with open(target_path, encoding='utf-8', errors='ignore') as f:
+            with open(target_path, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             if article:
@@ -553,21 +497,15 @@ def handle_tool_call(req_id, tool_name, args):
             else:
                 result_text = f"## {statute}（概览）\n\n{extract_article(content)}"
                 # 添加章节导航
-                chapters = re.findall(r'^##\s+(.+)$', content, re.MULTILINE)
+                chapters = re.findall(r"^##\s+(.+)$", content, re.MULTILINE)
                 if chapters:
                     result_text += "\n\n### 章节结构\n\n" + "\n".join(f"- {c}" for c in chapters[:30])
 
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {
-                    "content": [{"type": "text", "text": result_text}]
-                }
-            }
+            return {"jsonrpc": "2.0", "id": req_id, "result": {"content": [{"type": "text", "text": result_text}]}}
 
         elif tool_name == "eco_graph_query":
             node = args.get("node", "")
-            relation_type = args.get("relation_type", "all")
+            args.get("relation_type", "all")
 
             # 基于 wiki 文件间的 wikilink 进行图谱分析
             wiki_files = collect_wiki_files(vault)
@@ -577,29 +515,21 @@ def handle_tool_call(req_id, tool_name, args):
 
             for wf in wiki_files:
                 try:
-                    with open(wf, encoding='utf-8', errors='ignore') as f:
+                    with open(wf, encoding="utf-8", errors="ignore") as f:
                         content = f.read()
 
                     # 检查是否引用了目标节点
-                    links = re.findall(r'\[\[([^\]|]+)(?:\|[^\]]+)?\]\]', content)
+                    links = re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
                     for link in links:
                         if node_lower in link.lower():
                             rel_path = wf.relative_to(vault).as_posix()
-                            related.append({
-                                "file": rel_path,
-                                "relation": "references",
-                                "target": link.strip()
-                            })
+                            related.append({"file": rel_path, "relation": "references", "target": link.strip()})
 
                     # 检查目标节点是否引用了本文件
                     if node_lower in wf.stem.lower():
                         for link in links:
                             rel_path = wf.relative_to(vault).as_posix()
-                            related.append({
-                                "file": rel_path,
-                                "relation": "referenced_by",
-                                "target": link.strip()
-                            })
+                            related.append({"file": rel_path, "relation": "referenced_by", "target": link.strip()})
                 except OSError:
                     continue
 
@@ -610,14 +540,14 @@ def handle_tool_call(req_id, tool_name, args):
                     "content": [
                         {
                             "type": "text",
-                            "text": json.dumps({
-                                "node": node,
-                                "relations_count": len(related),
-                                "relations": related[:30]
-                            }, ensure_ascii=False, indent=2)
+                            "text": json.dumps(
+                                {"node": node, "relations_count": len(related), "relations": related[:30]},
+                                ensure_ascii=False,
+                                indent=2,
+                            ),
                         }
                     ]
-                }
+                },
             }
 
         elif tool_name == "eco_list_statutes":
@@ -630,11 +560,7 @@ def handle_tool_call(req_id, tool_name, args):
                 root_dir = vault / "raw"
 
             if not root_dir.exists():
-                return {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "error": {"code": -32000, "message": f"目录不存在: {root_dir}"}
-                }
+                return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32000, "message": f"目录不存在: {root_dir}"}}
 
             # 搜索所有 .md/.txt 文件（走清单缓存），按文件名筛选
             all_files = _cached_files(root_dir)
@@ -642,11 +568,7 @@ def handle_tool_call(req_id, tool_name, args):
             for f in all_files:
                 if category.lower() in f.stem.lower():
                     rel_path = f.relative_to(vault).as_posix()
-                    matched.append({
-                        "path": rel_path,
-                        "name": f.stem,
-                        "dir": f.parent.relative_to(vault).as_posix()
-                    })
+                    matched.append({"path": rel_path, "name": f.stem, "dir": f.parent.relative_to(vault).as_posix()})
 
             return {
                 "jsonrpc": "2.0",
@@ -655,14 +577,12 @@ def handle_tool_call(req_id, tool_name, args):
                     "content": [
                         {
                             "type": "text",
-                            "text": json.dumps({
-                                "category": category,
-                                "total": len(matched),
-                                "statutes": matched
-                            }, ensure_ascii=False, indent=2)
+                            "text": json.dumps(
+                                {"category": category, "total": len(matched), "statutes": matched}, ensure_ascii=False, indent=2
+                            ),
                         }
                     ]
-                }
+                },
             }
 
         elif tool_name == "eco_faithfulness_check":
@@ -671,7 +591,7 @@ def handle_tool_call(req_id, tool_name, args):
                 return {
                     "jsonrpc": "2.0",
                     "id": req_id,
-                    "error": {"code": -32000, "message": "rag_score 不可用（numpy 缺失或导入失败）"}
+                    "error": {"code": -32000, "message": "rag_score 不可用（numpy 缺失或导入失败）"},
                 }
 
             answer = args.get("answer", "")
@@ -680,11 +600,7 @@ def handle_tool_call(req_id, tool_name, args):
             query = args.get("query", "") or answer[:50]
 
             if not answer.strip():
-                return {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "error": {"code": -32602, "message": "answer 不能为空"}
-                }
+                return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32602, "message": "answer 不能为空"}}
 
             contexts = []
             if source.strip():
@@ -692,18 +608,14 @@ def handle_tool_call(req_id, tool_name, args):
             if statute.strip():
                 target_path = find_statute_file(vault, statute)
                 if not target_path:
-                    return {
-                        "jsonrpc": "2.0",
-                        "id": req_id,
-                        "error": {"code": -32000, "message": f"未找到法规: {statute}"}
-                    }
-                with open(target_path, encoding='utf-8', errors='ignore') as f:
+                    return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32000, "message": f"未找到法规: {statute}"}}
+                with open(target_path, encoding="utf-8", errors="ignore") as f:
                     contexts.append(f.read(100000))
             if not contexts:
                 return {
                     "jsonrpc": "2.0",
                     "id": req_id,
-                    "error": {"code": -32602, "message": "必须提供 source（内联原文）或 statute（法规名）之一"}
+                    "error": {"code": -32602, "message": "必须提供 source（内联原文）或 statute（法规名）之一"},
                 }
 
             r = _SCORER.score(query, answer, contexts)
@@ -718,24 +630,14 @@ def handle_tool_call(req_id, tool_name, args):
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
-                "result": {
-                    "content": [{"type": "text", "text": json.dumps(d, ensure_ascii=False, indent=2)}]
-                }
+                "result": {"content": [{"type": "text", "text": json.dumps(d, ensure_ascii=False, indent=2)}]},
             }
 
         else:
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "error": {"code": -32601, "message": f"Unknown tool: {tool_name}"}
-            }
+            return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Unknown tool: {tool_name}"}}
 
     except Exception as e:
-        return {
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "error": {"code": -32000, "message": f"Internal error: {str(e)}"}
-        }
+        return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32000, "message": f"Internal error: {str(e)}"}}
 
 
 # ===== 主循环 =====
@@ -744,13 +646,16 @@ def handle_tool_call(req_id, tool_name, args):
 def main():
     """MCP 服务器主循环：从 stdin 读取 JSON-RPC 请求，处理，写入 stdout"""
     # 启动信息走 stderr，避免污染 stdout 的 JSON-RPC 帧（官方 MCP SDK 客户端会被打乱）
-    startup_msg = json.dumps({
-        "event": "mcp.startup",
-        "server_name": "eco-knowledge-mcp",
-        "version": "0.2.0",
-        "vault_path": str(find_vault_path()),
-        "tools_count": len(TOOLS)
-    }, ensure_ascii=False)
+    startup_msg = json.dumps(
+        {
+            "event": "mcp.startup",
+            "server_name": "eco-knowledge-mcp",
+            "version": "0.2.0",
+            "vault_path": str(find_vault_path()),
+            "tools_count": len(TOOLS),
+        },
+        ensure_ascii=False,
+    )
     sys.stderr.write(startup_msg + "\n")
     sys.stderr.flush()
 
@@ -762,11 +667,7 @@ def main():
         try:
             request = json.loads(line)
         except json.JSONDecodeError:
-            error_resp = json.dumps({
-                "jsonrpc": "2.0",
-                "id": None,
-                "error": {"code": -32700, "message": "Parse error"}
-            })
+            error_resp = json.dumps({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}})
             sys.stdout.write(error_resp + "\n")
             sys.stdout.flush()
             continue
@@ -787,6 +688,7 @@ if __name__ == "__main__":
     except BrokenPipeError:
         # 客户端断开（管道关闭）属正常退出路径，重定向 stdout 避免解释器收尾再报错
         import os
+
         devnull = os.open(os.devnull, os.O_WRONLY)
         os.dup2(devnull, sys.stdout.fileno())
         sys.exit(0)

@@ -2,7 +2,6 @@
 
 from govmcp_tools import hunan_env as he
 
-
 SAMPLE_HTML = """
 <html><body>
 <li><a title='2026年7月全省环境质量状况' target="_blank"
@@ -51,6 +50,7 @@ def test_find_article_missing(monkeypatch):
 def test_gunzip_guard():
     # 服务端声明 gzip 但未压缩时不解压、不报错；真 gzip 正确解压
     import gzip
+
     raw = "你好".encode()
     assert he._maybe_gunzip(raw, "gzip") == raw
     assert he._maybe_gunzip(gzip.compress(raw), "gzip") == raw

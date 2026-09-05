@@ -9,25 +9,24 @@ eco_loops_integration.py — 五层循环集成入口（补强版）
 4. 任务完成钩子：on_task_complete() 供外层调用
 """
 
+import logging
 import os
 import sys
-import time
-import logging
-import threading
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("eco_loops")
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from agent_core.heartbeat import PulseLoop, PulseSteps, default_steps
-from agent_core.meta_evolution import MetaEvolution
+from agent_core.heartbeat import PulseLoop, default_steps  # noqa: E402
+from agent_core.meta_evolution import MetaEvolution  # noqa: E402
 
 # ── L5 自愈（条件加载，允许缺失） ──
 try:
     from agent_core.self_healing import SelfHealing
+
     _HAS_SELF_HEALING = True
 except ImportError:
     SelfHealing = None
@@ -82,7 +81,7 @@ class EcoLoopsIntegration:
         def _suggestions_wrapper():
             ctx = {}
             try:
-                sync_result = steps.step_sync()
+                steps.step_sync()
                 diff_result = steps.step_diff()
                 rule_result = steps.step_rule_engine()
                 ctx["stale_count"] = len(rule_result.get("triggered", []))
@@ -90,6 +89,7 @@ class EcoLoopsIntegration:
             except Exception:
                 pass
             return steps.step_suggestions(ctx)
+
         self.l3.register_listener("suggestions", _suggestions_wrapper)
 
         logger.info("[L3] Pulse 全量五步骤已接线: sync/diff/rule_engine/mem_cron/suggestions")
@@ -120,11 +120,13 @@ class EcoLoopsIntegration:
         """
         self._task_count += 1
         if task_result:
-            self._task_history.append({
-                "success": task_result.get("success", True),
-                "task": task_result.get("task", ""),
-                "timestamp": datetime.now().isoformat(),
-            })
+            self._task_history.append(
+                {
+                    "success": task_result.get("success", True),
+                    "task": task_result.get("task", ""),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             # 仅保留最近 200 条历史
             if len(self._task_history) > 200:
                 self._task_history = self._task_history[-200:]
@@ -150,6 +152,7 @@ class EcoLoopsIntegration:
         """注册 L4 每日自动调度（依赖 scheduler 模块）"""
         try:
             from agent_core.scheduler import scheduler
+
             cron_expr = "0 2 * * *" if self._l4_daily_time == "02:00" else None
             if not cron_expr:
                 h, m = self._l4_daily_time.split(":")
@@ -216,7 +219,8 @@ loops = EcoLoopsIntegration()
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     print("=== Eco Agent 五层循环自检 ===")
     test_results = loops.self_test()

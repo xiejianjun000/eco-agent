@@ -95,9 +95,7 @@ class ApprovalFlow:
         self._audit_chain = audit_chain
 
         # 初始化审批步骤
-        self.steps: list[ApprovalStep] = [
-            ApprovalStep(level=i + 1, approver=name) for i, name in enumerate(approvers)
-        ]
+        self.steps: list[ApprovalStep] = [ApprovalStep(level=i + 1, approver=name) for i, name in enumerate(approvers)]
 
         self.current_level: int = 1  # 当前待审批级别 (1-based)
         self._start_time: float = time.time()
@@ -208,9 +206,7 @@ class ApprovalFlow:
             return self.result()
 
         if approver != step.approver:
-            raise ValueError(
-                f"审批人不匹配: 当前级别({step.level})需要 '{step.approver}'，但收到 '{approver}'"
-            )
+            raise ValueError(f"审批人不匹配: 当前级别({step.level})需要 '{step.approver}'，但收到 '{approver}'")
 
         step.status = ApprovalStatus.APPROVED
         step.timestamp = time.time()
@@ -241,9 +237,7 @@ class ApprovalFlow:
             return self.result()
 
         if approver != step.approver:
-            raise ValueError(
-                f"审批人不匹配: 当前级别({step.level})需要 '{step.approver}'，但收到 '{approver}'"
-            )
+            raise ValueError(f"审批人不匹配: 当前级别({step.level})需要 '{step.approver}'，但收到 '{approver}'")
 
         step.status = ApprovalStatus.REJECTED
         step.timestamp = time.time()
@@ -308,9 +302,7 @@ class ApprovalFlow:
         """
         if not self.is_complete():
             return False
-        return all(
-            s.status in (ApprovalStatus.APPROVED, ApprovalStatus.SKIPPED) for s in self.steps
-        )
+        return all(s.status in (ApprovalStatus.APPROVED, ApprovalStatus.SKIPPED) for s in self.steps)
 
     def result(self) -> ApprovalStatus:
         """
@@ -348,10 +340,7 @@ class ApprovalFlow:
 
     def __repr__(self) -> str:
         status = "completed" if self._completed else "in_progress"
-        return (
-            f"<ApprovalFlow level={self.current_level}/{len(self.steps)}"
-            f" status={status} elapsed={self._elapsed():.1f}s>"
-        )
+        return f"<ApprovalFlow level={self.current_level}/{len(self.steps)} status={status} elapsed={self._elapsed():.1f}s>"
 
 
 # ── 便捷工厂函数 ──────────────────────────────────────────

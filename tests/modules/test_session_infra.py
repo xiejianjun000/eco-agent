@@ -15,8 +15,8 @@ sys.path.insert(0, str(ROOT))
 
 import pytest  # noqa: E402
 
-
 # ═══════════════ SessionEventLog ═══════════════
+
 
 @pytest.fixture()
 def log(tmp_path):
@@ -67,6 +67,7 @@ def test_fault_injection_hash_tamper(log):
     lines = log.path.read_text(encoding="utf-8").splitlines()
     # 篡改第 2 条（seq=2）的 data 字段
     import json
+
     e2 = json.loads(lines[1])
     e2["data"] = {"tampered": True}
     lines[1] = json.dumps(e2, ensure_ascii=False)
@@ -85,6 +86,7 @@ def test_replay_is_deterministic(log):
 
 
 # ═══════════════ ContextCompactor ═══════════════
+
 
 def test_compaction_truncate_fallback():
     from agent_core.compaction import compact, estimate_tokens
@@ -111,6 +113,7 @@ def test_compaction_noop_under_limit():
 
 # ═══════════════ MemoryCurator ═══════════════
 
+
 def test_retention_curve_ebbinghaus():
     from agent_core.memory_curation import MemoryCurator
 
@@ -121,8 +124,9 @@ def test_retention_curve_ebbinghaus():
 
 
 def test_recall_orders_by_retention():
-    from agent_core.memory_curation import MemoryCurator
     from datetime import datetime, timedelta
+
+    from agent_core.memory_curation import MemoryCurator
 
     now = datetime.now()
     episodic = [
@@ -188,13 +192,16 @@ def test_conflict_permanent_not_resolved_automatically(tmp_path):
 
 # ═══════════════ 辅助 ═══════════════
 
+
 def tmp_path_fixture():
     import tempfile
+
     return Path(tempfile.mkdtemp(prefix="eco-mem-"))
 
 
 def json_loads(path):
     import json
+
     return json.loads(path.read_text(encoding="utf-8"))
 
 

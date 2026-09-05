@@ -1,6 +1,6 @@
 """span 树可观测性测试：父子嵌套/耗时字段/落盘/树形渲染/OTLP 导出 + chat_with_tools 集成"""
-import json
 
+import json
 
 from agent_core.observability import SpanTree
 
@@ -72,6 +72,7 @@ class TestSpanTreeChatIntegration:
 
     def _client(self, monkeypatch):
         from agent_core.llm_client import LLMClient
+
         c = LLMClient()
         monkeypatch.setattr(c, "_api_key", "sk-test")
         monkeypatch.setattr(c, "_disabled", False)
@@ -81,13 +82,22 @@ class TestSpanTreeChatIntegration:
     def test_tool_round_span_tree(self, monkeypatch, tmp_path):
         monkeypatch.setattr("agent_core.decisions.DECISIONS_FILE", tmp_path / "dec.jsonl")
         c = self._client(monkeypatch)
-        rounds = iter([
-            {"role": "assistant", "content": None,
-             "tool_calls": [{"id": "call_1", "type": "function",
-                             "function": {"name": "save_document",
-                                          "arguments": '{"filename": "a.md", "content": "x"}'}}]},
-            {"role": "assistant", "content": "已保存。"},
-        ])
+        rounds = iter(
+            [
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {"name": "save_document", "arguments": '{"filename": "a.md", "content": "x"}'},
+                        }
+                    ],
+                },
+                {"role": "assistant", "content": "已保存。"},
+            ]
+        )
 
         def fake_call(model, messages, tools):
             c._last_usage = {"prompt_tokens": 11, "completion_tokens": 6}
@@ -102,8 +112,7 @@ class TestSpanTreeChatIntegration:
 
         tree = SpanTree()
         root = tree.start("chat", "session")
-        answer = c.chat_with_tools([{"role": "user", "content": "保存"}], tools=[{"x": 1}],
-                                   stream=False, spans=tree)
+        answer = c.chat_with_tools([{"role": "user", "content": "保存"}], tools=[{"x": 1}], stream=False, spans=tree)
         tree.end(root)
         assert answer == "已保存。"
 

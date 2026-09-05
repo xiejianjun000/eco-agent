@@ -9,6 +9,7 @@
 
 铁律：只读写 ~/.eco/.env，绝不把 key 打印到终端；本文件不含任何真实 key。
 """
+
 import os
 from pathlib import Path
 
@@ -68,6 +69,7 @@ def _mask(v: str) -> str:
 # ---------------------------------------------------------------------------
 def _model_list() -> int:
     from agent_core.llm_providers import list_providers
+
     env = _merged_env()
     rows = []
     for spec in list_providers():
@@ -78,8 +80,7 @@ def _model_list() -> int:
         else:
             has = spec.has_key(env) or (spec.name == "moonshot" and bool(env.get("KIMI_API_KEY")))
         base = spec.base_url or "(ECO_CUSTOM_BASE_URL)"
-        rows.append((spec.name, spec.display, base, spec.default_model or "-",
-                     "✅" if has else "❌"))
+        rows.append((spec.name, spec.display, base, spec.default_model or "-", "✅" if has else "❌"))
     headers = ("NAME", "显示名", "BASE URL", "默认模型", "KEY")
     widths = [max(len(str(r[i])) for r in rows + [headers]) for i in range(5)]
     fmt = "  ".join(f"{{:<{w}}}" for w in widths)
@@ -96,6 +97,7 @@ def _model_use(name: str | None) -> int:
         print("用法: eco config model use <name>")
         return 2
     from agent_core.llm_providers import get_provider
+
     try:
         spec = get_provider(name)
     except KeyError as e:
@@ -113,28 +115,31 @@ def _model_use(name: str | None) -> int:
 
 def _model_test(name: str | None) -> int:
     from agent_core.llm_providers import get_provider, resolve_provider
+
     env = _merged_env()
     try:
         spec = get_provider(name) if name else resolve_provider(None, env)
     except KeyError as e:
         print(e.args[0])
         return 2
-    has_key = (spec.has_key(env)
-               or (spec.name == "moonshot" and bool(env.get("KIMI_API_KEY")))
-               or spec.name == "ollama")
+    has_key = spec.has_key(env) or (spec.name == "moonshot" and bool(env.get("KIMI_API_KEY"))) or spec.name == "ollama"
     if spec.name == "custom" and not env.get("ECO_CUSTOM_BASE_URL"):
         print("[model test] custom provider 未配置 ECO_CUSTOM_BASE_URL")
         return 1
     if not has_key:
-        print(f"[model test] 未检测到 {spec.env_key}，无法测试 {spec.name}。"
-              f"请先设置该环境变量（申请入口: {spec.doc or '见官方文档'}）")
+        print(
+            f"[model test] 未检测到 {spec.env_key}，无法测试 {spec.name}。"
+            f"请先设置该环境变量（申请入口: {spec.doc or '见官方文档'}）"
+        )
         return 1
     from agent_core.llm_client import LLMClient
+
     client = LLMClient.from_provider(spec.name)
-    print(f"[model test] {spec.name} ({spec.display}) → {client._provider['base_url']}"
-          f"  model={client._provider['default_model']}  key={_mask(client._api_key)}")
-    text = client.complete("ping", system="Reply with a short greeting.",
-                           max_tokens=16, timeout=30.0)
+    print(
+        f"[model test] {spec.name} ({spec.display}) → {client._provider['base_url']}"
+        f"  model={client._provider['default_model']}  key={_mask(client._api_key)}"
+    )
+    text = client.complete("ping", system="Reply with a short greeting.", max_tokens=16, timeout=30.0)
     if text:
         print(f"[model test] ✅ 连通正常，响应: {text[:120]}")
         return 0

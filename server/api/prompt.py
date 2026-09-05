@@ -57,15 +57,16 @@ async def register_section(req: SectionRequest) -> dict:
     """注册/覆盖一个自定义提示词片段（插件式贡献，可插拔）。"""
     eng = get_prompt_engine()
     try:
-        eng.register_section(req.section_id, req.title, req.content,
-                             priority=req.priority, source=req.source)
+        eng.register_section(req.section_id, req.title, req.content, priority=req.priority, source=req.source)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    eng.audit.append(source=f"prompt_api:{req.source}",
-                     content=f"section 注册/覆盖: {req.section_id} ({req.title})",
-                     accepted=True, reason="section_registered")
-    return {"ok": True, "section_id": req.section_id,
-            "sections": eng.list_sections()}
+    eng.audit.append(
+        source=f"prompt_api:{req.source}",
+        content=f"section 注册/覆盖: {req.section_id} ({req.title})",
+        accepted=True,
+        reason="section_registered",
+    )
+    return {"ok": True, "section_id": req.section_id, "sections": eng.list_sections()}
 
 
 @router.delete("/prompt/sections/{section_id}")
@@ -73,8 +74,7 @@ async def unregister_section(section_id: str) -> dict:
     """移除提示词片段。"""
     eng = get_prompt_engine()
     removed = eng.unregister_section(section_id)
-    eng.audit.append(source="prompt_api", content=f"section 移除: {section_id}",
-                     accepted=True, reason="section_removed")
+    eng.audit.append(source="prompt_api", content=f"section 移除: {section_id}", accepted=True, reason="section_removed")
     return {"ok": removed, "section_id": section_id, "sections": eng.list_sections()}
 
 
@@ -87,8 +87,7 @@ async def inject_prompt(req: InjectRequest) -> dict:
     eng = get_prompt_engine()
     ok = eng.inject(req.content, source=req.source, task_id=req.task_id)
     if not ok:
-        return {"ok": False, "reason": "注入被安全校验拒绝（已写入 SM3 审计链）",
-                "injections": eng.list_injections()}
+        return {"ok": False, "reason": "注入被安全校验拒绝（已写入 SM3 审计链）", "injections": eng.list_injections()}
     return {"ok": True, "injections": eng.list_injections()}
 
 
@@ -97,9 +96,12 @@ async def clear_injections(source: str = Query(default="", description="按来�
     """清理运行时注入（按来源前缀或全部）。"""
     eng = get_prompt_engine()
     n = eng.clear_injections(source_prefix=source)
-    eng.audit.append(source="prompt_api",
-                     content=f"injections 清理: source={source or '*'} count={n}",
-                     accepted=True, reason="injections_cleared")
+    eng.audit.append(
+        source="prompt_api",
+        content=f"injections 清理: source={source or '*'} count={n}",
+        accepted=True,
+        reason="injections_cleared",
+    )
     return {"ok": True, "cleared": n, "injections": eng.list_injections()}
 
 
@@ -108,6 +110,5 @@ async def switch_persona(req: PersonaRequest) -> dict:
     """切换执法阶段人设（巡查/文书/评查，三阶段提示词状态机）。"""
     eng = get_prompt_engine()
     if not eng.switch_phase(req.phase, task_id="prompt_api"):
-        raise HTTPException(status_code=400,
-                            detail=f"非法阶段: {req.phase}（可选 inspection/documentation/review）")
+        raise HTTPException(status_code=400, detail=f"非法阶段: {req.phase}（可选 inspection/documentation/review）")
     return {"ok": True, "phase": eng.phase, "overview": eng.overview()}

@@ -34,7 +34,7 @@ SERVER_VERSION = "1.0.0"
 TOOLS = [
     {
         "name": "cnemc_air_quality",
-        "description": "查询指定城市实时空气质量：PM2.5/PM10/SO2/NO2/CO/O3 六参数浓度 + AQI + 首要污染物 + 等级（GB 3095-2012）",
+        "description": "查询指定城市实时空气质量：PM2.5/PM10/SO2/NO2/CO/O3 六参数浓度 + AQI + 首要污染物 + 等级（GB 3095-2012）",  # noqa: E501
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -79,9 +79,15 @@ def _audit(tool: str, args: dict, result: str, duration_ms: int) -> None:
         audit_file = ROOT / "memory-tree" / "data" / "audit" / "cnemc_mcp_audit.jsonl"
         audit_file.parent.mkdir(parents=True, exist_ok=True)
         entry = chain.entries[-1]
-        record = {"when": time.time(), "tool": tool, "args": args,
-                  "result_preview": str(result)[:200], "cost": f"{duration_ms}ms",
-                  "prev_hash": entry.prev_hash, "current_hash": entry.current_hash}
+        record = {
+            "when": time.time(),
+            "tool": tool,
+            "args": args,
+            "result_preview": str(result)[:200],
+            "cost": f"{duration_ms}ms",
+            "prev_hash": entry.prev_hash,
+            "current_hash": entry.current_hash,
+        }
         with audit_file.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
     except Exception:  # noqa: BLE001 — 审计失败不阻断数据服务
@@ -147,12 +153,19 @@ def handle_request(request: dict) -> dict:
     params = request.get("params", {})
 
     if method == "initialize":
-        return {"jsonrpc": "2.0", "id": req_id, "result": {
-            "protocolVersion": params.get("protocolVersion", "2024-11-05"),
-            "capabilities": {"tools": {}},
-            "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION,
-                           "title": "中国环境监测总站空气质量 govMCP（SM3 审计）"},
-        }}
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": params.get("protocolVersion", "2024-11-05"),
+                "capabilities": {"tools": {}},
+                "serverInfo": {
+                    "name": SERVER_NAME,
+                    "version": SERVER_VERSION,
+                    "title": "中国环境监测总站空气质量 govMCP（SM3 审计）",
+                },
+            },
+        }
     if method in ("tools/list", "mcp.list_tools"):
         return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": TOOLS}}
     if method in ("tools/call", "mcp.call_tool"):
@@ -168,15 +181,17 @@ def handle_request(request: dict) -> dict:
                 data = {"error": "aqi 必须是数值"}
         else:
             data = {"error": f"未知工具: {name}"}
-        return {"jsonrpc": "2.0", "id": req_id, "result": {
-            "content": [{"type": "text", "text": json.dumps(data, ensure_ascii=False)}],
-            "isError": "error" in data,
-        }}
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "content": [{"type": "text", "text": json.dumps(data, ensure_ascii=False)}],
+                "isError": "error" in data,
+            },
+        }
     if method in ("ping", "mcp.ping"):
-        return {"jsonrpc": "2.0", "id": req_id,
-                "result": {"status": "ok", "timestamp": datetime.now().isoformat()}}
-    return {"jsonrpc": "2.0", "id": req_id,
-            "error": {"code": -32601, "message": f"Method '{method}' not found"}}
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"status": "ok", "timestamp": datetime.now().isoformat()}}
+    return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Method '{method}' not found"}}
 
 
 def main() -> int:
@@ -191,10 +206,19 @@ def main() -> int:
         print(json.dumps(_aqi_level(85), ensure_ascii=False, indent=2))
         return 0
 
-    sys.stderr.write(json.dumps({
-        "event": "mcp.startup", "server_name": SERVER_NAME,
-        "version": SERVER_VERSION, "tools_count": len(TOOLS),
-        "audit": "govmcp SM3 链（等保）"}, ensure_ascii=False) + "\n")
+    sys.stderr.write(
+        json.dumps(
+            {
+                "event": "mcp.startup",
+                "server_name": SERVER_NAME,
+                "version": SERVER_VERSION,
+                "tools_count": len(TOOLS),
+                "audit": "govmcp SM3 链（等保）",
+            },
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
     sys.stderr.flush()
 
     for line in sys.stdin:
@@ -204,8 +228,9 @@ def main() -> int:
         try:
             request = json.loads(line)
         except json.JSONDecodeError:
-            sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": None,
-                                         "error": {"code": -32700, "message": "Parse error"}}) + "\n")
+            sys.stdout.write(
+                json.dumps({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}}) + "\n"
+            )
             sys.stdout.flush()
             continue
         if "id" not in request:  # 通知不回包

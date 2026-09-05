@@ -35,10 +35,10 @@ def detect_correction(text: str) -> str | None:
     """识别用户输入是否为纠错，返回纠错内容；不是纠错返回 None"""
     t = text.strip()
     if t.startswith("/correct"):
-        body = t[len("/correct"):].strip(" ：:")
+        body = t[len("/correct") :].strip(" ：:")
         return body or None
     if t.startswith("/纠错"):
-        body = t[len("/纠错"):].strip(" ：:")
+        body = t[len("/纠错") :].strip(" ：:")
         return body or None
     for pat in _NL_PATTERNS:
         m = pat.match(t)

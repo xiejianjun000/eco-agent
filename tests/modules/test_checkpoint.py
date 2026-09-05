@@ -1,4 +1,5 @@
 """会话检查点/回滚：快照/列举/回滚/多会话隔离/损坏快照容错（全 mock，离线）。"""
+
 import json
 
 import pytest
@@ -72,9 +73,13 @@ class TestCheckpointStore:
 
     def test_rewind_restores_history(self, store):
         store.create(history=[{"role": "user", "content": "第一轮"}])
-        store.create(history=[{"role": "user", "content": "第一轮"},
-                              {"role": "assistant", "content": "答"},
-                              {"role": "user", "content": "第二轮"}])
+        store.create(
+            history=[
+                {"role": "user", "content": "第一轮"},
+                {"role": "assistant", "content": "答"},
+                {"role": "user", "content": "第二轮"},
+            ]
+        )
         cp = store.rewind(1)
         assert cp is not None
         assert cp["history"] == [{"role": "user", "content": "第一轮"}]

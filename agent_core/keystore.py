@@ -11,6 +11,7 @@ get_keystore() 按 ECO_SECRET_BACKEND=env|file|vault 选择，默认 env。
 
 铁律：本文件不含任何真实 key；HTTP 一律 urllib；后端故障时调用方自行回退。
 """
+
 import base64
 import json
 import logging
@@ -24,9 +25,10 @@ from pathlib import Path
 logger = logging.getLogger("keystore")
 
 try:
+    from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-    from cryptography.hazmat.primitives import hashes
+
     CRYPTO_AVAIL = True
 except Exception:  # pragma: no cover - cryptography 缺失时拒绝降级
     CRYPTO_AVAIL = False
@@ -83,10 +85,7 @@ class EnvBackend(SecretBackend):
         self._env.pop(key, None)
 
     def list_keys(self) -> list[str]:
-        return sorted(
-            k for k, v in self._env.items()
-            if v and k.endswith(SECRET_ENV_SUFFIXES)
-        )
+        return sorted(k for k, v in self._env.items() if v and k.endswith(SECRET_ENV_SUFFIXES))
 
 
 # ---------------------------------------------------------------------------
@@ -106,10 +105,7 @@ class FileVaultBackend(SecretBackend):
         if not master_key:
             master_key = os.environ.get("ECO_MASTER_KEY", "")
         if not master_key:
-            raise RuntimeError(
-                "[FileVaultBackend] 未设置 ECO_MASTER_KEY，拒绝创建加密秘钥库——"
-                "请先配置长期随机主密钥"
-            )
+            raise RuntimeError("[FileVaultBackend] 未设置 ECO_MASTER_KEY，拒绝创建加密秘钥库——请先配置长期随机主密钥")
         self._path = Path(path) if path else DEFAULT_VAULT_FILE
         self._key = self._derive_key(master_key)
         self._aead = AESGCM(self._key)
@@ -130,9 +126,7 @@ class FileVaultBackend(SecretBackend):
     def _enforce_mode(path: Path) -> None:
         mode = stat.S_IMODE(path.stat().st_mode)
         if mode != VAULT_FILE_MODE:
-            logger.warning(
-                "[FileVaultBackend] %s 权限 %03o 过宽，已收紧为 600", path, mode
-            )
+            logger.warning("[FileVaultBackend] %s 权限 %03o 过宽，已收紧为 600", path, mode)
             path.chmod(VAULT_FILE_MODE)
 
     def _read_db(self) -> dict:
@@ -269,7 +263,8 @@ def get_keystore(backend: str | None = None) -> SecretBackend:
     if cls is None:
         logger.warning(
             "[keystore] 未知 ECO_SECRET_BACKEND=%r，回退 env；可用: %s",
-            name, "/".join(sorted(_BACKENDS)),
+            name,
+            "/".join(sorted(_BACKENDS)),
         )
         cls = EnvBackend
     return cls()

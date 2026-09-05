@@ -110,7 +110,9 @@ def _log_stats(session_id: str) -> tuple[int, str]:
 def _to_out(s) -> SessionOut:
     log_count, log_updated = _log_stats(s.session_id)
     return SessionOut(
-        session_id=s.session_id, platform=s.platform, user_id=s.user_id,
+        session_id=s.session_id,
+        platform=s.platform,
+        user_id=s.user_id,
         created_at=s.created_at,
         updated_at=log_updated or s.updated_at,
         message_count=log_count or len(getattr(s, "messages", [])),
@@ -131,10 +133,17 @@ async def list_sessions() -> list[SessionOut]:
         if slog.path.exists():
             count, updated = _log_stats("default")
             if count > 0:
-                out.append(SessionOut(
-                    session_id="default", platform="web", user_id="default",
-                    created_at=updated, updated_at=updated, message_count=count,
-                    name=_load_names().get("default", "")))
+                out.append(
+                    SessionOut(
+                        session_id="default",
+                        platform="web",
+                        user_id="default",
+                        created_at=updated,
+                        updated_at=updated,
+                        message_count=count,
+                        name=_load_names().get("default", ""),
+                    )
+                )
     except Exception:  # noqa: BLE001
         pass
     out.sort(key=lambda x: x.updated_at, reverse=True)
@@ -175,8 +184,15 @@ async def rename_session(session_id: str, body: SessionRename) -> SessionOut:
     s = mgr.get(session_id)
     if s is None:
         if session_id == "default":
-            return SessionOut(session_id="default", platform="web", user_id="default",
-                              created_at="", updated_at="", message_count=0, name=name)
+            return SessionOut(
+                session_id="default",
+                platform="web",
+                user_id="default",
+                created_at="",
+                updated_at="",
+                message_count=0,
+                name=name,
+            )
         raise HTTPException(status_code=404, detail="session not found")
     return _to_out(s)
 
@@ -266,5 +282,4 @@ async def get_session_messages(session_id: str) -> dict:
             messages.append({"role": "user", "content": e["data"].get("content", "")})
         elif e.get("type") == "assistant/message":
             messages.append({"role": "assistant", "content": e["data"].get("content", "")})
-    return {"session_id": session_id, "messages": messages,
-            "count": len(messages)}
+    return {"session_id": session_id, "messages": messages, "count": len(messages)}

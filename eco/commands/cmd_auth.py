@@ -10,6 +10,7 @@ eco auth - 非交互授权令牌管理（L4 等高级权限的脚本/CI 通道�
 ECO_RBAC=1 时，grant 要求会话角色（env ECO_ROLE）具备 auth_grant 能力；
 默认 ECO_RBAC 关闭，行为与之前完全一致。
 """
+
 import os
 
 from agent_core import grants as grants_mod
@@ -21,10 +22,12 @@ def run(args):
     if action == "grant":
         role = getattr(args, "role", None) or os.environ.get("ECO_AUTH_ROLE") or None
         try:
-            g = rbac.grant_with_role(level=getattr(args, "level", "L4"),
-                                     ttl=int(getattr(args, "ttl", 3600)),
-                                     scope=getattr(args, "scope", "*") or "*",
-                                     role=role)
+            g = rbac.grant_with_role(
+                level=getattr(args, "level", "L4"),
+                ttl=int(getattr(args, "ttl", 3600)),
+                scope=getattr(args, "scope", "*") or "*",
+                role=role,
+            )
         except PermissionError as e:
             print(f"[auth] 拒绝: {e}")
             return 1
@@ -58,8 +61,10 @@ def run(args):
         for g in gs:
             state = "过期" if g["_expired"] else ("有效" if g["_valid_sig"] else "签名无效")
             role_txt = f" role={g['role']}" if g.get("role") else ""
-            print(f"  {g['id']}  level={g['level']} scope={g.get('scope', '*')}{role_txt} "
-                  f"expires={g.get('expires_iso', '?')}  [{state}]")
+            print(
+                f"  {g['id']}  level={g['level']} scope={g.get('scope', '*')}{role_txt} "
+                f"expires={g.get('expires_iso', '?')}  [{state}]"
+            )
         return 0
     print(f"[auth] 未知操作: {action}")
     return 1
@@ -68,13 +73,12 @@ def run(args):
 def _sso_status():
     """eco auth sso status — 显示 SSO 配置状态（secret 脱敏，discovery 可达性）"""
     from agent_core import sso as sso_mod
+
     cfg = sso_mod.OIDCConfig.from_env()
     print(f"[auth sso] enabled={'是' if cfg.enabled else '否（ECO_SSO=1 开启）'}")
     print(f"  protocol={cfg.protocol}  issuer={cfg.issuer or '(未配置)'}")
-    print(f"  client_id={cfg.client_id or '(未配置)'}  "
-          f"client_secret={cfg.masked_secret()}")
-    print(f"  redirect_uri={cfg.redirect_uri or '(未配置)'}  "
-          f"scopes={' '.join(cfg.scopes)}")
+    print(f"  client_id={cfg.client_id or '(未配置)'}  client_secret={cfg.masked_secret()}")
+    print(f"  redirect_uri={cfg.redirect_uri or '(未配置)'}  scopes={' '.join(cfg.scopes)}")
     print(f"  role_claim={cfg.role_claim}  session_ttl={cfg.session_ttl}s")
     if cfg.protocol == "cas":
         print(f"  cas_validate_url={cfg.cas_validate_url or '(未配置)'}")
@@ -84,8 +88,7 @@ def _sso_status():
         return 0
     try:
         doc = sso_mod.OIDCProvider(cfg, timeout=3).discover()
-        print(f"  discovery=可达 authorization_endpoint="
-              f"{doc.get('authorization_endpoint', '?')}")
+        print(f"  discovery=可达 authorization_endpoint={doc.get('authorization_endpoint', '?')}")
         return 0
     except Exception as e:
         print(f"  discovery=不可达（{e}）")

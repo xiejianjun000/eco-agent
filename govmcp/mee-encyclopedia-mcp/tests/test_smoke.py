@@ -1,4 +1,5 @@
 """冒烟测试：验证模块导入、工具注册、核心读取/下载能力。运行: python tests/test_smoke.py"""
+
 from __future__ import annotations
 
 import sys
@@ -28,12 +29,30 @@ try:
     check("工具注册", len(tools) >= 45, f"共 {len(tools)} 个工具")
     tool_names = set(tools.keys())
     check("读取工具存在", {"read_web_page", "read_air_quality", "read_mee_list", "search_policy"}.issubset(tool_names))
-    check("下载工具存在", {"download_file", "download_standard_pdf", "export_mee_list", "export_air_quality_csv", "list_downloads"}.issubset(tool_names))
-    check("全栏目工具存在", {"list_mee_categories", "read_policy_type", "read_policy_interpretation",
-                             "read_quality_report", "read_interact", "read_exposure",
-                             "read_english_list", "read_nnsa_list", "search_site",
-                             "list_policy_types", "list_quality_reports", "list_interact_sections",
-                             "list_nnsa_sections"}.issubset(tool_names))
+    check(
+        "下载工具存在",
+        {"download_file", "download_standard_pdf", "export_mee_list", "export_air_quality_csv", "list_downloads"}.issubset(
+            tool_names
+        ),
+    )
+    check(
+        "全栏目工具存在",
+        {
+            "list_mee_categories",
+            "read_policy_type",
+            "read_policy_interpretation",
+            "read_quality_report",
+            "read_interact",
+            "read_exposure",
+            "read_english_list",
+            "read_nnsa_list",
+            "search_site",
+            "list_policy_types",
+            "list_quality_reports",
+            "list_interact_sections",
+            "list_nnsa_sections",
+        }.issubset(tool_names),
+    )
 except Exception as exc:  # noqa: BLE001
     check("工具注册", False, str(exc))
 
@@ -44,7 +63,9 @@ check("流域局", server.list_river_bureaus()["count"] == 6)
 check("法规导览", len(server.list_laws()["laws"]) >= 5)
 
 # 4. RAG 知识库
-server.rag_ingest("t1", "环境保护法测试", "中华人民共和国环境保护法于1989年颁布，2014年修订，是环境保护领域的基础法律。", "测试源")
+server.rag_ingest(
+    "t1", "环境保护法测试", "中华人民共和国环境保护法于1989年颁布，2014年修订，是环境保护领域的基础法律。", "测试源"
+)
 hits = server.rag_query("环境保护基础法律")
 check("RAG 检索", len(hits["hits"]) > 0, f"命中 {len(hits['hits'])} 条")
 
@@ -75,10 +96,14 @@ NET_CHECKS = [
 for name, fn in NET_CHECKS:
     try:
         result = fn()
-        ok = (result.get("items") if isinstance(result.get("items"), list) else bool(result))
+        ok = result.get("items") if isinstance(result.get("items"), list) else bool(result)
         if isinstance(result.get("items"), list):
             ok = bool(result["items"]) or bool(result.get("note"))
-        check(f"网络读取-{name}", bool(ok), f"items={len(result.get('items', [])) if isinstance(result.get('items'), list) else '-'}")
+        check(
+            f"网络读取-{name}",
+            bool(ok),
+            f"items={len(result.get('items', [])) if isinstance(result.get('items'), list) else '-'}",
+        )
     except Exception as exc:  # noqa: BLE001
         check(f"网络读取-{name}", False, str(exc))
 

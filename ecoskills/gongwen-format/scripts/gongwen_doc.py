@@ -8,8 +8,7 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Pt, Cm
-
+from docx.shared import Cm, Pt
 
 TITLE_FONT = "方正小标宋简体"
 BODY_FONT = "仿宋_GB2312"
@@ -17,7 +16,7 @@ SUBTITLE_FONT = "楷体_GB2312"
 LEVEL1_FONT = "黑体"
 
 TITLE_SIZE = Pt(22)  # 2号
-BODY_SIZE = Pt(16)   # 3号
+BODY_SIZE = Pt(16)  # 3号
 PAGE_NUM_SIZE = Pt(14)  # 4号
 
 LINE_SPACING = Pt(29)
@@ -73,8 +72,7 @@ def _normalize_quotes(text: str) -> str:
     return re.sub(r'"([^"\n]+)"', r"“\1”", text)
 
 
-def _add_text_paragraph(document, text, font_name, size, *, align=None,
-                        first_line_indent=None, left_indent=None):
+def _add_text_paragraph(document, text, font_name, size, *, align=None, first_line_indent=None, left_indent=None):
     paragraph = document.add_paragraph()
     if align is not None:
         paragraph.alignment = align
@@ -436,11 +434,7 @@ def build_document(data, output_path: Path):
                 paragraph_text,
                 font_name,
                 BODY_SIZE,
-                align=(
-                    WD_ALIGN_PARAGRAPH.JUSTIFY
-                    if font_name == BODY_FONT
-                    else WD_ALIGN_PARAGRAPH.LEFT
-                ),
+                align=(WD_ALIGN_PARAGRAPH.JUSTIFY if font_name == BODY_FONT else WD_ALIGN_PARAGRAPH.LEFT),
                 first_line_indent=TWO_CHAR_INDENT,
             )
 
@@ -506,13 +500,15 @@ def main():
     args = parser.parse_args()
 
     data = {}
-    has_custom = any([
-        args.title,
-        args.recipients,
-        args.body,
-        args.body_file,
-        args.attachment,
-    ])
+    has_custom = any(
+        [
+            args.title,
+            args.recipients,
+            args.body,
+            args.body_file,
+            args.attachment,
+        ]
+    )
 
     if args.md:
         data = _load_markdown_input(args.md)

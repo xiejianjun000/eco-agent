@@ -18,16 +18,15 @@ SERVER = ROOT / "_scripts" / "weather-mcp.py"
 
 
 def _rpc(request: dict, timeout: int = 120) -> dict:
-    r = subprocess.run([sys.executable, str(SERVER)],
-                       input=json.dumps(request) + "\n",
-                       capture_output=True, text=True, timeout=timeout)
+    r = subprocess.run(
+        [sys.executable, str(SERVER)], input=json.dumps(request) + "\n", capture_output=True, text=True, timeout=timeout
+    )
     assert r.returncode == 0, r.stderr
     return json.loads(r.stdout.strip().splitlines()[-1])
 
 
 def test_initialize():
-    resp = _rpc({"jsonrpc": "2.0", "id": 1, "method": "initialize",
-                 "params": {"protocolVersion": "2024-11-05"}})
+    resp = _rpc({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}})
     assert resp["result"]["serverInfo"]["name"] == "weather-govmcp"
 
 
@@ -38,16 +37,16 @@ def test_tools_list():
 
 
 def test_city_list():
-    resp = _rpc({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
-                 "params": {"name": "weather_city_list", "arguments": {}}})
+    resp = _rpc({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "weather_city_list", "arguments": {}}})
     content = json.loads(resp["result"]["content"][0]["text"])
     assert content["cities"]["冷水江"] == "101250803"
 
 
 def test_weather_now_real():
-    resp = _rpc({"jsonrpc": "2.0", "id": 4, "method": "tools/call",
-                 "params": {"name": "weather_now", "arguments": {"city": "冷水江"}}},
-                timeout=120)
+    resp = _rpc(
+        {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "weather_now", "arguments": {"city": "冷水江"}}},
+        timeout=120,
+    )
     content = json.loads(resp["result"]["content"][0]["text"])
     if "error" in content:
         assert "失败" in content["error"]  # 网络不可达时如实报错
@@ -59,17 +58,29 @@ def test_weather_now_real():
 
 def test_weather_now_by_code():
     """直接用 101 城市码查询。"""
-    resp = _rpc({"jsonrpc": "2.0", "id": 5, "method": "tools/call",
-                 "params": {"name": "weather_now", "arguments": {"city": "101250803"}}},
-                timeout=120)
+    resp = _rpc(
+        {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {"name": "weather_now", "arguments": {"city": "101250803"}},
+        },
+        timeout=120,
+    )
     content = json.loads(resp["result"]["content"][0]["text"])
     if "error" not in content:
         assert content["code"] == "101250803"
 
 
 def test_unknown_city():
-    resp = _rpc({"jsonrpc": "2.0", "id": 6, "method": "tools/call",
-                 "params": {"name": "weather_now", "arguments": {"city": "不存在市"}}})
+    resp = _rpc(
+        {
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "tools/call",
+            "params": {"name": "weather_now", "arguments": {"city": "不存在市"}},
+        }
+    )
     content = json.loads(resp["result"]["content"][0]["text"])
     assert "未知城市" in content["error"]
 
@@ -84,6 +95,7 @@ def test_audit_written():
 
 
 # ── epmap 签名单元测试（官方示例算法）──
+
 
 def test_epmap_signature_algorithm():
     """云市场网关签名：signStr='x-date: <UTC>'，HMAC-SHA1→base64。"""

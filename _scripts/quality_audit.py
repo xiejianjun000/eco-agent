@@ -37,36 +37,38 @@ ECO AGENT 14 维质量评分卡ECO SCHEMA 2
   python _scripts/quality_audit.py --summary      # 仅摘要
 """
 
-import re
-import json
 import argparse
-from pathlib import Path
+import json
+import re
 from datetime import datetime
-
+from pathlib import Path
 
 #  项目根目录
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 #  红线阈值ECO SCHEMA 2
-REDLINES = {k.split("_", 1)[1] if "_" in k else k: v for k, v in {
-    # 所有 D  85%关键项  90%
-    # 孤岛率  5%断链率  3%
-    "D1_traceability": {"min": 0.95, "label": "法规溯源准确率"},
-    "D2_procedure": {"min": 1.00, "label": "执法程序合规率"},
-    "D3_confidence": {"min": 0.90, "label": "置信度标注率"},
-    "D4_completeness": {"min": 0.90, "label": "执法分析完整性"},
-    "D5_cross_ref": {"min": 0.95, "label": "法规交叉引用率"},
-    "D6_bidirectional": {"min": 0.90, "label": "案例双向关联率"},
-    "D7_connectivity": {"min": 0.90, "label": "执法图谱连通度"},
-    "D8_island": {"min": 0.00, "label": "知识孤岛率", "max": 0.05},
-    "D9_index": {"min": 0.95, "label": "索引覆盖率"},
-    "D10_freshness": {"min": 0.80, "label": "法规新鲜度"},
-    "D11_coverage": {"min": 0.90, "label": "rawwiki覆盖率"},
-    "D12_anti_hallucination": {"min": 0.95, "label": "反幻觉率"},
-    "D13_broken_links": {"min": 0.00, "label": "断链率", "max": 0.03},
-    "D14_fault_tolerance": {"min": 0.95, "label": "系统容错度"},
-}.items()}
+REDLINES = {
+    k.split("_", 1)[1] if "_" in k else k: v
+    for k, v in {
+        # 所有 D  85%关键项  90%
+        # 孤岛率  5%断链率  3%
+        "D1_traceability": {"min": 0.95, "label": "法规溯源准确率"},
+        "D2_procedure": {"min": 1.00, "label": "执法程序合规率"},
+        "D3_confidence": {"min": 0.90, "label": "置信度标注率"},
+        "D4_completeness": {"min": 0.90, "label": "执法分析完整性"},
+        "D5_cross_ref": {"min": 0.95, "label": "法规交叉引用率"},
+        "D6_bidirectional": {"min": 0.90, "label": "案例双向关联率"},
+        "D7_connectivity": {"min": 0.90, "label": "执法图谱连通度"},
+        "D8_island": {"min": 0.00, "label": "知识孤岛率", "max": 0.05},
+        "D9_index": {"min": 0.95, "label": "索引覆盖率"},
+        "D10_freshness": {"min": 0.80, "label": "法规新鲜度"},
+        "D11_coverage": {"min": 0.90, "label": "rawwiki覆盖率"},
+        "D12_anti_hallucination": {"min": 0.95, "label": "反幻觉率"},
+        "D13_broken_links": {"min": 0.00, "label": "断链率", "max": 0.03},
+        "D14_fault_tolerance": {"min": 0.95, "label": "系统容错度"},
+    }.items()
+}
 
 
 #  必备文件清单
@@ -212,7 +214,7 @@ def find_broken_wikilinks():
         if ".git" in str(f):
             continue
         content = f.read_text(encoding="utf-8", errors="ignore")
-        links = re.findall(r'\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]', content)
+        links = re.findall(r"\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]", content)
         for link in links:
             link_name = link.strip()
             if link_name not in all_stems:
@@ -244,7 +246,7 @@ def audit_project_quality():
 
     # --- D2: 宪法段落完整性 ---
     section_results = check_constitution_sections()
-    total_sections = sum(len(v["missing_sections"]) for v in section_results.values())
+    sum(len(v["missing_sections"]) for v in section_results.values())
     all_missing = [(fname, s) for fname, v in section_results.items() for s in v["missing_sections"]]
     total_required = sum(len(v) for v in REQUIRED_SECTIONS.values())
     d2_score = 1.0 - (len(all_missing) / max(total_required, 1))
@@ -290,8 +292,12 @@ def audit_project_quality():
         print(f"   [FAIL] 缺少: {f}")
 
     # --- D7: Git 提交健康度 ---
-    import subprocess; git_log = subprocess.run(['git', '-C', str(PROJECT_ROOT), 'log', '--oneline'], capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
-    commit_count = len([l for l in git_log.splitlines() if l.strip()])
+    import subprocess
+
+    git_log = subprocess.run(
+        ["git", "-C", str(PROJECT_ROOT), "log", "--oneline"], capture_output=True, text=True, encoding="utf-8", errors="replace"
+    ).stdout
+    commit_count = len([line for line in git_log.splitlines() if line.strip()])
     d7_score = min(1.0, commit_count / 5)  # 至少 5 次提交满分
     print(f"\n[GIT] D7 Git 提交健康度: {d7_score:.0%} ({commit_count} 次提交)")
     if commit_count == 0:
@@ -301,12 +307,12 @@ def audit_project_quality():
     broken = find_broken_wikilinks()
     total_md = fm["total"]
     d8_score = 1.0 - (len(broken) / max(total_md, 1))
-    print(f"\n[LINK] D8 悬空链接率: {1-d8_score:.1%} ({len(broken)} 个断链)")
+    print(f"\n[LINK] D8 悬空链接率: {1 - d8_score:.1%} ({len(broken)} 个断链)")
     if broken:
         for b in broken[:5]:
             print(f"   [WARN]  {b['file']}  [[{b['link']}]]")
         if len(broken) > 5:
-            print(f"   ... 还有 {len(broken)-5} 个")
+            print(f"   ... 还有 {len(broken) - 5} 个")
 
     # --- D9: 文件总览统计 ---
     line_stats = count_file_lines()
@@ -322,7 +328,9 @@ def audit_project_quality():
     print(f"   总文件数: {len(line_stats)} 个 ({total_lines} 行)")
 
     # --- D10: 版本标记 ---
-    tags = subprocess.run(['git', '-C', str(PROJECT_ROOT), 'tag'], capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+    tags = subprocess.run(
+        ["git", "-C", str(PROJECT_ROOT), "tag"], capture_output=True, text=True, encoding="utf-8", errors="replace"
+    ).stdout.strip()
     has_tag = bool(tags)
     d10_score = 1.0 if has_tag else 0.0
     print(f"\n[FM]  D10 版本标记: {d10_score:.0%}")
@@ -330,12 +338,13 @@ def audit_project_quality():
 
     # --- Python 语法检查 ---
     import ast as _ast
+
     py_errors = []
     for f in sorted(PROJECT_ROOT.rglob("*.py")):
         if ".git" in str(f):
             continue
         try:
-            source = f.read_text(encoding='utf-8', errors='ignore')
+            source = f.read_text(encoding="utf-8", errors="ignore")
             _ast.parse(source)
         except SyntaxError as e:
             py_errors.append(f"{f.relative_to(PROJECT_ROOT).as_posix()}: {e}")
@@ -390,7 +399,7 @@ def audit_project_quality():
             "missing_frontmatter": fm["files"],
             "broken_links": broken[:20],
             "python_errors": py_errors,
-        }
+        },
     }
 
 

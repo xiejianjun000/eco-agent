@@ -15,12 +15,12 @@ subconscious_watcher.py — ECO AGENT 法规时效监控模块（Subconscious）
   python _scripts/subconscious_watcher.py --report
 """
 
-import json
-import time
-import logging
 import argparse
-from pathlib import Path
+import json
+import logging
+import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("subconscious_watcher")
@@ -143,12 +143,10 @@ class StatuteWatcher:
         results["alert_count"] = len(results["alerts"])
 
         self._history.append(results)
-        logger.info(f"[Watcher] 法规检查完成: {results['total_statutes']} 部, "
-                    f"{results['alert_count']} 项告警")
+        logger.info(f"[Watcher] 法规检查完成: {results['total_statutes']} 部, {results['alert_count']} 项告警")
         return results
 
-    def _check_statute(self, name: str, info: dict[str, Any],
-                       now: datetime) -> dict[str, Any] | None:
+    def _check_statute(self, name: str, info: dict[str, Any], now: datetime) -> dict[str, Any] | None:
         """检查单部法规"""
         effective_str = info.get("effective")
         if not effective_str:
@@ -217,8 +215,7 @@ class StatuteWatcher:
     # 报告
     # ═══════════════════════════════════
 
-    def generate_report(self, check_result: dict[str, Any] | None = None
-                        ) -> str:
+    def generate_report(self, check_result: dict[str, Any] | None = None) -> str:
         """生成法规时效报告"""
         if not check_result:
             check_result = self.check_all()
@@ -244,8 +241,7 @@ class StatuteWatcher:
         if check_result["alerts"]:
             lines.extend(["", "---", "", "## 告警详情", ""])
             for alert in check_result["alerts"]:
-                icon = {"warning": "🔴", "info": "🟡", "error": "🔴"}.get(
-                    alert.get("alert_level", ""), "⚪")
+                icon = {"warning": "🔴", "info": "🟡", "error": "🔴"}.get(alert.get("alert_level", ""), "⚪")
                 lines.append(f"### {icon} {alert['statute']}")
                 lines.append("")
                 lines.append(f"- **状态**：{alert['status']}")
@@ -255,21 +251,20 @@ class StatuteWatcher:
                     lines.append(f"- **已生效 {alert['days_since_effective']} 天**")
                 lines.append("")
 
-        lines.extend([
-            "---",
-            "",
-            "## 全部法规清单",
-            "",
-            "| 法规名称 | 状态 | 生效日期 | 备注 |",
-            "|:---------|:----:|:---------|:------|",
-        ])
+        lines.extend(
+            [
+                "---",
+                "",
+                "## 全部法规清单",
+                "",
+                "| 法规名称 | 状态 | 生效日期 | 备注 |",
+                "|:---------|:----:|:---------|:------|",
+            ]
+        )
 
         for name, info in sorted(self._registry.items()):
             notes = info.get("absorbed_by") or info.get("notes", "")
-            lines.append(
-                f"| {name} | {info.get('status', '')} "
-                f"| {info.get('effective', '')} | {notes[:30]} |"
-            )
+            lines.append(f"| {name} | {info.get('status', '')} | {info.get('effective', '')} | {notes[:30]} |")
 
         return "\n".join(lines)
 
@@ -346,36 +341,43 @@ class StatuteWatcher:
 
         if info.get("status") == "已废止":
             absorbed = info.get("absorbed_by", "")
-            assessment["impacts"].append({
-                "area": "法规引用",
-                "impact": "高",
-                "description": f"该法规已废止，所有引用需改为 {absorbed}",
-            })
-            assessment["impacts"].append({
-                "area": "执法文书",
-                "impact": "高",
-                "description": "已有文书中引用该法规的条款需要更新",
-            })
-            assessment["impacts"].append({
-                "area": "裁量基准",
-                "impact": "中",
-                "description": "对应的裁量基准可能需要调整",
-            })
-            assessment["recommendations"].extend([
-                f"更新知识库中所有引用 {statute_name} 的条目",
-                f"检查执法文书中对 {statute_name} 的引用",
-                "通知相关执法人员法规变更情况",
-            ])
+            assessment["impacts"].append(
+                {
+                    "area": "法规引用",
+                    "impact": "高",
+                    "description": f"该法规已废止，所有引用需改为 {absorbed}",
+                }
+            )
+            assessment["impacts"].append(
+                {
+                    "area": "执法文书",
+                    "impact": "高",
+                    "description": "已有文书中引用该法规的条款需要更新",
+                }
+            )
+            assessment["impacts"].append(
+                {
+                    "area": "裁量基准",
+                    "impact": "中",
+                    "description": "对应的裁量基准可能需要调整",
+                }
+            )
+            assessment["recommendations"].extend(
+                [
+                    f"更新知识库中所有引用 {statute_name} 的条目",
+                    f"检查执法文书中对 {statute_name} 的引用",
+                    "通知相关执法人员法规变更情况",
+                ]
+            )
 
         if info.get("status") == "现行":
-            assessment["recommendations"].append(
-                f"确认 {statute_name} 现行有效，继续监控更新情况"
-            )
+            assessment["recommendations"].append(f"确认 {statute_name} 现行有效，继续监控更新情况")
 
         return assessment
 
 
 # ===== 测试 =====
+
 
 def test():
     """测试法规监控模块"""
@@ -416,6 +418,7 @@ def main():
     args = parser.parse_args()
 
     from _scripts.memory_tree import MemoryTree
+
     mt = MemoryTree()
     watcher = StatuteWatcher(mt)
 

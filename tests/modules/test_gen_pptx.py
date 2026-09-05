@@ -24,8 +24,7 @@ def test_minimal_structure():
     data = build_pptx([{"title": "标题", "bullets": ["要点1", "要点2"]}])
     z = _parse(data)
     names = z.namelist()
-    for required in ("[Content_Types].xml", "_rels/.rels",
-                     "ppt/presentation.xml", "ppt/slides/slide1.xml"):
+    for required in ("[Content_Types].xml", "_rels/.rels", "ppt/presentation.xml", "ppt/slides/slide1.xml"):
         assert required in names, f"缺部件: {required}"
 
 
@@ -41,7 +40,7 @@ def test_multi_page():
 
 def test_xml_escape():
     """标题含 XML 特殊字符必须转义（防 XML 注入/损坏）。"""
-    data = build_pptx([{"title": "a<b>&\"c", "bullets": []}])
+    data = build_pptx([{"title": 'a<b>&"c', "bullets": []}])
     z = _parse(data)
     slide = z.read("ppt/slides/slide1.xml").decode()
     assert "<b>&amp;" in slide or "&lt;b&gt;" in slide
@@ -51,9 +50,12 @@ def test_cli_quick_mode(tmp_path):
     import subprocess
 
     out = tmp_path / "quick.pptx"
-    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "gen_pptx.py"),
-                        str(out), "--title", "快速模式", "--bullets", "甲|乙|丙"],
-                       capture_output=True, text=True, timeout=30)
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "gen_pptx.py"), str(out), "--title", "快速模式", "--bullets", "甲|乙|丙"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
     assert r.returncode == 0, r.stderr
     assert out.exists()
     z = zipfile.ZipFile(out)

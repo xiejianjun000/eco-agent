@@ -16,6 +16,7 @@
 安全边界：授权仅放行 level <= grant.level 的工具（L4 授权可覆盖 L3），
 scope 限制到具体工具或 "*" 全部。不提供"跳过全部闸门"的裸开关。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -59,8 +60,7 @@ def _now() -> float:
     return time.time()
 
 
-def grant(level: str = "L4", ttl: int = 3600, scope: str = "*",
-          grants_dir: Path | None = None) -> dict:
+def grant(level: str = "L4", ttl: int = 3600, scope: str = "*", grants_dir: Path | None = None) -> dict:
     """生成授权令牌并落盘，返回授权 dict"""
     level = level.upper()
     if level not in _LEVEL_ORDER:
@@ -77,8 +77,7 @@ def grant(level: str = "L4", ttl: int = 3600, scope: str = "*",
     body["signature"] = _sign(body)
     d = Path(grants_dir) if grants_dir else GRANTS_DIR
     d.mkdir(parents=True, exist_ok=True)
-    (d / f"{gid}.json").write_text(json.dumps(body, ensure_ascii=False, indent=1),
-                                   encoding="utf-8")
+    (d / f"{gid}.json").write_text(json.dumps(body, ensure_ascii=False, indent=1), encoding="utf-8")
     return body
 
 
@@ -99,9 +98,9 @@ def list_grants(grants_dir: Path | None = None) -> list[dict]:
             try:
                 g = json.loads(p.read_text(encoding="utf-8"))
                 g["_expired"] = _now() > float(g.get("expires_at", 0))
-                g["_valid_sig"] = _sign({k: v for k, v in g.items()
-                                         if k not in ("signature", "_expired", "_valid_sig")}
-                                        ) == g.get("signature")
+                g["_valid_sig"] = _sign(
+                    {k: v for k, v in g.items() if k not in ("signature", "_expired", "_valid_sig")}
+                ) == g.get("signature")
                 out.append(g)
             except (OSError, json.JSONDecodeError):
                 pass
@@ -124,8 +123,7 @@ def verify(grant: dict, level: str, tool_name: str = "") -> tuple[bool, str]:
     return True, "授权有效"
 
 
-def find_valid_grant(level: str, tool_name: str = "",
-                     grants_dir: Path | None = None) -> tuple[dict | None, str]:
+def find_valid_grant(level: str, tool_name: str = "", grants_dir: Path | None = None) -> tuple[dict | None, str]:
     """在授权目录中查找可用于 (level, tool) 的有效授权"""
     d = Path(grants_dir) if grants_dir else GRANTS_DIR
     if not d.is_dir():
@@ -147,11 +145,15 @@ def audit_grant_use(grant: dict, tool_name: str, level: str):
     """授权放行写 SM3 审计链，source=grant:<id>"""
     try:
         from agent_core.prompt_engine import get_prompt_engine
+
         get_prompt_engine().audit.append(
             source=f"grant:{grant.get('id', '?')}",
             content=f"{tool_name} [{level}] 凭授权令牌放行 "
-                    f"(level={grant.get('level')}, scope={grant.get('scope')}, "
-                    f"expires={grant.get('expires_iso')})",
-            phase="permission", accepted=True, reason="授权令牌放行")
+            f"(level={grant.get('level')}, scope={grant.get('scope')}, "
+            f"expires={grant.get('expires_iso')})",
+            phase="permission",
+            accepted=True,
+            reason="授权令牌放行",
+        )
     except Exception:
         pass

@@ -23,9 +23,8 @@ from pathlib import Path
 from PIL import Image as PILImage
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
-from pptx.util import Inches, Pt, Emu
-
+from pptx.enum.text import PP_ALIGN
+from pptx.util import Inches, Pt
 
 LAYOUTS = ["fullscreen", "title_above", "title_below", "title_left", "center", "grid"]
 
@@ -40,8 +39,10 @@ def hex_to_rgb(hex_str: str) -> RGBColor:
 
 
 def fit_image_size(
-    img_w: int, img_h: int,
-    max_w: int, max_h: int,
+    img_w: int,
+    img_h: int,
+    max_w: int,
+    max_h: int,
 ) -> tuple[int, int]:
     """Scale image to fit within max dimensions, preserving aspect ratio."""
     ratio_w = max_w / img_w
@@ -51,8 +52,10 @@ def fit_image_size(
 
 
 def cover_image_size(
-    img_w: int, img_h: int,
-    target_w: int, target_h: int,
+    img_w: int,
+    img_h: int,
+    target_w: int,
+    target_h: int,
 ) -> tuple[int, int, int, int]:
     """Scale image to cover target area (may crop). Returns (width, height, left_offset, top_offset)."""
     ratio_w = target_w / img_w
@@ -70,9 +73,18 @@ def get_image_size(image_path: str) -> tuple[int, int]:
         return img.size
 
 
-def add_textbox(slide, text: str, left, top, width, height,
-                font_size: int = 28, font_color: RGBColor = None,
-                bold: bool = True, alignment=PP_ALIGN.LEFT):
+def add_textbox(
+    slide,
+    text: str,
+    left,
+    top,
+    width,
+    height,
+    font_size: int = 28,
+    font_color: RGBColor = None,
+    bold: bool = True,
+    alignment=PP_ALIGN.LEFT,
+):
     txBox = slide.shapes.add_textbox(left, top, width, height)
     tf = txBox.text_frame
     tf.word_wrap = True
@@ -99,16 +111,21 @@ def add_fullscreen_slide(prs, image_path: str, bg_color: RGBColor):
     set_slide_bg(slide, bg_color)
 
     img_w, img_h = get_image_size(image_path)
-    new_w, new_h, left, top = cover_image_size(
-        img_w, img_h, SLIDE_WIDTH, SLIDE_HEIGHT
-    )
+    new_w, new_h, left, top = cover_image_size(img_w, img_h, SLIDE_WIDTH, SLIDE_HEIGHT)
     slide.shapes.add_picture(image_path, left, top, new_w, new_h)
     return slide
 
 
-def add_title_image_slide(prs, image_path: str, title: str,
-                          title_position: str, bg_color: RGBColor,
-                          title_color: RGBColor, title_size: int, margin: float):
+def add_title_image_slide(
+    prs,
+    image_path: str,
+    title: str,
+    title_position: str,
+    bg_color: RGBColor,
+    title_color: RGBColor,
+    title_size: int,
+    margin: float,
+):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_bg(slide, bg_color)
 
@@ -119,8 +136,17 @@ def add_title_image_slide(prs, image_path: str, title: str,
     if title_position == "above":
         # Title on top
         if title:
-            add_textbox(slide, title, margin_emu, margin_emu, content_w, title_h,
-                        font_size=title_size, font_color=title_color, alignment=PP_ALIGN.LEFT)
+            add_textbox(
+                slide,
+                title,
+                margin_emu,
+                margin_emu,
+                content_w,
+                title_h,
+                font_size=title_size,
+                font_color=title_color,
+                alignment=PP_ALIGN.LEFT,
+            )
         img_top = margin_emu + title_h + Inches(0.2)
         img_max_h = SLIDE_HEIGHT - img_top - margin_emu
     elif title_position == "below":
@@ -128,13 +154,29 @@ def add_title_image_slide(prs, image_path: str, title: str,
         img_top = margin_emu
         img_max_h = SLIDE_HEIGHT - title_h - margin_emu * 2 - Inches(0.2)
         if title:
-            add_textbox(slide, title, margin_emu, img_top + img_max_h + Inches(0.2),
-                        content_w, title_h, font_size=title_size, font_color=title_color)
+            add_textbox(
+                slide,
+                title,
+                margin_emu,
+                img_top + img_max_h + Inches(0.2),
+                content_w,
+                title_h,
+                font_size=title_size,
+                font_color=title_color,
+            )
     else:  # left
         title_w = Inches(3.5)
         if title:
-            add_textbox(slide, title, margin_emu, margin_emu, title_w, SLIDE_HEIGHT - 2 * margin_emu,
-                        font_size=title_size, font_color=title_color)
+            add_textbox(
+                slide,
+                title,
+                margin_emu,
+                margin_emu,
+                title_w,
+                SLIDE_HEIGHT - 2 * margin_emu,
+                font_size=title_size,
+                font_color=title_color,
+            )
         content_w = SLIDE_WIDTH - title_w - margin_emu * 3
         margin_emu = title_w + margin_emu * 2
         img_top = Inches(margin)
@@ -172,8 +214,7 @@ def add_center_slide(prs, image_path: str, bg_color: RGBColor, margin: float):
     return slide
 
 
-def add_grid_slide(prs, image_paths: list[str], cols: int,
-                   bg_color: RGBColor, margin: float):
+def add_grid_slide(prs, image_paths: list[str], cols: int, bg_color: RGBColor, margin: float):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_bg(slide, bg_color)
 
@@ -208,8 +249,7 @@ def main():
     parser.add_argument("images", nargs="+", help="Image file paths")
     parser.add_argument("-o", "--output", required=True, help="Output .pptx file path")
     parser.add_argument("-t", "--titles", nargs="*", help="Slide titles")
-    parser.add_argument("--layout", choices=LAYOUTS, default="fullscreen",
-                        help="Layout mode (default: fullscreen)")
+    parser.add_argument("--layout", choices=LAYOUTS, default="fullscreen", help="Layout mode (default: fullscreen)")
     parser.add_argument("--bg-color", default="FFFFFF", help="Background color hex (default: FFFFFF)")
     parser.add_argument("--title-color", default="333333", help="Title font color hex (default: 333333)")
     parser.add_argument("--title-size", type=int, default=28, help="Title font size in pt")
@@ -247,7 +287,7 @@ def main():
     if args.layout == "grid":
         # Grid: batch images into slides
         for i in range(0, len(image_paths), args.cols * 2):
-            batch = image_paths[i:i + args.cols * 2]
+            batch = image_paths[i : i + args.cols * 2]
             add_grid_slide(prs, batch, args.cols, bg_color, args.margin)
     else:
         for idx, img_path in enumerate(image_paths):
@@ -259,10 +299,7 @@ def main():
                 add_center_slide(prs, img_path, bg_color, args.margin)
             elif args.layout in ("title_above", "title_below", "title_left"):
                 position = args.layout.replace("title_", "")
-                add_title_image_slide(
-                    prs, img_path, title, position,
-                    bg_color, title_color, args.title_size, args.margin
-                )
+                add_title_image_slide(prs, img_path, title, position, bg_color, title_color, args.title_size, args.margin)
 
     # Save
     output_path = Path(args.output)

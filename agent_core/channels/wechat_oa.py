@@ -4,6 +4,7 @@
 - XML 消息解析（文本消息）
 - 客服消息接口主动发消息（需 access_token）
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -11,20 +12,17 @@ import json
 import os
 import urllib.request
 import xml.etree.ElementTree as ET
-from typing import Optional
 
 from .base import Channel, InboundMessage, body_bytes, http_post_json
 
 KEFU_URL = "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token={token}"
-TOKEN_URL = ("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential"
-             "&appid={appid}&secret={secret}")
+TOKEN_URL = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={appid}&secret={secret}"
 
 
 def check_signature(token: str, timestamp: str, nonce: str, signature: str) -> bool:
     if not all([token, timestamp, nonce, signature]):
         return False
-    digest = hashlib.sha1(
-        "".join(sorted([token, timestamp, nonce])).encode("utf-8")).hexdigest()
+    digest = hashlib.sha1("".join(sorted([token, timestamp, nonce])).encode("utf-8")).hexdigest()
     return digest == signature
 
 
@@ -46,15 +44,15 @@ class WeChatOAChannel(Channel):
 
     def verify(self, request: dict) -> bool:
         args = request.get("args", {})
-        return check_signature(self._token(), args.get("timestamp", ""),
-                               args.get("nonce", ""), args.get("signature", ""))
+        return check_signature(self._token(), args.get("timestamp", ""), args.get("nonce", ""), args.get("signature", ""))
 
     def parse(self, request: dict) -> InboundMessage | None:
         if request.get("method", "POST").upper() == "GET":
             # 服务器配置 URL 验证：回显 echostr
             echostr = request.get("args", {}).get("echostr", "")
-            return InboundMessage(channel=self.name, user_id="", text=echostr,
-                                  extras={"type": "url_verify"}) if echostr else None
+            return (
+                InboundMessage(channel=self.name, user_id="", text=echostr, extras={"type": "url_verify"}) if echostr else None
+            )
         xml_text = body_bytes(request).decode("utf-8", "ignore")
         if _xml_get(xml_text, "MsgType") != "text":
             return None
@@ -70,10 +68,10 @@ class WeChatOAChannel(Channel):
         token = kw.get("access_token") or self.config.get("access_token")
         if not token:
             appid = self.config.get("app_id") or os.environ.get("WECHAT_OA_APP_ID", "")
-            secret = self.config.get("app_secret") \
-                or os.environ.get("WECHAT_OA_APP_SECRET", "")
+            secret = self.config.get("app_secret") or os.environ.get("WECHAT_OA_APP_SECRET", "")
             with urllib.request.urlopen(  # noqa: S310 测试中 mock
-                    TOKEN_URL.format(appid=appid, secret=secret), timeout=10) as r:
+                TOKEN_URL.format(appid=appid, secret=secret), timeout=10
+            ) as r:
                 token = json.loads(r.read().decode("utf-8")).get("access_token", "")
         payload = {"touser": user_id, "msgtype": "text", "text": {"content": text}}
         resp = http_post_json(KEFU_URL.format(token=token), payload)

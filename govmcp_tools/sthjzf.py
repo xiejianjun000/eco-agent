@@ -25,11 +25,11 @@ approval_required=True + confirm=true 双重闸门，不进聊天工具表。
 from __future__ import annotations
 
 import base64
+import datetime
 import json
 import os
 import re
 import threading
-import datetime
 from typing import Any
 from urllib.parse import urljoin
 
@@ -44,10 +44,7 @@ CAS_BASE = os.environ.get("STHJZF_CAS_BASE", "https://sthjzf.lem.org.cn:8090").r
 EAP_BASE = os.environ.get("STHJZF_EAP_BASE", "https://eap.lem.org.cn").rstrip("/")
 WATER_BASE = os.environ.get("STHJZF_WATER_BASE", "https://jkzx.envsc.cn").rstrip("/")
 AES_KEY = b"boandaxxjsgfyxgs"
-UA = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-)
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 
 # 规范涉企检查业务视图
 VIEWS = {
@@ -73,14 +70,26 @@ LEDGER_MAP = {
 }
 
 TASK_TYPE_NAMES = {
-    "A": "自动监测线索", "B": "异常断面溯源线索", "C": "饮用水水源地线索",
-    "D": "涉水环境违法网络线索", "E": "重点岸线管控线索", "F": "卫星遥感线索",
-    "G": "涉重金属排放线索", "H": "排污许可线索", "I": "现场帮扶发现线索", "J": "海洋环境执法线索",
+    "A": "自动监测线索",
+    "B": "异常断面溯源线索",
+    "C": "饮用水水源地线索",
+    "D": "涉水环境违法网络线索",
+    "E": "重点岸线管控线索",
+    "F": "卫星遥感线索",
+    "G": "涉重金属排放线索",
+    "H": "排污许可线索",
+    "I": "现场帮扶发现线索",
+    "J": "海洋环境执法线索",
 }
 
 SOURCE_TYPE_NAMES = {
-    "01": "日常执法检查", "02": "信访举报", "03": "专项执法行动",
-    "04": "上级交办转办及领导批示", "09": "其他部门移交", "10": "中央环保督察", "11": "其他来源",
+    "01": "日常执法检查",
+    "02": "信访举报",
+    "03": "专项执法行动",
+    "04": "上级交办转办及领导批示",
+    "09": "其他部门移交",
+    "10": "中央环保督察",
+    "11": "其他来源",
 }
 
 CLUE_VERIFY_API = {
@@ -124,16 +133,19 @@ def _session_file() -> str | None:
 
 # ─── 认证底层 ────────────────────────────────────────────────
 
+
 def _encrypt_password(pwd: str) -> str:
     """CAS 密码加密：AES-128-ECB-Pkcs7 + base64（key=boandaxxjsgfyxgs）。"""
     from Crypto.Cipher import AES
     from Crypto.Util.Padding import pad
+
     cipher = AES.new(AES_KEY, AES.MODE_ECB)
     return base64.b64encode(cipher.encrypt(pad(pwd.encode("utf-8"), 16))).decode()
 
 
 def _ocr_captcha(img_bytes: bytes) -> str:
     import ddddocr
+
     return ddddocr.DdddOcr(show_ad=False).classification(img_bytes).strip()
 
 
@@ -144,22 +156,22 @@ def _do_sso(session: requests.Session, username: str, password: str) -> bool:
         loc = r0.headers.get("Location", "")
         if not loc:
             return False
-        r1 = session.get(loc if loc.startswith("http") else CAS_BASE + loc,
-                         timeout=25, allow_redirects=True)
+        r1 = session.get(loc if loc.startswith("http") else CAS_BASE + loc, timeout=25, allow_redirects=True)
         lt = re.search(r'name="lt" value="([^"]+)"', r1.text)
         ex = re.search(r'name="execution" value="([^"]+)"', r1.text)
         if not lt or not ex:
             return False
-        cap = _ocr_captcha(
-            session.get(f"{CAS_BASE}/cas/kaptcha.jpg", timeout=25).content
-        )
+        cap = _ocr_captcha(session.get(f"{CAS_BASE}/cas/kaptcha.jpg", timeout=25).content)
         data = {
-            "username": username, "password": _encrypt_password(password),
-            "captcha": cap, "lt": lt.group(1), "execution": ex.group(1),
-            "_eventId": "submit", "submit": "登 录",
+            "username": username,
+            "password": _encrypt_password(password),
+            "captcha": cap,
+            "lt": lt.group(1),
+            "execution": ex.group(1),
+            "_eventId": "submit",
+            "submit": "登 录",
         }
-        r2 = session.post(f"{CAS_BASE}/cas/login", data=data,
-                          timeout=25, allow_redirects=False)
+        r2 = session.post(f"{CAS_BASE}/cas/login", data=data, timeout=25, allow_redirects=False)
         if r2.status_code in (301, 302, 303, 307):
             session.get(r2.headers["Location"], timeout=25, allow_redirects=True)
             return True
@@ -215,12 +227,10 @@ def _save_session() -> None:
     if not _session or not path:
         return
     try:
-        cookies = [
-            {"name": c.name, "value": c.value, "domain": c.domain, "path": c.path}
-            for c in _session.cookies
-        ]
+        cookies = [{"name": c.name, "value": c.value, "domain": c.domain, "path": c.path} for c in _session.cookies]
         state = {
-            "username": _last_username, "password": _last_password,
+            "username": _last_username,
+            "password": _last_password,
             "cookies": cookies,
             "saved_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
@@ -289,8 +299,7 @@ def _need_login() -> str | None:
     env_p = os.environ.get("STHJZF_PASSWORD", "")
     if env_u and env_p and _do_login(env_u, env_p):
         return None
-    return ("未登录，请先调用 sthjzf_login 工具，或设置环境变量 "
-            "STHJZF_USERNAME / STHJZF_PASSWORD")
+    return "未登录，请先调用 sthjzf_login 工具，或设置环境变量 STHJZF_USERNAME / STHJZF_PASSWORD"
 
 
 def _platform_status() -> dict:
@@ -312,7 +321,7 @@ TAGS = ["执法平台", "国家四平台", "行政处罚", "水环境", "非现�
 
 @govmcp_tool(
     name="sthjzf_login",
-    description="一键登录国家生态环境综合执法监管平台(自动CAS认证+AES加密+验证码识别+跨平台SSO+会话持久化)。账号密码可通过参数传入,或设置环境变量 STHJZF_USERNAME/STHJZF_PASSWORD",
+    description="一键登录国家生态环境综合执法监管平台(自动CAS认证+AES加密+验证码识别+跨平台SSO+会话持久化)。账号密码可通过参数传入,或设置环境变量 STHJZF_USERNAME/STHJZF_PASSWORD",  # noqa: E501
     category=CATEGORY,
     tags=TAGS + ["auth"],
 )
@@ -321,8 +330,7 @@ def sthjzf_login(username: str = "", password: str = "") -> dict:
     username = username or os.environ.get("STHJZF_USERNAME", "")
     password = password or os.environ.get("STHJZF_PASSWORD", "")
     if not username or not password:
-        return {"success": False,
-                "message": "请提供账号密码，或设置环境变量 STHJZF_USERNAME/STHJZF_PASSWORD"}
+        return {"success": False, "message": "请提供账号密码，或设置环境变量 STHJZF_USERNAME/STHJZF_PASSWORD"}
     with _lock:
         ok = _do_login(username, password)
     result = {
@@ -365,8 +373,7 @@ def sthjzf_list_views() -> dict:
     category=CATEGORY,
     tags=TAGS,
 )
-def sthjzf_query_view(view: str, page_num: int = 1, page_size: int = 20,
-                      url_params: str = "{}") -> dict:
+def sthjzf_query_view(view: str, page_num: int = 1, page_size: int = 20, url_params: str = "{}") -> dict:
     """规范涉企检查业务视图数据查询。"""
     err = _need_login()
     if err:
@@ -377,14 +384,19 @@ def sthjzf_query_view(view: str, page_num: int = 1, page_size: int = 20,
     except Exception:
         return {"success": False, "error": "url_params 不是合法 JSON"}
     up.update({"isImmediatelyQuery": True, "isView": "", "token": _token_gfsqzz, "multi": True})
-    body = {"xh": vid, "urlParams": up, "pageSize": page_size, "pageNum": page_num,
-            "executeQuery": {"conditions": []}, "extendParam": {}}
+    body = {
+        "xh": vid,
+        "urlParams": up,
+        "pageSize": page_size,
+        "pageNum": page_num,
+        "executeQuery": {"conditions": []},
+        "extendParam": {},
+    }
     url = f"{CAS_BASE}/gfsqzz/platform/component/queryservice/analysis/analysiscontroller/query/{vid}"
     try:
         r = _session.post(url, json=body, timeout=30)
         j = r.json()
-        return {"success": True, "view": view,
-                "total": j.get("total"), "rows": j.get("list", [])}
+        return {"success": True, "view": view, "total": j.get("total"), "rows": j.get("list", [])}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -401,8 +413,7 @@ def sthjzf_get_menu(system: str = "") -> dict:
     if err:
         return {"success": False, "error": err}
     try:
-        r = _session.post(f"{CAS_BASE}/gfsqzz/main/findcurrentusermenu?token={_token_gfsqzz}",
-                          timeout=25)
+        r = _session.post(f"{CAS_BASE}/gfsqzz/main/findcurrentusermenu?token={_token_gfsqzz}", timeout=25)
         return {"success": True, "system": system or "gfsqzz", "menu": r.json()}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -429,12 +440,25 @@ def sthjzf_get_view_config(view: str) -> dict:
         j = html.find("{", i)
         obj, _ = json.JSONDecoder().raw_decode(html[j:])
         td = obj.get("targetData", {})
-        cols = [{"字段": c.get("zd"), "类型": c.get("zdlx"), "中文名": c.get("zdm"),
-                 "展示": c.get("isChecked"), "可导出": c.get("isExport")}
-                for c in obj.get("targetColumns", [])]
-        return {"success": True, "view": view, "viewId": vid,
-                "sql": td.get("select"), "where": td.get("where"),
-                "orderBy": td.get("orderBy"), "columns": cols}
+        cols = [
+            {
+                "字段": c.get("zd"),
+                "类型": c.get("zdlx"),
+                "中文名": c.get("zdm"),
+                "展示": c.get("isChecked"),
+                "可导出": c.get("isExport"),
+            }
+            for c in obj.get("targetColumns", [])
+        ]
+        return {
+            "success": True,
+            "view": view,
+            "viewId": vid,
+            "sql": td.get("select"),
+            "where": td.get("where"),
+            "orderBy": td.get("orderBy"),
+            "columns": cols,
+        }
     except Exception as e:
         return {"success": False, "error": f"解析失败: {e}"}
 
@@ -457,8 +481,7 @@ def sthjzf_query_cases(page_num: int = 1, page_size: int = 20) -> dict:
     try:
         j = _session.get(url, headers=headers, timeout=30).json()
         data = j.get("data", {})
-        return {"success": True, "total": data.get("total"),
-                "records": data.get("records", [])}
+        return {"success": True, "total": data.get("total"), "records": data.get("records", [])}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -479,8 +502,7 @@ def sthjzf_list_depts(parent_id: str = "") -> dict:
     headers = {"blade-auth": f"bearer {_token_eap}"}
     params = {"parentId": parent_id} if parent_id else None
     try:
-        j = _session.get(f"{EAP_BASE}/api/td-system/dept/list",
-                         headers=headers, params=params, timeout=30).json()
+        j = _session.get(f"{EAP_BASE}/api/td-system/dept/list", headers=headers, params=params, timeout=30).json()
         data = j.get("data", [])
         return {"success": True, "count": len(data), "rows": data[:200]}
     except Exception as e:
@@ -502,8 +524,7 @@ def sthjzf_query_case_detail(case_id: str) -> dict:
         return {"success": False, "error": "行政处罚系统未登录(SSO失败)"}
     headers = {"blade-auth": f"bearer {_token_eap}"}
     try:
-        j = _session.get(f"{EAP_BASE}/api/td-punish/caseRegist/detail?id={case_id}",
-                         headers=headers, timeout=30).json()
+        j = _session.get(f"{EAP_BASE}/api/td-punish/caseRegist/detail?id={case_id}", headers=headers, timeout=30).json()
         return {"success": True, "detail": j.get("data", {})}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -515,8 +536,9 @@ def sthjzf_query_case_detail(case_id: str) -> dict:
     category=CATEGORY,
     tags=TAGS + ["行政处罚"],
 )
-def sthjzf_query_case_statistics(source_type: str = "01", area_code: str = "",
-                                 start_date: str = "2026-01-01", end_date: str = "") -> dict:
+def sthjzf_query_case_statistics(
+    source_type: str = "01", area_code: str = "", start_date: str = "2026-01-01", end_date: str = ""
+) -> dict:
     """行政处罚案件来源类型统计。"""
     err = _need_login()
     if err:
@@ -532,14 +554,19 @@ def sthjzf_query_case_statistics(source_type: str = "01", area_code: str = "",
     try:
         j = _session.get(
             f"{EAP_BASE}/api/td-punish/caseDetailVisual/caseDetailSourceTypeStatistics",
-            headers=headers, params=params, timeout=30).json()
+            headers=headers,
+            params=params,
+            timeout=30,
+        ).json()
         data = j.get("data", {})
-        return {"success": True,
-                "来源类型": SOURCE_TYPE_NAMES.get(source_type, source_type),
-                "areaCode": area_code or "全国",
-                "period": f"{start_date} ~ {end_date}",
-                "案件数": data.get("total"),
-                "records": data.get("records", [])}
+        return {
+            "success": True,
+            "来源类型": SOURCE_TYPE_NAMES.get(source_type, source_type),
+            "areaCode": area_code or "全国",
+            "period": f"{start_date} ~ {end_date}",
+            "案件数": data.get("total"),
+            "records": data.get("records", []),
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -559,8 +586,7 @@ def sthjzf_water_current_user(include_ext: bool = False) -> dict:
         return {"success": False, "error": "水环境平台未登录(SSO失败)"}
     headers = {"Authorization": f"Bearer {_token_water}"}
     try:
-        r = _session.get(f"{WATER_BASE}/api/uiam-users/get/current-user",
-                         headers=headers, timeout=25)
+        r = _session.get(f"{WATER_BASE}/api/uiam-users/get/current-user", headers=headers, timeout=25)
         data = r.json()
         if include_ext:
             return {"success": True, "data": data}
@@ -578,9 +604,7 @@ def sthjzf_water_current_user(include_ext: bool = False) -> dict:
     category=CATEGORY,
     tags=TAGS + ["水环境"],
 )
-def sthjzf_water_task_statistics(region_code: str = "431381",
-                                 start_time: str = "2026-01-01",
-                                 end_time: str = "") -> dict:
+def sthjzf_water_task_statistics(region_code: str = "431381", start_time: str = "2026-01-01", end_time: str = "") -> dict:
     """水环境非现场执法'工作进展情况'统计（问题推送）。"""
     err = _need_login()
     if err:
@@ -592,8 +616,7 @@ def sthjzf_water_task_statistics(region_code: str = "431381",
     headers = {"Authorization": f"Bearer {_token_water}", "Content-Type": "application/json"}
     body = {"regionCode": region_code, "startTime": start_time, "endTime": end_time}
     try:
-        r = _session.post(f"{WATER_BASE}/water-law-platform/home/statisticsLeft",
-                          headers=headers, json=body, timeout=30)
+        r = _session.post(f"{WATER_BASE}/water-law-platform/home/statisticsLeft", headers=headers, json=body, timeout=30)
         j = r.json()
         data = j.get("data", {})
         top = data.get("rightTopVo", {})
@@ -613,9 +636,13 @@ def sthjzf_water_task_statistics(region_code: str = "431381",
             "立案": top.get("filedCaseCount"),
             "处罚金额": top.get("penaltyAmount"),
             "按线索类型": [
-                {"类型": t.get("name"), "总数": t.get("taskCount"),
-                 "待核实": t.get("checkCount"), "待确认": t.get("confirmCount"),
-                 "已办结": t.get("ybjCount")}
+                {
+                    "类型": t.get("name"),
+                    "总数": t.get("taskCount"),
+                    "待核实": t.get("checkCount"),
+                    "待确认": t.get("confirmCount"),
+                    "已办结": t.get("ybjCount"),
+                }
                 for t in types
             ],
         }
@@ -625,18 +652,27 @@ def sthjzf_water_task_statistics(region_code: str = "431381",
 
 @govmcp_tool(
     name="sthjzf_water_task_list",
-    description="查询水环境任务办理明细台账。task_type传线索类型(A-J:A自动监测 B断面溯源 C水源地 D违法网络 E岸线 F遥感 G重金属 H排污许可 I帮扶 J海洋);task_status:-1全部/10待区县核实/20待市级确认/30待最终认定/40已完成;is_true:-1全部/1属实/0不属实",
+    description="查询水环境任务办理明细台账。task_type传线索类型(A-J:A自动监测 B断面溯源 C水源地 D违法网络 E岸线 F遥感 G重金属 H排污许可 I帮扶 J海洋);task_status:-1全部/10待区县核实/20待市级确认/30待最终认定/40已完成;is_true:-1全部/1属实/0不属实",  # noqa: E501
     category=CATEGORY,
     tags=TAGS + ["水环境"],
 )
-def sthjzf_water_task_list(task_type: str = "A", page_num: int = 1, page_size: int = 20,
-                           region_code: str = "431381000", start_time: str = "2026-01-01",
-                           end_time: str = "", task_status: str = "-1",
-                           company_name: str = "", is_true: int = -1) -> dict:
+def sthjzf_water_task_list(
+    task_type: str = "A",
+    page_num: int = 1,
+    page_size: int = 20,
+    region_code: str = "431381000",
+    start_time: str = "2026-01-01",
+    end_time: str = "",
+    task_status: str = "-1",
+    company_name: str = "",
+    is_true: int = -1,
+) -> dict:
     """水环境非现场执法任务办理台账（10 类线索全支持）。"""
     if task_type not in LEDGER_MAP:
-        return {"success": False,
-                "error": f"线索类型 task_type 应为 A-J 之一，支持: {json.dumps(TASK_TYPE_NAMES, ensure_ascii=False)}"}
+        return {
+            "success": False,
+            "error": f"线索类型 task_type 应为 A-J 之一，支持: {json.dumps(TASK_TYPE_NAMES, ensure_ascii=False)}",
+        }
     err = _need_login()
     if err:
         return {"success": False, "error": err}
@@ -647,18 +683,28 @@ def sthjzf_water_task_list(task_type: str = "A", page_num: int = 1, page_size: i
     path = LEDGER_MAP[task_type]
     headers = {"Authorization": f"Bearer {_token_water}", "Content-Type": "application/json"}
     body = {
-        "pageNum": page_num, "pageSize": page_size, "regionCode": region_code,
-        "valleyCode": "-1", "taskNum": "", "importProblemNum": "",
-        "taskStatus": task_status, "rectificationStatus": "-1",
-        "isTrue": is_true, "isIllegal": -1,
-        "taskSendStartTime": start_time, "taskSendEndTime": end_time,
-        "onlyCurrentLevelPendingVerify": 0, "onlyCurrentLevelPendingConfirm": 0,
-        "onlyCurrentLevelPendingRectification": 0, "clueType": "-1",
-        "companyName": company_name, "mpName": "", "isFiling": None,
+        "pageNum": page_num,
+        "pageSize": page_size,
+        "regionCode": region_code,
+        "valleyCode": "-1",
+        "taskNum": "",
+        "importProblemNum": "",
+        "taskStatus": task_status,
+        "rectificationStatus": "-1",
+        "isTrue": is_true,
+        "isIllegal": -1,
+        "taskSendStartTime": start_time,
+        "taskSendEndTime": end_time,
+        "onlyCurrentLevelPendingVerify": 0,
+        "onlyCurrentLevelPendingConfirm": 0,
+        "onlyCurrentLevelPendingRectification": 0,
+        "clueType": "-1",
+        "companyName": company_name,
+        "mpName": "",
+        "isFiling": None,
     }
     try:
-        r = _session.post(f"{WATER_BASE}/water-law-platform/{path}",
-                          headers=headers, json=body, timeout=30)
+        r = _session.post(f"{WATER_BASE}/water-law-platform/{path}", headers=headers, json=body, timeout=30)
         j = r.json()
         data = j.get("data", {})
         page = data.get("page", {})
@@ -679,8 +725,7 @@ def sthjzf_water_task_list(task_type: str = "A", page_num: int = 1, page_size: i
     category=CATEGORY,
     tags=TAGS + ["水环境"],
 )
-def sthjzf_water_supervise_statistics(start_time: str = "2026-01-01",
-                                      end_time: str = "") -> dict:
+def sthjzf_water_supervise_statistics(start_time: str = "2026-01-01", end_time: str = "") -> dict:
     """水环境非现场执法监督统计。"""
     err = _need_login()
     if err:
@@ -693,8 +738,10 @@ def sthjzf_water_supervise_statistics(start_time: str = "2026-01-01",
     try:
         j = _session.get(
             f"{WATER_BASE}/water-platform/offSceneEnforcementWork/OffSceneEnforcementWorkStatistics",
-            headers=headers, params={"startTime": start_time, "endTime": end_time},
-            timeout=30).json()
+            headers=headers,
+            params={"startTime": start_time, "endTime": end_time},
+            timeout=30,
+        ).json()
         d = j.get("data", {})
         return {
             "success": True,
@@ -714,6 +761,7 @@ def sthjzf_water_supervise_statistics(start_time: str = "2026-01-01",
 
 # ── 写入类工具（approval_required + confirm 双重闸门，不进聊天表）──
 
+
 @govmcp_tool(
     name="sthjzf_water_clue_verify",
     description="水环境线索核实写入(敏感操作,需审批)。task_type支持A自动监测/F遥感/I帮扶/J海洋/B断面/C水源地/D违法网络/E岸线/G重金属/H排污许可;is_true:1属实/2部分属实/0不属实;需confirm=true才执行",
@@ -721,13 +769,18 @@ def sthjzf_water_supervise_statistics(start_time: str = "2026-01-01",
     tags=TAGS + ["水环境", "写入", "敏感"],
     approval_required=True,
 )
-def sthjzf_water_clue_verify(clue_id: str, task_type: str = "A", is_true: int = 0,
-                             is_illegal: int = 0, situation: str = "", is_filing: int = 0,
-                             confirm: bool = False) -> dict:
+def sthjzf_water_clue_verify(
+    clue_id: str,
+    task_type: str = "A",
+    is_true: int = 0,
+    is_illegal: int = 0,
+    situation: str = "",
+    is_filing: int = 0,
+    confirm: bool = False,
+) -> dict:
     """水环境非现场执法线索核实提交（写入平台，敏感操作）。"""
     if not confirm:
-        return {"blocked": True,
-                "message": "写入操作需人工授权，请确认后设置 confirm=true 重新调用"}
+        return {"blocked": True, "message": "写入操作需人工授权，请确认后设置 confirm=true 重新调用"}
     err = _need_login()
     if err:
         return {"success": False, "error": err}
@@ -740,31 +793,33 @@ def sthjzf_water_clue_verify(clue_id: str, task_type: str = "A", is_true: int = 
             "commitType": 1,
             "taskAssignId": clue_id,
             "taskType": task_type,
-            "taskVerifyRecords": [{
-                "isTrue": is_true,
-                "isIllegal": is_illegal,
-                "clueVerificationSituationDescription": situation,
-                "isFiling": is_filing,
-            }],
+            "taskVerifyRecords": [
+                {
+                    "isTrue": is_true,
+                    "isIllegal": is_illegal,
+                    "clueVerificationSituationDescription": situation,
+                    "isFiling": is_filing,
+                }
+            ],
             "taskPunishmentRecords": [],
         }
-        r = _session.post(f"{WATER_BASE}/water-law-platform/{api}",
-                          headers=headers, json=body, timeout=30)
+        r = _session.post(f"{WATER_BASE}/water-law-platform/{api}", headers=headers, json=body, timeout=30)
     else:
         if task_type not in CLUE_VERIFY_API:
             return {"success": False, "error": "线索类型 task_type 应为 A/B/C/D/E/F/G/H/I/J 之一"}
         api = f"clueChange/{CLUE_VERIFY_API[task_type]}"
         body = {
-            "id": clue_id, "clueId": clue_id,
-            "isTrue": is_true, "isIllegal": is_illegal,
-            "situationDescribe": situation, "isFiling": is_filing,
+            "id": clue_id,
+            "clueId": clue_id,
+            "isTrue": is_true,
+            "isIllegal": is_illegal,
+            "situationDescribe": situation,
+            "isFiling": is_filing,
         }
-        r = _session.post(f"{WATER_BASE}/water-law-platform/{api}",
-                          headers=headers, json=body, timeout=30)
+        r = _session.post(f"{WATER_BASE}/water-law-platform/{api}", headers=headers, json=body, timeout=30)
     try:
         j = r.json()
-        return {"success": j.get("code") == 0, "api": api, "code": j.get("code"),
-                "msg": j.get("msg"), "data": j.get("data")}
+        return {"success": j.get("code") == 0, "api": api, "code": j.get("code"), "msg": j.get("msg"), "data": j.get("data")}
     except Exception:
         return {"success": False, "raw": r.text[:2000]}
 
@@ -776,12 +831,10 @@ def sthjzf_water_clue_verify(clue_id: str, task_type: str = "A", is_true: int = 
     tags=TAGS + ["水环境", "写入", "敏感"],
     approval_required=True,
 )
-def sthjzf_water_clue_confirm(task_id: str, is_pass: int = 1, confirm_describe: str = "",
-                              confirm: bool = False) -> dict:
+def sthjzf_water_clue_confirm(task_id: str, is_pass: int = 1, confirm_describe: str = "", confirm: bool = False) -> dict:
     """水环境线索确认（待确认状态任务 taskStatus=20）。"""
     if not confirm:
-        return {"blocked": True,
-                "message": "写入操作需人工授权，请确认后设置 confirm=true 重新调用"}
+        return {"blocked": True, "message": "写入操作需人工授权，请确认后设置 confirm=true 重新调用"}
     err = _need_login()
     if err:
         return {"success": False, "error": err}
@@ -790,18 +843,22 @@ def sthjzf_water_clue_confirm(task_id: str, is_pass: int = 1, confirm_describe: 
     headers = {"Authorization": f"Bearer {_token_water}", "Content-Type": "application/json"}
     body = {"isPass": is_pass, "confirmDescribe": confirm_describe, "id": task_id}
     try:
-        r = _session.post(f"{WATER_BASE}/water-law-platform/task/taskConfirm",
-                          headers=headers, json=body, timeout=30)
+        r = _session.post(f"{WATER_BASE}/water-law-platform/task/taskConfirm", headers=headers, json=body, timeout=30)
         j = r.json()
-        return {"success": j.get("code") == 0, "api": "task/taskConfirm",
-                "code": j.get("code"), "msg": j.get("msg"), "data": j.get("data")}
+        return {
+            "success": j.get("code") == 0,
+            "api": "task/taskConfirm",
+            "code": j.get("code"),
+            "msg": j.get("msg"),
+            "data": j.get("data"),
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 @govmcp_tool(
     name="sthjzf_water_api",
-    description="调用水环境平台 API(仅已登录会话)。path传完整路径(如 /water-law-platform/xxx 或 /water-platform/xxx 或 /api/xxx)",
+    description="调用水环境平台 API(仅已登录会话)。path传完整路径(如 /water-law-platform/xxx 或 /water-platform/xxx 或 /api/xxx)",  # noqa: E501
     category=CATEGORY,
     tags=TAGS + ["水环境", "raw"],
 )
@@ -830,12 +887,23 @@ def sthjzf_water_api(path: str, method: str = "GET", body: str = "{}") -> dict:
 # ─── 注册入口 ────────────────────────────────────────────────
 
 _TOOLS: list[Any] = [
-    sthjzf_login, sthjzf_status, sthjzf_list_views, sthjzf_query_view,
-    sthjzf_get_menu, sthjzf_get_view_config, sthjzf_query_cases,
-    sthjzf_list_depts, sthjzf_query_case_detail, sthjzf_query_case_statistics,
-    sthjzf_water_current_user, sthjzf_water_task_statistics,
-    sthjzf_water_task_list, sthjzf_water_supervise_statistics,
-    sthjzf_water_clue_verify, sthjzf_water_clue_confirm, sthjzf_water_api,
+    sthjzf_login,
+    sthjzf_status,
+    sthjzf_list_views,
+    sthjzf_query_view,
+    sthjzf_get_menu,
+    sthjzf_get_view_config,
+    sthjzf_query_cases,
+    sthjzf_list_depts,
+    sthjzf_query_case_detail,
+    sthjzf_query_case_statistics,
+    sthjzf_water_current_user,
+    sthjzf_water_task_statistics,
+    sthjzf_water_task_list,
+    sthjzf_water_supervise_statistics,
+    sthjzf_water_clue_verify,
+    sthjzf_water_clue_confirm,
+    sthjzf_water_api,
 ]
 
 
@@ -855,7 +923,7 @@ def _p(props: dict, required: list[str]) -> dict:
 
 CHAT_TOOLS: dict[str, dict] = {
     "sthjzf_query_view": {
-        "description": "国家四平台-规范涉企行政检查系统数据查询(线索反馈/本级线索排查/问题整改/线索问题台账/地方动态)。view传名称或ID。",
+        "description": "国家四平台-规范涉企行政检查系统数据查询(线索反馈/本级线索排查/问题整改/线索问题台账/地方动态)。view传名称或ID。",  # noqa: E501
         "parameters": _p(
             {
                 "view": {"type": "string", "description": "视图名称(如 线索问题台账)或ID"},
@@ -910,7 +978,7 @@ CHAT_TOOLS: dict[str, dict] = {
         "handler": sthjzf_query_case_detail,
     },
     "sthjzf_query_case_statistics": {
-        "description": "国家四平台-行政处罚案件来源类型统计(01日常执法检查/02信访举报/03专项行动/04上级交办/09其他部门/10中央督察/11其他)。",
+        "description": "国家四平台-行政处罚案件来源类型统计(01日常执法检查/02信访举报/03专项行动/04上级交办/09其他部门/10中央督察/11其他)。",  # noqa: E501
         "parameters": _p(
             {
                 "source_type": {"type": "string", "description": "来源类型(01-11)"},
@@ -923,7 +991,7 @@ CHAT_TOOLS: dict[str, dict] = {
         "handler": sthjzf_query_case_statistics,
     },
     "sthjzf_water_task_statistics": {
-        "description": "国家四平台-水环境非现场执法问题推送统计(任务总计/待核实/待确认/已办结/属实/立案/处罚金额及10类线索分布)。region_code默认431381=冷水江市。",
+        "description": "国家四平台-水环境非现场执法问题推送统计(任务总计/待核实/待确认/已办结/属实/立案/处罚金额及10类线索分布)。region_code默认431381=冷水江市。",  # noqa: E501
         "parameters": _p(
             {
                 "region_code": {"type": "string", "description": "行政区划代码(默认431381冷水江市)"},
@@ -935,7 +1003,7 @@ CHAT_TOOLS: dict[str, dict] = {
         "handler": sthjzf_water_task_statistics,
     },
     "sthjzf_water_task_list": {
-        "description": "国家四平台-水环境任务办理明细台账(10类线索:A自动监测/B断面溯源/C水源地/D违法网络/E岸线/F遥感/G重金属/H排污许可/I帮扶/J海洋)。task_status:-1全部/10待区县核实/20待市级确认/30待最终认定/40已完成。",
+        "description": "国家四平台-水环境任务办理明细台账(10类线索:A自动监测/B断面溯源/C水源地/D违法网络/E岸线/F遥感/G重金属/H排污许可/I帮扶/J海洋)。task_status:-1全部/10待区县核实/20待市级确认/30待最终认定/40已完成。",  # noqa: E501
         "parameters": _p(
             {
                 "task_type": {"type": "string", "description": "线索类型(A-J)"},
@@ -944,7 +1012,10 @@ CHAT_TOOLS: dict[str, dict] = {
                 "region_code": {"type": "string", "description": "行政区划代码(默认431381000)"},
                 "start_time": {"type": "string", "description": "任务下发开始日期(YYYY-MM-DD)"},
                 "end_time": {"type": "string", "description": "任务下发结束日期(YYYY-MM-DD)"},
-                "task_status": {"type": "string", "description": "任务状态(-1全部/10待区县核实/20待市级确认/30待最终认定/40已完成)"},
+                "task_status": {
+                    "type": "string",
+                    "description": "任务状态(-1全部/10待区县核实/20待市级确认/30待最终认定/40已完成)",
+                },
                 "company_name": {"type": "string", "description": "企业名称模糊查询"},
                 "is_true": {"type": "integer", "description": "是否属实(-1全部/1属实/0不属实)"},
             },

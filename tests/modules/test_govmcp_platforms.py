@@ -12,9 +12,8 @@ from __future__ import annotations
 import base64
 import hashlib
 
-
-
 # ── 1. govmcp 注册表挂载 ─────────────────────────────────────────
+
 
 def test_register_all_mounts_three_platforms():
     from govmcp.tools.registry import ToolRegistry
@@ -26,29 +25,53 @@ def test_register_all_mounts_three_platforms():
 
     # 在线监测（11）
     for n in (
-        "wryzxjc_login", "wryzxjc_status", "wryzxjc_list_regions",
-        "wryzxjc_list_pollution_sources", "wryzxjc_get_pollution_source",
-        "wryzxjc_list_alarms", "wryzxjc_list_devices",
-        "wryzxjc_list_realtime_data", "wryzxjc_list_jcd_tree",
-        "wryzxjc_list_history_data", "wryzxjc_raw_query",
+        "wryzxjc_login",
+        "wryzxjc_status",
+        "wryzxjc_list_regions",
+        "wryzxjc_list_pollution_sources",
+        "wryzxjc_get_pollution_source",
+        "wryzxjc_list_alarms",
+        "wryzxjc_list_devices",
+        "wryzxjc_list_realtime_data",
+        "wryzxjc_list_jcd_tree",
+        "wryzxjc_list_history_data",
+        "wryzxjc_raw_query",
     ):
         assert n in names, f"在线监测工具缺失: {n}"
     # 国家四平台（17）
     for n in (
-        "sthjzf_login", "sthjzf_status", "sthjzf_list_views", "sthjzf_query_view",
-        "sthjzf_get_menu", "sthjzf_get_view_config", "sthjzf_query_cases",
-        "sthjzf_list_depts", "sthjzf_query_case_detail", "sthjzf_query_case_statistics",
-        "sthjzf_water_current_user", "sthjzf_water_task_statistics",
-        "sthjzf_water_task_list", "sthjzf_water_supervise_statistics",
-        "sthjzf_water_clue_verify", "sthjzf_water_clue_confirm", "sthjzf_water_api",
+        "sthjzf_login",
+        "sthjzf_status",
+        "sthjzf_list_views",
+        "sthjzf_query_view",
+        "sthjzf_get_menu",
+        "sthjzf_get_view_config",
+        "sthjzf_query_cases",
+        "sthjzf_list_depts",
+        "sthjzf_query_case_detail",
+        "sthjzf_query_case_statistics",
+        "sthjzf_water_current_user",
+        "sthjzf_water_task_statistics",
+        "sthjzf_water_task_list",
+        "sthjzf_water_supervise_statistics",
+        "sthjzf_water_clue_verify",
+        "sthjzf_water_clue_confirm",
+        "sthjzf_water_api",
     ):
         assert n in names, f"国家四平台工具缺失: {n}"
     # 排污许可（11）
     for n in (
-        "permit_login", "permit_status", "permit_menu", "permit_license_list",
-        "permit_enterprise_list", "permit_jgzf_menu", "permit_jgzf_license_execution",
-        "permit_jgzf_stop_production", "permit_jgzf_enterprise_archive",
-        "permit_area_list", "permit_industry_list",
+        "permit_login",
+        "permit_status",
+        "permit_menu",
+        "permit_license_list",
+        "permit_enterprise_list",
+        "permit_jgzf_menu",
+        "permit_jgzf_license_execution",
+        "permit_jgzf_stop_production",
+        "permit_jgzf_enterprise_archive",
+        "permit_area_list",
+        "permit_industry_list",
     ):
         assert n in names, f"排污许可工具缺失: {n}"
 
@@ -78,6 +101,7 @@ def test_input_schema_inference():
 
 
 # ── 2. 在线监测：HTML 解析 ─────────────────────────────────────────
+
 
 def test_wryzxjc_parse_rows_skips_action_columns():
     from govmcp_tools.wryzxjc import _parse_rows
@@ -118,14 +142,14 @@ def test_wryzxjc_get_total():
 
 # ── 3. 国家四平台：AES 加密与写入双闸门 ───────────────────────────
 
+
 def test_sthjzf_encrypt_password():
-    from govmcp_tools.sthjzf import _encrypt_password
     from Crypto.Cipher import AES
     from Crypto.Util.Padding import pad
 
-    expected = base64.b64encode(
-        AES.new(b"boandaxxjsgfyxgs", AES.MODE_ECB).encrypt(pad(b"test1234", 16))
-    ).decode()
+    from govmcp_tools.sthjzf import _encrypt_password
+
+    expected = base64.b64encode(AES.new(b"boandaxxjsgfyxgs", AES.MODE_ECB).encrypt(pad(b"test1234", 16))).decode()
     assert _encrypt_password("test1234") == expected
 
 
@@ -133,9 +157,7 @@ def test_sthjzf_water_clue_verify_confirm_gate():
     """写入工具 confirm=False 时短路返回 blocked，不发任何网络请求。"""
     from govmcp_tools.sthjzf import sthjzf_water_clue_verify
 
-    result = sthjzf_water_clue_verify(
-        clue_id="abc", task_type="A", is_true=1, situation="x", confirm=False
-    )
+    result = sthjzf_water_clue_verify(clue_id="abc", task_type="A", is_true=1, situation="x", confirm=False)
     assert result.get("blocked") is True
 
 
@@ -173,8 +195,9 @@ def test_sthjzf_login_missing_credentials():
 
 # ── 4. 排污许可：RSA / modulus / MD5 签名 ─────────────────────────
 
+
 def test_permit_rsa_encrypt_matches_raw_pow():
-    from govmcp_tools.permit_management import rsa_encrypt, E, CHUNK
+    from govmcp_tools.permit_management import CHUNK, E, rsa_encrypt
 
     modulus = "e5d1f0" + "0" * 30  # 任意模数
     pwd = "Abc123"
@@ -201,8 +224,8 @@ def test_permit_extract_error():
 
 
 def test_permit_jgzf_sign_md5_vector():
-    from govmcp_tools.permit_management import jgzf_sign
     import govmcp_tools.permit_management as m
+    from govmcp_tools.permit_management import jgzf_sign
 
     saved_key = m.JGZF_KEY
     m.JGZF_KEY = "secretkey"
@@ -238,13 +261,13 @@ def test_permit_not_configured_returns_guidance():
 
 # ── 5. 聊天通道接线 ──────────────────────────────────────────────
 
+
 def test_chat_tool_list_includes_platform_tools():
     from agent_core.wiring_manifest import WIRED_REQUIRED
     from server.api.chat import _codex_tools
 
     wired = {t["function"]["name"] for t in _codex_tools()}
-    platform = [n for n in WIRED_REQUIRED
-                if n.startswith(("wryzxjc_", "sthjzf_", "permit_"))]
+    platform = [n for n in WIRED_REQUIRED if n.startswith(("wryzxjc_", "sthjzf_", "permit_"))]
     assert len(platform) >= 28, "接线清单平台工具数量异常"
     missing = [n for n in platform if n not in wired]
     assert not missing, f"三平台聊天工具未接入: {missing}"
@@ -257,10 +280,7 @@ def test_chat_platform_handlers_registered():
 
     _ensure_platform_tools()
     assert len(_PLATFORM_CHAT_NAMES) == 31  # 28 政务平台 + 2 环境公开数据源 + 1 湖南月报
-    no_handler = [
-        n for n in _PLATFORM_CHAT_NAMES
-        if n not in _HANDLERS and resolve_tool_name(n) not in _HANDLERS
-    ]
+    no_handler = [n for n in _PLATFORM_CHAT_NAMES if n not in _HANDLERS and resolve_tool_name(n) not in _HANDLERS]
     assert not no_handler, f"三平台聊天工具没有 handler: {no_handler}"
 
 

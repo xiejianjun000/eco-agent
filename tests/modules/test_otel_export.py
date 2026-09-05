@@ -1,4 +1,5 @@
 """test_otel_export.py — OTel collector 导出与 trace/decision 关联（全 mock 零外呼）"""
+
 import json
 from types import SimpleNamespace
 from unittest import mock
@@ -7,9 +8,8 @@ import pytest
 import yaml
 
 from agent_core import observability as obs
-from agent_core.observability import (OTLPExporter, SpanTree, current_trace_id,
-                                      set_current_tree, trace_id_for_session)
 from agent_core.decisions import record_decision
+from agent_core.observability import OTLPExporter, SpanTree, current_trace_id, set_current_tree, trace_id_for_session
 
 REPO = __import__("pathlib").Path(__file__).resolve().parents[2]
 DEPLOY = REPO / "deploy" / "otel"
@@ -38,8 +38,7 @@ class TestTraceId:
 
     def test_tree_property_matches_to_otlp(self):
         t = _tree()
-        ids = {sp["traceId"] for rs in t.to_otlp()["resourceSpans"]
-               for ss in rs["scopeSpans"] for sp in ss["spans"]}
+        ids = {sp["traceId"] for rs in t.to_otlp()["resourceSpans"] for ss in rs["scopeSpans"] for sp in ss["spans"]}
         assert ids == {t.trace_id}
 
     def test_current_tree_registered_on_init(self):
@@ -52,8 +51,7 @@ class TestTraceId:
 
     def test_decision_carries_current_trace_id(self, tmp_path):
         t = _tree("dec-sess")
-        entry = record_decision(2, ["read_file"], "tool_calls",
-                                path=tmp_path / "d.jsonl")
+        entry = record_decision(2, ["read_file"], "tool_calls", path=tmp_path / "d.jsonl")
         payload = json.loads(entry["content"])
         assert payload["trace_id"] == t.trace_id
 
@@ -63,8 +61,7 @@ class TestTraceId:
         assert json.loads(entry["content"])["trace_id"] == ""
 
     def test_decision_explicit_trace_id_wins(self, tmp_path):
-        entry = record_decision(0, [], "stop", trace_id="ab" * 16,
-                                path=tmp_path / "d.jsonl")
+        entry = record_decision(0, [], "stop", trace_id="ab" * 16, path=tmp_path / "d.jsonl")
         assert json.loads(entry["content"])["trace_id"] == "ab" * 16
 
 
@@ -87,8 +84,7 @@ class _OpenPatch:
         self.open_mock = mock.Mock(**kw)
         opener = mock.Mock()
         opener.open = self.open_mock
-        self._p = mock.patch.object(obs.urllib.request, "build_opener",
-                                    return_value=opener)
+        self._p = mock.patch.object(obs.urllib.request, "build_opener", return_value=opener)
 
     def __enter__(self):
         self._p.__enter__()
@@ -151,11 +147,13 @@ class TestCmdTrace:
         t = _tree("cmd-sess")
         t.save(directory=tmp_path)
         from eco.commands import cmd_trace
-        args = SimpleNamespace(session="cmd-sess", tree=True, otel=None,
-                               export="otlp", endpoint="http://mock:4318")
-        with mock.patch.object(cmd_trace, "TRACES_DIR", tmp_path), \
-             mock.patch.object(obs, "TRACES_DIR", tmp_path), \
-             _patch_open(return_value=_Resp(200)):
+
+        args = SimpleNamespace(session="cmd-sess", tree=True, otel=None, export="otlp", endpoint="http://mock:4318")
+        with (
+            mock.patch.object(cmd_trace, "TRACES_DIR", tmp_path),
+            mock.patch.object(obs, "TRACES_DIR", tmp_path),
+            _patch_open(return_value=_Resp(200)),
+        ):
             assert cmd_trace.run(args) == 0
         out = capsys.readouterr().out
         assert "OTel collector" in out and t.trace_id in out
@@ -163,13 +161,14 @@ class TestCmdTrace:
     def test_export_otlp_fallback_via_cmd(self, tmp_path, capsys):
         _tree("cmd-fb").save(directory=tmp_path)
         from eco.commands import cmd_trace
-        args = SimpleNamespace(session="cmd-fb", tree=True, otel=None,
-                               export="otlp", endpoint="http://down:4318")
-        with mock.patch.object(cmd_trace, "TRACES_DIR", tmp_path), \
-             mock.patch.object(obs, "TRACES_DIR", tmp_path), \
-             _patch_open(side_effect=OSError("down")), \
-             mock.patch.object(OTLPExporter, "_write_fallback",
-                               side_effect=lambda tree: None):
+
+        args = SimpleNamespace(session="cmd-fb", tree=True, otel=None, export="otlp", endpoint="http://down:4318")
+        with (
+            mock.patch.object(cmd_trace, "TRACES_DIR", tmp_path),
+            mock.patch.object(obs, "TRACES_DIR", tmp_path),
+            _patch_open(side_effect=OSError("down")),
+            mock.patch.object(OTLPExporter, "_write_fallback", side_effect=lambda tree: None),
+        ):
             assert cmd_trace.run(args) == 0
         assert "降级" in capsys.readouterr().out
 

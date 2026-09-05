@@ -10,14 +10,14 @@ daemon.py — Eco Agent 后台守护服务（补强版）
 - 健康检查面板升级
 """
 
-import os
-import sys
-import time
-import signal
 import logging
+import os
+import signal
+import sys
 import threading
-from pathlib import Path
+import time
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("daemon")
 
@@ -39,15 +39,19 @@ class DaemonService:
 
     def register(self, name: str, start_fn, stop_fn=None, health_check=None):
         self._services[name] = {
-            "start": start_fn, "stop": stop_fn,
-            "health_check": health_check, "status": "registered",
+            "start": start_fn,
+            "stop": stop_fn,
+            "health_check": health_check,
+            "status": "registered",
         }
 
     def init_all_services(self):
         """初始化并注册所有子服务"""
+
         # ── 服务 1: 五层循环（L1/L3/L4/L5） ──
         def _start_loops():
             from agent_core.eco_loops_integration import loops
+
             self._eco_loops = loops
             loops.start()
             logger.info("[Daemon] 五层循环已启动 (L1+L3+L4+L5)")
@@ -68,6 +72,7 @@ class DaemonService:
         def _start_scheduler():
             try:
                 from agent_core.scheduler import scheduler
+
                 scheduler.start()
                 logger.info(f"[Daemon] Cron 调度器已启动 ({len(scheduler._jobs)} 个任务)")
             except ImportError as e:
@@ -76,6 +81,7 @@ class DaemonService:
         def _stop_scheduler():
             try:
                 from agent_core.scheduler import scheduler
+
                 scheduler.stop()
             except ImportError:
                 pass
@@ -83,6 +89,7 @@ class DaemonService:
         def _health_scheduler():
             try:
                 from agent_core.scheduler import scheduler
+
                 s = scheduler.get_stats()
                 return {"ok": s["running"], **s}
             except ImportError:
@@ -94,6 +101,7 @@ class DaemonService:
         def _start_wechat():
             try:
                 from agent_core.channels.wechat_personal import wechat_bot
+
                 # 有消息回调时走 Agent 引擎
                 wechat_bot.start()
                 logger.info("[Daemon] 微信个人号通道尝试启动（等待扫码）")
@@ -103,6 +111,7 @@ class DaemonService:
         def _stop_wechat():
             try:
                 from agent_core.channels.wechat_personal import wechat_bot
+
                 wechat_bot.stop()
             except ImportError:
                 pass
@@ -110,6 +119,7 @@ class DaemonService:
         def _health_wechat():
             try:
                 from agent_core.channels.wechat_personal import wechat_bot
+
                 return wechat_bot.get_health()
             except ImportError:
                 return {"ok": False, "status": "not_loaded"}
@@ -122,12 +132,14 @@ class DaemonService:
         def _start_gateway():
             try:
                 from gateway.channels.telegram import start_telegram
+
                 start_telegram()
                 logger.info("[Daemon] Telegram 通道已启动")
             except ImportError:
                 logger.debug("[Daemon] Telegram 通道未加载")
             try:
                 from gateway.channels.discord import start_discord
+
                 start_discord()
                 logger.info("[Daemon] Discord 通道已启动")
             except ImportError:
@@ -142,18 +154,21 @@ class DaemonService:
         def _start_domestic():
             try:
                 from agent_core.channels.feishu import start_feishu
+
                 start_feishu()
                 logger.info("[Daemon] 飞书通道已启动")
             except ImportError:
                 logger.debug("[Daemon] 飞书通道未加载")
             try:
                 from agent_core.channels.wecom import start_wecom
+
                 start_wecom()
                 logger.info("[Daemon] 企微通道已启动")
             except ImportError:
                 logger.debug("[Daemon] 企微通道未加载")
             try:
                 from agent_core.channels.dingtalk import start_dingtalk
+
                 start_dingtalk()
                 logger.info("[Daemon] 钉钉通道已启动")
             except ImportError:
@@ -260,16 +275,14 @@ daemon = DaemonService()
 
 
 def run_foreground():
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s [%(name)s] %(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
     daemon.start_all()
     try:
         while daemon._running:
             time.sleep(10)
             health = daemon.check_health()
             if not health.get("all_ok", True):
-                degraded = [f"{k}={v}" for k, v in health.get("services", {}).items()
-                            if v not in ("running", "ok", "stopped")]
+                degraded = [f"{k}={v}" for k, v in health.get("services", {}).items() if v not in ("running", "ok", "stopped")]
                 logger.warning(f"服务降级: {degraded}")
     except KeyboardInterrupt:
         daemon.stop_all()
@@ -279,7 +292,7 @@ def run_start():
     if daemon.is_running():
         print("Daemon 已在运行中")
         return
-    pid = os.fork() if hasattr(os, 'fork') else 0
+    pid = os.fork() if hasattr(os, "fork") else 0
     if pid == 0:
         try:
             os.setsid()
@@ -329,11 +342,14 @@ def run_status():
 
 if __name__ == "__main__":
     import sys
+
     cmd = sys.argv[1] if len(sys.argv) > 1 else "foreground"
     handlers = {
-        "start": run_start, "stop": run_stop,
+        "start": run_start,
+        "stop": run_stop,
         "restart": lambda: (run_stop(), time.sleep(1), run_start()),
-        "status": run_status, "foreground": run_foreground,
+        "status": run_status,
+        "foreground": run_foreground,
     }
     handler = handlers.get(cmd)
     if handler:

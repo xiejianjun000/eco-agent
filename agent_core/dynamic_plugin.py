@@ -56,13 +56,11 @@ class DynamicPluginRegistry:
         """保存插件代码（不可变追加语义简化为覆盖式保存 + 版本注释）。"""
         pid = plugin_id or uuid.uuid4().hex[:10]
         path = _plugin_path(pid)
-        header = (f"# dynamic plugin: {pid}  ({name or 'unnamed'})  "
-                  f"defined_at={time.time():.0f}\n")
+        header = f"# dynamic plugin: {pid}  ({name or 'unnamed'})  defined_at={time.time():.0f}\n"
         with self._lock:
             path.write_text(header + code, encoding="utf-8")
         compile_result = self._precheck(pid)
-        return {"ok": compile_result.get("ok", True), "plugin_id": pid,
-                "path": str(path), "precheck": compile_result}
+        return {"ok": compile_result.get("ok", True), "plugin_id": pid, "path": str(path), "precheck": compile_result}
 
     def _precheck(self, plugin_id: str) -> dict:
         path = _plugin_path(plugin_id)
@@ -77,8 +75,7 @@ class DynamicPluginRegistry:
     def run(self, plugin_id: str, config: dict | None = None) -> dict:
         """装载并激活插件（cordis ctx.plugin 装载，返回 dispose 句柄）。"""
         if not _ALLOWED:
-            return {"ok": False, "error":
-                    "动态插件默认关闭：设置 ECO_DYNAMIC_PLUGINS=1 后重启才允许 run"}
+            return {"ok": False, "error": "动态插件默认关闭：设置 ECO_DYNAMIC_PLUGINS=1 后重启才允许 run"}
         path = _plugin_path(plugin_id)
         if not path.is_file():
             return {"ok": False, "error": f"插件未定义: {plugin_id}"}
@@ -96,12 +93,10 @@ class DynamicPluginRegistry:
             sys.modules[spec.name] = module
             spec.loader.exec_module(module)
             ctx = get_app_context()
-            dispose = ctx.plugin(module, config=config or {},
-                                 plugin_id=f"dynamic:{plugin_id}")
+            dispose = ctx.plugin(module, config=config or {}, plugin_id=f"dynamic:{plugin_id}")
             with self._lock:
                 self._runs[plugin_id] = dispose
-            return {"ok": True, "plugin_id": plugin_id,
-                    "snapshot": ctx.snapshot()["plugins"].get(f"dynamic:{plugin_id}")}
+            return {"ok": True, "plugin_id": plugin_id, "snapshot": ctx.snapshot()["plugins"].get(f"dynamic:{plugin_id}")}
         except Exception as e:  # noqa: BLE001
             tb = traceback.format_exc(limit=12)
             logger.warning("动态插件 %s 运行失败: %s", plugin_id, e)
@@ -137,25 +132,25 @@ class DynamicPluginRegistry:
             out = []
             for path in sorted(DATA_DIR.glob("*.py")):
                 pid = path.stem
-                out.append({
-                    "plugin_id": pid,
-                    "running": pid in self._runs,
-                    "size_bytes": path.stat().st_size,
-                    "defined_at": path.stat().st_mtime,
-                })
+                out.append(
+                    {
+                        "plugin_id": pid,
+                        "running": pid in self._runs,
+                        "size_bytes": path.stat().st_size,
+                        "defined_at": path.stat().st_mtime,
+                    }
+                )
             return out
 
     def get_source(self, plugin_id: str) -> dict:
         path = _plugin_path(plugin_id)
         if not path.is_file():
             return {"ok": False, "error": f"插件未定义: {plugin_id}"}
-        return {"ok": True, "plugin_id": plugin_id,
-                "source": path.read_text(encoding="utf-8")}
+        return {"ok": True, "plugin_id": plugin_id, "source": path.read_text(encoding="utf-8")}
 
     def stats(self) -> dict:
         with self._lock:
-            return {"allowed": _ALLOWED, "defined": len(list(DATA_DIR.glob("*.py"))),
-                    "running": len(self._runs)}
+            return {"allowed": _ALLOWED, "defined": len(list(DATA_DIR.glob("*.py"))), "running": len(self._runs)}
 
 
 _registry: DynamicPluginRegistry | None = None

@@ -14,7 +14,7 @@ eco_agent_sdk — ECO AGENT 官方 Python SDK
 """
 
 from eco_agent_sdk.client import EcoClient, SyncEcoClient
-from eco_agent_sdk.errors import EcoError, EcoConnectionError, EcoApiError
+from eco_agent_sdk.errors import EcoApiError, EcoConnectionError, EcoError
 from eco_agent_sdk.types import (
     ChatRequest,
     ChatResponse,

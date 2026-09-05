@@ -19,15 +19,15 @@ memory_tree.py — ECO AGENT Memory Tree 核心引擎
   mt.sync_to_obsidian()
 """
 
-import os
-import json
-import re
-import time
 import hashlib
-import sqlite3
+import json
 import logging
-from pathlib import Path
+import os
+import re
+import sqlite3
+import time
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("memory_tree")
@@ -39,9 +39,9 @@ OBSIDIAN_SYNC_DIR = PROJECT_ROOT / "memory-tree" / "obsidian_sync"
 OBSIDIAN_VAULT = None  # 由 set_obsidian_vault() 设置
 
 # 系统敏感目录（路径遍历防护：resolve 后命中即拒绝读写；resolve 消解 /etc→/private/etc 软链）
-_FORBIDDEN_ROOTS = tuple(Path(p).resolve() for p in ("/etc", "/proc", "/sys", "/dev", "/root",
-                                                     "/usr", "/bin", "/sbin", "/Library",
-                                                     "/System"))
+_FORBIDDEN_ROOTS = tuple(
+    Path(p).resolve() for p in ("/etc", "/proc", "/sys", "/dev", "/root", "/usr", "/bin", "/sbin", "/Library", "/System")
+)
 
 
 def _confine_vault_dir(path: Path) -> Path | None:
@@ -94,36 +94,51 @@ class MemoryTree:
 
     # ── 节点 CRUD ──
 
-    def create_node(self, type: str, title: str, content: str,
-                    tags: list[str] = None, score: float = 50.0,
-                    parent_id: str = None, source: str = "manual",
-                    confidence: str = "medium") -> dict[str, Any]:
+    def create_node(
+        self,
+        type: str,
+        title: str,
+        content: str,
+        tags: list[str] = None,
+        score: float = 50.0,
+        parent_id: str = None,
+        source: str = "manual",
+        confidence: str = "medium",
+    ) -> dict[str, Any]:
         """创建新节点"""
         node_id = self._generate_id(type)
         tags_json = json.dumps(tags or [], ensure_ascii=False)
         now = datetime.now().isoformat()
 
         with self._conn() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO nodes (id, type, title, content, score, tags,
                                    parent_id, source, confidence,
                                    created_at, updated_at, accessed_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (node_id, type, title, content, score, tags_json,
-                  parent_id, source, confidence, now, now, now))
+            """,
+                (node_id, type, title, content, score, tags_json, parent_id, source, confidence, now, now, now),
+            )
 
             # 更新 FTS 索引
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO nodes_fts (rowid, title, content, tags)
                 VALUES (last_insert_rowid(), ?, ?, ?)
-            """, (title, content[:5000], tags_json))
+            """,
+                (title, content[:5000], tags_json),
+            )
 
             # 如果有父节点，创建关联边
             if parent_id:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO edges (source_id, target_id, relation, weight)
                     VALUES (?, ?, 'derived_from', 0.8)
-                """, (node_id, parent_id))
+                """,
+                    (node_id, parent_id),
+                )
 
             # 更新元数据
             conn.execute("""
@@ -139,19 +154,20 @@ class MemoryTree:
     def get_node(self, node_id: str) -> dict[str, Any] | None:
         """获取节点详情"""
         with self._conn() as conn:
-            row = conn.execute(
-                "SELECT * FROM nodes WHERE id = ?", (node_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM nodes WHERE id = ?", (node_id,)).fetchone()
             if not row:
                 return None
             node = dict(row)
             node["tags"] = json.loads(node.get("tags", "[]"))
             # 更新访问计数
-            conn.execute("""
+            conn.execute(
+                """
                 UPDATE nodes SET access_count = access_count + 1,
                                  accessed_at = datetime('now')
                 WHERE id = ?
-            """, (node_id,))
+            """,
+                (node_id,),
+            )
             return node
 
     def update_node(self, node_id: str, **kwargs) -> dict[str, Any] | None:
@@ -175,19 +191,22 @@ class MemoryTree:
 
             # 更新 FTS
             if "title" in updates or "content" in updates:
-                row = conn.execute(
-                    "SELECT rowid, title, content, tags FROM nodes WHERE id = ?",
-                    (node_id,)
-                ).fetchone()
+                row = conn.execute("SELECT rowid, title, content, tags FROM nodes WHERE id = ?", (node_id,)).fetchone()
                 if row:
-                    conn.execute("""
+                    conn.execute(
+                        """
                         INSERT INTO nodes_fts (rowid, title, content, tags)
                         VALUES (?, ?, ?, ?)
                         ON CONFLICT(rowid) DO UPDATE SET
                             title=excluded.title, content=excluded.content, tags=excluded.tags
-                    """, (row["rowid"], updates.get("title", row["title"]),
-                          updates.get("content", row["content"][:5000]),
-                          updates.get("tags", row["tags"])))
+                    """,
+                        (
+                            row["rowid"],
+                            updates.get("title", row["title"]),
+                            updates.get("content", row["content"][:5000]),
+                            updates.get("tags", row["tags"]),
+                        ),
+                    )
 
         self._invalidate_bm25()
         return self.get_node(node_id)
@@ -200,11 +219,9 @@ class MemoryTree:
             if not row:
                 return False
             if promote_children:
-                conn.execute("UPDATE nodes SET parent_id = NULL WHERE parent_id = ?",
-                             (node_id,))
+                conn.execute("UPDATE nodes SET parent_id = NULL WHERE parent_id = ?", (node_id,))
             conn.execute("DELETE FROM nodes_fts WHERE rowid = ?", (row["rowid"],))
-            conn.execute("DELETE FROM edges WHERE source_id = ? OR target_id = ?",
-                         (node_id, node_id))
+            conn.execute("DELETE FROM edges WHERE source_id = ? OR target_id = ?", (node_id, node_id))
             conn.execute("DELETE FROM sync_log WHERE node_id = ?", (node_id,))
             conn.execute("DELETE FROM nodes WHERE id = ?", (node_id,))
             conn.execute("UPDATE metadata SET value = (SELECT COUNT(*) FROM nodes) WHERE key = 'node_count'")
@@ -212,8 +229,7 @@ class MemoryTree:
         self._invalidate_bm25()
         return True
 
-    def prune(self, min_score: float | None = None, max_age_days: int | None = None,
-              dry_run: bool = False) -> dict[str, Any]:
+    def prune(self, min_score: float | None = None, max_age_days: int | None = None, dry_run: bool = False) -> dict[str, Any]:
         """遗忘机制：按低分（min_score）或长期未访问（max_age_days）清理节点。
 
         - security/denied 标签节点始终受保护，绝不删除；
@@ -235,37 +251,30 @@ class MemoryTree:
             where = " AND ".join(conds)
             # 受保护节点：security/denied 标签
             protected_rows = conn.execute(
-                f"SELECT id FROM nodes WHERE ({where}) AND "
-                f"(tags LIKE '%security%' OR tags LIKE '%denied%')", params).fetchall()
+                f"SELECT id FROM nodes WHERE ({where}) AND (tags LIKE '%security%' OR tags LIKE '%denied%')", params
+            ).fetchall()
             protected_ids = {r["id"] for r in protected_rows}
-            candidates = conn.execute(
-                f"SELECT id, title, score, tags, accessed_at FROM nodes WHERE {where}",
-                params).fetchall()
+            candidates = conn.execute(f"SELECT id, title, score, tags, accessed_at FROM nodes WHERE {where}", params).fetchall()
             to_delete = [dict(r) for r in candidates if r["id"] not in protected_ids]
             if not dry_run:
                 for r in to_delete:
-                    conn.execute("UPDATE nodes SET parent_id = NULL WHERE parent_id = ?",
-                                 (r["id"],))
-                    conn.execute(
-                        "DELETE FROM nodes_fts WHERE rowid = "
-                        "(SELECT rowid FROM nodes WHERE id = ?)", (r["id"],))
-                    conn.execute("DELETE FROM edges WHERE source_id = ? OR target_id = ?",
-                                 (r["id"], r["id"]))
+                    conn.execute("UPDATE nodes SET parent_id = NULL WHERE parent_id = ?", (r["id"],))
+                    conn.execute("DELETE FROM nodes_fts WHERE rowid = (SELECT rowid FROM nodes WHERE id = ?)", (r["id"],))
+                    conn.execute("DELETE FROM edges WHERE source_id = ? OR target_id = ?", (r["id"], r["id"]))
                     conn.execute("DELETE FROM sync_log WHERE node_id = ?", (r["id"],))
                     conn.execute("DELETE FROM nodes WHERE id = ?", (r["id"],))
-                conn.execute("UPDATE metadata SET value = (SELECT COUNT(*) FROM nodes) "
-                             "WHERE key = 'node_count'")
+                conn.execute("UPDATE metadata SET value = (SELECT COUNT(*) FROM nodes) WHERE key = 'node_count'")
                 self._invalidate_bm25()
             return {
                 "dry_run": dry_run,
                 "deleted": 0 if dry_run else len(to_delete),
                 "protected": len(protected_ids),
-                "candidates": [{"id": r["id"], "title": r["title"], "score": r["score"]}
-                               for r in to_delete],
+                "candidates": [{"id": r["id"], "title": r["title"], "score": r["score"]} for r in to_delete],
             }
 
-    def list_nodes(self, type: str | None = None, tags: list[str] | None = None,
-                   limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
+    def list_nodes(
+        self, type: str | None = None, tags: list[str] | None = None, limit: int = 50, offset: int = 0
+    ) -> list[dict[str, Any]]:
         """列出节点，支持类型和标签过滤"""
         where_clauses = []
         params = []
@@ -281,7 +290,8 @@ class MemoryTree:
         where = " AND ".join(where_clauses) if where_clauses else "1=1"
 
         with self._conn() as conn:
-            rows = conn.execute(f"""
+            rows = conn.execute(
+                f"""
                 SELECT n.*, COUNT(e.id) as edge_count
                 FROM nodes n
                 LEFT JOIN edges e ON e.source_id = n.id OR e.target_id = n.id
@@ -289,7 +299,9 @@ class MemoryTree:
                 GROUP BY n.id
                 ORDER BY n.score DESC, n.updated_at DESC
                 LIMIT ? OFFSET ?
-            """, params + [limit, offset]).fetchall()
+            """,
+                params + [limit, offset],
+            ).fetchall()
 
             results = []
             for row in rows:
@@ -304,6 +316,7 @@ class MemoryTree:
         """取 BM25 检索索引（惰性缓存：全量节点建一次，增删改后置空重建）。"""
         if self._bm25_cache is None:
             from agent_core.hybrid_retrieval import BM25Index
+
             with self._conn() as conn:
                 rows = conn.execute("SELECT id, title, content FROM nodes").fetchall()
             bm = BM25Index()
@@ -315,15 +328,14 @@ class MemoryTree:
         """节点增删改后调用：置空 BM25 缓存，下次检索重建。"""
         self._bm25_cache = None
 
-    def search(self, query: str, type: str | None = None,
-               max_results: int = 10) -> list[dict[str, Any]]:
+    def search(self, query: str, type: str | None = None, max_results: int = 10) -> list[dict[str, Any]]:
         """混合检索（BM25 + 评分排序 + LIKE 降级）"""
         keywords = query.lower().split()
         if not keywords:
             return []
 
         # 检测是否含中文（中文用 LIKE 降级为主）
-        has_chinese = any('一' <= c <= '鿿' for c in query)
+        has_chinese = any("一" <= c <= "鿿" for c in query)
 
         with self._conn() as conn:
             where_type = "AND n.type = ?" if type else ""  # 参数化，防 SQL 注入
@@ -333,7 +345,8 @@ class MemoryTree:
                 # FTS5 BM25 检索（仅对非中文有效）
                 fts_query = " OR ".join(keywords)
                 try:
-                    rows = conn.execute(f"""
+                    rows = conn.execute(
+                        f"""
                         SELECT n.*, nodes_fts.rank as bm25_score,
                                COUNT(e.id) as edge_count
                         FROM nodes_fts
@@ -344,7 +357,9 @@ class MemoryTree:
                         GROUP BY n.id
                         ORDER BY nodes_fts.rank ASC
                         LIMIT ?
-                    """, ((fts_query, type, max_results) if type else (fts_query, max_results))).fetchall()
+                    """,
+                        ((fts_query, type, max_results) if type else (fts_query, max_results)),
+                    ).fetchall()
                     results = [dict(r) for r in rows]
                 except sqlite3.OperationalError:
                     pass
@@ -381,13 +396,14 @@ class MemoryTree:
                     if type:
                         params.append(type)
                     if existing_ids:
-                        placeholders = ','.join('?' for _ in existing_ids)
+                        placeholders = ",".join("?" for _ in existing_ids)
                         exclude_clause = f"AND n.id NOT IN ({placeholders})"
                         params.extend(list(existing_ids))
                     params.append(f"%{kw}%")
                     params.append(remaining)
 
-                    rows = conn.execute(f"""
+                    rows = conn.execute(
+                        f"""
                         SELECT n.*, COUNT(e.id) as edge_count
                         FROM nodes n
                         LEFT JOIN edges e ON e.source_id = n.id OR e.target_id = n.id
@@ -402,14 +418,14 @@ class MemoryTree:
                             END DESC,
                             n.score DESC
                         LIMIT ?
-                    """, params)
+                    """,
+                        params,
+                    )
 
                     for row in rows:
                         node = dict(row)
                         node["tags"] = json.loads(node.get("tags", "[]"))
-                        node["snippet"] = self._generate_snippet(
-                            node.get("content", ""), [kw]
-                        )
+                        node["snippet"] = self._generate_snippet(node.get("content", ""), [kw])
                         results.append(node)
                         existing_ids.add(node["id"])
                         remaining -= 1
@@ -424,8 +440,7 @@ class MemoryTree:
 
             return results[:max_results]
 
-    def search_hybrid(self, query: str, type: str | None = None,
-                      max_results: int = 10) -> list[dict[str, Any]]:
+    def search_hybrid(self, query: str, type: str | None = None, max_results: int = 10) -> list[dict[str, Any]]:
         """Phase B2 混合检索：关键词通道（FTS5 BM25/LIKE，复用 search）+ 向量通道
         （hybrid_retrieval，OpenAI 兼容 embedding，sqlite 本地向量库）RRF(k=60) 融合。
         无 embedding 配置/调用失败时优雅降级为纯关键词通道（结果 channel='bm25'）。
@@ -437,34 +452,30 @@ class MemoryTree:
         channel = "bm25"
         try:
             from agent_core.hybrid_retrieval import EmbeddingClient, VectorStore, rrf_fuse
+
             ec = EmbeddingClient()
             if ec.available():
                 with self._conn() as conn:
-                    rows = conn.execute(
-                        "SELECT id, title, content, type FROM nodes").fetchall()
+                    rows = conn.execute("SELECT id, title, content, type FROM nodes").fetchall()
                 store = VectorStore()
                 namespace = "memory_tree"
                 fids = [f"{namespace}:{r['id']}" for r in rows]
-                missing_idx = [i for i, f in enumerate(fids)
-                               if f not in store.existing_ids(fids)]
+                missing_idx = [i for i, f in enumerate(fids) if f not in store.existing_ids(fids)]
                 if missing_idx:
-                    vecs = ec.embed([f"{rows[i]['title']}\n{rows[i]['content']}"[:2000]
-                                     for i in missing_idx])
+                    vecs = ec.embed([f"{rows[i]['title']}\n{rows[i]['content']}"[:2000] for i in missing_idx])
                     if vecs:
                         for i, vec in zip(missing_idx, vecs, strict=False):
                             if vec:
-                                store.upsert(fids[i], vec,
-                                             source=f"memory_tree:{rows[i]['type']}",
-                                             text=rows[i]["content"])
+                                store.upsert(fids[i], vec, source=f"memory_tree:{rows[i]['type']}", text=rows[i]["content"])
                 qvec = ec.embed([query[:2000]])
                 if qvec and qvec[0]:
                     if type:
                         allow = {f"{namespace}:{r['id']}" for r in rows if r["type"] == type}
                     else:
                         allow = set(fids)
-                    vec_rank = [d.split(":", 1)[1]
-                                for d in store.cosine_rank(qvec[0], doc_ids=list(allow),
-                                                           top_k=max_results * 2)]
+                    vec_rank = [
+                        d.split(":", 1)[1] for d in store.cosine_rank(qvec[0], doc_ids=list(allow), top_k=max_results * 2)
+                    ]
                     if vec_rank:
                         channel = "hybrid"
                         # 向量命中的节点补充进候选集（关键词通道可能漏召回）
@@ -485,15 +496,14 @@ class MemoryTree:
                 continue
             node = dict(node)
             node["channel"] = channel
-            node["vector_enabled"] = (channel == "hybrid")
+            node["vector_enabled"] = channel == "hybrid"
             node["rrf_score"] = round(score, 6)
             out.append(node)
             if len(out) >= max_results:
                 break
         return out
 
-    def _generate_snippet(self, content: str, keywords: list[str],
-                          max_len: int = 200) -> str:
+    def _generate_snippet(self, content: str, keywords: list[str], max_len: int = 200) -> str:
         """生成关键词上下文摘要"""
         content_lower = content.lower()
         for kw in keywords:
@@ -514,7 +524,8 @@ class MemoryTree:
     def get_related(self, node_id: str, max_depth: int = 1) -> list[dict[str, Any]]:
         """获取关联节点"""
         with self._conn() as conn:
-            rows = conn.execute("""
+            rows = conn.execute(
+                """
                 SELECT DISTINCT n.*, e.relation, e.weight
                 FROM edges e
                 JOIN nodes n ON (n.id = e.target_id OR n.id = e.source_id)
@@ -522,7 +533,9 @@ class MemoryTree:
                 AND n.id != ?
                 ORDER BY e.weight DESC
                 LIMIT 20
-            """, (node_id, node_id, node_id)).fetchall()
+            """,
+                (node_id, node_id, node_id),
+            ).fetchall()
 
             results = []
             for row in rows:
@@ -531,15 +544,17 @@ class MemoryTree:
                 results.append(node)
             return results
 
-    def create_edge(self, source_id: str, target_id: str,
-                    relation: str = "related", weight: float = 1.0) -> bool:
+    def create_edge(self, source_id: str, target_id: str, relation: str = "related", weight: float = 1.0) -> bool:
         """创建节点关联"""
         try:
             with self._conn() as conn:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO edges (source_id, target_id, relation, weight)
                     VALUES (?, ?, ?, ?)
-                """, (source_id, target_id, relation, weight))
+                """,
+                    (source_id, target_id, relation, weight),
+                )
                 conn.execute("UPDATE metadata SET value = (SELECT COUNT(*) FROM edges) WHERE key = 'edge_count'")
             return True
         except sqlite3.IntegrityError:
@@ -553,8 +568,7 @@ class MemoryTree:
         if target_dir is not None:
             target_dir = _confine_vault_dir(Path(target_dir))
             if target_dir is None:
-                return {"synced": 0, "failed": 0,
-                        "errors": ["拒绝写入系统敏感目录（路径遍历防护）"]}
+                return {"synced": 0, "failed": 0, "errors": ["拒绝写入系统敏感目录（路径遍历防护）"]}
         if not target_dir:
             logger.warning("未设置 Obsidian 同步目标目录")
             return {"synced": 0, "failed": 0, "errors": []}
@@ -579,16 +593,22 @@ class MemoryTree:
                 node["tags"] = json.loads(node.get("tags", "[]"))
                 try:
                     file_path = self._write_obsidian_file(target_dir, node)
-                    conn.execute("""
+                    conn.execute(
+                        """
                         INSERT INTO sync_log (node_id, direction, status, file_path)
                         VALUES (?, 'to_obsidian', 'success', ?)
-                    """, (node["id"], str(file_path)))
+                    """,
+                        (node["id"], str(file_path)),
+                    )
                     stats["synced"] += 1
                 except Exception as e:
-                    conn.execute("""
+                    conn.execute(
+                        """
                         INSERT INTO sync_log (node_id, direction, status, error_msg)
                         VALUES (?, 'to_obsidian', 'failed', ?)
-                    """, (node["id"], str(e)))
+                    """,
+                        (node["id"], str(e)),
+                    )
                     stats["failed"] += 1
                     stats["errors"].append(str(e))
 
@@ -614,22 +634,22 @@ class MemoryTree:
         target_dir.mkdir(parents=True, exist_ok=True)
 
         # 文件名（安全处理）
-        safe_title = re.sub(r'[<>:"/\\|?*]', '_', node["title"])[:80]
+        safe_title = re.sub(r'[<>:"/\\|?*]', "_", node["title"])[:80]
         file_path = target_dir / f"{safe_title}.md"
 
         # 构建 frontmatter
         tags_yaml = "\n".join(f"  - {t}" for t in node["tags"])
         frontmatter = f"""---
-id: {node['id']}
-type: {node['type']}
-score: {node['score']}
-confidence: {node['confidence']}
+id: {node["id"]}
+type: {node["type"]}
+score: {node["score"]}
+confidence: {node["confidence"]}
 tags:
 {tags_yaml}
-parent: {node['parent_id'] or ''}
-source: {node['source']}
-created: {node['created_at'][:10]}
-updated: {node['updated_at'][:10]}
+parent: {node["parent_id"] or ""}
+source: {node["source"]}
+created: {node["created_at"][:10]}
+updated: {node["updated_at"][:10]}
 ---
 
 """
@@ -645,8 +665,7 @@ updated: {node['updated_at'][:10]}
         if source_dir is not None:
             source_dir = _confine_vault_dir(Path(source_dir))
             if source_dir is None:
-                return {"synced": 0, "failed": 0,
-                        "errors": ["拒绝读取系统敏感目录（路径遍历防护）"]}
+                return {"synced": 0, "failed": 0, "errors": ["拒绝读取系统敏感目录（路径遍历防护）"]}
         if not source_dir or not source_dir.exists():
             return {"synced": 0, "failed": 0, "errors": ["源目录不存在"]}
 
@@ -675,13 +694,13 @@ updated: {node['updated_at'][:10]}
             return None
 
         yaml_text = content[3:end]
-        body = content[end + 3:].strip()
+        body = content[end + 3 :].strip()
         frontmatter = {}
         for line in yaml_text.strip().split("\n"):
             if ":" in line:
                 key, _, value = line.partition(":")
                 key = key.strip()
-                value = value.strip().strip('"\'')
+                value = value.strip().strip("\"'")
                 if key == "tags":
                     continue  # 单独处理
                 frontmatter[key] = value
@@ -695,7 +714,7 @@ updated: {node['updated_at'][:10]}
                 continue
             if in_tags:
                 if line.strip().startswith("- "):
-                    tags.append(line.strip()[2:].strip().strip('"\''))
+                    tags.append(line.strip()[2:].strip().strip("\"'"))
                 else:
                     in_tags = False
 
@@ -726,32 +745,49 @@ updated: {node['updated_at'][:10]}
         now = datetime.now().isoformat()
 
         with self._conn() as conn:
-            existing = conn.execute(
-                "SELECT id FROM nodes WHERE id = ?", (node["id"],)
-            ).fetchone()
+            existing = conn.execute("SELECT id FROM nodes WHERE id = ?", (node["id"],)).fetchone()
 
             if existing:
-                conn.execute("""
+                conn.execute(
+                    """
                     UPDATE nodes SET title=?, content=?, score=?, tags=?,
                            confidence=?, updated_at=?
                     WHERE id=?
-                """, (node["title"], node["content"], node["score"],
-                      tags_json, node["confidence"], now, node["id"]))
+                """,
+                    (node["title"], node["content"], node["score"], tags_json, node["confidence"], now, node["id"]),
+                )
             else:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO nodes (id, type, title, content, score, tags,
                                        parent_id, source, confidence,
                                        created_at, updated_at, accessed_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (node["id"], node["type"], node["title"], node["content"],
-                      node["score"], tags_json, node["parent_id"],
-                      node["source"], node["confidence"], now, now, now))
+                """,
+                    (
+                        node["id"],
+                        node["type"],
+                        node["title"],
+                        node["content"],
+                        node["score"],
+                        tags_json,
+                        node["parent_id"],
+                        node["source"],
+                        node["confidence"],
+                        now,
+                        now,
+                        now,
+                    ),
+                )
 
             # 同步日志
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO sync_log (node_id, direction, status)
                 VALUES (?, 'to_sqlite', 'success')
-            """, (node["id"],))
+            """,
+                (node["id"],),
+            )
 
     # ── 评分与热度 ──
 
@@ -768,36 +804,31 @@ updated: {node['updated_at'][:10]}
             max_access = max((r["access_count"] for r in rows), default=1)
             for row in rows:
                 # 时效因子（越新越高）
-                days_since_update = (now - datetime.fromisoformat(
-                    row["accessed_at"] or row["updated_at"])).days
+                days_since_update = (now - datetime.fromisoformat(row["accessed_at"] or row["updated_at"])).days
                 recency = max(0, 1 - days_since_update / 90)
 
                 # 频率因子
                 frequency = row["access_count"] / max_access
 
                 # 新评分 = 原评分 * 0.5 + 时效 * 0.3 + 频率 * 0.2
-                new_score = (
-                    row["score"] * 0.5
-                    + recency * 100 * 0.3
-                    + frequency * 100 * 0.2
-                )
+                new_score = row["score"] * 0.5 + recency * 100 * 0.3 + frequency * 100 * 0.2
                 new_score = max(0, min(100, new_score))
 
-                conn.execute(
-                    "UPDATE nodes SET score = ? WHERE id = ?",
-                    (new_score, row["id"])
-                )
+                conn.execute("UPDATE nodes SET score = ? WHERE id = ?", (new_score, row["id"]))
 
         logger.info("评分重算完成")
 
     def get_hot_nodes(self, limit: int = 50) -> list[dict[str, Any]]:
         """获取热点节点（高分 + 高频访问）"""
         with self._conn() as conn:
-            rows = conn.execute("""
+            rows = conn.execute(
+                """
                 SELECT * FROM nodes
                 ORDER BY score DESC, access_count DESC
                 LIMIT ?
-            """, (limit,)).fetchall()
+            """,
+                (limit,),
+            ).fetchall()
             results = []
             for row in rows:
                 node = dict(row)
@@ -822,8 +853,7 @@ updated: {node['updated_at'][:10]}
                 "total_nodes": total,
                 "total_edges": edges,
                 "db_size_kb": db_size / 1024,
-                "by_type": {r["type"]: {"count": r["cnt"], "avg_score": round(r["avg_score"], 1)}
-                           for r in by_type},
+                "by_type": {r["type"]: {"count": r["cnt"], "avg_score": round(r["avg_score"], 1)} for r in by_type},
             }
 
     # ── 工具 ──
@@ -852,16 +882,22 @@ updated: {node['updated_at'][:10]}
 def test():
     """测试 Memory Tree 基本功能"""
     import tempfile
+
     db_path = Path(tempfile.mkdtemp()) / "test_memory.db"
     mt = MemoryTree(db_path)
 
     # 创建测试节点
-    node1 = mt.create_node("statute", "大气污染防治法", "大气污染防治法内容摘要...",
-                           tags=["env/air"], score=95.0, source="flowwiki")
-    node2 = mt.create_node("case", "XX公司超标排放大气污染物案",
-                           "某公司超标排放大气污染物被处罚...",
-                           tags=["env/air", "enforcement/penalty"], score=80.0,
-                           parent_id=node1["id"])
+    node1 = mt.create_node(
+        "statute", "大气污染防治法", "大气污染防治法内容摘要...", tags=["env/air"], score=95.0, source="flowwiki"
+    )
+    node2 = mt.create_node(
+        "case",
+        "XX公司超标排放大气污染物案",
+        "某公司超标排放大气污染物被处罚...",
+        tags=["env/air", "enforcement/penalty"],
+        score=80.0,
+        parent_id=node1["id"],
+    )
 
     print(f"节点数: {mt.get_stats()['total_nodes']}")
     print(f"节点1: {node1['id']} - {node1['title']} ({node1['score']}分)")
@@ -884,9 +920,11 @@ def test():
     # 清理
     mt.db_path = None  # 确保无连接残留
     import gc
+
     gc.collect()
     import shutil
     import time
+
     time.sleep(0.1)
     try:
         shutil.rmtree(db_path.parent)

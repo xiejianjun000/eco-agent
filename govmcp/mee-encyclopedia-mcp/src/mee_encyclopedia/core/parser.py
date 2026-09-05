@@ -1,4 +1,5 @@
 """HTML / 链接 / 表格解析工具。"""
+
 from __future__ import annotations
 
 import re

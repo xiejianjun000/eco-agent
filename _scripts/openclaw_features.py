@@ -11,8 +11,8 @@ openclaw_features.py — ECO AGENT OpenClaw 对标补全
   from _scripts.openclaw_features import PlanRegistry, MCPGate, SkillLoader
 """
 
-import re
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # 1. Plan-as-Tool
 # ═══════════════════════════════════════
 
+
 class PlanRegistry:
     """执法流程注册表——将多步执法流程注册为 LLM 可调用工具"""
 
@@ -33,30 +34,42 @@ class PlanRegistry:
         self._load_defaults()
 
     def _load_defaults(self):
-        self.register("普通处罚流程", {
-            "description": "一般行政处罚的完整流程（立案→调查→告知→决定→送达）",
-            "steps": ["案源登记", "立案审批", "调查取证", "告知听证", "法制审核", "处罚决定", "送达执行", "结案归档"],
-            "estimated_time": "15-30 工作日",
-            "risk_level": "medium",
-        })
-        self.register("简易处罚流程", {
-            "description": "对公民200元以下/法人3000元以下罚款的简易程序",
-            "steps": ["现场执法", "告知", "当场处罚", "送达", "结案"],
-            "estimated_time": "当场完成",
-            "risk_level": "low",
-        })
-        self.register("按日计罚流程", {
-            "description": "对拒不改正的违法行为按日连续处罚",
-            "steps": ["复查确认未改正", "核算计罚天数", "制作按日计罚决定", "送达", "结案"],
-            "estimated_time": "5-10 工作日",
-            "risk_level": "high",
-        })
-        self.register("移送公安流程", {
-            "description": "涉嫌环境犯罪案件移送公安机关",
-            "steps": ["案件审查", "负责人审批", "制作移送书", "移送公安", "跟踪反馈"],
-            "estimated_time": "3-7 工作日",
-            "risk_level": "high",
-        })
+        self.register(
+            "普通处罚流程",
+            {
+                "description": "一般行政处罚的完整流程（立案→调查→告知→决定→送达）",
+                "steps": ["案源登记", "立案审批", "调查取证", "告知听证", "法制审核", "处罚决定", "送达执行", "结案归档"],
+                "estimated_time": "15-30 工作日",
+                "risk_level": "medium",
+            },
+        )
+        self.register(
+            "简易处罚流程",
+            {
+                "description": "对公民200元以下/法人3000元以下罚款的简易程序",
+                "steps": ["现场执法", "告知", "当场处罚", "送达", "结案"],
+                "estimated_time": "当场完成",
+                "risk_level": "low",
+            },
+        )
+        self.register(
+            "按日计罚流程",
+            {
+                "description": "对拒不改正的违法行为按日连续处罚",
+                "steps": ["复查确认未改正", "核算计罚天数", "制作按日计罚决定", "送达", "结案"],
+                "estimated_time": "5-10 工作日",
+                "risk_level": "high",
+            },
+        )
+        self.register(
+            "移送公安流程",
+            {
+                "description": "涉嫌环境犯罪案件移送公安机关",
+                "steps": ["案件审查", "负责人审批", "制作移送书", "移送公安", "跟踪反馈"],
+                "estimated_time": "3-7 工作日",
+                "risk_level": "high",
+            },
+        )
 
     def register(self, name: str, plan: dict) -> bool:
         self._plans[name] = plan
@@ -71,35 +84,50 @@ class PlanRegistry:
         q = query.lower()
         for name, plan in self._plans.items():
             score = 0
-            if "简易" in q and "简易" in name: score += 3
-            if "普通" in q and "普通" in name: score += 3
-            if "公安" in q and "移送" in name: score += 3
-            if "按日" in q and "按日" in name: score += 3
-            if "处罚" in q and "处罚" in name: score += 1
-            if "罚款" in q and ("简易" in name or "普通" in name): score += 1
+            if "简易" in q and "简易" in name:
+                score += 3
+            if "普通" in q and "普通" in name:
+                score += 3
+            if "公安" in q and "移送" in name:
+                score += 3
+            if "按日" in q and "按日" in name:
+                score += 3
+            if "处罚" in q and "处罚" in name:
+                score += 1
+            if "罚款" in q and ("简易" in name or "普通" in name):
+                score += 1
             if score > 0:
                 results.append({"name": name, "score": score, "plan": plan})
         results.sort(key=lambda x: -x["score"])
-        return [{"name": r["name"], "description": r["plan"]["description"],
-                 "steps": r["plan"]["steps"], "estimated_time": r["plan"]["estimated_time"],
-                 "risk_level": r["plan"]["risk_level"]} for r in results]
+        return [
+            {
+                "name": r["name"],
+                "description": r["plan"]["description"],
+                "steps": r["plan"]["steps"],
+                "estimated_time": r["plan"]["estimated_time"],
+                "risk_level": r["plan"]["risk_level"],
+            }
+            for r in results
+        ]
 
     def to_tool_schema(self) -> list[dict]:
         """输出 OpenAI Function Calling 格式"""
-        return [{
-            "type": "function",
-            "function": {
-                "name": "suggest_plan",
-                "description": "根据执法场景推荐合适的执法流程",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {"type": "string", "description": "执法场景描述，如'某企业超标排污'"},
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": "suggest_plan",
+                    "description": "根据执法场景推荐合适的执法流程",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string", "description": "执法场景描述，如'某企业超标排污'"},
+                        },
+                        "required": ["query"],
                     },
-                    "required": ["query"],
                 },
             }
-        }]
+        ]
 
     def list_plans(self) -> list[str]:
         return list(self._plans.keys())
@@ -109,12 +137,20 @@ class PlanRegistry:
 # 2. Per-Agent MCP — 工具可见性管控
 # ═══════════════════════════════════════
 
+
 class MCPGate:
     """Per-Agent MCP 权限门——控制每个 Agent 能看到哪些 MCP 工具"""
 
     # 每个 Agent 可见的 MCP 工具白名单
     AGENT_MCP_MAP = {
-        "orchestrator": ["eco_search", "eco_retrieve", "eco_statute_query", "eco_graph_query", "eco_list_statutes", "list_tools"],
+        "orchestrator": [
+            "eco_search",
+            "eco_retrieve",
+            "eco_statute_query",
+            "eco_graph_query",
+            "eco_list_statutes",
+            "list_tools",
+        ],
         "searcher": ["eco_search", "eco_retrieve", "eco_statute_query", "eco_list_statutes"],
         "reviewer": ["eco_retrieve", "eco_statute_query"],
         "writer": ["eco_retrieve"],
@@ -166,6 +202,7 @@ class MCPGate:
 # 3. Progressive Skill — 三级加载
 # ═══════════════════════════════════════
 
+
 class SkillLoader:
     """渐进式 Skill 加载——三级加载：meta → instructions → resources"""
 
@@ -210,13 +247,13 @@ class SkillLoader:
                 for line in content[3:end].strip().split("\n"):
                     if ":" in line:
                         k, _, v = line.partition(":")
-                        meta[k.strip()] = v.strip().strip('"\'')
+                        meta[k.strip()] = v.strip().strip("\"'")
         return meta
 
     def _extract_instructions(self, content: str) -> str:
         """提取 instructions 层——核心操作指令"""
         # 找 ### Instructions 或 ## Instructions 段落
-        patterns = [r'#+\s*Instructions\s*(.*?)(?=##|\Z)', r'#+\s*操作步骤\s*(.*?)(?=##|\Z)']
+        patterns = [r"#+\s*Instructions\s*(.*?)(?=##|\Z)", r"#+\s*操作步骤\s*(.*?)(?=##|\Z)"]
         for p in patterns:
             m = re.search(p, content, re.DOTALL)
             if m:
@@ -226,9 +263,9 @@ class SkillLoader:
     def _extract_resources(self, content: str) -> list[str]:
         """提取 resources 层——引用的资源文件"""
         resources = []
-        for link in re.findall(r'\[\[([^\]]+)\]\]', content):
+        for link in re.findall(r"\[\[([^\]]+)\]\]", content):
             resources.append(link)
-        for link in re.findall(r'\((raw/|[._]scripts/|[._]skills/[^)]+)\)', content):
+        for link in re.findall(r"\((raw/|[._]scripts/|[._]skills/[^)]+)\)", content):
             resources.append(link)
         return resources
 
@@ -286,9 +323,10 @@ skill_loader = SkillLoader()
 
 # ===== 测试 =====
 
+
 def test():
     print("[TEST] OpenClaw 三项能力验证")
-    print(f"  {'='*40}")
+    print(f"  {'=' * 40}")
 
     # 1. Plan-as-Tool
     plans = plan_registry.list_plans()
@@ -314,7 +352,7 @@ def test():
     skills_with_desc = skill_loader.search_by_meta("name", "query-skill")
     print(f"  按name查询query-skill: {'找到' if skills_with_desc else '未找到'}")
 
-    print(f"\n{'='*40}")
+    print(f"\n{'=' * 40}")
     print("[OK] OpenClaw 三项全部完成")
 
 

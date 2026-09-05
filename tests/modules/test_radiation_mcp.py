@@ -18,16 +18,15 @@ SERVER = ROOT / "_scripts" / "radiation-mcp.py"
 
 
 def _rpc(request: dict, timeout: int = 120) -> dict:
-    r = subprocess.run([sys.executable, str(SERVER)],
-                       input=json.dumps(request) + "\n",
-                       capture_output=True, text=True, timeout=timeout)
+    r = subprocess.run(
+        [sys.executable, str(SERVER)], input=json.dumps(request) + "\n", capture_output=True, text=True, timeout=timeout
+    )
     assert r.returncode == 0, r.stderr
     return json.loads(r.stdout.strip().splitlines()[-1])
 
 
 def test_initialize():
-    resp = _rpc({"jsonrpc": "2.0", "id": 1, "method": "initialize",
-                 "params": {"protocolVersion": "2024-11-05"}})
+    resp = _rpc({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}})
     assert resp["result"]["serverInfo"]["name"] == "radiation-govmcp"
 
 
@@ -39,9 +38,10 @@ def test_tools_list():
 
 def test_provinces_real():
     """官方直连：31 省剂量率汇总（网络不可达时如实报错）。"""
-    resp = _rpc({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
-                 "params": {"name": "radiation_provinces", "arguments": {}}},
-                timeout=120)
+    resp = _rpc(
+        {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "radiation_provinces", "arguments": {}}},
+        timeout=120,
+    )
     content = json.loads(resp["result"]["content"][0]["text"])
     if "error" in content:
         assert "失败" in content["error"]
@@ -53,9 +53,15 @@ def test_provinces_real():
 
 
 def test_stations_hunan():
-    resp = _rpc({"jsonrpc": "2.0", "id": 4, "method": "tools/call",
-                 "params": {"name": "radiation_stations", "arguments": {"province": "湖南"}}},
-                timeout=120)
+    resp = _rpc(
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {"name": "radiation_stations", "arguments": {"province": "湖南"}},
+        },
+        timeout=120,
+    )
     content = json.loads(resp["result"]["content"][0]["text"])
     if "error" not in content:
         assert content["count"] >= 1
@@ -63,15 +69,20 @@ def test_stations_hunan():
 
 
 def test_unknown_province():
-    resp = _rpc({"jsonrpc": "2.0", "id": 5, "method": "tools/call",
-                 "params": {"name": "radiation_stations", "arguments": {"province": "不存在省"}}})
+    resp = _rpc(
+        {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {"name": "radiation_stations", "arguments": {"province": "不存在省"}},
+        }
+    )
     content = json.loads(resp["result"]["content"][0]["text"])
     assert "未知省份" in content["error"]
 
 
 def test_baseline():
-    resp = _rpc({"jsonrpc": "2.0", "id": 6, "method": "tools/call",
-                 "params": {"name": "radiation_baseline", "arguments": {}}})
+    resp = _rpc({"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "radiation_baseline", "arguments": {}}})
     content = json.loads(resp["result"]["content"][0]["text"])
     assert "39.3-403.5" in content["baseline_range"]
 

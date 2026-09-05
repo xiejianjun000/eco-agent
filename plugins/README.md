@@ -37,10 +37,12 @@ def load(ctx):
     ctx.log("loaded")
     return {"ok": True}
 
+
 def unload(ctx):
     """卸载时执行：清理副作用。"""
     ctx.log("unloaded")
     return {"ok": True}
+
 
 def echo(text: str) -> str:
     return text

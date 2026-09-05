@@ -9,12 +9,12 @@ Eco Agent 并行测试执行器
   python tests/run_all.py --report-only       # 仅重新生成报告（不跑测试）
 """
 
+import re
+import subprocess
 import sys
 import time
-import subprocess
-import re
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 REPORT_DIR = ROOT / "tests" / "reports"
@@ -29,8 +29,8 @@ def discover_tests():
     for f in files:
         # 解析测试类和方法
         content = f.read_text("utf-8", errors="replace")
-        classes = re.findall(r'class\s+(\w+)\s*:', content)
-        methods = re.findall(r'def\s+(test_\w+)\s*\(', content)
+        classes = re.findall(r"class\s+(\w+)\s*:", content)
+        methods = re.findall(r"def\s+(test_\w+)\s*\(", content)
         modules[f.stem] = {"file": str(f), "classes": classes, "methods": methods}
     return modules
 
@@ -39,6 +39,7 @@ def _xdist_available() -> bool:
     """检测 pytest-xdist 是否可用（决定能否用 -n auto 并行）"""
     try:
         import xdist  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -53,17 +54,20 @@ def run_pytest(args: list = None) -> dict:
     args = list(args or [])
     if "-n" in args and not _xdist_available():
         i = args.index("-n")
-        del args[i:i + 2]
+        del args[i : i + 2]
         print("[Harness] pytest-xdist 未安装，回退串行执行")
     cmd.extend(args)
 
     # 默认参数
-    cmd.extend([
-        "-v",
-        "--tb=short",
-        "-p", "no:cacheprovider",
-        str(TEST_MODULES_DIR),
-    ])
+    cmd.extend(
+        [
+            "-v",
+            "--tb=short",
+            "-p",
+            "no:cacheprovider",
+            str(TEST_MODULES_DIR),
+        ]
+    )
 
     start = time.time()
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=str(ROOT))
@@ -73,11 +77,15 @@ def run_pytest(args: list = None) -> dict:
     # 逐字段独立匹配——存量 bug：要求 "passed" 与 "failed" 出现在同一行才解析，
     # 全通过时该行不含 "failed"，导致永远解析为 0。
     passed = failed = skipped = errors = 0
-    summary_lines = [l for l in result.stdout.split("\n") if re.search(r"=+.*\bin\b.*=+\s*$", l)]
+    summary_lines = [line for line in result.stdout.split("\n") if re.search(r"=+.*\bin\b.*=+\s*$", line)]
     if summary_lines:
         line = summary_lines[-1]
-        for key, pat in (("passed", r"(\d+)\s+passed"), ("failed", r"(\d+)\s+failed"),
-                         ("skipped", r"(\d+)\s+skipped"), ("errors?", r"(\d+)\s+errors?")):
+        for key, pat in (
+            ("passed", r"(\d+)\s+passed"),
+            ("failed", r"(\d+)\s+failed"),
+            ("skipped", r"(\d+)\s+skipped"),
+            ("errors?", r"(\d+)\s+errors?"),
+        ):
             m = re.search(pat, line)
             if not m:
                 continue
@@ -94,7 +102,9 @@ def run_pytest(args: list = None) -> dict:
     collection_failed = result.returncode not in (0, 1) and passed + failed + skipped == 0
 
     return {
-        "passed": passed, "failed": failed, "skipped": skipped,
+        "passed": passed,
+        "failed": failed,
+        "skipped": skipped,
         "errors": errors + (1 if collection_failed else 0),
         "returncode": result.returncode,
         "elapsed_s": round(elapsed, 2),
@@ -156,9 +166,7 @@ def update_readme_badge(pass_rate: float, total: int):
     content = readme_path.read_text("utf-8", errors="replace")
     color = "brightgreen" if pass_rate >= 95 else "yellow" if pass_rate >= 80 else "red"
 
-    new_badges = (
-        f"[![Tests](https://img.shields.io/badge/tests-{total}%20passed-{color})](TEST_LOG.md)"
-    )
+    new_badges = f"[![Tests](https://img.shields.io/badge/tests-{total}%20passed-{color})](TEST_LOG.md)"
 
     # Replace or insert badges
     badge_pattern = r"\[!\[Tests\].*?\]\(TEST_LOG\.md\)"
@@ -183,16 +191,16 @@ def update_test_log(results: dict, report_file: str):
     total = results["passed"] + results["failed"] + results["skipped"] + results["errors"]
     pass_rate = round(results["passed"] / max(total, 1) * 100, 1)
 
-    entry = f"""## [{timestamp.strftime('%Y-%m-%d %H:%M')}] 测试运行 #{count_entries(log_path) + 1}
+    entry = f"""## [{timestamp.strftime("%Y-%m-%d %H:%M")}] 测试运行 #{count_entries(log_path) + 1}
 
 | 指标 | 数值 |
 |:-----|:----:|
 | 总用例 | {total} |
-| 通过 | {results['passed']} |
-| 失败 | {results['failed']} |
-| 跳过 | {results['skipped']} |
+| 通过 | {results["passed"]} |
+| 失败 | {results["failed"]} |
+| 跳过 | {results["skipped"]} |
 | 通过率 | {pass_rate}% |
-| 耗时 | {results['elapsed_s']}s |
+| 耗时 | {results["elapsed_s"]}s |
 | 报告 | [{report_file.name}](reports/{report_file.name}) |
 
 ---
@@ -219,9 +227,9 @@ def count_entries(log_path: Path) -> int:
     return content.count("## [")
 
 
-
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="Eco Agent 并行测试执行器")
     parser.add_argument("--quick", action="store_true", help="快速模式")
     parser.add_argument("--ci", action="store_true", help="CI 模式")
@@ -255,9 +263,9 @@ def main():
 
     # 打印摘要
     total_all = results["passed"] + results["failed"] + results["skipped"] + results["errors"]
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print("  Eco Agent 测试完成")
-    print(f"  {'='*50}")
+    print(f"  {'=' * 50}")
     print(f"  总用例: {total_all}")
     print(f"  通过:   {results['passed']}")
     print(f"  失败:   {results['failed']}")
@@ -265,7 +273,7 @@ def main():
     print(f"  耗时:   {results['elapsed_s']}s")
     print(f"  通过率: {pass_rate}%")
     print(f"  报告:   {report_file}")
-    print(f"  {'='*50}")
+    print(f"  {'=' * 50}")
 
     if results["failed"] > 0 or results["errors"] > 0:
         sys.exit(1)

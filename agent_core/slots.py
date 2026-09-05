@@ -14,8 +14,6 @@ GET /api/v1/slots 动态渲染标签与内容（数据经 GET /api/v1/slots/{id}
 from __future__ import annotations
 
 import threading
-from typing import Any
-from collections.abc import Callable
 
 # 已知挂点
 SLOT_NAMES = ("side.tab",)
@@ -44,12 +42,14 @@ class SlotRegistry:
             out = []
             for name, panels in slots.items():
                 for p in panels:
-                    out.append({
-                        "slot": name,
-                        "id": p.get("id"),
-                        "title": p.get("title"),
-                        "description": p.get("description", ""),
-                    })
+                    out.append(
+                        {
+                            "slot": name,
+                            "id": p.get("id"),
+                            "title": p.get("title"),
+                            "description": p.get("description", ""),
+                        }
+                    )
             return out
 
     def get_data(self, panel_id: str) -> dict:

@@ -8,6 +8,7 @@
 凭据不内置：HUNAN_AIR_API_PASSWORD 需从官网首页底部 iframe
 （https://hn.leitesoft.cn:8031/HN/*.html）页面 JS 中提取后注入环境变量。
 """
+
 from __future__ import annotations
 
 import json
@@ -93,9 +94,7 @@ def air_hourly(city: str, order_by: str = "ASC") -> list[dict]:
     """指定城市逐小时空气质量序列。"""
     if not city:
         raise ValueError("city 为必填参数")
-    rows = _normalize_rows(
-        _api_get("MobileApp/GetCurHourlyByCity", {"city": city, "orderBy": order_by})
-    )
+    rows = _normalize_rows(_api_get("MobileApp/GetCurHourlyByCity", {"city": city, "orderBy": order_by}))
     return rows
 
 

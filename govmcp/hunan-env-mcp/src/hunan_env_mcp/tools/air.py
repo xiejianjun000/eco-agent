@@ -1,4 +1,5 @@
 """空气质量类 MCP 工具（数据源：hn.leitesoft.cn:9020 HNAirWebAPI）。"""
+
 from __future__ import annotations
 
 from ..datasource import air_api

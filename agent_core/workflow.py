@@ -27,7 +27,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger("eco.workflow")
 
@@ -115,8 +114,7 @@ print(json.dumps({"result": _result, "log": _log}, ensure_ascii=False, default=s
 '''
 
 
-def run_workflow(script: str, args: dict | None = None,
-                 timeout: int = DEFAULT_TIMEOUT) -> dict:
+def run_workflow(script: str, args: dict | None = None, timeout: int = DEFAULT_TIMEOUT) -> dict:
     """执行编排脚本。返回 {ok, result, log, duration_ms}。"""
     args = args or {}
     t0 = time.time()
@@ -124,21 +122,29 @@ def run_workflow(script: str, args: dict | None = None,
         proc = subprocess.run(
             [sys.executable, "-c", _WRAPPER, script],
             input=json.dumps(args, ensure_ascii=False),
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
             cwd=str(ROOT),
         )
         duration_ms = int((time.time() - t0) * 1000)
         out = proc.stdout.strip()
         if not out:
-            return {"ok": False, "error": f"无输出（exit={proc.returncode}）",
-                    "stderr": proc.stderr[-800:], "duration_ms": duration_ms}
+            return {
+                "ok": False,
+                "error": f"无输出（exit={proc.returncode}）",
+                "stderr": proc.stderr[-800:],
+                "duration_ms": duration_ms,
+            }
         payload = json.loads(out)
-        return {"ok": proc.returncode == 0, "result": payload.get("result"),
-                "log": payload.get("log", []), "duration_ms": duration_ms,
-                "stderr_tail": proc.stderr[-500:] if proc.returncode != 0 else ""}
+        return {
+            "ok": proc.returncode == 0,
+            "result": payload.get("result"),
+            "log": payload.get("log", []),
+            "duration_ms": duration_ms,
+            "stderr_tail": proc.stderr[-500:] if proc.returncode != 0 else "",
+        }
     except subprocess.TimeoutExpired:
-        return {"ok": False, "error": f"超时（>{timeout}s），已强制终止",
-                "duration_ms": int((time.time() - t0) * 1000)}
+        return {"ok": False, "error": f"超时（>{timeout}s），已强制终止", "duration_ms": int((time.time() - t0) * 1000)}
     except Exception as e:  # noqa: BLE001
-        return {"ok": False, "error": f"{type(e).__name__}: {e}",
-                "duration_ms": int((time.time() - t0) * 1000)}
+        return {"ok": False, "error": f"{type(e).__name__}: {e}", "duration_ms": int((time.time() - t0) * 1000)}

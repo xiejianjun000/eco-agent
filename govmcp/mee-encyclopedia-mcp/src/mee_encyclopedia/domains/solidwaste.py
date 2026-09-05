@@ -1,4 +1,5 @@
 """固废危废领域：危废名录查询、固废系统入口。"""
+
 from __future__ import annotations
 
 import logging
@@ -19,6 +20,7 @@ def search_waste_category(fetcher, cache, keyword: str) -> dict:
     try:
         html = fetcher.get_text(SOLID_WASTE)
         from ..core.parser import parse_links
+
         links = parse_links(html, base_url=SOLID_WASTE, limit=100)
         items = [lk for lk in links if keyword in lk["title"]][:10]
         result["items"] = items

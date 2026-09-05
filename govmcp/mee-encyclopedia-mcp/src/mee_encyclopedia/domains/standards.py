@@ -1,4 +1,5 @@
 """标准领域：生态环境标准目录检索、标准详情。"""
+
 from __future__ import annotations
 
 import logging
@@ -19,6 +20,7 @@ def search_standard(fetcher, cache, keyword: str, limit: int = 10) -> dict:
     try:
         html = fetcher.get_text(STD_INDEX)
         from ..core.parser import parse_links
+
         links = parse_links(html, base_url=STD_INDEX, limit=200)
         items = [lk for lk in links if keyword in lk["title"]][:limit]
         result["items"] = items
@@ -41,6 +43,7 @@ def read_standard(fetcher, cache, standard_no: str) -> dict:
     try:
         html = fetcher.get_text(STD_INDEX)
         from ..core.parser import parse_links
+
         links = parse_links(html, base_url=STD_INDEX, limit=300)
         m = re.search(r"(\d{3,4})", no)
         num = m.group(1) if m else ""

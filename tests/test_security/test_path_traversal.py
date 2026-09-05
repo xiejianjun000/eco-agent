@@ -4,17 +4,17 @@
 校验 vault 路径：resolve 消解 ../ 与软链后，命中系统敏感目录即拒绝；
 `root` 参数提供白名单约束。
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 
-from agent_core.utils.vault_validator import validate_vault_path
 from _scripts.memory_tree import MemoryTree
+from agent_core.utils.vault_validator import validate_vault_path
 
 
 def test_system_paths_rejected():
-    for p in ("/etc/passwd", "/etc", "/proc", "/sys", "/dev", "/usr",
-              "/root", "/Library", "/System"):
+    for p in ("/etc/passwd", "/etc", "/proc", "/sys", "/dev", "/usr", "/root", "/Library", "/System"):
         assert validate_vault_path(p) is None, f"应拒绝系统路径: {p}"
 
 

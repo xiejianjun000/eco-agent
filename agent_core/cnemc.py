@@ -29,8 +29,7 @@ _REQUEST_HEADERS = {
     "Origin": "https://air.cnemc.cn:18007",
     "Referer": "https://air.cnemc.cn:18007/",
     "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     ),
     "X-Requested-With": "XMLHttpRequest",
 }
@@ -68,9 +67,7 @@ def _fetch_all_stations() -> tuple[list[dict[str, Any]], float, bool]:
     for attempt in range(MAX_RETRIES + 1):
         try:
             with httpx.Client(timeout=REQUEST_TIMEOUT, follow_redirects=True) as client:
-                resp = client.post(
-                    CNEMC_REALTIME_URL, content=b"", headers=_REQUEST_HEADERS
-                )
+                resp = client.post(CNEMC_REALTIME_URL, content=b"", headers=_REQUEST_HEADERS)
                 resp.raise_for_status()
                 data = resp.json()
             if not isinstance(data, list) or not data:
@@ -194,9 +191,7 @@ def get_city_realtime_air_quality(city: str) -> dict[str, Any]:
     records, fetched_at, from_cache = _fetch_all_stations()
     matched = _match_city(records, city)
     if not matched:
-        raise CNEMCError(
-            f"CNEMC 实时数据中未匹配到城市 '{city}', 请确认城市名(支持全国地市级城市)。"
-        )
+        raise CNEMCError(f"CNEMC 实时数据中未匹配到城市 '{city}', 请确认城市名(支持全国地市级城市)。")
 
     # 城市级浓度 = 各站点滑动均值(24h / O3 8h)的算术平均
     field_map = {
@@ -239,9 +234,7 @@ def get_city_realtime_air_quality(city: str) -> dict[str, Any]:
         "main_pollutant": main_pollutant,
         "publish_time": publish_time,
         "data_source": "cache" if from_cache else "cnemc_realtime",
-        "cache_time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(fetched_at))
-        if from_cache
-        else None,
+        "cache_time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(fetched_at)) if from_cache else None,
     }
 
 

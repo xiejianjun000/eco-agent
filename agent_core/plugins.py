@@ -22,10 +22,10 @@ from __future__ import annotations
 import importlib.util
 import logging
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-from collections.abc import Callable
 
 import yaml  # type: ignore[import-untyped]
 
@@ -66,7 +66,8 @@ class PluginManifest:
                 risk_level=str(t.get("risk_level", "L3")).upper(),
                 approval_required=bool(t.get("approval_required", False)),
             )
-            for t in data.get("tools", []) if isinstance(t, dict) and t.get("name")
+            for t in data.get("tools", [])
+            if isinstance(t, dict) and t.get("name")
         ]
         manifest = cls(
             name=str(data.get("name", "")),
@@ -106,8 +107,7 @@ class PluginContext:
         self.tools: dict[str, Callable] = {}
         self.metadata: dict[str, Any] = {}
 
-    def register_tool(self, name: str, handler: Callable, description: str = "",
-                      risk_level: str = "L3") -> None:
+    def register_tool(self, name: str, handler: Callable, description: str = "", risk_level: str = "L3") -> None:
         if risk_level not in RISK_LEVELS:
             raise ValueError(f"风险级非法: {risk_level}")
         if name in self.tools:
@@ -149,13 +149,15 @@ class PluginManager:
             if entry.is_dir() and (entry / "plugin.yaml").is_file():
                 try:
                     manifest = PluginManifest.load(entry)
-                    out.append({
-                        "name": manifest.name,
-                        "version": manifest.version,
-                        "description": manifest.description,
-                        "dir": str(entry),
-                        "status": "loaded" if manifest.name in self._loaded else "available",
-                    })
+                    out.append(
+                        {
+                            "name": manifest.name,
+                            "version": manifest.version,
+                            "description": manifest.description,
+                            "dir": str(entry),
+                            "status": "loaded" if manifest.name in self._loaded else "available",
+                        }
+                    )
                 except (FileNotFoundError, ValueError) as e:
                     out.append({"name": entry.name, "dir": str(entry), "status": "invalid", "error": str(e)})
         return out
@@ -185,15 +187,14 @@ class PluginManager:
             return {"ok": False, "error": f"工具冲突（已被其他插件注册）: {conflicts}"}
 
         try:
-            spec = importlib.util.spec_from_file_location(
-                f"eco_plugin_{name}", entry_path)
+            spec = importlib.util.spec_from_file_location(f"eco_plugin_{name}", entry_path)
             if spec is None or spec.loader is None:
                 raise ImportError(f"无法加载插件入口: {entry_path}")
             module = importlib.util.module_from_spec(spec)
             sys.modules[spec.name] = module
             spec.loader.exec_module(module)
             load_fn = getattr(module, "load", None)
-            unload_fn = getattr(module, "unload", None)
+            getattr(module, "unload", None)
             if not callable(load_fn):
                 raise ImportError("handler 缺少 load(ctx) 入口")
         except Exception as e:  # noqa: BLE001 — 插件加载失败兜底
@@ -217,14 +218,22 @@ class PluginManager:
             self._tool_owner[tool_name] = name
 
         self._loaded[name] = LoadedPlugin(
-            manifest=manifest, dir=plugin_dir, context=ctx,
-            loaded_at=datetime.now().isoformat(), module=module,
+            manifest=manifest,
+            dir=plugin_dir,
+            context=ctx,
+            loaded_at=datetime.now().isoformat(),
+            module=module,
             status="loaded",
         )
         loaded_tools = sorted(ctx.tools.keys())
         logger.info("插件已加载: %s v%s, 工具=%s", name, manifest.version, loaded_tools)
-        return {"ok": True, "status": "loaded", "name": name, "tools": loaded_tools,
-                "result": result if isinstance(result, dict) else {}}
+        return {
+            "ok": True,
+            "status": "loaded",
+            "name": name,
+            "tools": loaded_tools,
+            "result": result if isinstance(result, dict) else {},
+        }
 
     def unload(self, name: str) -> dict:
         loaded = self._loaded.get(name)
@@ -234,7 +243,7 @@ class PluginManager:
             unload_fn = getattr(loaded.module, "unload", None)
             if callable(unload_fn):
                 unload_fn(loaded.context)
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             logger.exception("插件 unload() 执行失败: %s", name)
         for tool_name in loaded.context.tools:
             self._tool_owner.pop(tool_name, None)

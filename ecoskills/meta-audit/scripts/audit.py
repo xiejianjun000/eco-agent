@@ -22,8 +22,16 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 SKILLS_DIR = ROOT / "ecoskills"
 
 CHECK_LABELS = [
-    "frontmatter-name", "description 完整", "触发词", "风险标注",
-    "工作流", "决策表/清单", "输出格式", "引用纪律", "引用路径真实", "篇幅合理",
+    "frontmatter-name",
+    "description 完整",
+    "触发词",
+    "风险标注",
+    "工作流",
+    "决策表/清单",
+    "输出格式",
+    "引用纪律",
+    "引用路径真实",
+    "篇幅合理",
 ]
 
 
@@ -44,12 +52,17 @@ def audit_skill(name: str) -> dict:
     skill_dir = SKILLS_DIR / name
     md = skill_dir / "SKILL.md"
     if not md.exists():
-        return {"skill": name, "exists": False, "score": 0,
-                "checks": [{"item": "存在", "ok": False, "note": "SKILL.md 不存在"}]}
+        return {
+            "skill": name,
+            "exists": False,
+            "score": 0,
+            "checks": [{"item": "存在", "ok": False, "note": "SKILL.md 不存在"}],
+        }
     text = md.read_text(encoding="utf-8")
     meta, body = _parse_frontmatter(text)
 
     checks = []
+
     def add(item: str, ok: bool, note: str = "") -> None:
         checks.append({"item": item, "ok": ok, "note": note})
 
@@ -60,8 +73,11 @@ def audit_skill(name: str) -> dict:
     add("触发词", has_trigger, "description 含触发词" if "触发词" in desc else "无")
     risk = meta.get("risk_level", "")
     has_forbidden = any(k in body for k in ("禁用领域", "严格限制", "⚠️"))
-    add("风险标注", bool(risk) and (risk != "high" or has_forbidden),
-        f"risk_level={risk or '缺失'}" + ("，含禁用领域" if has_forbidden else "，无禁用领域"))
+    add(
+        "风险标注",
+        bool(risk) and (risk != "high" or has_forbidden),
+        f"risk_level={risk or '缺失'}" + ("，含禁用领域" if has_forbidden else "，无禁用领域"),
+    )
     add("工作流", bool(re.search(r"Step\s*\d", body)) or "工作流程" in body)
     add("决策表/清单", bool(re.search(r"^\|.+\|$", body, re.M)))
     add("输出格式", "输出格式" in body or "```" in body)
@@ -69,16 +85,13 @@ def audit_skill(name: str) -> dict:
     # 引用路径真实性：正文中出现的 references/xxx 或 scripts/xxx 必须在磁盘存在
     refs = set(re.findall(r"(?:references|scripts)/[\w./-]+", body))
     missing_refs = [r for r in refs if not (skill_dir / r).exists()]
-    add("引用路径真实", not missing_refs,
-        "缺失: " + ", ".join(missing_refs) if missing_refs else "全部存在")
+    add("引用路径真实", not missing_refs, "缺失: " + ", ".join(missing_refs) if missing_refs else "全部存在")
     # 篇幅上限 2026-08 由 8000 上调至 12000：gongwen-draft 正文 8623 字、含 16 份
     # references 与 15 个 scripts 的完整工作流，8000 上限过紧导致误伤合法长技能。
     add("篇幅合理", 300 <= len(body) <= 12000, f"正文 {len(body)} 字")
 
     score = sum(10 for c in checks if c["ok"])
-    return {"skill": name, "exists": True, "score": score,
-            "max": len(checks) * 10, "checks": checks,
-            "pass": score >= 70}
+    return {"skill": name, "exists": True, "score": score, "max": len(checks) * 10, "checks": checks, "pass": score >= 70}
 
 
 def main() -> None:
@@ -90,8 +103,7 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.all:
-        names = sorted(d.name for d in SKILLS_DIR.iterdir()
-                       if d.is_dir() and (d / "SKILL.md").exists())
+        names = sorted(d.name for d in SKILLS_DIR.iterdir() if d.is_dir() and (d / "SKILL.md").exists())
         results = [audit_skill(n) for n in names]
     else:
         if not args.target:
@@ -111,8 +123,7 @@ def main() -> None:
             for c in r["checks"]:
                 if not c["ok"]:
                     print(f"   ✗ {c['item']} — {c['note']}")
-        print(f"\n合计: {sum(1 for r in results if r.get('pass'))}/{len(results)} 通过"
-              f"（门槛 {args.min} 分）")
+        print(f"\n合计: {sum(1 for r in results if r.get('pass'))}/{len(results)} 通过（门槛 {args.min} 分）")
     sys.exit(0 if all(r.get("pass") for r in results) else 1)
 
 

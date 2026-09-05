@@ -34,25 +34,29 @@ async def list_documents() -> dict:
         for f in sorted(OUTPUT_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
             if f.is_file() and f.suffix.lower() in (".docx", ".pptx", ".xlsx", ".pdf"):
                 st = f.stat()
-                files.append({
-                    "name": f.name,
-                    "path": str(f),
-                    "size_kb": round(st.st_size / 1024, 1),
-                    "modified": st.st_mtime,
-                })
+                files.append(
+                    {
+                        "name": f.name,
+                        "path": str(f),
+                        "size_kb": round(st.st_size / 1024, 1),
+                        "modified": st.st_mtime,
+                    }
+                )
     # 回答产物（MD）并入文档列表：持久落盘，重启仍在
     art_dir = _artifacts_dir()
     artifacts = []
     if art_dir.is_dir():
         for f in sorted(art_dir.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True):
             st = f.stat()
-            artifacts.append({
-                "name": f.name,
-                "path": str(f),
-                "size_kb": round(st.st_size / 1024, 1),
-                "modified": st.st_mtime,
-                "kind": "artifact",
-            })
+            artifacts.append(
+                {
+                    "name": f.name,
+                    "path": str(f),
+                    "size_kb": round(st.st_size / 1024, 1),
+                    "modified": st.st_mtime,
+                    "kind": "artifact",
+                }
+            )
     return {"count": len(files) + len(artifacts), "files": files, "artifacts": artifacts}
 
 
@@ -68,8 +72,7 @@ async def read_artifact(name: str) -> dict:
         content = target.read_text(encoding="utf-8", errors="replace")
     except OSError as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"read failed: {e}") from e
-    return {"name": safe, "path": str(target), "content": content,
-            "size": target.stat().st_size}
+    return {"name": safe, "path": str(target), "content": content, "size": target.stat().st_size}
 
 
 @router.get("/documents/artifact/{name}/download")
@@ -79,8 +82,7 @@ async def download_artifact(name: str) -> FileResponse:
     target = art_dir / Path(name).name
     if not target.is_file():
         raise HTTPException(status_code=404, detail="artifact not found")
-    return FileResponse(str(target), filename=target.name,
-                        media_type="text/markdown")
+    return FileResponse(str(target), filename=target.name, media_type="text/markdown")
 
 
 @router.get("/documents/tools")

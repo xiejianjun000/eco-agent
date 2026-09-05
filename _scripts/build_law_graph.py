@@ -47,9 +47,7 @@ def main() -> None:
                 edges.append([num, target])
         if num % 200 == 0:
             print(f"  进度 {num}/{TOTAL}，已收集 {len(edges)} 条边")
-    out = {"count": len(edges), "edges": edges,
-           "built_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-           "failed": failed}
+    out = {"count": len(edges), "edges": edges, "built_at": time.strftime("%Y-%m-%d %H:%M:%S"), "failed": failed}
     OUT.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     print(f"完成: {len(edges)} 条边，耗时 {time.time() - t0:.1f}s，失败 {len(failed)} 条 → {OUT}")
 

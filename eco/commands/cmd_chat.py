@@ -2,18 +2,22 @@
 eco chat - CLAUDE/CODEX/HERMES pattern
   LLM <-> Tools -> Final answer
 """
-import sys
 
-_IS_WINDOWS = sys.platform.startswith("win")
 import logging
-logging.basicConfig(level=logging.WARNING)
+import sys
 
 from eco import __version__
 
+_IS_WINDOWS = sys.platform.startswith("win")
+
+logging.basicConfig(level=logging.WARNING)
+
+
 try:
+    from rich import box  # noqa: F401
     from rich.console import Console
     from rich.panel import Panel  # noqa: F401
-    from rich import box  # noqa: F401
+
     _console = Console()
     _HAVE_RICH = True
 except ImportError:
@@ -32,8 +36,10 @@ LOGO = r"""
    ╚══════╝ ╚═════╝ ╚═════╝    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚══╝   ╚═╝
 """
 
+
 def _build_messages(history, question, system_extra=""):
     from agent_core.prompt_engine import get_prompt_engine
+
     eng = get_prompt_engine()
     # system_extra 若已是 prompt_engine 产出（含安全层标记，如 workspace 注入路径），
     # 直接作为完整系统提示词，避免安全层重复拼接
@@ -42,6 +48,7 @@ def _build_messages(history, question, system_extra=""):
     else:
         system = eng.build_system_prompt(extra=system_extra)
     from eco.trace import get_tracer
+
     tracer = get_tracer()
     if getattr(tracer, "enabled", False):
         tracer.system_prompt(system, soul_loaded=getattr(eng.soul, "loaded", False))
@@ -51,10 +58,12 @@ def _build_messages(history, question, system_extra=""):
     messages.append({"role": "user", "content": question})
     return messages
 
+
 def _workspace_system_extra(query: str = "", tracer=None):
     """当前工作区内容（有 query 时按相关性混合检索片段，否则摘要）经 prompt_engine
     注入校验后进入动态层，返回拼接进 system 的文本"""
     from agent_core.workspace import get_workspace_manager
+
     mgr = get_workspace_manager()
     ws = mgr.current()
     if ws is None:
@@ -67,12 +76,15 @@ def _workspace_system_extra(query: str = "", tracer=None):
             pass
     if mgr.inject_current_summary(query=query):
         from agent_core.prompt_engine import get_prompt_engine
+
         return get_prompt_engine().build_system_prompt()
     return ""
+
 
 def _handle_resume_intent(q):
     """跨会话续接：识别"继续上次XX的检查"类意图，自动匹配并加载工作区"""
     from agent_core.workspace import get_workspace_manager
+
     mgr = get_workspace_manager()
     if mgr.current() is not None:
         return None
@@ -83,6 +95,7 @@ def _handle_resume_intent(q):
         return ws
     return None
 
+
 def _restore_session(args):
     """会话恢复：--resume <slug> 按名恢复；--continue 恢复最近活跃工作区。
     从 ~/.eco/workspaces/<slug>/history.jsonl 重建 history（user/assistant 事件）。"""
@@ -91,6 +104,7 @@ def _restore_session(args):
     if not slug and not cont:
         return []
     from agent_core.workspace import get_workspace_manager
+
     mgr = get_workspace_manager()
     ws = None
     if slug:
@@ -114,9 +128,9 @@ def _restore_session(args):
             history.append({"role": "user", "content": content})
         elif kind == "assistant":
             history.append({"role": "assistant", "content": content})
-    print(f"[session] 已恢复工作区「{ws.meta.get('name', ws.path.name)}」"
-          f"会话历史 {len(history)} 条消息")
+    print(f"[session] 已恢复工作区「{ws.meta.get('name', ws.path.name)}」会话历史 {len(history)} 条消息")
     return history
+
 
 # 复杂任务 DAG 计划（与 RoleSwarm 执行图一致）：patrol ∥ law -> doc -> synthesis
 _DAG_PLAN = [
@@ -126,8 +140,7 @@ _DAG_PLAN = [
     ("synthesis", "总管仲裁合成最终答复", ["doc"]),
 ]
 # swarm on_stage 阶段标签 -> DAG 步骤 id（命中即勾选对应 todo）
-_STAGE_DONE = {"巡查Agent 完成": "patrol", "法规Agent 完成": "law",
-               "文书Agent 完成": "doc", "总管合成完成": "synthesis"}
+_STAGE_DONE = {"巡查Agent 完成": "patrol", "法规Agent 完成": "law", "文书Agent 完成": "doc", "总管合成完成": "synthesis"}
 
 
 def _dag_edges_text() -> list[str]:
@@ -143,6 +156,7 @@ def _maybe_swarm(q, context="", tracer=None):
     （用户可见，/todo 查看），每个 DAG 步骤完成即勾选 todos.md；
     -v 模式展示 DAG 边（patrol∥law→doc→synthesis）。"""
     from agent_core.role_swarm import get_role_swarm, is_complex_task
+
     if not is_complex_task(q):
         return None
     swarm = get_role_swarm()
@@ -153,6 +167,7 @@ def _maybe_swarm(q, context="", tracer=None):
     ws = None
     try:
         from agent_core.workspace import get_workspace_manager
+
         ws = get_workspace_manager().current()
         if ws is not None:
             ws.append_todo(f"[plan] 复杂任务分解：{q[:60]}")
@@ -189,8 +204,8 @@ def _maybe_swarm(q, context="", tracer=None):
                 ws.complete_todo("[plan]")
         except Exception:
             pass
-    return result["synthesis"] or "\n".join(
-        f"[{r}] {t}" for r, t in result["contributions"].items())
+    return result["synthesis"] or "\n".join(f"[{r}] {t}" for r, t in result["contributions"].items())
+
 
 def _safe(text):
     if _IS_WINDOWS:
@@ -198,12 +213,14 @@ def _safe(text):
             text.encode(sys.stdout.encoding)
             return text
         except Exception:
-            return ''.join(c for c in text if ord(c) < 65536)
+            return "".join(c for c in text if ord(c) < 65536)
     return text
+
 
 def _stream_answer(messages, tracer=None):
     from agent_core.llm_client import get_default_client
-    from agent_core.tools_registry import get_tools, attach_mcp_tools
+    from agent_core.tools_registry import attach_mcp_tools, get_tools
+
     c = get_default_client()
     if not c.available():
         print("[LLM not configured. Run: eco setup]")
@@ -211,11 +228,17 @@ def _stream_answer(messages, tracer=None):
     attach_mcp_tools()  # ECO_MCP_SERVERS 配置的远程工具并入（幂等，未配置则跳过）
     # ── 结构化 span 树：会话根 span → llm_call → tool_call 嵌套，落 ~/.eco/traces/ ──
     from agent_core.observability import SpanTree
-    tree = SpanTree(meta={"provider": getattr(c, "_provider_name", ""),
-                          "model": (getattr(c, "_provider", None) or {}).get("default_model", "")})
+
+    tree = SpanTree(
+        meta={
+            "provider": getattr(c, "_provider_name", ""),
+            "model": (getattr(c, "_provider", None) or {}).get("default_model", ""),
+        }
+    )
     root_span = tree.start("chat", "session")
     full_text = [""]
     first_chunk_received = [False]
+
     def on_chunk(chunk):
         if not first_chunk_received[0]:
             first_chunk_received[0] = True
@@ -223,10 +246,12 @@ def _stream_answer(messages, tracer=None):
         display = _safe(chunk)
         sys.stdout.write(display)
         sys.stdout.flush()
+
     tools = get_tools()
     try:
-        result = c.chat_with_tools(messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5,
-                                   tracer=tracer, stream=True, spans=tree)
+        result = c.chat_with_tools(
+            messages, tools=tools, on_chunk=on_chunk, max_tool_rounds=5, tracer=tracer, stream=True, spans=tree
+        )
     except KeyboardInterrupt:
         # 生成中 Ctrl+C：取消当前生成、保留会话（不杀进程、不丢历史）
         print("\n[已取消当前生成，会话保留；可继续输入或 /exit 退出]")
@@ -236,22 +261,24 @@ def _stream_answer(messages, tracer=None):
     try:
         path = tree.save()
         if tracer is not None and getattr(tracer, "enabled", False):
-            tracer._emit(f"  [trace] span 树已落盘: {path}（eco trace --tree {tree.session_id}）",
-                         style="#8a8a8a")
+            tracer._emit(f"  [trace] span 树已落盘: {path}（eco trace --tree {tree.session_id}）", style="#8a8a8a")
     except Exception:
         pass
     return result
+
 
 def _user_input_blocked(text: str):
     """用户原始输入同样过注入防线（此前只校验动态注入内容，用户输入裸奔）。
     命中返回拒绝原因字符串，未命中返回 None。"""
     from agent_core.prompt_engine import validate_injection
+
     ok, reason = validate_injection(text)
     return None if ok else reason
 
 
 def run(args):
-    from eco.trace import set_verbose, get_tracer
+    from eco.trace import get_tracer, set_verbose
+
     set_verbose(getattr(args, "verbose", False))
     restored = _restore_session(args)
     if args.query:
@@ -269,6 +296,7 @@ def run(args):
         print()
         return 0
     return _repl(history=restored)
+
 
 _HELP_TEXT = """  REPL 命令：
     /help      显示本帮助
@@ -294,6 +322,7 @@ def _banner_summary() -> str:
     """启动横幅一行摘要：provider/model/workspace/权限闸门状态"""
     try:
         from agent_core.llm_client import get_default_client
+
         c = get_default_client()
         s = c.get_stats()
         llm = f"{s['provider']}/{s['model']}" if s.get("has_api_key") else "未配置(eco setup)"
@@ -301,10 +330,12 @@ def _banner_summary() -> str:
         llm = "未知"
     try:
         from agent_core.workspace import get_workspace_manager
+
         ws = get_workspace_manager().current_name() or "无"
     except Exception:
         ws = "无"
     import os as _os
+
     gate_env = _os.environ.get("ECO_PERMISSION_GATE", "").strip().lower()
     gate = "关闭(ECO_PERMISSION_GATE=0)" if gate_env == "0" else "开启"
     return f"  provider/model: {llm}  |  workspace: {ws}  |  权限闸门: {gate}"
@@ -316,6 +347,7 @@ def _self_system_extra() -> str:
     模型照此事实直接作答，而不是用"不在能力范围"套话拒绝。"""
     try:
         from agent_core.llm_client import get_default_client
+
         s = get_default_client().get_stats()
         llm = f"{s['provider']}/{s['model']}" if s.get("has_api_key") else "未配置(eco setup)"
     except Exception:
@@ -337,12 +369,12 @@ def _model_cmd_text(arg: str) -> str:
     """Kimi 风格 /model：空参列出当前与可选 provider；带名称运行时切换"""
     from agent_core.llm_client import get_default_client
     from agent_core.llm_providers import PROVIDERS as _REG
+
     client = get_default_client()
     if not arg:
         s = client.get_stats()
         cur = f"{s['provider']}/{s['model']}" if s.get("has_api_key") else "未配置(eco setup)"
-        lines = [f"[model] 当前: {cur}",
-                 "[model] 可选 provider（✅=已配置 Key，/model <名称> 切换）:"]
+        lines = [f"[model] 当前: {cur}", "[model] 可选 provider（✅=已配置 Key，/model <名称> 切换）:"]
         for name, spec in _REG.items():
             mark = "✅" if spec.has_key() else "  "
             lines.append(f"  {mark} {name:<12} {spec.display}  默认模型: {spec.default_model}")
@@ -352,11 +384,9 @@ def _model_cmd_text(arg: str) -> str:
         return f"[model] 未知 provider: {arg}（可选: {'、'.join(_REG)}）"
     if client.switch_provider(arg):
         s = client.get_stats()
-        return (f"[model] 已切换到 {arg}（当前模型 {s.get('model', '?')}，本次会话生效；"
-                f"持久化请 eco config model use {arg}）")
+        return f"[model] 已切换到 {arg}（当前模型 {s.get('model', '?')}，本次会话生效；持久化请 eco config model use {arg}）"
     spec = _REG[arg]
-    return (f"[model] 切换失败：未检测到 {spec.env_key}。先在 ~/.eco/.env 配置该 Key，"
-            f"或用 eco config model test {arg} 排查")
+    return f"[model] 切换失败：未检测到 {spec.env_key}。先在 ~/.eco/.env 配置该 Key，或用 eco config model test {arg} 排查"
 
 
 def _combine_extra(extra: str, mode: str = "chat") -> str:
@@ -370,14 +400,20 @@ def _combine_extra(extra: str, mode: str = "chat") -> str:
 # 对话模式预设（对标 Kimi 的 plan/spec/goal/auto 快捷命令）：
 # 切换后作为模式指令注入动态层，状态栏左侧同步显示
 _MODES = {
-    "plan": ("【模式:plan】规划模式：先输出分步实施计划（步骤、涉及对象、验证方式），"
-             "等用户明确确认后再展开执行；确认前不直接给最终答案或实质性改动。"),
-    "spec": ("【模式:spec】规格模式：以需求规格说明为中心，先澄清需求并产出结构化 SPEC"
-             "（目标、范围、验收标准、约束），对齐后再进入实现讨论。"),
-    "goal": ("【模式:goal】目标模式：先把用户意图转成带可验证完成判据的目标陈述，"
-             "每轮自检与目标的差距并给出下一步，直到判据满足。"),
-    "auto": ("【模式:auto】自动模式：在不越权（L4 操作仍需授权）、不破坏的前提下，"
-             "主动拆解任务、连续多步推进，减少向用户反复确认。"),
+    "plan": (
+        "【模式:plan】规划模式：先输出分步实施计划（步骤、涉及对象、验证方式），"
+        "等用户明确确认后再展开执行；确认前不直接给最终答案或实质性改动。"
+    ),
+    "spec": (
+        "【模式:spec】规格模式：以需求规格说明为中心，先澄清需求并产出结构化 SPEC"
+        "（目标、范围、验收标准、约束），对齐后再进入实现讨论。"
+    ),
+    "goal": (
+        "【模式:goal】目标模式：先把用户意图转成带可验证完成判据的目标陈述，每轮自检与目标的差距并给出下一步，直到判据满足。"
+    ),
+    "auto": (
+        "【模式:auto】自动模式：在不越权（L4 操作仍需授权）、不破坏的前提下，主动拆解任务、连续多步推进，减少向用户反复确认。"
+    ),
 }
 
 # 输入框长文本阈值（字符）：超过则落盘为 txt，消息体替换为文件引用（对标 Kimi 的粘贴压缩）
@@ -391,30 +427,36 @@ def _maybe_compress_paste(q: str) -> str:
         return q
     import time
     from pathlib import Path
+
     d = Path.home() / ".eco" / "paste"
     d.mkdir(parents=True, exist_ok=True)
     p = d / f"paste-{time.strftime('%Y%m%d-%H%M%S')}.txt"
     p.write_text(q, encoding="utf-8")
     print(f"[paste] 长文本 {len(q)} 字已自动保存: {p}")
-    return (f"用户粘贴了一段长文本（共 {len(q)} 字），已保存到文件 {p}。"
-            f"请先调用 analyze_document 工具（file_path={p}）读取全文，"
-            f"再按文本本身的意图处理；若文本末尾带有明确问题或指令，优先响应它。")
+    return (
+        f"用户粘贴了一段长文本（共 {len(q)} 字），已保存到文件 {p}。"
+        f"请先调用 analyze_document 工具（file_path={p}）读取全文，"
+        f"再按文本本身的意图处理；若文本末尾带有明确问题或指令，优先响应它。"
+    )
 
 
 def _display_width(s: str) -> int:
     """终端显示宽度（中日韩全角字符按 2 计）"""
     import unicodedata
+
     return sum(2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1 for ch in s)
 
 
 def _term_width() -> int:
     import shutil
+
     return shutil.get_terminal_size((80, 20)).columns
 
 
 def _context_limit() -> int:
     """上下文窗口大小（token），默认 64k，可用 ECO_CONTEXT_LIMIT 覆盖"""
     import os
+
     try:
         return int(os.environ.get("ECO_CONTEXT_LIMIT", "64000"))
     except ValueError:
@@ -433,16 +475,19 @@ def _status_left(mode: str = "chat") -> str:
     """左侧状态：模式 + provider/model + 工作区 + 权限闸门（对标 Kimi 左栏）"""
     try:
         from agent_core.llm_client import get_default_client
+
         s = get_default_client().get_stats()
         llm = f"{s['provider']}/{s['model']}" if s.get("has_api_key") else "未配置(eco setup)"
     except Exception:
         llm = "未知"
     try:
         from agent_core.workspace import get_workspace_manager
+
         ws = get_workspace_manager().current_name() or "无"
     except Exception:
         ws = "无"
     import os as _os
+
     gate = "off" if _os.environ.get("ECO_PERMISSION_GATE", "").strip().lower() == "0" else "on"
     return f" {mode}  {llm}  ws:{ws}  gate:{gate}"
 
@@ -482,6 +527,7 @@ def _boxed_input(history, mode: str = "chat") -> str:
 def _checkpoint_store(mgr):
     """当前会话检查点存储：会话 id 取当前工作区 slug，无工作区用 default"""
     from agent_core.checkpoint import CheckpointStore
+
     session = mgr.current_name() or "default"
     return CheckpointStore(session=session)
 
@@ -501,6 +547,7 @@ def _repl(history=None):
         print(f"[session] 继续上次会话（已载入 {len(history)} 条消息，/new 可清空重来）")
     if _HAVE_RICH:
         from rich.text import Text
+
         _console.print()
         _console.print(Text(LOGO, style="dark_green"))
         _console.print(Text(f"  ECO AGENT v{__version__}  --  Environmental Regulation AI", style="dark_green bold"))
@@ -512,14 +559,16 @@ def _repl(history=None):
             "  /verbose   切换轨迹模式（思考/工具调用/耗时）\n"
             "  /exit      退出（生成中 Ctrl+C 只取消当前回答）"
         )
-        _console.print(Panel(
-            tips,
-            title="快速上手",
-            title_align="left",
-            border_style="dark_green",
-            box=box.ROUNDED,
-            padding=(0, 1),
-        ))
+        _console.print(
+            Panel(
+                tips,
+                title="快速上手",
+                title_align="left",
+                border_style="dark_green",
+                box=box.ROUNDED,
+                padding=(0, 1),
+            )
+        )
         _console.print()
     else:
         print(LOGO)
@@ -529,6 +578,7 @@ def _repl(history=None):
         print()
 
     from agent_core.workspace import get_workspace_manager
+
     mgr = get_workspace_manager()
     mode = "chat"
     while True:
@@ -537,10 +587,13 @@ def _repl(history=None):
         except (EOFError, KeyboardInterrupt):
             print()
             break
-        if not q: continue
-        if q in ("/exit", "/quit"): break
+        if not q:
+            continue
+        if q in ("/exit", "/quit"):
+            break
         if q == "/help":
-            print(_HELP_TEXT); continue
+            print(_HELP_TEXT)
+            continue
         if q in ("/plan", "/spec", "/goal", "/auto"):
             mode = q[1:]
             print(f"[mode] 已切换到 {mode} 模式（/chat 返回普通对话）")
@@ -558,12 +611,15 @@ def _repl(history=None):
                 print(t if t else "[todo] 当前工作区暂无待办（任务计划中产生的待办会显示在这里）")
             continue
         if q == "/verbose":
-            from eco.trace import set_verbose, get_tracer
+            from eco.trace import get_tracer, set_verbose
+
             on = set_verbose(not get_tracer().enabled)
             print(f"[trace] verbose 轨迹模式: {'开启' if on else '关闭'}")
             continue
         if q == "/new":
-            history = []; print("[reset]"); continue
+            history = []
+            print("[reset]")
+            continue
         if q == "/checkpoints":
             store = _checkpoint_store(mgr)
             cps = store.list()
@@ -573,10 +629,12 @@ def _repl(history=None):
                 print(f"[checkpoints] 会话 {store.session} 共 {len(cps)} 个检查点：")
                 for cp in cps:
                     nfiles = len(cp.get("workspace", {}).get("files", {}))
-                    print(f"  #{cp['id']}  {cp.get('ts','')}  "
-                          f"历史 {len(cp.get('history', []))} 条  "
-                          f"decisions {cp.get('decisions_count', 0)}  "
-                          f"工作区文件 {nfiles} 个")
+                    print(
+                        f"  #{cp['id']}  {cp.get('ts', '')}  "
+                        f"历史 {len(cp.get('history', []))} 条  "
+                        f"decisions {cp.get('decisions_count', 0)}  "
+                        f"工作区文件 {nfiles} 个"
+                    )
             continue
         if q.startswith("/rewind"):
             parts = q.split()
@@ -597,11 +655,10 @@ def _repl(history=None):
                 print(f"[rewind] 检查点 #{n} 不存在或已损坏（/checkpoints 查看可用编号）")
                 continue
             history = list(cp.get("history", []))
-            print(f"[rewind] 已回滚到检查点 #{n}（会话历史 {len(history)} 条，"
-                  f"工作区文件按快照还原）")
+            print(f"[rewind] 已回滚到检查点 #{n}（会话历史 {len(history)} 条，工作区文件按快照还原）")
             continue
         if q == "/model" or q.startswith("/model "):
-            print(_model_cmd_text(q[len("/model"):].strip().lower()))
+            print(_model_cmd_text(q[len("/model") :].strip().lower()))
             _print_status_bar(history, mode)
             continue
         q = _maybe_compress_paste(q)
@@ -619,6 +676,7 @@ def _repl(history=None):
         ws = mgr.current()
         context = ws.summary() if ws else ""
         from eco.trace import get_tracer
+
         tracer = get_tracer()
         extra = _combine_extra(_workspace_system_extra(q, tracer=tracer), mode)
 

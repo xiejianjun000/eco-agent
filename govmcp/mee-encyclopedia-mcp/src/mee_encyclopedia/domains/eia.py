@@ -1,4 +1,5 @@
 """环评领域：环评信用、登记表备案、环评机构信息。"""
+
 from __future__ import annotations
 
 import logging
@@ -19,6 +20,7 @@ def query_eia_credit(fetcher, cache, name: str) -> dict:
     try:
         html = fetcher.get_text(EIA_CREDIT)
         from ..core.parser import parse_article
+
         text = parse_article(html, max_chars=2000)
         result["page_snippet"] = text[:1000] if text else ""
         result["note"] = "环评信用平台为登录后动态查询系统，公开页面无法直接结构化查询；需登录态（可派发 browser-agent 处理）"

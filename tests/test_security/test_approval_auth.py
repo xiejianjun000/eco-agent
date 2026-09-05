@@ -4,6 +4,7 @@
 decide 端点仅允许本机访问（防 CSRF/越权）。answerer 自报仍需命中授权链，
 此处再加 IP 白名单做纵深防御。
 """
+
 from __future__ import annotations
 
 import pytest

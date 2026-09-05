@@ -17,8 +17,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-
 # ── 工具实现 ─────────────────────────────────────────────
+
 
 def shell_run(command: str, cwd: str = "", timeout: int = 30) -> str:
     """沙箱执行 shell 命令。"""
@@ -61,11 +61,9 @@ def git_status(repo_path: str = ".") -> str:
     p = Path(repo_path).expanduser()
     try:
         status = subprocess.run(
-            ["git", "status", "--short", "--branch"], cwd=str(p),
-            capture_output=True, text=True, timeout=15)
-        log = subprocess.run(
-            ["git", "log", "--oneline", "-3"], cwd=str(p),
-            capture_output=True, text=True, timeout=15)
+            ["git", "status", "--short", "--branch"], cwd=str(p), capture_output=True, text=True, timeout=15
+        )
+        log = subprocess.run(["git", "log", "--oneline", "-3"], cwd=str(p), capture_output=True, text=True, timeout=15)
         return {
             "status": status.stdout.strip() or status.stderr.strip(),
             "recent_commits": log.stdout.strip(),

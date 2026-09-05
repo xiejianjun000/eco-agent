@@ -7,7 +7,6 @@ import argparse
 import re
 from pathlib import Path
 
-
 DATE_RE = re.compile(r"\d{4}年\d{1,2}月\d{1,2}日|\d{4}年\d{1,2}月|\d{4}年度?")
 NUMBER_RE = re.compile(r"\d+(?:\.\d+)?\s*(?:%|％|万元|亿元|人|户|项|个|件|次|天|月|年|日前|月底)")
 ORG_RE = re.compile(r"[\u4e00-\u9fff]{2,}(?:委员会|人民政府|办公室|厅|局|办|中心|部门|单位|街道办事处|公司|学校)")
@@ -52,9 +51,7 @@ def build_dossier(paths: list[Path], task: str | None = None) -> str:
         all_lines.extend((label, line) for line in lines)
 
     merged_lines = [f"{label}：{line}" for label, line in all_lines]
-    fact_pattern = re.compile(
-        f"(?:{DATE_RE.pattern})|(?:{NUMBER_RE.pattern})|(?:{ORG_RE.pattern})"
-    )
+    fact_pattern = re.compile(f"(?:{DATE_RE.pattern})|(?:{NUMBER_RE.pattern})|(?:{ORG_RE.pattern})")
     fact_lines = pick_lines(merged_lines, fact_pattern)
     claim_lines = pick_lines(merged_lines, CLAIM_RE)
 

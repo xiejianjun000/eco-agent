@@ -28,28 +28,67 @@ from pathlib import Path
 # ─── shell 白名单（只读/受限命令集）─────────────────────────────
 
 SHELL_ALLOWED = {
-    "ls", "cat", "head", "tail", "wc", "grep", "find", "pwd", "echo",
-    "date", "du", "df", "ps", "python3", "python", "git", "tree", "sort",
-    "uniq", "sed", "awk", "diff", "basename", "dirname", "which", "test",
+    "ls",
+    "cat",
+    "head",
+    "tail",
+    "wc",
+    "grep",
+    "find",
+    "pwd",
+    "echo",
+    "date",
+    "du",
+    "df",
+    "ps",
+    "python3",
+    "python",
+    "git",
+    "tree",
+    "sort",
+    "uniq",
+    "sed",
+    "awk",
+    "diff",
+    "basename",
+    "dirname",
+    "which",
+    "test",
     # 开发类（自改自测闭环）：测试/依赖/构建
-    "pytest", "pip", "npm", "node", "make",
+    "pytest",
+    "pip",
+    "npm",
+    "node",
+    "make",
     # 飞书/企业微信 CLI（授权登录/发消息/查登录态，本地已认证）
     "lark-cli",
 }
 
 # 高危第一命令（即使白名单里出现变体也拒绝）
-SHELL_FORBIDDEN_START = ("rm", "sudo", "chmod", "chown", "kill", "shutdown",
-                         "reboot", "mkfs", "dd", "curl", "wget", "scp", "ssh")
+SHELL_FORBIDDEN_START = (
+    "rm",
+    "sudo",
+    "chmod",
+    "chown",
+    "kill",
+    "shutdown",
+    "reboot",
+    "mkfs",
+    "dd",
+    "curl",
+    "wget",
+    "scp",
+    "ssh",
+)
 
 # 危险语法模式（任一命中即拒绝）
-_SHELL_DANGER_RE = re.compile(
-    r"[><]|`|\$\(|\$\{|&&|\|\||;|mkfifo|/dev/|>>"
-)
+_SHELL_DANGER_RE = re.compile(r"[><]|`|\$\(|\$\{|&&|\|\||;|mkfifo|/dev/|>>")
 
 SHELL_TIMEOUT = 30.0
 OUTPUT_CAP = 8000
 
 # ─── 文件工具允许根 ────────────────────────────────────────────
+
 
 def _allowed_roots() -> list[Path]:
     roots = []
@@ -64,14 +103,20 @@ def _allowed_roots() -> list[Path]:
 def _audit(action: str, target: str, decision: str, reason: str) -> None:
     try:
         from agent_core.prompt_engine import get_prompt_engine
+
         get_prompt_engine().audit.append(
-            source="exec_tool", content=f"{action} {target[:80]} -> {decision}",
-            phase="permission", accepted=(decision == "allow"), reason=reason)
+            source="exec_tool",
+            content=f"{action} {target[:80]} -> {decision}",
+            phase="permission",
+            accepted=(decision == "allow"),
+            reason=reason,
+        )
     except Exception:
         pass
 
 
 # ─── ① shell_run ───────────────────────────────────────────────
+
 
 def run_shell(command: str) -> str:
     """白名单 shell 执行。返回 JSON 字符串（ok/stdout/stderr/duration）。"""
@@ -80,9 +125,7 @@ def run_shell(command: str) -> str:
         return json.dumps({"ok": False, "error": "空命令"}, ensure_ascii=False)
     if _SHELL_DANGER_RE.search(cmd):
         _audit("shell", cmd, "deny", "危险语法（重定向/链/替换）")
-        return json.dumps({"ok": False,
-                           "error": "命令含危险语法（重定向/命令链/$替换/反引号均禁止）"},
-                          ensure_ascii=False)
+        return json.dumps({"ok": False, "error": "命令含危险语法（重定向/命令链/$替换/反引号均禁止）"}, ensure_ascii=False)
     # 按管道分段，每段首命令必须白名单
     segments = [s.strip() for s in cmd.split("|") if s.strip()]
     if not segments:
@@ -98,34 +141,39 @@ def run_shell(command: str) -> str:
             return json.dumps({"ok": False, "error": f"禁止命令: {base}"}, ensure_ascii=False)
         if base not in SHELL_ALLOWED:
             _audit("shell", cmd, "deny", f"非白名单命令 {base}")
-            return json.dumps({"ok": False,
-                               "error": f"命令不在白名单: {base}（白名单: "
-                                        + "、".join(sorted(SHELL_ALLOWED)) + "）"},
-                              ensure_ascii=False)
+            return json.dumps(
+                {"ok": False, "error": f"命令不在白名单: {base}（白名单: " + "、".join(sorted(SHELL_ALLOWED)) + "）"},
+                ensure_ascii=False,
+            )
     _audit("shell", cmd, "allow", "白名单放行")
-    env = {k: v for k, v in os.environ.items()
-           if k in ("PATH", "LANG", "LC_ALL", "HOME", "LARK_CLI_HOME")}
+    env = {k: v for k, v in os.environ.items() if k in ("PATH", "LANG", "LC_ALL", "HOME", "LARK_CLI_HOME")}
     import time
+
     t0 = time.monotonic()
     try:
-        p = subprocess.run(cmd, shell=True, capture_output=True, text=True,
-                           timeout=SHELL_TIMEOUT, env=env)
+        p = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=SHELL_TIMEOUT, env=env)
         out = (p.stdout or "")[:OUTPUT_CAP]
         err = (p.stderr or "")[:500]
-        return json.dumps({
-            "ok": True, "exit": p.returncode, "stdout": out, "stderr": err,
-            "duration_ms": int((time.monotonic() - t0) * 1000),
-            "truncated": bool(p.stdout and len(p.stdout) > OUTPUT_CAP),
-        }, ensure_ascii=False)
+        return json.dumps(
+            {
+                "ok": True,
+                "exit": p.returncode,
+                "stdout": out,
+                "stderr": err,
+                "duration_ms": int((time.monotonic() - t0) * 1000),
+                "truncated": bool(p.stdout and len(p.stdout) > OUTPUT_CAP),
+            },
+            ensure_ascii=False,
+        )
     except subprocess.TimeoutExpired:
         _audit("shell", cmd, "deny", "超时")
-        return json.dumps({"ok": False, "error": f"超时（>{SHELL_TIMEOUT}s）"},
-                          ensure_ascii=False)
+        return json.dumps({"ok": False, "error": f"超时（>{SHELL_TIMEOUT}s）"}, ensure_ascii=False)
     except Exception as e:  # noqa: BLE001
         return json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False)
 
 
 # ─── ② 文件工具 ────────────────────────────────────────────────
+
 
 def _resolve_within(path_str: str, for_write: bool) -> tuple[Path | None, str]:
     """解析路径并校验在允许根内。返回 (Path, error)。"""
@@ -157,9 +205,16 @@ def file_read(path: str, max_chars: int = 12000) -> str:
         return json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False)
     _audit("file_read", str(real), "allow", "只读放行")
     truncated = len(text) > max_chars
-    return json.dumps({"ok": True, "path": str(real),
-                       "chars": min(len(text), max_chars), "truncated": truncated,
-                       "content": text[:max_chars]}, ensure_ascii=False)
+    return json.dumps(
+        {
+            "ok": True,
+            "path": str(real),
+            "chars": min(len(text), max_chars),
+            "truncated": truncated,
+            "content": text[:max_chars],
+        },
+        ensure_ascii=False,
+    )
 
 
 def file_write(path: str, content: str) -> str:
@@ -175,9 +230,7 @@ def file_write(path: str, content: str) -> str:
     except OSError as e:
         return json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False)
     _audit("file_write", str(real), "allow", "工作区/仓库内写入")
-    return json.dumps({"ok": True, "path": str(real),
-                       "bytes": len((content or "").encode("utf-8"))},
-                      ensure_ascii=False)
+    return json.dumps({"ok": True, "path": str(real), "bytes": len((content or "").encode("utf-8"))}, ensure_ascii=False)
 
 
 def file_edit(path: str, old_string: str, new_string: str) -> str:
@@ -195,9 +248,7 @@ def file_edit(path: str, old_string: str, new_string: str) -> str:
     if count == 0:
         return json.dumps({"ok": False, "error": "old_string 未命中"}, ensure_ascii=False)
     if count > 1:
-        return json.dumps({"ok": False,
-                           "error": f"old_string 命中 {count} 处（必须唯一，请加长上下文）"},
-                          ensure_ascii=False)
+        return json.dumps({"ok": False, "error": f"old_string 命中 {count} 处（必须唯一，请加长上下文）"}, ensure_ascii=False)
     new_text = text.replace(old_string, new_string, 1)
     if len(new_text) > 200_000:
         return json.dumps({"ok": False, "error": "修改后超过 200KB 上限"}, ensure_ascii=False)
@@ -206,6 +257,6 @@ def file_edit(path: str, old_string: str, new_string: str) -> str:
     except OSError as e:
         return json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False)
     _audit("file_edit", str(real), "allow", "唯一命中替换")
-    return json.dumps({"ok": True, "path": str(real),
-                       "replaced": 1, "bytes": len(new_text.encode("utf-8"))},
-                      ensure_ascii=False)
+    return json.dumps(
+        {"ok": True, "path": str(real), "replaced": 1, "bytes": len(new_text.encode("utf-8"))}, ensure_ascii=False
+    )

@@ -34,9 +34,7 @@ def macro(scored: list[dict]) -> dict:
 
 
 def run_single(client, item):
-    resp = client.chat(
-        [{"role": "system", "content": SYSTEM},
-         {"role": "user", "content": item["question"]}])
+    resp = client.chat([{"role": "system", "content": SYSTEM}, {"role": "user", "content": item["question"]}])
     return (resp.get("choices", [{}])[0].get("message", {}).get("content", "") or "").strip()
 
 
@@ -52,6 +50,7 @@ def main():
 
     from agent_core.llm_client import get_default_client
     from agent_core.role_swarm import RoleSwarm
+
     client = get_default_client()
     if not client.available():
         print("[compare] LLM 不可用")
@@ -67,8 +66,10 @@ def main():
             ans = fn(swarm if mode == "swarm" else client, item)
             s = score_item(ans, item)
             scored.append(s)
-            print(f"[{mode} {i}/{len(items)}] cite={s['citation_hit']:.2f} kpF1={s['keypoint_f1']:.2f} "
-                  f"({time.time()-t0:.0f}s)", flush=True)
+            print(
+                f"[{mode} {i}/{len(items)}] cite={s['citation_hit']:.2f} kpF1={s['keypoint_f1']:.2f} ({time.time() - t0:.0f}s)",
+                flush=True,
+            )
         report["modes"][mode] = macro(scored)
         print(f"[{mode}] {report['modes'][mode]}", flush=True)
 

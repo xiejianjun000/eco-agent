@@ -15,12 +15,12 @@ Eco Agent 独创——竞品均未系统化实现。
 """
 
 import json
+import logging
 import time
 import uuid
-import logging
-from pathlib import Path
-from datetime import datetime
 from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("self_healing")
 
@@ -37,12 +37,17 @@ class SelfHealer:
         self._fail_count = 0
         self._circuit_breakers: dict[str, dict] = {}
 
-    def protect(self, operation: Callable, context: str = "",
-                fallback: Callable | None = None,
-                max_retries: int = 3, timeout_ms: int = 30000) -> dict:
+    def protect(
+        self,
+        operation: Callable,
+        context: str = "",
+        fallback: Callable | None = None,
+        max_retries: int = 3,
+        timeout_ms: int = 30000,
+    ) -> dict:
         """保护执行一个操作——自动异常捕获/分类/恢复"""
         start = time.time()
-        operation_name = context or getattr(operation, '__name__', str(operation))
+        operation_name = context or getattr(operation, "__name__", str(operation))
 
         # 检查熔断器
         cb = self._circuit_breakers.get(operation_name)
@@ -64,8 +69,7 @@ class SelfHealer:
                     self._circuit_breakers[operation_name]["state"] = "closed"
                     self._circuit_breakers[operation_name]["failures"] = 0
 
-                return {"success": True, "result": result, "attempts": attempt,
-                        "elapsed_ms": round(elapsed, 1)}
+                return {"success": True, "result": result, "attempts": attempt, "elapsed_ms": round(elapsed, 1)}
 
             except Exception as e:
                 last_error = str(e)
@@ -73,8 +77,7 @@ class SelfHealer:
 
                 if attempt < max_retries:
                     delay = self._calc_backoff(attempt, error_type)
-                    logger.warning(f"[Heal] {operation_name}: 第{attempt}次失败 ({error_type}), "
-                                  f"{delay}ms后重试")
+                    logger.warning(f"[Heal] {operation_name}: 第{attempt}次失败 ({error_type}), {delay}ms后重试")
                     time.sleep(delay / 1000)
 
         # 全部重试失败——记录熔断
@@ -82,8 +85,9 @@ class SelfHealer:
         self._fail_count += 1
 
         self._circuit_breakers[operation_name] = {
-            "state": "open", "opened_at": time.time(),
-            "cooldown": min(300, 5 * (max_retries ** 2)),  # 指数增长冷却
+            "state": "open",
+            "opened_at": time.time(),
+            "cooldown": min(300, 5 * (max_retries**2)),  # 指数增长冷却
             "failures": self._circuit_breakers.get(operation_name, {}).get("failures", 0) + 1,
         }
 
@@ -108,9 +112,9 @@ class SelfHealer:
         """计算退避时间"""
         base = 100  # 100ms
         if error_type == "transient":
-            return base * (2 ** attempt) + (attempt * 50)
+            return base * (2**attempt) + (attempt * 50)
         if error_type == "deadlock":
-            return base * (3 ** attempt)
+            return base * (3**attempt)
         return base * attempt
 
     def _apply_fallback(self, operation_name: str, fallback: Callable | None, reason: str) -> dict:
@@ -127,7 +131,8 @@ class SelfHealer:
         """写入韧性日志"""
         event = {
             "timestamp": datetime.now().isoformat(),
-            "operation": operation, "error": error[:200],
+            "operation": operation,
+            "error": error[:200],
             "elapsed_ms": round(elapsed_ms, 1),
         }
         HEAL_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -139,14 +144,14 @@ class SelfHealer:
             "healed": self._heal_count,
             "failed": self._fail_count,
             "circuit_breakers": {
-                k: {"state": v["state"], "failures": v["failures"]}
-                for k, v in self._circuit_breakers.items()
+                k: {"state": v["state"], "failures": v["failures"]} for k, v in self._circuit_breakers.items()
             },
             "heal_rate": f"{self._heal_count / max(self._heal_count + self._fail_count, 1) * 100:.0f}%",
         }
 
 
 # ===== 检查点快照系统 =====
+
 
 class CheckpointSnapshot:
     """检查点快照——任务执行前保存完整状态，可"时光倒流" """
@@ -165,7 +170,7 @@ class CheckpointSnapshot:
         }
         self._snapshots.append(snapshot)
         if len(self._snapshots) > self._max_snapshots:
-            self._snapshots = self._snapshots[-self._max_snapshots:]
+            self._snapshots = self._snapshots[-self._max_snapshots :]
         return snapshot_id
 
     def restore(self, snapshot_id: str) -> dict | None:
@@ -181,10 +186,12 @@ class CheckpointSnapshot:
 
 # ===== 测试 =====
 
+
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     print("[TEST] L5 Self-Healing Loop", flush=True)
 
@@ -197,6 +204,7 @@ def test():
 
     # 测试失败+重试
     attempt = [0]
+
     def failing_op():
         attempt[0] += 1
         if attempt[0] < 3:
@@ -209,6 +217,7 @@ def test():
     # 测试熔断器
     def always_fail():
         raise ValueError("persistent error")
+
     r3 = healer.protect(always_fail, "test_cb", max_retries=2)
     r4 = healer.protect(always_fail, "test_cb", max_retries=2)
     print(f"[CircuitBreaker] 第一次: {r3['success']}, 第二次: {r4['success']} (应熔断)", flush=True)
@@ -221,7 +230,7 @@ def test():
     stats = healer.get_stats()
     print(f"\n[Stats] 自愈: {stats['healed']}次, 自愈率: {stats['heal_rate']}", flush=True)
 
-    print(f"\n{'='*30}", flush=True)
+    print(f"\n{'=' * 30}", flush=True)
     print("[OK] L5 Self-Healing 测试通过", flush=True)
 
 

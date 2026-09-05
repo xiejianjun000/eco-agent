@@ -11,9 +11,10 @@ from __future__ import annotations
 from pathlib import Path
 
 # 系统敏感目录（resolve 后命中即拒绝；/etc 经 resolve 已覆盖 /private/etc 软链）
-_FORBIDDEN_ROOTS = tuple(Path(p).expanduser().resolve() for p in (
-    "/etc", "/proc", "/sys", "/dev", "/root", "/usr", "/bin", "/sbin",
-    "/Library", "/System"))
+_FORBIDDEN_ROOTS = tuple(
+    Path(p).expanduser().resolve()
+    for p in ("/etc", "/proc", "/sys", "/dev", "/root", "/usr", "/bin", "/sbin", "/Library", "/System")
+)
 
 
 def validate_vault_path(path, root: str | Path | None = None) -> Path | None:

@@ -7,6 +7,7 @@
 - 出站扩展：机器人单聊/群消息/卡片（api.dingtalk.com，机器人 accessToken）、
   审批实例查询（oapi topapi，旧版 access_token）——双 token 体系，均带缓存
 """
+
 from __future__ import annotations
 
 import base64
@@ -16,7 +17,6 @@ import json
 import os
 import time
 import urllib.parse
-from typing import Optional
 
 from .base import Channel, InboundMessage, body_json, http_get_json, http_post_json
 
@@ -25,22 +25,19 @@ GETTOKEN_URL = "https://oapi.dingtalk.com/gettoken?appkey={key}&appsecret={secre
 ROBOT_TOKEN_URL = "https://api.dingtalk.com/v1.0/oauth2/accessToken"
 ROBOT_OTO_URL = "https://api.dingtalk.com/v1.0/robot/oToMessages/batchSend"
 ROBOT_GROUP_URL = "https://api.dingtalk.com/v1.0/robot/groupMessages/send"
-APPROVAL_URL = ("https://oapi.dingtalk.com/topapi/processinstance/get"
-                "?access_token={token}")
+APPROVAL_URL = "https://oapi.dingtalk.com/topapi/processinstance/get?access_token={token}"
 
 
 def sign(secret: str, timestamp: str) -> str:
     """钉钉加签算法。"""
     string_to_sign = f"{timestamp}\n{secret}"
-    digest = hmac.new(secret.encode("utf-8"), string_to_sign.encode("utf-8"),
-                      hashlib.sha256).digest()
+    digest = hmac.new(secret.encode("utf-8"), string_to_sign.encode("utf-8"), hashlib.sha256).digest()
     return urllib.parse.quote_plus(base64.b64encode(digest))
 
 
 class DingTalkChannel(Channel):
     name = "dingtalk"
-    env_keys = ("DINGTALK_SECRET", "DINGTALK_ACCESS_TOKEN",
-                "DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_ROBOT_CODE")
+    env_keys = ("DINGTALK_SECRET", "DINGTALK_ACCESS_TOKEN", "DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_ROBOT_CODE")
 
     def __init__(self, config: dict | None = None):
         super().__init__(config)
@@ -53,13 +50,11 @@ class DingTalkChannel(Channel):
 
     def _app_credentials(self) -> tuple[str, str]:
         key = self.config.get("app_key") or os.environ.get("DINGTALK_APP_KEY", "")
-        secret = self.config.get("app_secret") \
-            or os.environ.get("DINGTALK_APP_SECRET", "")
+        secret = self.config.get("app_secret") or os.environ.get("DINGTALK_APP_SECRET", "")
         return key, secret
 
     def _robot_code(self) -> str:
-        return self.config.get("robot_code") \
-            or os.environ.get("DINGTALK_ROBOT_CODE", "")
+        return self.config.get("robot_code") or os.environ.get("DINGTALK_ROBOT_CODE", "")
 
     def get_app_token(self) -> str:
         """旧版 oapi access_token（topapi 审批等接口用），带缓存。"""
@@ -83,12 +78,10 @@ class DingTalkChannel(Channel):
         key, secret = self._app_credentials()
         if not key or not secret:
             return ""
-        resp = http_post_json(ROBOT_TOKEN_URL,
-                              {"appKey": key, "appSecret": secret})
+        resp = http_post_json(ROBOT_TOKEN_URL, {"appKey": key, "appSecret": secret})
         token = resp.get("accessToken", "")
         if token:
-            self._robot_token_cache = (token,
-                                       time.time() + int(resp.get("expireIn", 7200)))
+            self._robot_token_cache = (token, time.time() + int(resp.get("expireIn", 7200)))
         return token
 
     def _robot_send(self, url: str, payload: dict) -> bool:
@@ -96,8 +89,7 @@ class DingTalkChannel(Channel):
         token = self.get_robot_token()
         if not token:
             return False
-        resp = http_post_json(url, payload,
-                              headers={"x-acs-dingtalk-access-token": token})
+        resp = http_post_json(url, payload, headers={"x-acs-dingtalk-access-token": token})
         return resp.get("errcode", 0) == 0
 
     def verify(self, request: dict) -> bool:
@@ -127,16 +119,14 @@ class DingTalkChannel(Channel):
             user_id=data.get("senderId", ""),
             text=text,
             msg_id=data.get("msgId", ""),
-            extras={"session_webhook": data.get("sessionWebhook", ""),
-                    "sender_nick": data.get("senderNick", "")},
+            extras={"session_webhook": data.get("sessionWebhook", ""), "sender_nick": data.get("senderNick", "")},
         )
 
     def reply(self, user_id: str, text: str, **kw) -> bool:
         """优先用 outgoing 的 sessionWebhook 回复；否则走自定义机器人 webhook（加签）。"""
         webhook = kw.get("session_webhook")
         if not webhook:
-            token = self.config.get("access_token") \
-                or os.environ.get("DINGTALK_ACCESS_TOKEN", "")
+            token = self.config.get("access_token") or os.environ.get("DINGTALK_ACCESS_TOKEN", "")
             webhook = WEBHOOK_URL.format(token=token)
             secret = self._secret()
             if secret:
@@ -148,31 +138,37 @@ class DingTalkChannel(Channel):
 
     def send_text(self, user_id: str, text: str) -> bool:
         """机器人单聊文本消息（oToMessages/batchSend，userIds 标识接收人）。"""
-        payload = {"robotCode": self._robot_code(),
-                   "userIds": [user_id],
-                   "msgKey": "sampleText",
-                   "msgParam": json.dumps({"content": text}, ensure_ascii=False)}
+        payload = {
+            "robotCode": self._robot_code(),
+            "userIds": [user_id],
+            "msgKey": "sampleText",
+            "msgParam": json.dumps({"content": text}, ensure_ascii=False),
+        }
         return self._robot_send(ROBOT_OTO_URL, payload)
 
     def send_group_message(self, group_open_id: str, text: str) -> bool:
         """机器人群消息（groupMessages/send，openConversationId 标识群）。"""
-        payload = {"robotCode": self._robot_code(),
-                   "openConversationId": group_open_id,
-                   "msgKey": "sampleText",
-                   "msgParam": json.dumps({"content": text}, ensure_ascii=False)}
+        payload = {
+            "robotCode": self._robot_code(),
+            "openConversationId": group_open_id,
+            "msgKey": "sampleText",
+            "msgParam": json.dumps({"content": text}, ensure_ascii=False),
+        }
         return self._robot_send(ROBOT_GROUP_URL, payload)
 
     def send_card(self, user_id: str, title: str, content: str) -> bool:
         """机器人单聊卡片消息（sampleActionCard）。"""
-        card = {"config": {"promote": False},
-                "header": {"title": {"content": title, "type": "text"},
-                           "templateId": "red"},
-                "body": {"content": content,
-                         "formattedContent": f"# {title}\n\n{content}"}}
-        payload = {"robotCode": self._robot_code(),
-                   "userIds": [user_id],
-                   "msgKey": "sampleActionCard",
-                   "msgParam": json.dumps(card, ensure_ascii=False)}
+        card = {
+            "config": {"promote": False},
+            "header": {"title": {"content": title, "type": "text"}, "templateId": "red"},
+            "body": {"content": content, "formattedContent": f"# {title}\n\n{content}"},
+        }
+        payload = {
+            "robotCode": self._robot_code(),
+            "userIds": [user_id],
+            "msgKey": "sampleActionCard",
+            "msgParam": json.dumps(card, ensure_ascii=False),
+        }
         return self._robot_send(ROBOT_OTO_URL, payload)
 
     def query_approval(self, process_instance_id: str) -> dict | None:
@@ -180,8 +176,7 @@ class DingTalkChannel(Channel):
         token = self.get_app_token()
         if not token:
             return None
-        resp = http_post_json(APPROVAL_URL.format(token=token),
-                              {"process_instance_id": process_instance_id})
+        resp = http_post_json(APPROVAL_URL.format(token=token), {"process_instance_id": process_instance_id})
         if resp.get("errcode") == 0:
             return resp.get("process_instance", {})
         return None

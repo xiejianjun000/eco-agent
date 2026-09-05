@@ -92,8 +92,7 @@ def _build_skill(name: str, answers: dict) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser(description="访谈式技能冷启动")
     ap.add_argument("name", help="新技能名（目录名，如 scene-xxx）")
-    ap.add_argument("--print", dest="print_questions", action="store_true",
-                    help="仅打印 8 问")
+    ap.add_argument("--print", dest="print_questions", action="store_true", help="仅打印 8 问")
     ap.add_argument("--answers", help="answers.json 路径（批量模式）")
     args = ap.parse_args()
 

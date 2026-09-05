@@ -1,7 +1,9 @@
 """工具名规范化（P0）与 CLI 轨迹模式测试——全部 mock，不联网"""
-import sys
+
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 import asyncio
 import json
 
@@ -48,6 +50,7 @@ class TestToolNameNormalization:
     def test_duplicate_dedup_report(self):
         # 源头重复定义已清除；去重防线仍须对动态注入的重复生效
         import copy
+
         dup = copy.deepcopy(tr.ALL_TOOL_DEFS[0])
         tr.ALL_TOOL_DEFS.append(dup)
         try:
@@ -67,18 +70,24 @@ class TestToolNameNormalization:
         @tr.tool("测试.工具")
         def _dummy(x: str = ""):
             return {"x": x}
+
         slug = tr.resolve_tool_name("测试.工具")
         out = asyncio.run(tr.execute_tool(slug, {"x": "1"}))
         assert json.loads(out) == {"x": "1"}
 
     def test_execute_tool_via_slug_and_original(self):
         """execute_tool 同时接受 slug 与原始名"""
-        r1 = json.loads(asyncio.run(tr.execute_tool(
-            "calculate_carbon_emission", {"industry": "钢铁", "energy_consumption": "10"})))
+        r1 = json.loads(
+            asyncio.run(tr.execute_tool("calculate_carbon_emission", {"industry": "钢铁", "energy_consumption": "10"}))
+        )
         assert r1["emission_t"] == 18.0
-        r2 = json.loads(asyncio.run(tr.execute_tool(
-            tr.resolve_tool_name("calculate_carbon_emission"),
-            {"industry": "钢铁", "energy_consumption": "10"})))
+        r2 = json.loads(
+            asyncio.run(
+                tr.execute_tool(
+                    tr.resolve_tool_name("calculate_carbon_emission"), {"industry": "钢铁", "energy_consumption": "10"}
+                )
+            )
+        )
         assert r2 == r1
 
 
@@ -116,11 +125,13 @@ class TestTracer:
 
     def test_truncation(self):
         from eco.trace import _truncate
+
         long_text = "x" * 200
         assert len(_truncate(long_text, 80)) <= 80
 
     def test_audit_chain_source_trace(self, tmp_path):
         from agent_core.prompt_engine import PromptAuditChain
+
         chain = PromptAuditChain(path=tmp_path / "audit.jsonl")
         t = Tracer(enabled=False, audit=True)
         t._audit_chain = chain
@@ -147,9 +158,16 @@ class TestChatWithToolsTrace:
         """mock LLM：第一轮 tool_calls，第二轮文本 → tracer 收到完整轨迹"""
         from agent_core.llm_client import LLMClient
 
-        tc = [{"id": "c1", "type": "function",
-               "function": {"name": "calculate_carbon_emission",
-                            "arguments": '{"industry": "钢铁", "energy_consumption": "10"}'}}]
+        tc = [
+            {
+                "id": "c1",
+                "type": "function",
+                "function": {
+                    "name": "calculate_carbon_emission",
+                    "arguments": '{"industry": "钢铁", "energy_consumption": "10"}',
+                },
+            }
+        ]
         responses = [
             {"choices": [{"message": {"content": "先算碳排放", "tool_calls": tc}}]},
             {"choices": [{"message": {"content": "排放 18 吨"}}]},
@@ -172,8 +190,7 @@ class TestChatWithToolsTrace:
         monkeypatch.setattr(client._httpx, "post", lambda *a, **k: FakeResp())
 
         tracer = Tracer(enabled=True, audit=False, console=None)
-        out = client.chat_with_tools([{"role": "user", "content": "q"}],
-                                     tools=[], tracer=tracer)
+        out = client.chat_with_tools([{"role": "user", "content": "q"}], tools=[], tracer=tracer)
         assert "18" in out
         phases = [e["phase"] for e in tracer.events]
         assert "round" in phases

@@ -48,7 +48,7 @@ def tokenize(text: str) -> list[str]:
     # 中文 bigram
     cjk = "".join(ch if re.fullmatch(r"[一-鿿]", ch) else " " for ch in text)
     for seg in cjk.split():
-        tokens.extend(seg[i:i + 2] for i in range(len(seg) - 1))
+        tokens.extend(seg[i : i + 2] for i in range(len(seg) - 1))
     return tokens
 
 
@@ -119,6 +119,7 @@ class EmbeddingClient:
 
     def __init__(self):
         from agent_core.llm_client import PROVIDERS
+
         self._disabled = os.environ.get("ECO_LLM_DISABLE", "").strip().lower() in ("1", "true", "yes")
         env = {}
         env_file = Path.home() / ".eco" / ".env"
@@ -128,8 +129,12 @@ class EmbeddingClient:
                     k, v = line.split("=", 1)
                     env[k.strip()] = v.strip()
         self._env = env
-        name = os.environ.get("ECO_EMBED_PROVIDER") or env.get("ECO_EMBED_PROVIDER") \
-            or os.environ.get("ECO_PROVIDER") or env.get("ECO_PROVIDER", "deepseek")
+        name = (
+            os.environ.get("ECO_EMBED_PROVIDER")
+            or env.get("ECO_EMBED_PROVIDER")
+            or os.environ.get("ECO_PROVIDER")
+            or env.get("ECO_PROVIDER", "deepseek")
+        )
         prov = PROVIDERS.get(name, {})
         self.model = prov.get("embedding_model") or os.environ.get("ECO_EMBED_MODEL", "")
         key_env = prov.get("api_key_env", "")
@@ -138,13 +143,15 @@ class EmbeddingClient:
         self._httpx = None
         try:
             import httpx
+
             self._httpx = httpx
         except ImportError:
             pass
 
     def available(self) -> bool:
-        return (not self._disabled and self._httpx is not None
-                and bool(self.model) and bool(self._api_key) and bool(self._base_url))
+        return (
+            not self._disabled and self._httpx is not None and bool(self.model) and bool(self._api_key) and bool(self._base_url)
+        )
 
     def embed(self, texts: list[str], timeout: float = 30.0) -> list[list[float]] | None:
         """批量取向量；失败返回 None（调用方降级 BM25-only）"""
@@ -153,8 +160,7 @@ class EmbeddingClient:
         try:
             resp = self._httpx.post(
                 f"{self._base_url}/embeddings",
-                headers={"Authorization": f"Bearer {self._api_key}",
-                         "Content-Type": "application/json"},
+                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
                 json={"model": self.model, "input": texts},
                 timeout=timeout,
             )
@@ -183,7 +189,8 @@ class VectorStore:
                 "  text TEXT DEFAULT '',"
                 "  vec TEXT DEFAULT '',"
                 "  updated_at REAL"
-                ")")
+                ")"
+            )
 
     def _conn(self) -> sqlite3.Connection:
         return sqlite3.connect(str(self.db_path))
@@ -195,7 +202,8 @@ class VectorStore:
                 "VALUES (?,?,?,?,?) ON CONFLICT(doc_id) DO UPDATE SET "
                 "source=excluded.source, text=excluded.text, vec=excluded.vec, "
                 "updated_at=excluded.updated_at",
-                (doc_id, source, text[:500], json.dumps(vec), time.time()))
+                (doc_id, source, text[:500], json.dumps(vec), time.time()),
+            )
 
     def existing_ids(self, doc_ids: list[str]) -> set[str]:
         if not doc_ids:
@@ -204,8 +212,7 @@ class VectorStore:
             q = f"SELECT doc_id FROM hybrid_vec WHERE doc_id IN ({','.join('?' * len(doc_ids))})"
             return {r[0] for r in conn.execute(q, doc_ids).fetchall()}
 
-    def cosine_rank(self, qvec: list[float], doc_ids: list[str] | None = None,
-                    top_k: int = 10) -> list[str]:
+    def cosine_rank(self, qvec: list[float], doc_ids: list[str] | None = None, top_k: int = 10) -> list[str]:
         """numpy 余弦相似度排序，返回 doc_id 降序列表"""
         try:
             import numpy as np
@@ -250,15 +257,13 @@ class HybridRetriever:
     向量增量 upsert 进 sqlite（namespace 作为 doc_id 前缀隔离）。
     """
 
-    def __init__(self, namespace: str = "default",
-                 vec_db: Path | None = None,
-                 embed_client: EmbeddingClient | None = None):
+    def __init__(self, namespace: str = "default", vec_db: Path | None = None, embed_client: EmbeddingClient | None = None):
         self.namespace = namespace
         self.embed_client = embed_client if embed_client is not None else EmbeddingClient()
         self.store = VectorStore(vec_db)
-        self.docs: dict[str, dict] = {}     # full doc_id -> {"id","text","source"}
+        self.docs: dict[str, dict] = {}  # full doc_id -> {"id","text","source"}
         self._bm25 = BM25Index()
-        self.last_channel = "bm25"          # 最近一次检索实际使用的通道
+        self.last_channel = "bm25"  # 最近一次检索实际使用的通道
 
     def _fid(self, doc_id: str) -> str:
         return f"{self.namespace}:{doc_id}"
@@ -306,27 +311,31 @@ class HybridRetriever:
         for fid, score in fused[:top_k]:
             d = self.docs.get(fid)
             if d:
-                out.append({"id": fid, "text": d["text"],
-                            "source": d.get("source", ""),
-                            "score": round(score, 6),
-                            "channel": self.last_channel})
+                out.append(
+                    {
+                        "id": fid,
+                        "text": d["text"],
+                        "source": d.get("source", ""),
+                        "score": round(score, 6),
+                        "channel": self.last_channel,
+                    }
+                )
         return out
 
 
 # ── 便捷函数：对任意事件列表做一次性混合检索（工作区历史/Memory Tree 共用）──
 
-def hybrid_search(events: list[dict], query: str, top_k: int = 5,
-                  namespace: str = "adhoc",
-                  embed: bool = True,
-                  vec_db: Path | None = None) -> list[dict]:
+
+def hybrid_search(
+    events: list[dict], query: str, top_k: int = 5, namespace: str = "adhoc", embed: bool = True, vec_db: Path | None = None
+) -> list[dict]:
     """events: [{"content"/"text", "kind"/"source", ...}] → top_k 命中（带来源标注）"""
     docs = []
     for i, e in enumerate(events):
         text = e.get("content") or e.get("text") or ""
         if not text.strip():
             continue
-        docs.append({"id": str(e.get("id") or f"e{i}"), "text": text,
-                     "source": e.get("kind") or e.get("source") or namespace})
+        docs.append({"id": str(e.get("id") or f"e{i}"), "text": text, "source": e.get("kind") or e.get("source") or namespace})
     r = HybridRetriever(namespace=namespace, vec_db=vec_db)
     r.index(docs, embed=embed)
     return r.search(query, top_k=top_k)

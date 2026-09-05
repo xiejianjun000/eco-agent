@@ -39,8 +39,10 @@ def apply(ctx, config: dict | None = None) -> None:
     """组合装配入口：按凭证自动拉起网关子进程（幂等）。"""
     platforms = [p for p, env in _PLATFORM_ENV.items() if os.environ.get(env)]
     if not platforms:
-        logger.info("[gateway_boot] 无平台凭证（FEISHU_APP_ID/WECOM_CORP_ID/...），"
-                    "跳过网关自动启动——可手动 python gateway/eco-gateway-server.py")
+        logger.info(
+            "[gateway_boot] 无平台凭证（FEISHU_APP_ID/WECOM_CORP_ID/...），"
+            "跳过网关自动启动——可手动 python gateway/eco-gateway-server.py"
+        )
         ctx.provide("gateway", {"running": False, "platforms": []})
         return
     if not _GATEWAY.is_file():
@@ -49,8 +51,10 @@ def apply(ctx, config: dict | None = None) -> None:
     cmd = [sys.executable, str(_GATEWAY), "--platforms", ",".join(platforms)]
     try:
         proc = subprocess.Popen(
-            cmd, cwd=str(_ROOT),
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            cmd,
+            cwd=str(_ROOT),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
     except OSError as e:  # noqa: BLE001
         logger.warning("[gateway_boot] 网关启动失败: %s", e)

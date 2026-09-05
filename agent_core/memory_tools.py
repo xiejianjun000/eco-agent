@@ -25,16 +25,22 @@ def _j(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, default=str)
 
 
-def _memory_add(type: str = "case", title: str = "", content: str = "",
-                tags: list | None = None, score: float = 50.0,
-                parent_id: str = None, source: str = "manual",
-                confidence: str = "medium") -> str:
+def _memory_add(
+    type: str = "case",
+    title: str = "",
+    content: str = "",
+    tags: list | None = None,
+    score: float = 50.0,
+    parent_id: str = None,
+    source: str = "manual",
+    confidence: str = "medium",
+) -> str:
     if not title or not content:
         return _j({"ok": False, "error": "title 与 content 必填"})
     try:
-        node = _mt().create_node(type, title, content, tags=tags, score=score,
-                                 parent_id=parent_id, source=source,
-                                 confidence=confidence)
+        node = _mt().create_node(
+            type, title, content, tags=tags, score=score, parent_id=parent_id, source=source, confidence=confidence
+        )
         return _j({"ok": True, "node": node})
     except Exception as e:  # noqa: BLE001
         return _j({"ok": False, "error": f"{type(e).__name__}: {e}"})
@@ -45,8 +51,7 @@ def _memory_update(node_id: str = "", **kw) -> str:
         return _j({"ok": False, "error": "node_id 必填"})
     try:
         node = _mt().update_node(node_id, **kw)
-        return _j({"ok": node is not None, "node": node,
-                   "error": "" if node is not None else "节点不存在"})
+        return _j({"ok": node is not None, "node": node, "error": "" if node is not None else "节点不存在"})
     except Exception as e:  # noqa: BLE001
         return _j({"ok": False, "error": f"{type(e).__name__}: {e}"})
 
@@ -61,8 +66,7 @@ def _memory_delete(node_id: str = "") -> str:
         return _j({"ok": False, "error": f"{type(e).__name__}: {e}"})
 
 
-def _memory_search(query: str = "", type: str = None, limit: int = 10,
-                   hybrid: bool = True) -> str:
+def _memory_search(query: str = "", type: str = None, limit: int = 10, hybrid: bool = True) -> str:
     if not query:
         return _j({"ok": False, "error": "query 必填"})
     try:
@@ -83,13 +87,11 @@ def _memory_stats() -> str:
         return _j({"ok": False, "error": f"{type(e).__name__}: {e}"})
 
 
-def _memory_prune(min_score: float = None, max_age_days: int = None,
-                  dry_run: bool = True) -> str:
+def _memory_prune(min_score: float = None, max_age_days: int = None, dry_run: bool = True) -> str:
     if min_score is None and max_age_days is None:
         return _j({"ok": False, "error": "min_score 或 max_age_days 至少给一项"})
     try:
-        r = _mt().prune(min_score=min_score, max_age_days=max_age_days,
-                        dry_run=dry_run)
+        r = _mt().prune(min_score=min_score, max_age_days=max_age_days, dry_run=dry_run)
         r["ok"] = True
         return _j(r)
     except Exception as e:  # noqa: BLE001
@@ -116,15 +118,20 @@ def _memory_sync(mode: str = "both", vault_path: str = None) -> str:
 def _policy_reload() -> str:
     """热重载权限策略：重新解析 PERMISSION.md 工具风险覆盖 + L3 白名单 + glob 规则，无需重启进程。"""
     try:
-        from agent_core.permissions import load_overrides, load_l3_whitelist, load_glob_rules
+        from agent_core.permissions import load_glob_rules, load_l3_whitelist, load_overrides
 
         overrides = load_overrides()
         whitelist = load_l3_whitelist()
         glob_rules = load_glob_rules()
-        return _j({"ok": True, "overrides_count": len(overrides),
-                   "l3_whitelist_count": len(whitelist),
-                   "glob_rules_count": len(glob_rules),
-                   "note": "PERMISSION.md tool_risk_overrides / L3 白名单 / glob 规则已重新解析生效"})
+        return _j(
+            {
+                "ok": True,
+                "overrides_count": len(overrides),
+                "l3_whitelist_count": len(whitelist),
+                "glob_rules_count": len(glob_rules),
+                "note": "PERMISSION.md tool_risk_overrides / L3 白名单 / glob 规则已重新解析生效",
+            }
+        )
     except Exception as e:  # noqa: BLE001
         return _j({"ok": False, "error": f"{type(e).__name__}: {e}"})
 
@@ -144,8 +151,7 @@ def dispatch_memory_tool(name: str, arguments: dict) -> str:
             confidence=str(args.get("confidence", "medium")),
         )
     if name == "eco_memory_update":
-        upd = {k: v for k, v in args.items()
-               if k in ("title", "content", "score", "tags", "confidence", "parent_id")}
+        upd = {k: v for k, v in args.items() if k in ("title", "content", "score", "tags", "confidence", "parent_id")}
         return _memory_update(node_id=str(args.get("node_id", "")), **upd)
     if name == "eco_memory_delete":
         return _memory_delete(node_id=str(args.get("node_id", "")))
@@ -165,8 +171,7 @@ def dispatch_memory_tool(name: str, arguments: dict) -> str:
             dry_run=bool(args.get("dry_run", True)),
         )
     if name == "eco_memory_sync":
-        return _memory_sync(mode=str(args.get("mode", "both")),
-                            vault_path=args.get("vault_path") or None)
+        return _memory_sync(mode=str(args.get("mode", "both")), vault_path=args.get("vault_path") or None)
     if name == "eco_policy_reload":
         return _policy_reload()
     return _j({"ok": False, "error": f"未知工具: {name}"})

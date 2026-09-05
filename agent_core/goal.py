@@ -26,7 +26,6 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger("eco.goal")
 
@@ -67,8 +66,7 @@ class GoalStore:
 
     # ── CRUD ────────────────────────────────────────────
 
-    def create(self, objective: str, max_goal_rounds: int = 10,
-               auto_run: bool = False, context: str = "") -> dict:
+    def create(self, objective: str, max_goal_rounds: int = 10, auto_run: bool = False, context: str = "") -> dict:
         """创建目标。auto_run=True 时立即以后台子代理发起首轮。"""
         goal = {
             "id": uuid.uuid4().hex[:12],
@@ -98,8 +96,7 @@ class GoalStore:
 
     def list(self) -> list[dict]:
         with self._lock:
-            return [dict(g) for g in sorted(
-                self._goals.values(), key=lambda g: -g["created_at"])]
+            return [dict(g) for g in sorted(self._goals.values(), key=lambda g: -g["created_at"])]
 
     def _update(self, goal_id: str, mutate) -> dict | None:
         with self._lock:
@@ -117,13 +114,16 @@ class GoalStore:
         def m(g):
             g["status"] = "paused"
             g["armed"] = False
+
         return self._update(goal_id, m)
 
     def resume(self, goal_id: str) -> dict | None:
         """重新武装：armed 后由 run_next_round 驱动。"""
+
         def m(g):
             g["status"] = "active"
             g["armed"] = True
+
         goal = self._update(goal_id, m)
         if goal is not None:
             self.run_next_round(goal_id)
@@ -135,6 +135,7 @@ class GoalStore:
             g["armed"] = False
             if note:
                 g["history"].append({"time": time.time(), "type": "complete", "note": note})
+
         return self._update(goal_id, m)
 
     def block(self, goal_id: str, reason: str) -> dict | None:
@@ -142,6 +143,7 @@ class GoalStore:
             g["status"] = "blocked"
             g["armed"] = False
             g["blocked_reason"] = reason
+
         return self._update(goal_id, m)
 
     def delete(self, goal_id: str) -> bool:
@@ -200,8 +202,7 @@ class GoalStore:
                 while agent.status in ("pending", "running"):
                     time.sleep(1.5)
                 _on_done(agent)
-        return {"ok": True, "goal_id": goal_id, "subagent_id": snap["id"],
-                "round": goal["rounds"] + 1}
+        return {"ok": True, "goal_id": goal_id, "subagent_id": snap["id"], "round": goal["rounds"] + 1}
 
     def _notify_event(self, goal_id: str, event: str, detail: str) -> None:
         """目标事件通知落盘（ECO_DIR/goal_notifications.jsonl）——
@@ -211,9 +212,12 @@ class GoalStore:
             path = base / "goal_notifications.jsonl"
             path.parent.mkdir(parents=True, exist_ok=True)
             with path.open("a", encoding="utf-8") as f:
-                f.write(json.dumps({"ts": time.time(), "goal_id": goal_id,
-                                    "event": event, "detail": detail[:500]},
-                                   ensure_ascii=False) + "\n")
+                f.write(
+                    json.dumps(
+                        {"ts": time.time(), "goal_id": goal_id, "event": event, "detail": detail[:500]}, ensure_ascii=False
+                    )
+                    + "\n"
+                )
         except Exception:
             pass
 
@@ -227,8 +231,7 @@ class GoalStore:
         def m(g):
             g["rounds"] = rounds
             g["last_result"] = result
-            g["history"].append({"time": time.time(), "round": rounds,
-                                 "result": result[:500]})
+            g["history"].append({"time": time.time(), "round": rounds, "result": result[:500]})
             if agent.status == "done":
                 if _looks_complete(result):
                     # 完成即停：结果带强完成信号（✅/已完成）且无待续/失败信号 → completed
@@ -247,14 +250,15 @@ class GoalStore:
                 g["status"] = "blocked"
                 g["armed"] = False
                 g["blocked_reason"] = f"round {rounds} failed: {agent.error or agent.status}"
+
         self._update(goal_id, m)
         goal = self.get(goal_id)
         if goal:
             self._notify_event(
                 goal_id,
-                "completed" if goal["status"] == "completed" else
-                ("blocked" if goal["status"] == "blocked" else "round_done"),
-                f"第{rounds}轮 {goal['status']}: {result[:200]}")
+                "completed" if goal["status"] == "completed" else ("blocked" if goal["status"] == "blocked" else "round_done"),
+                f"第{rounds}轮 {goal['status']}: {result[:200]}",
+            )
         if goal and goal["armed"] and goal["status"] == "active":
             logger.info("goal %s 第 %s 轮完成，自动发起下一轮", goal_id, rounds)
             self.run_next_round(goal_id)
@@ -268,8 +272,7 @@ class GoalStore:
 
 
 _COMPLETE_SIGNAL = re.compile(r"✅|已完成|完成标准已达成|任务完成")
-_INCOMPLETE_SIGNAL = re.compile(
-    r"要我继续|需要我|待确认|还需|下一步|是否继续|请确认|继续查|尚未完成|未完成|继续执行")
+_INCOMPLETE_SIGNAL = re.compile(r"要我继续|需要我|待确认|还需|下一步|是否继续|请确认|继续查|尚未完成|未完成|继续执行")
 _FAIL_SIGNAL = re.compile(r"\[eco-server\]|Traceback|失败|报错", re.I)
 
 

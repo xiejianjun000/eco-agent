@@ -1,17 +1,17 @@
 """Telegram 通道适配器"""
 
+import logging
 import os
 import sys
-import logging
-import time
 import threading
+import time
 
 # 允许独立运行
 if __name__ == "__main__":
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
-    from gateway.gateway_core import ChannelAdapter, UnifiedMessage, MessageType
+    from gateway.gateway_core import ChannelAdapter, MessageType, UnifiedMessage
 else:
-    from ..gateway_core import ChannelAdapter, UnifiedMessage, MessageType
+    from ..gateway_core import ChannelAdapter, MessageType, UnifiedMessage
 
 logger = logging.getLogger("channel.telegram")
 
@@ -52,8 +52,7 @@ class TelegramAdapter(ChannelAdapter):
             logger.warning(f"Telegram 发送失败: {e}")
             return False
 
-    def send_card(self, channel_id: str, title: str, content: str,
-                  actions: list[dict] = None) -> bool:
+    def send_card(self, channel_id: str, title: str, content: str, actions: list[dict] = None) -> bool:
         if not self.is_configured():
             return False
         text = f"*{title}*\n\n{content}"
@@ -95,9 +94,11 @@ class TelegramAdapter(ChannelAdapter):
     def _poll_loop(self):
         while self._running:
             try:
-                r = requests.get(f"{self._base_url}/getUpdates", params={
-                    "offset": self._offset, "timeout": 30, "allowed_updates": ["message"]
-                }, timeout=35)
+                r = requests.get(
+                    f"{self._base_url}/getUpdates",
+                    params={"offset": self._offset, "timeout": 30, "allowed_updates": ["message"]},
+                    timeout=35,
+                )
                 data = r.json()
                 if data.get("ok"):
                     for update in data.get("result", []):

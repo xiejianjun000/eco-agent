@@ -16,10 +16,10 @@ writer_agent.py — ECO AGENT 执法文书生成 Agent
 """
 
 import json
-import re
 import logging
-from pathlib import Path
+import re
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("writer_agent")
@@ -31,6 +31,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 try:
     from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+
     HAS_JINJA = True
 except ImportError:
     HAS_JINJA = False
@@ -43,7 +44,7 @@ class SimpleTemplate:
 
     def __init__(self, content: str):
         self.content = content
-        self.variables = set(re.findall(r'\{\{(.*?)\}\}', content))
+        self.variables = set(re.findall(r"\{\{(.*?)\}\}", content))
 
     def render(self, **kwargs) -> str:
         result = self.content
@@ -127,11 +128,9 @@ class WriterAgent:
 
     def list_templates(self) -> dict[str, Any]:
         """列出可用模板"""
-        return {k: {"name": v["name"], "required_fields": v["required_fields"]}
-                for k, v in self.DOC_TYPES.items()}
+        return {k: {"name": v["name"], "required_fields": v["required_fields"]} for k, v in self.DOC_TYPES.items()}
 
-    def generate(self, doc_type: str, data: dict[str, Any],
-                 author: str = "ECO AGENT") -> dict[str, Any]:
+    def generate(self, doc_type: str, data: dict[str, Any], author: str = "ECO AGENT") -> dict[str, Any]:
         """生成执法文书"""
         if doc_type not in self.DOC_TYPES:
             return {"success": False, "error": f"不支持的文书类型: {doc_type}"}
@@ -161,7 +160,7 @@ class WriterAgent:
             return {"success": False, "error": f"模板渲染失败: {e}"}
 
         # 构建文书记录
-        doc_id = f"DOC-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{len(self._documents)+1:03d}"
+        doc_id = f"DOC-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{len(self._documents) + 1:03d}"
         document = {
             "doc_id": doc_id,
             "doc_type": doc_type,
@@ -221,9 +220,7 @@ class WriterAgent:
         else:
             doc["status"] = "draft"
 
-        logger.info(f"[ACE] 审查完成: {doc['doc_id']} "
-                    f"评分 {curator_result['score']}/100 "
-                    f"[{curator_result['recommendation']}]")
+        logger.info(f"[ACE] 审查完成: {doc['doc_id']} 评分 {curator_result['score']}/100 [{curator_result['recommendation']}]")
         return {"success": True, "ace": ace, "document": doc}
 
     def _reflector_check(self, doc: dict[str, Any]) -> dict[str, Any]:
@@ -233,7 +230,7 @@ class WriterAgent:
         issues = []
 
         # R1: 引用完整性
-        refs = re.findall(r'《[^》]+》', content)
+        refs = re.findall(r"《[^》]+》", content)
         checks["law_references"] = len(refs)
         if len(refs) == 0:
             issues.append("未发现法规引用")
@@ -242,24 +239,23 @@ class WriterAgent:
             checks["law_ref_score"] = 90
 
         # R2: 金额格式
-        amounts = re.findall(r'[\d,]+元', content)
+        amounts = re.findall(r"[\d,]+元", content)
         checks["penalty_amounts"] = len(amounts)
         checks["amount_format_score"] = 90 if amounts else 60
 
         # R3: 必填段检查
-        required_sections = ["权利告知" if "处罚决定" in content else None,
-                             "履行方式" if "履行" in content else None]
+        required_sections = ["权利告知" if "处罚决定" in content else None, "履行方式" if "履行" in content else None]
         present = [s for s in required_sections if s]
         checks["required_sections"] = len(present)
         checks["section_score"] = 90 if present else 50
 
         # R4: 日期格式
-        dates = re.findall(r'\d{4}年\d{1,2}月\d{1,2}日', content)
+        dates = re.findall(r"\d{4}年\d{1,2}月\d{1,2}日", content)
         checks["dates_found"] = len(dates)
         checks["date_format_score"] = 90 if dates else 40
 
         # R5: 敏感信息
-        phones = re.findall(r'1[3-9]\d{9}', content)
+        phones = re.findall(r"1[3-9]\d{9}", content)
         if phones:
             issues.append("包含未脱敏手机号")
             checks["sensitive_data_score"] = 50
@@ -277,8 +273,7 @@ class WriterAgent:
             "passed": overall >= 70,
         }
 
-    def _curator_decision(self, doc: dict[str, Any],
-                          reflector: dict[str, Any]) -> dict[str, Any]:
+    def _curator_decision(self, doc: dict[str, Any], reflector: dict[str, Any]) -> dict[str, Any]:
         """Curator 最终决策"""
         score = reflector["overall_score"]
         issues = reflector["issues"]
@@ -322,7 +317,7 @@ class WriterAgent:
 
         doc = document["document"]
         doc_type = doc.get("doc_type", "unknown")
-        safe_title = re.sub(r'[<>:"/\\|?*]', '_', doc.get("title", "untitled"))[:50]
+        safe_title = re.sub(r'[<>:"/\\|?*]', "_", doc.get("title", "untitled"))[:50]
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         if format == "md":
@@ -369,8 +364,7 @@ class WriterAgent:
 
         return {"success": False, "error": f"不支持的格式: {format}"}
 
-    def list_documents(self, status: str | None = None,
-                       limit: int = 20) -> list[dict[str, Any]]:
+    def list_documents(self, status: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
         """列出已生成的文书"""
         docs = self._documents
         if status:
@@ -385,22 +379,22 @@ class WriterAgent:
                 status: sum(1 for d in self._documents if d.get("status") == status)
                 for status in ("draft", "reviewing", "approved")
             },
-            "by_type": {
-                dt: sum(1 for d in self._documents if d.get("doc_type") == dt)
-                for dt in self.DOC_TYPES
-            },
+            "by_type": {dt: sum(1 for d in self._documents if d.get("doc_type") == dt) for dt in self.DOC_TYPES},
         }
 
 
 # ===== 测试 =====
 
+
 def test():
     """测试执法文书生成"""
     import sys as _sys
+
     _sys.path.insert(0, str(PROJECT_ROOT))
-    from _scripts.memory_tree import MemoryTree
-    import tempfile
     import shutil
+    import tempfile
+
+    from _scripts.memory_tree import MemoryTree
 
     db_path = Path(tempfile.mkdtemp()) / "test_writer.db"
     mt = MemoryTree(db_path)
@@ -408,24 +402,27 @@ def test():
 
     # 测试生成处罚决定书
     print("[TEST] 生成行政处罚决定书...")
-    doc1 = wa.generate("penalty_decision", {
-        "case_no": "环罚字〔2026〕第001号",
-        "party_name": "XX钢铁有限公司",
-        "credit_code": "91110000MA12345678",
-        "legal_representative": "张三",
-        "address": "XX省XX市XX区XX路XX号",
-        "investigation_process": "2026年3月15日，本机关执法人员对当事人进行现场检查...",
-        "violation_facts": "经查，当事人烧结机头排放口二氧化硫浓度为150mg/m³，超过标准限值100mg/m³。",
-        "evidence_list": ["现场检查笔录", "监测报告（编号：XXXX-2026-001）", "调查询问笔录"],
-        "laws_violated": ["《生态环境法典》第二编第二分编第XX条"],
-        "laws_basis": ["《生态环境法典》第二编第二分编第XX条第X款"],
-        "discretion_factors": ["超标倍数0.5倍，属一般情节", "当事人积极配合调查"],
-        "benchmark_refs": ["《主要大气污染物行政处罚裁量基准》"],
-        "penalties": ["责令立即改正违法行为", "处罚款人民币叁拾伍万元整（¥350,000.00）"],
-        "execution_method": "当事人应在收到本决定书之日起十五日内，将罚款缴至指定银行账户...",
-        "复议机关": "XX省生态环境厅",
-        "人民法院": "XX市人民法院",
-    })
+    doc1 = wa.generate(
+        "penalty_decision",
+        {
+            "case_no": "环罚字〔2026〕第001号",
+            "party_name": "XX钢铁有限公司",
+            "credit_code": "91110000MA12345678",
+            "legal_representative": "张三",
+            "address": "XX省XX市XX区XX路XX号",
+            "investigation_process": "2026年3月15日，本机关执法人员对当事人进行现场检查...",
+            "violation_facts": "经查，当事人烧结机头排放口二氧化硫浓度为150mg/m³，超过标准限值100mg/m³。",
+            "evidence_list": ["现场检查笔录", "监测报告（编号：XXXX-2026-001）", "调查询问笔录"],
+            "laws_violated": ["《生态环境法典》第二编第二分编第XX条"],
+            "laws_basis": ["《生态环境法典》第二编第二分编第XX条第X款"],
+            "discretion_factors": ["超标倍数0.5倍，属一般情节", "当事人积极配合调查"],
+            "benchmark_refs": ["《主要大气污染物行政处罚裁量基准》"],
+            "penalties": ["责令立即改正违法行为", "处罚款人民币叁拾伍万元整（¥350,000.00）"],
+            "execution_method": "当事人应在收到本决定书之日起十五日内，将罚款缴至指定银行账户...",
+            "复议机关": "XX省生态环境厅",
+            "人民法院": "XX市人民法院",
+        },
+    )
 
     # ACE 审查
     print("[TEST] ACE 审查...")
@@ -442,9 +439,13 @@ def test():
     stats = wa.get_stats()
     print(f"\n[TEST] 文书统计: {json.dumps(stats, ensure_ascii=False)}")
 
-    import gc; gc.collect()
-    try: shutil.rmtree(db_path.parent)
-    except Exception: pass
+    import gc
+
+    gc.collect()
+    try:
+        shutil.rmtree(db_path.parent)
+    except Exception:
+        pass
     print("\n[OK] 执法文书模块测试通过")
 
 

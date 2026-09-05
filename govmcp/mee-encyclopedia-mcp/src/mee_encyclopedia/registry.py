@@ -1,4 +1,5 @@
 """领域注册表：15 大领域命名空间与工具归属元数据。"""
+
 from __future__ import annotations
 
 DOMAIN_REGISTRY = {

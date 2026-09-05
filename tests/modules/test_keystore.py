@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """keystore.py 测试——三后端 CRUD / 0600 权限 / PBKDF2 派生 / vault mock / llm_providers 集成回退"""
+
 import io
 import json
 import os
@@ -10,13 +11,16 @@ import urllib.request
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from agent_core import keystore
-from agent_core.keystore import (
-    EnvBackend, FileVaultBackend, VaultClientBackend, get_keystore,
-)
 from agent_core import llm_providers as lp
+from agent_core.keystore import (
+    EnvBackend,
+    FileVaultBackend,
+    VaultClientBackend,
+    get_keystore,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +124,7 @@ class TestFileVaultBackend:
 # ---------------------------------------------------------------------------
 def _mock_http(store):
     """模拟 Vault KV v2：store 为 (path -> value) dict"""
+
     def http(req: urllib.request.Request, timeout: int) -> bytes:
         assert req.get_header("X-vault-token") == "tok-mock"
         url = req.full_url
@@ -127,20 +132,21 @@ def _mock_http(store):
         data_prefix = "secret/data/"
         meta_prefix = "secret/metadata"
         if req.get_method() == "GET" and path.startswith(data_prefix):
-            key = path[len(data_prefix):]
+            key = path[len(data_prefix) :]
             if key not in store:
                 raise urllib.error.HTTPError(url, 404, "not found", {}, io.BytesIO(b""))
             return json.dumps({"data": {"data": {"value": store[key]}}}).encode()
         if req.get_method() == "POST" and path.startswith(data_prefix):
-            key = path[len(data_prefix):]
+            key = path[len(data_prefix) :]
             store[key] = json.loads(req.data.decode())["data"]["value"]
             return b"{}"
         if req.get_method() == "DELETE" and path.startswith(data_prefix):
-            store.pop(path[len(data_prefix):], None)
+            store.pop(path[len(data_prefix) :], None)
             return b""
         if req.get_method() == "LIST" and path == meta_prefix:
             return json.dumps({"data": {"keys": sorted(store)}}).encode()
         raise AssertionError(f"未预期的请求: {req.get_method()} {url}")
+
     return http
 
 
@@ -148,8 +154,7 @@ class TestVaultClientBackend:
     @pytest.fixture
     def client(self):
         store = {}
-        return VaultClientBackend(addr="http://vault.test:8200", token="tok-mock",
-                                  http_fn=_mock_http(store)), store
+        return VaultClientBackend(addr="http://vault.test:8200", token="tok-mock", http_fn=_mock_http(store)), store
 
     def test_crud(self, client):
         c, store = client

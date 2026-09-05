@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """workspace 项目工作区测试（LLM 层不涉及）"""
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import pytest
+
+from agent_core.prompt_engine import PromptAuditChain, PromptEngine
 from agent_core.workspace import WorkspaceManager, slugify
-from agent_core.prompt_engine import PromptEngine, PromptAuditChain
 
 
 @pytest.fixture()
@@ -41,7 +43,7 @@ class TestWorkspaceCRUD:
 
     def test_slugify_safe(self):
         assert slugify(" 合力 砖厂/A:B ") == "合力-砖厂-A-B"
-        assert slugify("") .startswith("ws-")
+        assert slugify("").startswith("ws-")
 
     def test_events_notes_todos_summary(self, mgr):
         ws = mgr.create("合力砖厂")
@@ -108,6 +110,7 @@ class TestMemoryTreeFreeze:
         assert r["ok"] is True
         # 可检索
         from _scripts.memory_tree import MemoryTree
+
         mt = MemoryTree(db_path=tmp_path / "mem.db")
         hits = mt.search("合力砖厂")
         assert hits

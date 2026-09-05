@@ -1,4 +1,5 @@
 """排污许可领域：排污许可信息查询、系统入口。"""
+
 from __future__ import annotations
 
 import logging
@@ -18,6 +19,7 @@ def search_permit(fetcher, cache, company: str) -> dict:
     try:
         html = fetcher.get_text(PERMIT_PLATFORM)
         from ..core.parser import parse_article
+
         text = parse_article(html, max_chars=2000)
         result["page_snippet"] = text[:1000] if text else ""
         result["note"] = "排污许可平台为业务系统（需登录/验证码），公开端不支持结构化查询；建议派发 browser-agent 带登录态查询"

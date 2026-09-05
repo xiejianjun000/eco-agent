@@ -20,14 +20,15 @@ doc_image_extractor.py
     python doc_image_extractor.py -d <目录路径> [输出目录]
 """
 
-import sys
-import os
 import argparse
+import os
+import sys
 from pathlib import Path
 
 MIN_IMAGE_SIZE = 100 * 1024
 
 # -------------------- 依赖检查 --------------------
+
 
 def _require(package_name: str, install_cmd: str):
     """尝试导入包，失败时提示安装并退出。"""
@@ -40,6 +41,7 @@ def _require(package_name: str, install_cmd: str):
 
 
 # -------------------- PPTX 图片提取 --------------------
+
 
 def extract_images_from_pptx(filepath: str, output_dir: str) -> int:
     """使用 python-pptx 从 PPTX 中提取图片。"""
@@ -78,6 +80,7 @@ def extract_images_from_pptx(filepath: str, output_dir: str) -> int:
 
 # -------------------- DOCX 图片提取 --------------------
 
+
 def extract_images_from_docx(filepath: str, output_dir: str) -> int:
     """使用 python-docx 从 DOCX 中提取图片。"""
     _require("docx", "pip install python-docx")
@@ -113,6 +116,7 @@ def extract_images_from_docx(filepath: str, output_dir: str) -> int:
 
 
 # -------------------- XLSX 图片提取 --------------------
+
 
 def extract_images_from_xlsx(filepath: str, output_dir: str) -> int:
     """使用 openpyxl 从 XLSX 中提取图片。"""
@@ -176,21 +180,14 @@ def extract_images_from_file(filepath: str, output_dir: str) -> int:
 
     ext = Path(filepath).suffix.lower()
     if ext not in SUPPORTED_FORMATS:
-        raise ValueError(
-            f"不支持的文件格式: {ext}\n"
-            f"支持的格式: {', '.join(SUPPORTED_FORMATS.keys())}"
-        )
+        raise ValueError(f"不支持的文件格式: {ext}\n支持的格式: {', '.join(SUPPORTED_FORMATS.keys())}")
 
     os.makedirs(output_dir, exist_ok=True)
     extractor = SUPPORTED_FORMATS[ext]
     return extractor(filepath, output_dir)
 
 
-def extract_images(
-    inputs: list[str],
-    output_dir: str,
-    flat: bool = False
-) -> dict[str, int]:
+def extract_images(inputs: list[str], output_dir: str, flat: bool = False) -> dict[str, int]:
     """
     批量提取图片。
 
@@ -259,6 +256,7 @@ def extract_images(
 
             # 提取到临时目录，再重命名（flat 模式下需要加前缀）
             import tempfile
+
             tmp_dir = tempfile.mkdtemp()
             count = extract_images_from_file(filepath, tmp_dir)
 
@@ -294,6 +292,7 @@ def extract_images(
             else:
                 # 没提取到图片，清理临时目录
                 import shutil
+
                 shutil.rmtree(tmp_dir, ignore_errors=True)
                 if not flat:
                     # 空目录也清理
@@ -319,6 +318,7 @@ def extract_images(
 
 # -------------------- CLI --------------------
 
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="从文档中提取内嵌图片",
@@ -337,13 +337,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="要处理的文件或目录路径（可多选）",
     )
     parser.add_argument(
-        "-d", "--dir",
+        "-d",
+        "--dir",
         action="append",
         default=[],
         help="扫描目录中的所有支持文件（可多次使用）",
     )
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         default="extracted_images",
         help="输出目录（默认: extracted_images）",
     )

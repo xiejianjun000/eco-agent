@@ -1,4 +1,5 @@
 """二级缓存：内存（快）+ 磁盘（持久）。实时数据按 TTL 失效。"""
+
 from __future__ import annotations
 
 import hashlib

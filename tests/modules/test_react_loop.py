@@ -1,9 +1,11 @@
 """L1 ReAct++ 循环测试——真实行为断言（工具调用序列/中断注入/回滚副作用）"""
-import sys
+
 import os
-import time
+import sys
 import threading
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+import time
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from agent_core.react_loop import ReActPlusPlus, ReActState
 
 
@@ -36,9 +38,11 @@ class TestReActLoop:
         """工具抛异常：不外溢、被记录进 action_result，循环正常收尾"""
         loop = ReActPlusPlus()
         boom_calls = [0]
+
         def boom(query):
             boom_calls[0] += 1
             raise RuntimeError("爆炸")
+
         loop.register_tool("boom", boom, "必炸工具")
         result = loop.execute("boom 触发异常")
         assert boom_calls[0] == 1  # 当前实现：工具异常不外溢，不触发自动重试
@@ -49,10 +53,12 @@ class TestReActLoop:
         """中断注入：运行中打断，循环必须退出且如实标记 interrupted"""
         loop = ReActPlusPlus()
         entered = threading.Event()
+
         def slow_tool(query):
             entered.set()
             time.sleep(1.0)
             return "慢结果"
+
         loop.register_tool("slow", slow_tool, "慢工具")
         outcome = {}
         t = threading.Thread(target=lambda: outcome.update(loop.execute("slow 任务")), daemon=True)
@@ -90,9 +96,11 @@ class TestReActLoop:
         loop.register_tool("echo", lambda query: query, "测试工具")
         reflect_calls = []
         orig_reflect = loop._pause_reflect
+
         def spy_reflect(state, context):
             reflect_calls.append(state.step)
             return orig_reflect(state, context)
+
         loop._pause_reflect = spy_reflect
         loop._estimate_confidence = lambda thought, state: 0.1  # 强制低置信度
         loop.execute("echo 低置信任务")

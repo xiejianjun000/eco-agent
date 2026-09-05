@@ -94,18 +94,16 @@ def test_vector_store_upsert_and_cosine(tmp_path):
 
 
 def test_hybrid_with_fake_vectors(tmp_path):
-    r = HybridRetriever(namespace="t", vec_db=tmp_path / "v.db",
-                        embed_client=FakeEmbedClient())
+    r = HybridRetriever(namespace="t", vec_db=tmp_path / "v.db", embed_client=FakeEmbedClient())
     r.index(DOCS)
     hits = r.search("砖厂大气", top_k=2)
     assert hits[0]["id"].endswith(":a")
     assert hits[0]["channel"] == "hybrid"  # 向量通道参与融合
-    assert hits[0]["source"] == "note"     # 来源标注
+    assert hits[0]["source"] == "note"  # 来源标注
 
 
 def test_degrade_when_embed_fails(tmp_path):
-    r = HybridRetriever(namespace="t", vec_db=tmp_path / "v.db",
-                        embed_client=FakeEmbedClient(fail=True))
+    r = HybridRetriever(namespace="t", vec_db=tmp_path / "v.db", embed_client=FakeEmbedClient(fail=True))
     r.index(DOCS)
     hits = r.search("按日连续处罚", top_k=2)
     assert hits and hits[0]["id"].endswith(":b")
@@ -126,8 +124,7 @@ def test_degrade_when_no_embedding_config(monkeypatch, tmp_path):
 
 def test_hybrid_search_adhoc(tmp_path):
     events = [{"kind": "user", "content": d["text"]} for d in DOCS]
-    hits = hybrid_search(events, "大气 超标", top_k=1, namespace="adhoc-t",
-                         embed=False, vec_db=tmp_path / "v.db")
+    hits = hybrid_search(events, "大气 超标", top_k=1, namespace="adhoc-t", embed=False, vec_db=tmp_path / "v.db")
     assert len(hits) == 1 and "砖厂" in hits[0]["text"]
     assert hits[0]["source"] == "user"
 
@@ -135,10 +132,11 @@ def test_hybrid_search_adhoc(tmp_path):
 def test_workspace_relevant_context(tmp_path, monkeypatch):
     monkeypatch.setenv("ECO_LLM_DISABLE", "1")  # 强制 BM25-only
     from agent_core.workspace import WorkspaceManager
+
     mgr = WorkspaceManager(root=tmp_path / "ws")
     ws = mgr.create("合力砖厂检查")
     for i in range(6):
-        ws.add_event("user", f"第{i+1}轮：检查记录")
+        ws.add_event("user", f"第{i + 1}轮：检查记录")
     ws.add_event("law", "砖厂涉嫌违反《大气污染防治法》第九十九条 超标排放")
     ws.add_event("note", "按日连续处罚程序需先责令改正")
     mgr.open("合力砖厂检查")
@@ -153,11 +151,10 @@ def test_workspace_relevant_context(tmp_path, monkeypatch):
 def test_memory_tree_search_hybrid_degrade(tmp_path, monkeypatch):
     monkeypatch.setenv("ECO_LLM_DISABLE", "1")
     from _scripts.memory_tree import MemoryTree
+
     mt = MemoryTree(db_path=tmp_path / "mem.db")
-    mt.create_node(type="case", title="砖厂大气超标案",
-                   content="合力砖厂超标排放大气污染物", tags=["workspace"])
-    mt.create_node(type="case", title="污水台账案",
-                   content="污水处理台账核对", tags=["workspace"])
+    mt.create_node(type="case", title="砖厂大气超标案", content="合力砖厂超标排放大气污染物", tags=["workspace"])
+    mt.create_node(type="case", title="污水台账案", content="污水处理台账核对", tags=["workspace"])
     out = mt.search_hybrid("大气 超标", max_results=2)
     assert out and out[0]["title"] == "砖厂大气超标案"
     assert out[0]["channel"] == "bm25" and "rrf_score" in out[0]

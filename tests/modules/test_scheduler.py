@@ -10,9 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from agent_core.scheduler import (
-    CronScheduler, ScheduledJob, nl_to_cron
-)
+from agent_core.scheduler import CronScheduler, ScheduledJob, nl_to_cron  # noqa: E402
 
 
 class TestNlToCron(unittest.TestCase):
@@ -73,6 +71,7 @@ class TestCronScheduler(unittest.TestCase):
 
     def test_register_and_run_handler(self):
         results = []
+
         def my_handler():
             results.append("done")
             return "ok"

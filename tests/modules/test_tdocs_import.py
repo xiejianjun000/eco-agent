@@ -3,6 +3,7 @@
 覆盖：打包产物字段、完整四步管线 happy path、pre_import 缺字段报错、
 token 缺失报错、async_import 直接返回 file_url 短路、轮询进度 100 结束。
 """
+
 import asyncio
 import json
 import pathlib
@@ -14,9 +15,9 @@ from agent_core import tdocs_import as ti
 
 def _sample_html(tmp_path: pathlib.Path) -> pathlib.Path:
     p = tmp_path / "report.html"
-    p.write_text("<html><head><meta charset='utf-8'></head>"
-                 "<body><h1>冷江空气质量分析</h1><p>demo</p></body></html>",
-                 encoding="utf-8")
+    p.write_text(
+        "<html><head><meta charset='utf-8'></head><body><h1>冷江空气质量分析</h1><p>demo</p></body></html>", encoding="utf-8"
+    )
     return p
 
 
@@ -31,19 +32,24 @@ class _FakeSession:
     async def call_tool(self, name, arguments=None):
         self.calls.append((name, arguments))
         if name == "manage.pre_import":
-            return _ToolResult(json.dumps({
-                "upload_url": "https://cos.example.com/up/abc",
-                "file_key": "key-abc", "task_id": "task-1"}))
+            return _ToolResult(
+                json.dumps({"upload_url": "https://cos.example.com/up/abc", "file_key": "key-abc", "task_id": "task-1"})
+            )
         if name == "manage.async_import":
             return _ToolResult(json.dumps({"task_id": "task-1", "progress": 0}))
         if name == "manage.import_progress":
             # 第一次 50，第二次 100
             progress = 100 if len([c for c in self.calls if c[0] == "manage.import_progress"]) >= 2 else 50
-            return _ToolResult(json.dumps({
-                "task_id": "task-1", "progress": progress,
-                "file_id": "file-123" if progress == 100 else "",
-                "file_url": "https://docs.qq.com/doc/xyz" if progress == 100 else "",
-            }))
+            return _ToolResult(
+                json.dumps(
+                    {
+                        "task_id": "task-1",
+                        "progress": progress,
+                        "file_id": "file-123" if progress == 100 else "",
+                        "file_url": "https://docs.qq.com/doc/xyz" if progress == 100 else "",
+                    }
+                )
+            )
         raise AssertionError(f"unexpected tool: {name}")
 
 
@@ -123,6 +129,7 @@ class _FakeHttp:
 # 打包
 # ═══════════════════════════════════
 
+
 def test_run_pack_real(tmp_path):
     """真实 node aipage_pack.js 打包：产物 .aipage 存在且 md5/size 一致。"""
     html = _sample_html(tmp_path)
@@ -141,6 +148,7 @@ def test_run_pack_missing_html(tmp_path):
 # ═══════════════════════════════════
 # 管线（mock 会话 + mock PUT）
 # ═══════════════════════════════════
+
 
 def test_pipeline_happy_path(tmp_path, fake_ctx, monkeypatch):
     monkeypatch.setattr(ti.httpx, "AsyncClient", _FakeHttp)
@@ -187,13 +195,13 @@ def test_pipeline_async_import_direct_url(tmp_path, fake_ctx, monkeypatch):
     class _DirectSession(_FakeSession):
         async def call_tool(self, name, arguments=None):
             if name == "manage.pre_import":
-                return _ToolResult(json.dumps({
-                    "upload_url": "https://cos.example.com/up/abc",
-                    "file_key": "key-abc", "task_id": "task-1"}))
+                return _ToolResult(
+                    json.dumps({"upload_url": "https://cos.example.com/up/abc", "file_key": "key-abc", "task_id": "task-1"})
+                )
             if name == "manage.async_import":
-                return _ToolResult(json.dumps({
-                    "task_id": "task-1", "file_id": "file-9",
-                    "file_url": "https://docs.qq.com/doc/direct"}))
+                return _ToolResult(
+                    json.dumps({"task_id": "task-1", "file_id": "file-9", "file_url": "https://docs.qq.com/doc/direct"})
+                )
             raise AssertionError
 
     class _DirectFactory:
@@ -216,18 +224,20 @@ def test_pipeline_transient_progress_error(tmp_path, fake_ctx, monkeypatch):
     class _FlakySession(_FakeSession):
         async def call_tool(self, name, arguments=None):
             if name == "manage.pre_import":
-                return _ToolResult(json.dumps({
-                    "upload_url": "https://cos.example.com/up/abc",
-                    "file_key": "key-abc", "task_id": "task-1"}))
+                return _ToolResult(
+                    json.dumps({"upload_url": "https://cos.example.com/up/abc", "file_key": "key-abc", "task_id": "task-1"})
+                )
             if name == "manage.async_import":
                 return _ToolResult(json.dumps({"task_id": "task-1", "progress": 0}))
             if name == "manage.import_progress":
                 calls["n"] += 1
                 if calls["n"] == 1:
                     raise RuntimeError("tool execution failed: 11607:docID not match pattern")
-                return _ToolResult(json.dumps({
-                    "task_id": "task-1", "progress": 100,
-                    "file_id": "file-123", "file_url": "https://docs.qq.com/doc/xyz"}))
+                return _ToolResult(
+                    json.dumps(
+                        {"task_id": "task-1", "progress": 100, "file_id": "file-123", "file_url": "https://docs.qq.com/doc/xyz"}
+                    )
+                )
             raise AssertionError
 
     class _FlakyFactory:

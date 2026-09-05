@@ -19,11 +19,14 @@ logger = logging.getLogger("eco.cordis.permission_gate")
 def apply(ctx, config: dict | None = None) -> None:
     from agent_core import permissions
 
-    ctx.provide("permission_gate", {
-        "gate_tool_call": permissions.gate_tool_call,
-        "tool_risk_level": permissions.tool_risk_level,
-        "load_overrides": permissions.load_overrides,
-        "load_glob_rules": permissions.load_glob_rules,
-        "load_l3_whitelist": permissions.load_l3_whitelist,
-    })
+    ctx.provide(
+        "permission_gate",
+        {
+            "gate_tool_call": permissions.gate_tool_call,
+            "tool_risk_level": permissions.tool_risk_level,
+            "load_overrides": permissions.load_overrides,
+            "load_glob_rules": permissions.load_glob_rules,
+            "load_l3_whitelist": permissions.load_l3_whitelist,
+        },
+    )
     logger.info("[permission_gate] 权限闸门服务已注册（permission_gate）")

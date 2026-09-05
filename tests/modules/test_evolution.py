@@ -1,11 +1,14 @@
 """自进化引擎 + 技能系统测试——确定性数据内容断言"""
-import sys
+
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 import pytest
+
 import agent_core.evolution_v2 as evo
-from agent_core.evolution_v2 import ActiveLearner, ABTest, SwarmIntelligence
-from agent_core.skill_system import SkillRegistry, Skill
+from agent_core.evolution_v2 import ABTest, ActiveLearner, SwarmIntelligence
+from agent_core.skill_system import Skill, SkillRegistry
 
 
 @pytest.fixture
@@ -46,8 +49,10 @@ class TestActiveLearning:
 class TestABTest:
     def test_deterministic_winner(self):
         """确定性 scorer：同输入两次运行结果必须完全一致（可复现）"""
+
         def scorer(skill, case):
             return 0.9 if "精准" in skill else 0.3
+
         ab1, ab2 = ABTest(scorer=scorer), ABTest(scorer=scorer)
         tid1 = ab1.create_test("精准检索技能", "粗略检索技能", ["case1", "case2"])
         tid2 = ab2.create_test("精准检索技能", "粗略检索技能", ["case1", "case2"])
@@ -82,6 +87,7 @@ class TestSwarm:
 class TestSkillRegistry:
     def test_register_and_find(self, tmp_path, monkeypatch):
         import agent_core.skill_system as ss
+
         monkeypatch.setattr(ss, "DATA_DIR", tmp_path)
         monkeypatch.setattr(ss, "SKILL_DIR", tmp_path / "skills")  # 防止向仓库 skills/ 写运行时产物
         reg = SkillRegistry()

@@ -4,6 +4,7 @@
   hunan-env-mcp                 # 默认 stdio 模式（供 Claude Desktop/Cursor 等客户端）
   hunan-env-mcp http            # Streamable HTTP 模式，监听 0.0.0.0:8000
 """
+
 from __future__ import annotations
 
 import logging

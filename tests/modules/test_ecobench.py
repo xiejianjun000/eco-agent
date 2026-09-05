@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """EcoBench-mini 测试：数据集完整性 / 评分诚实性 / mock 流程"""
+
 import json
 import re
 import sys
@@ -7,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from benchmarks.ecobench.run_ecobench import score_item, load_dataset, MOCK_ANSWER, main
+from benchmarks.ecobench.run_ecobench import MOCK_ANSWER, load_dataset, main, score_item
 
 ECOBENCH_DIR = Path(__file__).resolve().parents[2] / "benchmarks" / "ecobench"
 
@@ -38,6 +39,7 @@ class TestDataset:
             assert it["source"].startswith("EHS知识库")
             # 金标准必须自洽：所有必引项在金标准中真实出现（评分器同口径归一化）
             from benchmarks.ecobench.run_ecobench import _norm
+
             ga = _norm(it["golden_answer"])
             for c in it["required_citations"]:
                 assert _norm(c) in ga, f"{it['id']} 必引项 {c} 未在金标准中出现"

@@ -6,6 +6,7 @@ token、JWKS RS256 验签（cryptography 生成测试 RSA 密钥对）、alg=non
 过期、gateway /auth/login 302 与 /auth/callback 全流程、/channels 管理
 请求会话门控与回调豁免、CAS serviceValidate XML 解析、CLI sso status。
 """
+
 import base64
 import json
 import time
@@ -34,36 +35,48 @@ def _b64(b: bytes) -> str:
 @pytest.fixture()
 def cfg():
     return sso_mod.OIDCConfig(
-        issuer=ISSUER, client_id="eco-agent", redirect_uri="http://gw/auth/callback",
-        scopes=("openid", "profile"), role_claim="role", enabled=True,
-        _client_secret="test-secret-xxxx")
+        issuer=ISSUER,
+        client_id="eco-agent",
+        redirect_uri="http://gw/auth/callback",
+        scopes=("openid", "profile"),
+        role_claim="role",
+        enabled=True,
+        _client_secret="test-secret-xxxx",
+    )
 
 
 def _make_provider(cfg, routes):
     """routes: {url: dict|bytes}；POST 按 URL 匹配。"""
+
     def http(req: urllib.request.Request, timeout: int):
         url = req.full_url
         if url not in routes:
             raise AssertionError(f"未预期的外呼: {url}")
         body = routes[url]
         return body if isinstance(body, bytes) else json.dumps(body).encode()
+
     return sso_mod.OIDCProvider(cfg, http_fn=http)
 
 
 @pytest.fixture()
 def rsa_keys():
     from cryptography.hazmat.primitives.asymmetric import rsa as _rsa
+
     priv = _rsa.generate_private_key(public_exponent=65537, key_size=2048)
     pub = priv.public_key().public_numbers()
-    jwk = {"kty": "RSA", "kid": "k1",
-           "n": _b64(pub.n.to_bytes((pub.n.bit_length() + 7) // 8, "big")),
-           "e": _b64(pub.e.to_bytes((pub.e.bit_length() + 7) // 8, "big"))}
+    jwk = {
+        "kty": "RSA",
+        "kid": "k1",
+        "n": _b64(pub.n.to_bytes((pub.n.bit_length() + 7) // 8, "big")),
+        "e": _b64(pub.e.to_bytes((pub.e.bit_length() + 7) // 8, "big")),
+    }
     return priv, jwk
 
 
 def _jwt(priv, claims: dict, header: dict | None = None) -> str:
     from cryptography.hazmat.primitives.asymmetric import padding
     from cryptography.hazmat.primitives.hashes import SHA256
+
     h = {"alg": "RS256", "typ": "JWT", "kid": "k1"}
     if header:
         h.update(header)
@@ -74,8 +87,7 @@ def _jwt(priv, claims: dict, header: dict | None = None) -> str:
     return f"{seg}.{_b64(sig)}"
 
 
-CLAIMS = {"iss": ISSUER, "sub": "u-001", "name": "张三", "role": "commander",
-          "exp": time.time() + 600}
+CLAIMS = {"iss": ISSUER, "sub": "u-001", "name": "张三", "role": "commander", "exp": time.time() + 600}
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +100,7 @@ class TestConfig:
 
     def test_from_env(self, monkeypatch):
         from agent_core import keystore
+
         monkeypatch.setenv("ECO_SSO", "1")
         monkeypatch.setenv("ECO_SSO_ISSUER", ISSUER + "/")
         monkeypatch.setenv("ECO_SSO_CLIENT_ID", "eco")
@@ -122,8 +135,10 @@ class TestOIDCFlow:
         assert p.check_state("forged-state") is False
 
     def test_exchange_code(self, cfg):
-        routes = {f"{ISSUER}/.well-known/openid-configuration": DISCOVERY,
-                  f"{ISSUER}/token": {"id_token": "x.y.z", "access_token": "a"}}
+        routes = {
+            f"{ISSUER}/.well-known/openid-configuration": DISCOVERY,
+            f"{ISSUER}/token": {"id_token": "x.y.z", "access_token": "a"},
+        }
         p = _make_provider(cfg, routes)
         tok = p.exchange_code("code-123")
         assert tok["id_token"] == "x.y.z"
@@ -134,8 +149,7 @@ class TestOIDCFlow:
 # ---------------------------------------------------------------------------
 class TestVerifyIdToken:
     def _provider(self, cfg, jwk, id_token):
-        routes = {f"{ISSUER}/.well-known/openid-configuration": DISCOVERY,
-                  f"{ISSUER}/jwks": {"keys": [jwk]}}
+        routes = {f"{ISSUER}/.well-known/openid-configuration": DISCOVERY, f"{ISSUER}/jwks": {"keys": [jwk]}}
         return _make_provider(cfg, routes)
 
     def test_rs256_ok(self, cfg, rsa_keys):
@@ -219,8 +233,7 @@ class TestSession:
     def test_tampered_rejected(self, isolated_secret):
         tok = sso_mod.issue_session({"sub": "u-1"}, rbac.Role.ADMIN)
         payload, sig = tok.rsplit(".", 1)
-        forged = _b64(json.dumps({"sub": "u-1", "role": "admin",
-                                  "expires_at": time.time() + 9999}).encode()) + "." + sig
+        forged = _b64(json.dumps({"sub": "u-1", "role": "admin", "expires_at": time.time() + 9999}).encode()) + "." + sig
         assert sso_mod.verify_session(forged) is None
         assert sso_mod.verify_session("garbage") is None
 
@@ -235,6 +248,7 @@ def gw(monkeypatch, tmp_path):
     monkeypatch.setattr(grants_mod, "SECRET_FILE", tmp_path / "grant_secret")
     httpd = http_server.make_server("127.0.0.1", 0)
     import threading
+
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{httpd.server_address[1]}"
     httpd.shutdown()
@@ -283,9 +297,11 @@ class TestGateway:
     def test_callback_full_flow(self, gw, cfg, rsa_keys):
         priv, jwk = rsa_keys
         id_token = _jwt(priv, CLAIMS)
-        routes = {f"{ISSUER}/.well-known/openid-configuration": DISCOVERY,
-                  f"{ISSUER}/token": {"id_token": id_token},
-                  f"{ISSUER}/jwks": {"keys": [jwk]}}
+        routes = {
+            f"{ISSUER}/.well-known/openid-configuration": DISCOVERY,
+            f"{ISSUER}/token": {"id_token": id_token},
+            f"{ISSUER}/jwks": {"keys": [jwk]},
+        }
         p = _make_provider(cfg, routes)
         http_server.set_sso_provider(p)
         _, state = p.authorization_url()
@@ -307,13 +323,11 @@ class TestGateway:
 
     def test_channels_management_with_session(self, gw, isolated_channel=None):
         tok = sso_mod.issue_session({"sub": "u-1"}, rbac.Role.ADMIN)
-        status, _, _ = _get(gw + "/channels/feishu",
-                            {"Authorization": f"Bearer {tok}"})
+        status, _, _ = _get(gw + "/channels/feishu", {"Authorization": f"Bearer {tok}"})
         assert status != 401  # 通过门控（渠道握手逻辑照常）
 
     def test_channel_post_callback_exempt(self, gw):
-        req = urllib.request.Request(gw + "/channels/feishu", data=b"{}",
-                                     method="POST")
+        req = urllib.request.Request(gw + "/channels/feishu", data=b"{}", method="POST")
         try:
             with urllib.request.urlopen(req, timeout=3) as r:
                 assert r.status == 200  # 消息回调豁免，不被 SSO 拦 401
@@ -361,12 +375,14 @@ class TestCAS:
 
     def test_cas_validate_http_mock(self):
         calls = []
+
         def http(req, timeout):
             calls.append(req.full_url)
             return CAS_OK.encode()
-        v = sso_mod.cas_validate("ST-1", service="http://gw/auth/callback",
-                                 validate_url="https://cas.gov/p3/serviceValidate",
-                                 http_fn=http)
+
+        v = sso_mod.cas_validate(
+            "ST-1", service="http://gw/auth/callback", validate_url="https://cas.gov/p3/serviceValidate", http_fn=http
+        )
         assert v["sub"] == "wangwu"
         assert "ticket=ST-1" in calls[0] and "service=" in calls[0]
 
@@ -379,6 +395,7 @@ class TestCLI:
         monkeypatch.delenv("ECO_SSO", raising=False)
         monkeypatch.delenv("ECO_SSO_ISSUER", raising=False)
         from eco.cli import main
+
         rc = main(["auth", "sso", "status"])
         out = capsys.readouterr().out
         assert rc == 0 and "enabled=否" in out and "discovery=跳过" in out

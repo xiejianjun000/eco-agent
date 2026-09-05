@@ -15,13 +15,13 @@ cross_region_sync.py — ECO AGENT 跨省执法协同模块
   crs.sync_benchmarks()
 """
 
-import os
-import json
 import hashlib
+import json
 import logging
-from pathlib import Path
+import os
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from dataclasses import dataclass, field, asdict
+from pathlib import Path
 
 logger = logging.getLogger("cross_region_sync")
 
@@ -30,10 +30,12 @@ SYNC_DIR = PROJECT_ROOT / "memory-tree" / "obsidian_sync" / "cross_region"
 SYNC_DIR.mkdir(parents=True, exist_ok=True)
 
 try:
+    import base64
+
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-    import base64
+
     HAS_CRYPTO = True
 except ImportError:
     HAS_CRYPTO = False
@@ -42,9 +44,11 @@ except ImportError:
 
 # ===== 节点 =====
 
+
 @dataclass
 class RegionNode:
     """地区节点"""
+
     node_id: str
     region: str
     name: str
@@ -54,9 +58,9 @@ class RegionNode:
     status: str = "active"
     last_seen: str = ""
     version: str = "2.0.0"
-    capabilities: list[str] = field(default_factory=lambda: [
-        "share_case", "sync_benchmark", "query_statute", "cooperative_review"
-    ])
+    capabilities: list[str] = field(
+        default_factory=lambda: ["share_case", "sync_benchmark", "query_statute", "cooperative_review"]
+    )
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -64,6 +68,7 @@ class RegionNode:
 
 class NodeRegistry:
     """节点注册表（单例）"""
+
     _instance = None
 
     def __new__(cls):
@@ -131,9 +136,7 @@ class NodeRegistry:
     def _save(self):
         data = {nid: n.to_dict() for nid, n in self._nodes.items()}
         SYNC_DIR.mkdir(parents=True, exist_ok=True)
-        self._registry_file.write_text(
-            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        self._registry_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def _load(self):
         if self._registry_file.exists():
@@ -146,6 +149,7 @@ class NodeRegistry:
 
 
 # ===== E2E 加密通信 =====
+
 
 class E2ECrypto:
     """E2E 加密通信"""
@@ -161,8 +165,7 @@ class E2ECrypto:
 
     def _derive_key(self, secret: str) -> bytes:
         if HAS_CRYPTO:
-            kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32,
-                             salt=b"eco-agent-a2a-salt", iterations=100000)
+            kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=b"eco-agent-a2a-salt", iterations=100000)
             key = base64.urlsafe_b64encode(kdf.derive(secret.encode()))
         else:
             # 简化方案
@@ -204,6 +207,7 @@ class E2ECrypto:
 
 # ===== 跨省协同 =====
 
+
 class CrossRegionSync:
     """跨省执法协同"""
 
@@ -215,11 +219,13 @@ class CrossRegionSync:
         self._stats = {"shared_cases": 0, "synced_benchmarks": 0, "queries": 0}
 
         # 注册本节点
-        self.registry.register(RegionNode(
-            node_id=node_id,
-            region=region,
-            name=f"ECO-{region}",
-        ))
+        self.registry.register(
+            RegionNode(
+                node_id=node_id,
+                region=region,
+                name=f"ECO-{region}",
+            )
+        )
         logger.info(f"[CRS] 跨省协同初始化: {region} ({node_id})")
 
     # ── 案例共享 ──
@@ -252,7 +258,7 @@ class CrossRegionSync:
                 logger.warning(f"发送到 {node.region} 失败: {e}")
 
         self._stats["shared_cases"] += 1
-        logger.info(f"[CRS] 案例共享: {case_data.get('title','')[:30]} → {delivered} 个节点")
+        logger.info(f"[CRS] 案例共享: {case_data.get('title', '')[:30]} → {delivered} 个节点")
         return {"delivered": delivered, "total_targets": len(targets)}
 
     def receive_case(self, encrypted: str, signature: str) -> dict | None:
@@ -265,7 +271,9 @@ class CrossRegionSync:
         # 存入本地
         case_data = payload.get("data", {})
         case_data["source_region"] = payload.get("source_region", "")
-        case_path = SYNC_DIR / "shared_cases" / f"from_{payload['source_region']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        case_path = (
+            SYNC_DIR / "shared_cases" / f"from_{payload['source_region']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         case_path.parent.mkdir(parents=True, exist_ok=True)
         case_path.write_text(json.dumps(case_data, ensure_ascii=False, indent=2), encoding="utf-8")
         return {"received": True, "source": payload.get("source_region")}
@@ -339,7 +347,7 @@ class CrossRegionSync:
                 "status": "awaiting_response",
                 "benchmarks": [],
             }
-        logger.info(f"[CRS] 裁量校准发起: {category}, {len(nodes)-1} 个地区参与")
+        logger.info(f"[CRS] 裁量校准发起: {category}, {len(nodes) - 1} 个地区参与")
         return calibration
 
     def _send_to_node(self, node: RegionNode, encrypted: str, signature: str) -> dict | None:
@@ -371,17 +379,20 @@ class CrossRegionSync:
             print(f"    - {n.name} ({n.region}) [{n.status}]")
 
         # 共享案例
-        result = self.share_case({
-            "title": f"测试案例-{self.region}",
-            "region": self.region,
-            "facts": "这是一个测试案例",
-        })
+        result = self.share_case(
+            {
+                "title": f"测试案例-{self.region}",
+                "region": self.region,
+                "facts": "这是一个测试案例",
+            }
+        )
         print(f"  案例共享: {result}")
 
         return self.get_stats()
 
 
 # ===== 演示 =====
+
 
 def demo_cross_region():
     """多节点跨省协同演示"""
@@ -402,13 +413,15 @@ def demo_cross_region():
 
     # 浙江共享案例
     print("\n--- 浙江共享案例 ---")
-    result = crs_zj.share_case({
-        "title": "杭州XX公司超标排水案",
-        "region": "浙江省",
-        "type": "penalty",
-        "penalty_amount": 450000,
-        "key_points": "超标0.8倍，从重处罚",
-    })
+    result = crs_zj.share_case(
+        {
+            "title": "杭州XX公司超标排水案",
+            "region": "浙江省",
+            "type": "penalty",
+            "penalty_amount": 450000,
+            "key_points": "超标0.8倍，从重处罚",
+        }
+    )
     print(f"  发送: {result}")
 
     # 江苏查询
@@ -422,7 +435,7 @@ def demo_cross_region():
 def test():
     """测试跨省协同"""
     crs = CrossRegionSync("node-test-001", "测试省")
-    crs2 = CrossRegionSync("node-test-002", "测试省2")
+    CrossRegionSync("node-test-002", "测试省2")
 
     nodes = crs.registry.discover()
     assert len(nodes) == 2, f"应发现 2 个节点，实际 {len(nodes)}"

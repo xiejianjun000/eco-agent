@@ -42,8 +42,7 @@ def _table_rows(body: str) -> list[list[str]]:
             cells = [c.strip() for c in line.strip().strip("|").split("|")]
             rows.append(cells)
     # 跳过表头行（通常第一行）
-    data = [r for i, r in enumerate(rows) if i != 0 or not any(
-        c.endswith(("要点", "适用", "项", "情节", "审查项")) for c in r)]
+    data = [r for i, r in enumerate(rows) if i != 0 or not any(c.endswith(("要点", "适用", "项", "情节", "审查项")) for c in r)]
     if data:
         # 若第一行疑似表头（所有单元格短且无数字），剔除
         first = data[0]
@@ -108,8 +107,7 @@ def generate_cases(name: str) -> dict:
     out_path = EVALS_DIR / f"{name}-cases.md"
     EVALS_DIR.mkdir(exist_ok=True)
     out_path.write_text("\n".join(lines), encoding="utf-8")
-    return {"skill": name, "out": str(out_path),
-            "cases": sum(1 for l in lines if l.startswith("## Q"))}
+    return {"skill": name, "out": str(out_path), "cases": sum(1 for line in lines if line.startswith("## Q"))}
 
 
 def main() -> None:

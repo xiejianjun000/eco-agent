@@ -33,7 +33,6 @@ import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any
-from collections.abc import Callable
 
 logger = logging.getLogger("mcp_connector")
 
@@ -44,6 +43,7 @@ try:
     from mcp.client.sse import sse_client
     from mcp.client.stdio import stdio_client
     from mcp.client.streamable_http import streamablehttp_client
+
     MCP_AVAILABLE = True
 except Exception:  # pragma: no cover - mcp 未安装时优雅降级
     MCP_AVAILABLE = False
@@ -53,12 +53,14 @@ except Exception:  # pragma: no cover - mcp 未安装时优雅降级
 # 配置
 # ═══════════════════════════════════
 
+
 @dataclass
 class MCPServerConfig:
     """MCP server 声明"""
+
     name: str
-    transport: str                      # "sse" | "stdio" | "http"(Streamable HTTP)
-    url: str = ""                       # sse/http 传输必填
+    transport: str  # "sse" | "stdio" | "http"(Streamable HTTP)
+    url: str = ""  # sse/http 传输必填
     command: list[str] = field(default_factory=list)  # stdio 传输必填
     env: dict[str, str] = field(default_factory=dict)
     headers: dict[str, str] = field(default_factory=dict)  # SSE/HTTP 自定义请求头（如 X-API-Key / Authorization 鉴权）
@@ -83,6 +85,7 @@ def load_configs_from_env(env_var: str = "ECO_MCP_SERVERS") -> list[MCPServerCon
     if not raw:
         # 环境变量未设：回退读 ~/.eco/.env（与 llm_client 配置来源一致）
         from pathlib import Path
+
         env_file = Path.home() / ".eco" / ".env"
         if env_file.exists():
             for line in env_file.read_text().splitlines():
@@ -105,6 +108,7 @@ def load_configs_from_env(env_var: str = "ECO_MCP_SERVERS") -> list[MCPServerCon
 # 单个 server 连接（持有 session，跑在后台事件循环）
 # ═══════════════════════════════════
 
+
 class MCPServerConnection:
     """一个 MCP server 的持久连接（异步上下文在专属事件循环线程中托管）"""
 
@@ -112,7 +116,7 @@ class MCPServerConnection:
         self.config = config
         self._loop = loop
         self._session = None
-        self._cm_stack: list = []   # 传输 / session 的 async context managers
+        self._cm_stack: list = []  # 传输 / session 的 async context managers
         self.tools: list[dict] = []
         self.connected = False
         self.last_error = ""
@@ -131,8 +135,7 @@ class MCPServerConnection:
         elif cfg.transport == "stdio":
             env = dict(os.environ)
             env.update(cfg.env)
-            params = StdioServerParameters(command=cfg.command[0],
-                                           args=cfg.command[1:], env=env)
+            params = StdioServerParameters(command=cfg.command[0], args=cfg.command[1:], env=env)
             cm = stdio_client(params)
         else:
             raise ValueError(f"不支持的传输类型: {cfg.transport}")
@@ -157,16 +160,14 @@ class MCPServerConnection:
                 try:
                     await _orig_validate(session, name, result)
                 except Exception as e:  # noqa: BLE001 — 格式不严 ≠ 数据不可用
-                    logger.warning("[mcp_connector] %s 输出校验未通过（降级放行）: %s",
-                                   name, str(e)[:140])
+                    logger.warning("[mcp_connector] %s 输出校验未通过（降级放行）: %s", name, str(e)[:140])
+
             session._validate_tool_result = _lenient_validate
         self._cm_stack.append(session)
         await asyncio.wait_for(session.initialize(), timeout=cfg.timeout)
         result = await asyncio.wait_for(session.list_tools(), timeout=cfg.timeout)
         self.tools = [
-            {"name": t.name,
-             "description": t.description or "",
-             "inputSchema": getattr(t, "inputSchema", {}) or {}}
+            {"name": t.name, "description": t.description or "", "inputSchema": getattr(t, "inputSchema", {}) or {}}
             for t in result.tools
         ]
         self._session = session
@@ -229,12 +230,8 @@ class MCPServerConnection:
         last_exc: Exception | None = None
         for attempt in (1, 2):
             try:
-                result = self._run(self._call_async(tool, arguments),
-                                   timeout=self.config.timeout + 5)
-                text = "\n".join(
-                    getattr(c, "text", "") for c in (result.content or [])
-                    if getattr(c, "type", "") == "text"
-                )
+                result = self._run(self._call_async(tool, arguments), timeout=self.config.timeout + 5)
+                text = "\n".join(getattr(c, "text", "") for c in (result.content or []) if getattr(c, "type", "") == "text")
                 is_error = bool(getattr(result, "isError", False))
                 return {
                     "success": not is_error,
@@ -274,6 +271,7 @@ class MCPServerConnection:
 # 连接器管理器（对接 eco-agent 工具体系）
 # ═══════════════════════════════════
 
+
 class MCPConnectorManager:
     """
     MCP 连接器管理器——所有 server 共用一个后台事件循环线程。
@@ -289,8 +287,7 @@ class MCPConnectorManager:
     def __init__(self, configs: list[MCPServerConfig] | None = None):
         self.configs = configs if configs is not None else load_configs_from_env()
         self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(target=self._loop.run_forever,
-                                        name="mcp-connector-loop", daemon=True)
+        self._thread = threading.Thread(target=self._loop.run_forever, name="mcp-connector-loop", daemon=True)
         self._thread.start()
         self._servers: dict[str, MCPServerConnection] = {}
 
@@ -307,8 +304,7 @@ class MCPConnectorManager:
 
         async def _safe_connect(conn: MCPServerConnection) -> None:
             try:
-                await asyncio.wait_for(conn._connect_async(),
-                                       timeout=conn.config.timeout + 10)
+                await asyncio.wait_for(conn._connect_async(), timeout=conn.config.timeout + 10)
                 logger.info(f"[MCP] {conn.config.name}: 已连接，发现 {len(conn.tools)} 个工具")
             except Exception as e:  # noqa: BLE001 — 单服务失败降级跳过
                 conn.connected = False
@@ -369,6 +365,7 @@ class MCPConnectorManager:
                 def make_handler(srv=name, tool=t["name"]):
                     def handler(**kwargs) -> dict:
                         return self.call_tool(srv, tool, kwargs)
+
                     return handler
 
                 react.register_tool(

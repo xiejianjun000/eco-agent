@@ -55,8 +55,15 @@ class VersionInfo:
 
 
 class SessionInfo:
-    def __init__(self, session_id: str, platform: str = "", user_id: str = "",
-                 created_at: str = "", updated_at: str = "", message_count: int = 0) -> None:
+    def __init__(
+        self,
+        session_id: str,
+        platform: str = "",
+        user_id: str = "",
+        created_at: str = "",
+        updated_at: str = "",
+        message_count: int = 0,
+    ) -> None:
         self.session_id = session_id
         self.platform = platform
         self.user_id = user_id

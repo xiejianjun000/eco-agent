@@ -15,8 +15,8 @@ eco_dashboard.py — ECO AGENT 执法态势看板
 
 import json
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("eco_dashboard")
@@ -25,12 +25,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 try:
     import sys as _sys
+
     _sys.path.insert(0, str(PROJECT_ROOT))
-    from _scripts.memory_tree import MemoryTree
-    from _scripts.enforcement_cases import CaseManager, BenchmarkManager
-    from _scripts.evolution_engine import EvolutionEngine  # noqa: F401 可用性探测
-    from _scripts.writer_agent import WriterAgent
     from _scripts.cross_region_sync import CrossRegionSync
+    from _scripts.enforcement_cases import BenchmarkManager, CaseManager
+    from _scripts.evolution_engine import EvolutionEngine  # noqa: F401 可用性探测
+    from _scripts.memory_tree import MemoryTree
+    from _scripts.writer_agent import WriterAgent
+
     HAS_MODULES = True
 except ImportError as e:
     HAS_MODULES = False
@@ -111,16 +113,15 @@ class Dashboard:
         # Git 信息
         try:
             import subprocess
+
             commits = subprocess.run(
-                ["git", "-C", str(PROJECT_ROOT), "log", "--oneline"],
-                capture_output=True, text=True, encoding="utf-8"
+                ["git", "-C", str(PROJECT_ROOT), "log", "--oneline"], capture_output=True, text=True, encoding="utf-8"
             ).stdout.strip()
             tags = subprocess.run(
-                ["git", "-C", str(PROJECT_ROOT), "tag"],
-                capture_output=True, text=True, encoding="utf-8"
+                ["git", "-C", str(PROJECT_ROOT), "tag"], capture_output=True, text=True, encoding="utf-8"
             ).stdout.strip()
             report["modules"]["git"] = {
-                "total_commits": len([l for l in commits.split("\n") if l.strip()]),
+                "total_commits": len([line for line in commits.split("\n") if line.strip()]),
                 "tags": tags.split("\n") if tags else [],
                 "latest_tag": tags.split("\n")[-1] if tags else "无",
             }
@@ -181,14 +182,21 @@ class Dashboard:
         # Git
         git = r.get("git", {})
         if "latest_tag" in git:
-            lines.extend(["", "## 四、版本信息", "", f"| 版本 | {git.get('latest_tag', '')} |",
-                          "|:-----|:----:|", f"| 累计提交 | {git.get('total_commits', 0)} |"])
+            lines.extend(
+                [
+                    "",
+                    "## 四、版本信息",
+                    "",
+                    f"| 版本 | {git.get('latest_tag', '')} |",
+                    "|:-----|:----:|",
+                    f"| 累计提交 | {git.get('total_commits', 0)} |",
+                ]
+            )
 
         lines.extend(["", "---", "", "*报告由 ECO AGENT Dashboard 自动生成*"])
         return "\n".join(lines)
 
-    def generate_card_data(self, report: dict | None = None,
-                           platform: str = "feishu") -> dict[str, Any]:
+    def generate_card_data(self, report: dict | None = None, platform: str = "feishu") -> dict[str, Any]:
         """生成飞书/企微/钉钉卡片数据"""
         if not report:
             report = self.gather_all()
@@ -251,8 +259,10 @@ class Dashboard:
 
 # ===== 主入口 =====
 
+
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="ECO AGENT 执法态势看板")
     parser.add_argument("--card", choices=["feishu", "wecom", "dingtalk"], help="推送卡片")
     parser.add_argument("--save", action="store_true", default=True, help="保存报告")
@@ -266,11 +276,11 @@ def main():
         print(f"报告已保存: {path}")
 
     if args.card:
-        card = dashboard.push_card(args.card)
+        dashboard.push_card(args.card)
         print(f"{args.card} 卡片已生成")
 
     # 控制台输出摘要
-    r = report.get("modules", {})
+    report.get("modules", {})
     print("\n")
     print(dashboard.generate_markdown_report(report))
 

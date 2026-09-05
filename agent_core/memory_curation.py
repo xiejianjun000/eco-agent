@@ -20,7 +20,7 @@ import json
 import logging
 import math
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +29,7 @@ logger = logging.getLogger("eco.memory_curation")
 DATA_DIR = Path(__file__).resolve().parent.parent / "memory-tree" / "data"
 
 # 艾宾浩斯简化参数：R(t) = e^(-t/S)，S=1 天；< FORGET_THRESHOLD 视为待归档
-FORGET_S = 1.0          # 衰减时间常数（天）
+FORGET_S = 1.0  # 衰减时间常数（天）
 FORGET_THRESHOLD = 0.25  # 权重阈值
 CONFLICT_RESOLVE_HOURS = 24  # A-04：24 小时内消解
 
@@ -65,22 +65,27 @@ class MemoryCurator:
                 ts = now
             age = (now - ts).total_seconds()
             weight = self.retention_weight(age, permanent=bool(entry.get("permanent")))
-            out.append({
-                **entry,
-                "retention_weight": round(weight, 4),
-                "status": "active" if weight >= FORGET_THRESHOLD else "forgotten",
-            })
+            out.append(
+                {
+                    **entry,
+                    "retention_weight": round(weight, 4),
+                    "status": "active" if weight >= FORGET_THRESHOLD else "forgotten",
+                }
+            )
         return out
 
-    def recall_episodic(self, episodic: list[dict], keyword: str = "",
-                        top_k: int = 10, now: datetime | None = None) -> list[dict]:
+    def recall_episodic(
+        self, episodic: list[dict], keyword: str = "", top_k: int = 10, now: datetime | None = None
+    ) -> list[dict]:
         """按遗忘权重召回情景记忆（遗忘的仍可检索但排在最后）。"""
         scored = self.score_episodic(episodic, now=now)
         if keyword:
             k = keyword.lower()
-            scored = [s for s in scored
-                      if k in str(s.get("event", "")).lower()
-                      or k in json.dumps(s.get("context", {}), ensure_ascii=False).lower()]
+            scored = [
+                s
+                for s in scored
+                if k in str(s.get("event", "")).lower() or k in json.dumps(s.get("context", {}), ensure_ascii=False).lower()
+            ]
         scored.sort(key=lambda s: (s["status"] == "forgotten", -s["retention_weight"]))
         return scored[:top_k]
 
@@ -104,14 +109,16 @@ class MemoryCurator:
     def register_value(self, key: str, value: Any, permanent: bool = False) -> None:
         """语义层写入时登记值，用于后续矛盾发现。"""
         conflicts = self._load_conflicts()
-        conflicts.append({
-            "key": key,
-            "current_value": str(value)[:500],
-            "conflicting_value": None,
-            "registered_at": datetime.now().isoformat(),
-            "status": "open",
-            "permanent": permanent,
-        })
+        conflicts.append(
+            {
+                "key": key,
+                "current_value": str(value)[:500],
+                "conflicting_value": None,
+                "registered_at": datetime.now().isoformat(),
+                "status": "open",
+                "permanent": permanent,
+            }
+        )
         self._save_conflicts(conflicts)
 
     def resolve_conflicts(self, semantic: dict[str, Any], now: datetime | None = None) -> dict:
@@ -137,13 +144,15 @@ class MemoryCurator:
             c["status"] = "resolved"
             c["resolved_at"] = now.isoformat()
             c["winner"] = str(current_value)[:500]
-            self._audit({
-                "action": "conflict_resolved",
-                "key": key,
-                "loser": c["current_value"],
-                "winner": c["winner"],
-                "opened_at": c["registered_at"],
-            })
+            self._audit(
+                {
+                    "action": "conflict_resolved",
+                    "key": key,
+                    "loser": c["current_value"],
+                    "winner": c["winner"],
+                    "opened_at": c["registered_at"],
+                }
+            )
             resolved += 1
         self._save_conflicts(conflicts)
         return {"resolved": resolved, "open": sum(1 for c in conflicts if c["status"] == "open")}
@@ -170,8 +179,7 @@ class MemoryCurator:
 
     def _save_conflicts(self, conflicts: list[dict]) -> None:
         with self._lock:
-            self._conflicts_path.write_text(
-                json.dumps(conflicts, ensure_ascii=False, indent=2), encoding="utf-8")
+            self._conflicts_path.write_text(json.dumps(conflicts, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def _audit(self, entry: dict) -> None:
         entry = {**entry, "time": datetime.now().isoformat()}

@@ -11,6 +11,7 @@
 打分：对每条样本调用 LLMClient.complete()，按期望要点命中率（要点关键词是否
 出现在回答中）计分，输出 JSON 报告；--baseline 对比回归（类目均分下降超阈值判回归）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -72,8 +73,7 @@ def score_answer(answer: str, expected_points: list) -> dict:
             hits.append(pt)
         else:
             misses.append(pt)
-    return {"score": round(len(hits) / len(expected_points), 4),
-            "hits": hits, "misses": misses}
+    return {"score": round(len(hits) / len(expected_points), 4), "hits": hits, "misses": misses}
 
 
 def run_eval(samples: list, client) -> dict:
@@ -88,22 +88,23 @@ def run_eval(samples: list, client) -> dict:
         answer = ""
         error = None
         try:
-            answer = client.complete(rec["question"], system=SYSTEM_PROMPT,
-                                     max_tokens=1024) or ""
+            answer = client.complete(rec["question"], system=SYSTEM_PROMPT, max_tokens=1024) or ""
         except Exception as exc:  # 单条失败不中断整轮
             error = f"{type(exc).__name__}: {exc}"
         sc = score_answer(answer, rec["expected_points"])
-        results.append({
-            "id": rec["id"],
-            "category": rec["category"],
-            "question": rec["question"],
-            "answer": answer,
-            "expected_points": rec["expected_points"],
-            "score": sc["score"],
-            "hits": sc["hits"],
-            "misses": sc["misses"],
-            "error": error,
-        })
+        results.append(
+            {
+                "id": rec["id"],
+                "category": rec["category"],
+                "question": rec["question"],
+                "answer": answer,
+                "expected_points": rec["expected_points"],
+                "score": sc["score"],
+                "hits": sc["hits"],
+                "misses": sc["misses"],
+                "error": error,
+            }
+        )
     by_cat = {}
     for r in results:
         by_cat.setdefault(r["category"], []).append(r["score"])
@@ -133,8 +134,7 @@ def compare_baseline(current: dict, baseline: dict, threshold: float = 0.05) -> 
         category_delta[cat] = delta
         if delta < -abs(threshold):
             regressions.append(cat)
-    overall_delta = round(current.get("overall_score", 0.0)
-                          - baseline.get("overall_score", 0.0), 4)
+    overall_delta = round(current.get("overall_score", 0.0) - baseline.get("overall_score", 0.0), 4)
     if overall_delta < -abs(threshold):
         regressions.append("__overall__")
     return {
@@ -148,19 +148,16 @@ def compare_baseline(current: dict, baseline: dict, threshold: float = 0.05) -> 
 def write_report(report: dict, out_path) -> Path:
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2),
-                        encoding="utf-8")
+    out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     return out_path
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="ECO 执法 eval 基准运行器（需 ECO_EVAL=1）")
     parser.add_argument("--dataset", default=str(DEFAULT_DATASET))
-    parser.add_argument("--report", default="",
-                        help="报告输出路径；默认 evals/reports/report-<时间戳>.json")
+    parser.add_argument("--report", default="", help="报告输出路径；默认 evals/reports/report-<时间戳>.json")
     parser.add_argument("--baseline", default="", help="基线报告 JSON 路径，用于回归对比")
-    parser.add_argument("--threshold", type=float, default=0.05,
-                        help="回归判定阈值（类目/总分下降幅度，默认 0.05）")
+    parser.add_argument("--threshold", type=float, default=0.05, help="回归判定阈值（类目/总分下降幅度，默认 0.05）")
     args = parser.parse_args(argv)
 
     if not eval_enabled():
@@ -171,11 +168,11 @@ def main(argv=None) -> int:
 
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from agent_core.llm_client import LLMClient
+
     client = LLMClient()
 
     report = run_eval(samples, client)
-    out = args.report or str(DEFAULT_REPORT_DIR
-                             / f"report-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json")
+    out = args.report or str(DEFAULT_REPORT_DIR / f"report-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json")
 
     if args.baseline:
         base_path = Path(args.baseline)
@@ -186,12 +183,10 @@ def main(argv=None) -> int:
         report["baseline_compare"] = compare_baseline(report, baseline, args.threshold)
 
     write_report(report, out)
-    print(f"[eval runner] total={report['total']} overall={report['overall_score']} "
-          f"cat_avg={report['category_avg']} -> {out}")
+    print(f"[eval runner] total={report['total']} overall={report['overall_score']} cat_avg={report['category_avg']} -> {out}")
     if report.get("baseline_compare"):
         bc = report["baseline_compare"]
-        print(f"[eval runner] baseline compare: overall_delta={bc['overall_delta']} "
-              f"regressions={bc['regressions'] or '无'}")
+        print(f"[eval runner] baseline compare: overall_delta={bc['overall_delta']} regressions={bc['regressions'] or '无'}")
         return 1 if bc["regressed"] else 0
     return 0
 

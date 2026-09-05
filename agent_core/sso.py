@@ -16,6 +16,7 @@
 门控：ECO_SSO=1 启用；默认关闭，所有能力不生效，不影响现有行为。
 铁律：本文件不含任何真实 key/secret；HTTP 一律 urllib 且可注入 mock。
 """
+
 from __future__ import annotations
 
 import base64
@@ -40,6 +41,7 @@ try:
     from cryptography.exceptions import InvalidSignature
     from cryptography.hazmat.primitives.asymmetric import padding, rsa
     from cryptography.hazmat.primitives.hashes import SHA256
+
     CRYPTO_AVAIL = True
 except Exception:  # pragma: no cover - cryptography 缺失时拒绝验签
     CRYPTO_AVAIL = False
@@ -72,14 +74,15 @@ def sso_protocol() -> str:
 @dataclass
 class OIDCConfig:
     """SSO/OIDC 配置。client_secret 经 keystore 读取（不落明文字段）。"""
+
     issuer: str = ""
     client_id: str = ""
     redirect_uri: str = ""
     scopes: tuple[str, ...] = ("openid", "profile")
     role_claim: str = "role"
     enabled: bool = False
-    protocol: str = "oidc"           # oidc | cas
-    cas_validate_url: str = ""       # CAS 模式：{cas}/p3/serviceValidate
+    protocol: str = "oidc"  # oidc | cas
+    cas_validate_url: str = ""  # CAS 模式：{cas}/p3/serviceValidate
     session_ttl: int = DEFAULT_SESSION_TTL
     _client_secret: str = field(default="", repr=False)
 
@@ -94,8 +97,7 @@ class OIDCConfig:
             secret = ks.get(SECRET_KEY_NAME) or ""
         except Exception:
             secret = ""
-        scopes = tuple(s for s in os.environ.get(
-            "ECO_SSO_SCOPES", "openid profile").split() if s)
+        scopes = tuple(s for s in os.environ.get("ECO_SSO_SCOPES", "openid profile").split() if s)
         return cls(
             issuer=os.environ.get("ECO_SSO_ISSUER", "").rstrip("/"),
             client_id=os.environ.get("ECO_SSO_CLIENT_ID", ""),
@@ -105,16 +107,14 @@ class OIDCConfig:
             enabled=sso_enabled(),
             protocol=sso_protocol(),
             cas_validate_url=os.environ.get("ECO_SSO_CAS_VALIDATE_URL", ""),
-            session_ttl=int(os.environ.get("ECO_SSO_SESSION_TTL",
-                                           DEFAULT_SESSION_TTL)),
+            session_ttl=int(os.environ.get("ECO_SSO_SESSION_TTL", DEFAULT_SESSION_TTL)),
             _client_secret=secret,
         )
 
     def masked_secret(self) -> str:
         if not self._client_secret:
             return "(未配置)"
-        return self._client_secret[:2] + "***" + self._client_secret[-2:] \
-            if len(self._client_secret) > 4 else "***"
+        return self._client_secret[:2] + "***" + self._client_secret[-2:] if len(self._client_secret) > 4 else "***"
 
 
 class SSOError(Exception):
@@ -160,8 +160,7 @@ class OIDCProvider:
     # ------------------------------------------------------------------
     # 授权 URL（state 防 CSRF）
     # ------------------------------------------------------------------
-    def authorization_url(self, state: str | None = None,
-                          extra: dict | None = None) -> tuple[str, str]:
+    def authorization_url(self, state: str | None = None, extra: dict | None = None) -> tuple[str, str]:
         """生成授权跳转 URL。state 缺省生成 SM3(随机) 并登记待校验。
         返回 (url, state)。"""
         ep = self.discover()["authorization_endpoint"]
@@ -198,9 +197,7 @@ class OIDCProvider:
             "client_id": self.config.client_id,
             "client_secret": self.config.client_secret,
         }
-        req = urllib.request.Request(
-            ep, data=urllib.parse.urlencode(payload).encode("utf-8"),
-            method="POST")
+        req = urllib.request.Request(ep, data=urllib.parse.urlencode(payload).encode("utf-8"), method="POST")
         req.add_header("Content-Type", "application/x-www-form-urlencoded")
         body = self._http(req, self._timeout)
         tok = json.loads(body.decode("utf-8"))
@@ -241,16 +238,14 @@ class OIDCProvider:
         )
         pub = numbers.public_key()
         try:
-            pub.verify(_b64url_decode(s), f"{h}.{p}".encode("ascii"),
-                       padding.PKCS1v15(), SHA256())
+            pub.verify(_b64url_decode(s), f"{h}.{p}".encode("ascii"), padding.PKCS1v15(), SHA256())
         except InvalidSignature as e:
             raise SSOError("id_token 签名无效") from e
 
         exp = claims.get("exp")
         if exp is not None and time.time() > float(exp):
             raise SSOError("id_token 已过期")
-        if claims.get("iss") and self.config.issuer \
-                and claims["iss"].rstrip("/") != self.config.issuer.rstrip("/"):
+        if claims.get("iss") and self.config.issuer and claims["iss"].rstrip("/") != self.config.issuer.rstrip("/"):
             raise SSOError("id_token iss 与 issuer 不匹配")
         return claims
 
@@ -342,8 +337,7 @@ def verify_session(token: str) -> dict | None:
 _CAS_NS = "{http://www.yale.edu/tp/cas}"
 
 
-def cas_validate(ticket: str, service: str, validate_url: str = "",
-                 http_fn=None, timeout: int = 5) -> dict:
+def cas_validate(ticket: str, service: str, validate_url: str = "", http_fn=None, timeout: int = 5) -> dict:
     """CAS 3.0 (/p3/serviceValidate) 校验。成功返回
     {"sub": user, "attributes": {...}}；失败抛 SSOError。"""
     url = validate_url or os.environ.get("ECO_SSO_CAS_VALIDATE_URL", "")
@@ -368,8 +362,7 @@ def parse_cas_validate_xml(data: bytes | str) -> dict:
     if failure is None:
         failure = root.find("authenticationFailure")
     if failure is not None:
-        raise SSOError(
-            f"CAS 认证失败: {failure.get('code', '')} {(failure.text or '').strip()}")
+        raise SSOError(f"CAS 认证失败: {failure.get('code', '')} {(failure.text or '').strip()}")
     success = root.find(f"{_CAS_NS}authenticationSuccess")
     if success is None:
         success = root.find("authenticationSuccess")
@@ -389,5 +382,4 @@ def parse_cas_validate_xml(data: bytes | str) -> dict:
         for child in attrs_el:
             tag = child.tag.replace(_CAS_NS, "")
             attrs.setdefault(tag, (child.text or "").strip())
-    return {"sub": user, "name": attrs.get("cn") or attrs.get("name") or user,
-            "attributes": attrs}
+    return {"sub": user, "name": attrs.get("cn") or attrs.get("name") or user, "attributes": attrs}

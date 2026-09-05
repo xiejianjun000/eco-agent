@@ -10,8 +10,9 @@
 
 铁律：本文件不含任何真实 API key，一律走环境变量占位符。
 """
+
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # 能力标签全集
 CAPS_ALL = {"tools", "stream", "json", "vision"}
@@ -27,6 +28,7 @@ def _key_value(name: str, env: dict | None = None) -> str | None:
         return env.get(name)
     try:
         from agent_core import keystore as _ks
+
         v = _ks.get_keystore().get(name)
         if v:
             return v
@@ -37,14 +39,14 @@ def _key_value(name: str, env: dict | None = None) -> str | None:
 
 @dataclass
 class ProviderSpec:
-    name: str            # 唯一标识，如 "moonshot"
-    display: str         # 中文显示名，如 "月之暗面 Kimi"
-    base_url: str        # OpenAI 兼容端点
-    env_key: str         # API key 环境变量名，如 "MOONSHOT_API_KEY"
+    name: str  # 唯一标识，如 "moonshot"
+    display: str  # 中文显示名，如 "月之暗面 Kimi"
+    base_url: str  # OpenAI 兼容端点
+    env_key: str  # API key 环境变量名，如 "MOONSHOT_API_KEY"
     default_model: str
-    models: list         # 推荐模型清单 list[str]
-    caps: set            # {"tools","stream","json","vision"} 子集 set[str]
-    doc: str = ""        # 申请 key 的入口 URL
+    models: list  # 推荐模型清单 list[str]
+    caps: set  # {"tools","stream","json","vision"} 子集 set[str]
+    doc: str = ""  # 申请 key 的入口 URL
 
     def has_key(self, env: dict | None = None) -> bool:
         """环境里（keystore/os.environ 或 ~/.eco/.env 快照）是否有该 provider 的 key"""
@@ -61,165 +63,213 @@ def _register(spec: ProviderSpec) -> None:
     PROVIDERS[spec.name] = spec
 
 
-_register(ProviderSpec(
-    name="moonshot", display="月之暗面 Kimi",
-    base_url="https://api.moonshot.cn/v1",
-    env_key="MOONSHOT_API_KEY",
-    default_model="kimi-k2.5",
-    models=["kimi-k2.5", "kimi-k2-0905-preview", "moonshot-v1-128k"],
-    caps={"tools", "stream", "json"},
-    doc="https://platform.moonshot.cn/console/api-keys",
-))
+_register(
+    ProviderSpec(
+        name="moonshot",
+        display="月之暗面 Kimi",
+        base_url="https://api.moonshot.cn/v1",
+        env_key="MOONSHOT_API_KEY",
+        default_model="kimi-k2.5",
+        models=["kimi-k2.5", "kimi-k2-0905-preview", "moonshot-v1-128k"],
+        caps={"tools", "stream", "json"},
+        doc="https://platform.moonshot.cn/console/api-keys",
+    )
+)
 
-_register(ProviderSpec(
-    name="deepseek", display="深度求索 DeepSeek",
-    base_url="https://api.deepseek.com/v1",
-    env_key="DEEPSEEK_API_KEY",
-    default_model="deepseek-v4-pro",
-    models=["deepseek-chat", "deepseek-reasoner", "deepseek-v4-pro", "deepseek-v4-flash"],
-    caps={"tools", "stream", "json"},
-    doc="https://platform.deepseek.com/api_keys",
-))
+_register(
+    ProviderSpec(
+        name="deepseek",
+        display="深度求索 DeepSeek",
+        base_url="https://api.deepseek.com/v1",
+        env_key="DEEPSEEK_API_KEY",
+        default_model="deepseek-v4-pro",
+        models=["deepseek-chat", "deepseek-reasoner", "deepseek-v4-pro", "deepseek-v4-flash"],
+        caps={"tools", "stream", "json"},
+        doc="https://platform.deepseek.com/api_keys",
+    )
+)
 
-_register(ProviderSpec(
-    name="zhipu", display="智谱 GLM",
-    base_url="https://open.bigmodel.cn/api/paas/v4",  # 官方 OpenAI 兼容端点
-    env_key="ZHIPU_API_KEY",
-    default_model="glm-4.6",
-    models=["glm-4.6", "glm-4.5", "glm-4.5-air"],
-    caps={"tools", "stream", "json", "vision"},
-    doc="https://open.bigmodel.cn/usercenter/apikeys",
-))
+_register(
+    ProviderSpec(
+        name="zhipu",
+        display="智谱 GLM",
+        base_url="https://open.bigmodel.cn/api/paas/v4",  # 官方 OpenAI 兼容端点
+        env_key="ZHIPU_API_KEY",
+        default_model="glm-4.6",
+        models=["glm-4.6", "glm-4.5", "glm-4.5-air"],
+        caps={"tools", "stream", "json", "vision"},
+        doc="https://open.bigmodel.cn/usercenter/apikeys",
+    )
+)
 
-_register(ProviderSpec(
-    name="qwen", display="阿里通义千问",
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",  # DashScope 兼容模式
-    env_key="DASHSCOPE_API_KEY",
-    default_model="qwen-max",
-    models=["qwen-max", "qwen-plus", "qwen-turbo", "qwen3-235b-a22b"],
-    caps={"tools", "stream", "json", "vision"},
-    doc="https://bailian.console.aliyun.com/#/api-key",
-))
+_register(
+    ProviderSpec(
+        name="qwen",
+        display="阿里通义千问",
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",  # DashScope 兼容模式
+        env_key="DASHSCOPE_API_KEY",
+        default_model="qwen-max",
+        models=["qwen-max", "qwen-plus", "qwen-turbo", "qwen3-235b-a22b"],
+        caps={"tools", "stream", "json", "vision"},
+        doc="https://bailian.console.aliyun.com/#/api-key",
+    )
+)
 
-_register(ProviderSpec(
-    name="wenxin", display="百度文心一言（千帆）",
-    base_url="https://qianfan.baidubce.com/v2",  # 千帆 v2 OpenAI 兼容端点
-    env_key="QIANFAN_API_KEY",
-    default_model="ernie-4.5-turbo-128k",
-    models=["ernie-4.5-turbo-128k", "ernie-x1-turbo-32k", "ernie-4.0-8k"],
-    caps={"tools", "stream", "json"},
-    doc="https://console.bce.baidu.com/qianfan/ais/console/apiKey",
-))
+_register(
+    ProviderSpec(
+        name="wenxin",
+        display="百度文心一言（千帆）",
+        base_url="https://qianfan.baidubce.com/v2",  # 千帆 v2 OpenAI 兼容端点
+        env_key="QIANFAN_API_KEY",
+        default_model="ernie-4.5-turbo-128k",
+        models=["ernie-4.5-turbo-128k", "ernie-x1-turbo-32k", "ernie-4.0-8k"],
+        caps={"tools", "stream", "json"},
+        doc="https://console.bce.baidu.com/qianfan/ais/console/apiKey",
+    )
+)
 
-_register(ProviderSpec(
-    name="doubao", display="字节豆包（火山方舟）",
-    base_url="https://ark.cn-beijing.volces.com/api/v3",
-    env_key="ARK_API_KEY",
-    default_model="doubao-pro-32k",  # 方舟现多用 endpoint id（ep-xxx），此处保留模型名占位
-    models=["doubao-pro-32k", "doubao-1.5-pro-32k", "doubao-1.5-lite-32k"],
-    caps={"tools", "stream", "json", "vision"},
-    doc="https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
-))
+_register(
+    ProviderSpec(
+        name="doubao",
+        display="字节豆包（火山方舟）",
+        base_url="https://ark.cn-beijing.volces.com/api/v3",
+        env_key="ARK_API_KEY",
+        default_model="doubao-pro-32k",  # 方舟现多用 endpoint id（ep-xxx），此处保留模型名占位
+        models=["doubao-pro-32k", "doubao-1.5-pro-32k", "doubao-1.5-lite-32k"],
+        caps={"tools", "stream", "json", "vision"},
+        doc="https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
+    )
+)
 
-_register(ProviderSpec(
-    name="doubao_plan", display="豆包 Agent Plan（火山方舟智能体计划）",
-    base_url="https://ark.cn-beijing.volces.com/api/plan/v3",
-    env_key="ARK_API_KEY",
-    default_model="ark-code-latest",
-    models=["ark-code-latest", "doubao-seed-2.0-code"],
-    caps={"tools", "stream", "json"},
-    doc="https://console.volcengine.com/ark/region:cn-beijing/subscription/agent-plan",
-))
+_register(
+    ProviderSpec(
+        name="doubao_plan",
+        display="豆包 Agent Plan（火山方舟智能体计划）",
+        base_url="https://ark.cn-beijing.volces.com/api/plan/v3",
+        env_key="ARK_API_KEY",
+        default_model="ark-code-latest",
+        models=["ark-code-latest", "doubao-seed-2.0-code"],
+        caps={"tools", "stream", "json"},
+        doc="https://console.volcengine.com/ark/region:cn-beijing/subscription/agent-plan",
+    )
+)
 
-_register(ProviderSpec(
-    name="hunyuan", display="腾讯混元",
-    base_url="https://api.hunyuan.cloud.tencent.com/v1",  # 官方 OpenAI 兼容端点
-    env_key="HUNYUAN_API_KEY",
-    default_model="hunyuan-turbo",
-    models=["hunyuan-turbo", "hunyuan-pro", "hunyuan-standard"],
-    caps={"tools", "stream", "json"},
-    doc="https://console.cloud.tencent.com/hunyuan/api-key",
-))
+_register(
+    ProviderSpec(
+        name="hunyuan",
+        display="腾讯混元",
+        base_url="https://api.hunyuan.cloud.tencent.com/v1",  # 官方 OpenAI 兼容端点
+        env_key="HUNYUAN_API_KEY",
+        default_model="hunyuan-turbo",
+        models=["hunyuan-turbo", "hunyuan-pro", "hunyuan-standard"],
+        caps={"tools", "stream", "json"},
+        doc="https://console.cloud.tencent.com/hunyuan/api-key",
+    )
+)
 
-_register(ProviderSpec(
-    name="spark", display="讯飞星火",
-    base_url="https://spark-api-open.xf-yun.com/v1",  # 官方 OpenAI 兼容端点
-    env_key="SPARK_API_KEY",
-    default_model="generalv3.5",
-    models=["generalv3.5", "generalv3", "spark-max", "4.0Ultra"],
-    caps={"tools", "stream", "json"},
-    doc="https://console.xfyun.cn/services/bm3",
-))
+_register(
+    ProviderSpec(
+        name="spark",
+        display="讯飞星火",
+        base_url="https://spark-api-open.xf-yun.com/v1",  # 官方 OpenAI 兼容端点
+        env_key="SPARK_API_KEY",
+        default_model="generalv3.5",
+        models=["generalv3.5", "generalv3", "spark-max", "4.0Ultra"],
+        caps={"tools", "stream", "json"},
+        doc="https://console.xfyun.cn/services/bm3",
+    )
+)
 
-_register(ProviderSpec(
-    name="minimax", display="MiniMax",
-    base_url="https://api.minimaxi.com/v1",  # 官方 OpenAI 兼容端点
-    env_key="MINIMAX_API_KEY",
-    default_model="MiniMax-M1",
-    models=["MiniMax-M1", "abab6.5s-chat", "MiniMax-Text-01"],
-    caps={"tools", "stream", "json"},
-    doc="https://platform.minimaxi.com/user-center/basic-information/interface-key",
-))
+_register(
+    ProviderSpec(
+        name="minimax",
+        display="MiniMax",
+        base_url="https://api.minimaxi.com/v1",  # 官方 OpenAI 兼容端点
+        env_key="MINIMAX_API_KEY",
+        default_model="MiniMax-M1",
+        models=["MiniMax-M1", "abab6.5s-chat", "MiniMax-Text-01"],
+        caps={"tools", "stream", "json"},
+        doc="https://platform.minimaxi.com/user-center/basic-information/interface-key",
+    )
+)
 
-_register(ProviderSpec(
-    name="stepfun", display="阶跃星辰 Step",
-    base_url="https://api.stepfun.com/v1",
-    env_key="STEPFUN_API_KEY",
-    default_model="step-2-16k",
-    models=["step-2-16k", "step-1-8k", "step-1v-8k"],
-    caps={"tools", "stream", "json", "vision"},
-    doc="https://platform.stepfun.com/account/api-keys",
-))
+_register(
+    ProviderSpec(
+        name="stepfun",
+        display="阶跃星辰 Step",
+        base_url="https://api.stepfun.com/v1",
+        env_key="STEPFUN_API_KEY",
+        default_model="step-2-16k",
+        models=["step-2-16k", "step-1-8k", "step-1v-8k"],
+        caps={"tools", "stream", "json", "vision"},
+        doc="https://platform.stepfun.com/account/api-keys",
+    )
+)
 
-_register(ProviderSpec(
-    name="baichuan", display="百川智能",
-    base_url="https://api.baichuan-ai.com/v1",  # 官方 OpenAI 兼容端点
-    env_key="BAICHUAN_API_KEY",
-    default_model="Baichuan4",
-    models=["Baichuan4", "Baichuan3-Turbo", "Baichuan2-Turbo"],
-    caps={"tools", "stream", "json"},
-    doc="https://platform.baichuan-ai.com/console/apikey",
-))
+_register(
+    ProviderSpec(
+        name="baichuan",
+        display="百川智能",
+        base_url="https://api.baichuan-ai.com/v1",  # 官方 OpenAI 兼容端点
+        env_key="BAICHUAN_API_KEY",
+        default_model="Baichuan4",
+        models=["Baichuan4", "Baichuan3-Turbo", "Baichuan2-Turbo"],
+        caps={"tools", "stream", "json"},
+        doc="https://platform.baichuan-ai.com/console/apikey",
+    )
+)
 
-_register(ProviderSpec(
-    name="sensenova", display="商汤日日新 SenseNova",
-    base_url="https://api.sensenova.cn/v1",  # 公认 OpenAI 兼容端点（官方文档以控制台为准）
-    env_key="SENSENOVA_API_KEY",
-    default_model="SenseChat-5",
-    models=["SenseChat-5", "SenseChat-32K", "SenseChat-Turbo"],
-    caps={"tools", "stream", "json"},
-    doc="https://console.sensenova.cn/",
-))
+_register(
+    ProviderSpec(
+        name="sensenova",
+        display="商汤日日新 SenseNova",
+        base_url="https://api.sensenova.cn/v1",  # 公认 OpenAI 兼容端点（官方文档以控制台为准）
+        env_key="SENSENOVA_API_KEY",
+        default_model="SenseChat-5",
+        models=["SenseChat-5", "SenseChat-32K", "SenseChat-Turbo"],
+        caps={"tools", "stream", "json"},
+        doc="https://console.sensenova.cn/",
+    )
+)
 
-_register(ProviderSpec(
-    name="ollama", display="Ollama（本地）",
-    base_url="http://localhost:11434/v1",
-    env_key="OLLAMA_API_KEY",  # 本地一般无需 key；占位即可
-    default_model="qwen2.5:7b",
-    models=["qwen2.5:7b", "llama3.1:8b", "deepseek-r1:7b"],
-    caps={"tools", "stream", "json"},
-    doc="https://ollama.com/",
-))
+_register(
+    ProviderSpec(
+        name="ollama",
+        display="Ollama（本地）",
+        base_url="http://localhost:11434/v1",
+        env_key="OLLAMA_API_KEY",  # 本地一般无需 key；占位即可
+        default_model="qwen2.5:7b",
+        models=["qwen2.5:7b", "llama3.1:8b", "deepseek-r1:7b"],
+        caps={"tools", "stream", "json"},
+        doc="https://ollama.com/",
+    )
+)
 
-_register(ProviderSpec(
-    name="openrouter", display="OpenRouter（聚合）",
-    base_url="https://openrouter.ai/api/v1",
-    env_key="OPENROUTER_API_KEY",
-    default_model="anthropic/claude-sonnet-4",
-    models=["anthropic/claude-sonnet-4", "openai/gpt-4o", "deepseek/deepseek-chat"],
-    caps={"tools", "stream", "json", "vision"},
-    doc="https://openrouter.ai/keys",
-))
+_register(
+    ProviderSpec(
+        name="openrouter",
+        display="OpenRouter（聚合）",
+        base_url="https://openrouter.ai/api/v1",
+        env_key="OPENROUTER_API_KEY",
+        default_model="anthropic/claude-sonnet-4",
+        models=["anthropic/claude-sonnet-4", "openai/gpt-4o", "deepseek/deepseek-chat"],
+        caps={"tools", "stream", "json", "vision"},
+        doc="https://openrouter.ai/keys",
+    )
+)
 
-_register(ProviderSpec(
-    name="custom", display="自定义（ECO_CUSTOM_BASE_URL）",
-    base_url="",  # 运行时从 ECO_CUSTOM_BASE_URL 读取
-    env_key="ECO_CUSTOM_API_KEY",
-    default_model="",  # 运行时从 ECO_CUSTOM_MODEL 读取
-    models=[],
-    caps={"tools", "stream", "json"},
-    doc="",
-))
+_register(
+    ProviderSpec(
+        name="custom",
+        display="自定义（ECO_CUSTOM_BASE_URL）",
+        base_url="",  # 运行时从 ECO_CUSTOM_BASE_URL 读取
+        env_key="ECO_CUSTOM_API_KEY",
+        default_model="",  # 运行时从 ECO_CUSTOM_MODEL 读取
+        models=[],
+        caps={"tools", "stream", "json"},
+        doc="",
+    )
+)
 
 
 def get_provider(name: str) -> ProviderSpec:
@@ -227,9 +277,7 @@ def get_provider(name: str) -> ProviderSpec:
     key = (name or "").strip().lower()
     spec = PROVIDERS.get(key)
     if spec is None:
-        raise KeyError(
-            f"未知 provider: {name!r}；可用: {', '.join(sorted(PROVIDERS))}"
-        )
+        raise KeyError(f"未知 provider: {name!r}；可用: {', '.join(sorted(PROVIDERS))}")
     return spec
 
 

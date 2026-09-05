@@ -67,7 +67,7 @@ class SkillDir:
 
         def _bigrams(s: str) -> set[str]:
             s = re.sub(r"[^\u4e00-\u9fff]", "", str(s))
-            return {s[i:i + 2] for i in range(len(s) - 1)}
+            return {s[i : i + 2] for i in range(len(s) - 1)}
 
         score = 0
         if self.name and self.name in text:

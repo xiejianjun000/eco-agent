@@ -18,8 +18,7 @@ import html as _html
 import json
 import math
 
-PALETTE = ["#0F766E", "#4176E6", "#F59E0B", "#EF4444", "#8A7A9B", "#22C55E",
-           "#0EA5E9", "#D946EF"]
+PALETTE = ["#0F766E", "#4176E6", "#F59E0B", "#EF4444", "#8A7A9B", "#22C55E", "#0EA5E9", "#D946EF"]
 
 _TMPL = """<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8"/>
@@ -111,17 +110,23 @@ def _svg_head(w: int, h: int) -> str:
 
 def _axis(rect, ticks, fmt=_fmt, xlabel="", ylabel="") -> str:
     x, y, w, h = rect
-    parts = [f'<line x1="{x}" y1="{y + h}" x2="{x + w}" y2="{y + h}" stroke="#E1E5EE" stroke-width="1"/>',
-             f'<line x1="{x}" y1="{y}" x2="{x}" y2="{y + h}" stroke="#E1E5EE" stroke-width="1"/>']
+    parts = [
+        f'<line x1="{x}" y1="{y + h}" x2="{x + w}" y2="{y + h}" stroke="#E1E5EE" stroke-width="1"/>',
+        f'<line x1="{x}" y1="{y}" x2="{x}" y2="{y + h}" stroke="#E1E5EE" stroke-width="1"/>',
+    ]
     for t in ticks:
         ty = y + h - (t - ticks[0]) / (ticks[-1] - ticks[0]) * h
         parts.append(f'<line x1="{x}" y1="{ty:.1f}" x2="{x + w}" y2="{ty:.1f}" stroke="#F1F3F5" stroke-width="1"/>')
         parts.append(f'<text x="{x - 6}" y="{ty + 4:.1f}" text-anchor="end" font-size="10.5" fill="#818588">{fmt(t)}</text>')
     if ylabel:
-        parts.append(f'<text x="{x - 40}" y="{y + h / 2}" text-anchor="middle" font-size="11" fill="#616567" '
-                     f'transform="rotate(-90 {x - 40} {y + h / 2})">{_html.escape(ylabel)}</text>')
+        parts.append(
+            f'<text x="{x - 40}" y="{y + h / 2}" text-anchor="middle" font-size="11" fill="#616567" '
+            f'transform="rotate(-90 {x - 40} {y + h / 2})">{_html.escape(ylabel)}</text>'
+        )
     if xlabel:
-        parts.append(f'<text x="{x + w / 2}" y="{y + h + 24}" text-anchor="middle" font-size="11" fill="#616567">{_html.escape(xlabel)}</text>')
+        parts.append(
+            f'<text x="{x + w / 2}" y="{y + h + 24}" text-anchor="middle" font-size="11" fill="#616567">{_html.escape(xlabel)}</text>'  # noqa: E501
+        )
     return "".join(parts)
 
 
@@ -151,17 +156,23 @@ def _line_chart(title: str, x_labels: list[str], series: list[dict], unit: str) 
             if v is not None:
                 pts.append(f"{px:.1f},{py:.1f}")
         if len(pts) >= 2:
-            parts.append(f'<polyline points="{" ".join(pts)}" fill="none" stroke="{color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>')
+            parts.append(
+                f'<polyline points="{" ".join(pts)}" fill="none" stroke="{color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>'  # noqa: E501
+            )
         for i, v in enumerate(data[si]):
             if v is None:
                 continue
             px, py = mx + i * step_x, my + ph - (v - lo) / (hi - lo) * ph
             lab = _fmt(v) + (unit or "")
-            tip = f"{_html.escape(s.get('name', ''))} · {_html.escape(x_labels[i] if i < len(x_labels) else str(i + 1))}：{_html.escape(lab)}"
-            parts.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="3.4" fill="#fff" stroke="{color}" stroke-width="2" data-tip="{tip}"/>')
+            tip = f"{_html.escape(s.get('name', ''))} · {_html.escape(x_labels[i] if i < len(x_labels) else str(i + 1))}：{_html.escape(lab)}"  # noqa: E501
+            parts.append(
+                f'<circle cx="{px:.1f}" cy="{py:.1f}" r="3.4" fill="#fff" stroke="{color}" stroke-width="2" data-tip="{tip}"/>'
+            )
     for i, lab in enumerate(x_labels[:n]):
         px = mx + i * step_x
-        parts.append(f'<text x="{px:.1f}" y="{my + ph + 18}" text-anchor="middle" font-size="10.5" fill="#616567">{_html.escape(str(lab))}</text>')
+        parts.append(
+            f'<text x="{px:.1f}" y="{my + ph + 18}" text-anchor="middle" font-size="10.5" fill="#616567">{_html.escape(str(lab))}</text>'  # noqa: E501
+        )
     parts.append("</svg>")
     legend = _legend_html([(s.get("name", f"系列{si + 1}"), PALETTE[si % len(PALETTE)]) for si, s in enumerate(series)])
     sub = f"{n} 个时点 · {len(series)} 系列" + (f" · 单位 {_html.escape(unit)}" if unit else "")
@@ -177,7 +188,7 @@ def _bar_chart(title: str, x_labels: list[str], series: list[dict], unit: str, s
         cum = []
         for i in range(n):
             vals_i = [(data[si][i] or 0) if i < len(data[si]) else 0 for si in range(len(series))]
-            cum.append([sum(vals_i[:k + 1]) for k in range(len(series))])
+            cum.append([sum(vals_i[: k + 1]) for k in range(len(series))])
         vals = [c[-1] for c in cum]
     else:
         vals = [v for d in data for v in d if v is not None]
@@ -200,14 +211,20 @@ def _bar_chart(title: str, x_labels: list[str], series: list[dict], unit: str, s
             y0 = my + ph - (base - lo) / (hi - lo) * ph
             y1 = my + ph - (base + v - lo) / (hi - lo) * ph
             lab = _fmt(v) + (unit or "")
-            tip = f"{_html.escape(s.get('name', ''))} · {_html.escape(x_labels[i] if i < len(x_labels) else str(i + 1))}：{_html.escape(lab)}"
-            parts.append(f'<rect x="{cx:.1f}" y="{min(y0, y1):.1f}" width="{max(2.0, bar_w - 2):.1f}" height="{abs(y1 - y0):.1f}" rx="2" fill="{color}" data-tip="{tip}"/>')
+            tip = f"{_html.escape(s.get('name', ''))} · {_html.escape(x_labels[i] if i < len(x_labels) else str(i + 1))}：{_html.escape(lab)}"  # noqa: E501
+            parts.append(
+                f'<rect x="{cx:.1f}" y="{min(y0, y1):.1f}" width="{max(2.0, bar_w - 2):.1f}" height="{abs(y1 - y0):.1f}" rx="2" fill="{color}" data-tip="{tip}"/>'  # noqa: E501
+            )
     for i, lab in enumerate(x_labels[:n]):
         cx = mx + i * slot + slot / 2
-        parts.append(f'<text x="{cx:.1f}" y="{my + ph + 18}" text-anchor="middle" font-size="10.5" fill="#616567">{_html.escape(str(lab))}</text>')
+        parts.append(
+            f'<text x="{cx:.1f}" y="{my + ph + 18}" text-anchor="middle" font-size="10.5" fill="#616567">{_html.escape(str(lab))}</text>'  # noqa: E501
+        )
     parts.append("</svg>")
     legend = _legend_html([(s.get("name", f"系列{si + 1}"), PALETTE[si % len(PALETTE)]) for si, s in enumerate(series)])
-    sub = f"{n} 个分组 · {len(series)} 系列" + (" · 堆叠" if stacked else "") + (f" · 单位 {_html.escape(unit)}" if unit else "")
+    sub = (
+        f"{n} 个分组 · {len(series)} 系列" + (" · 堆叠" if stacked else "") + (f" · 单位 {_html.escape(unit)}" if unit else "")
+    )
     return _TMPL.format(title=_html.escape(title), sub=sub, body="".join(parts), legend=legend)
 
 
@@ -231,19 +248,27 @@ def _pie_chart(title: str, items: list[dict], unit: str) -> str:
         pct = f"{frac * 100:.1f}%"
         lab = _fmt(v) + (unit or "")
         tip = f"{_html.escape(str(it.get('name', f'项{i + 1}')))}：{_html.escape(lab)}（{pct}）"
-        parts.append(f'<path d="M {cx} {cy} L {x0:.1f} {y0:.1f} A {r} {r} 0 {large} 1 {x1:.1f} {y1:.1f} Z" fill="{color}" stroke="#fff" stroke-width="1.5" data-tip="{tip}"/>')
+        parts.append(
+            f'<path d="M {cx} {cy} L {x0:.1f} {y0:.1f} A {r} {r} 0 {large} 1 {x1:.1f} {y1:.1f} Z" fill="{color}" stroke="#fff" stroke-width="1.5" data-tip="{tip}"/>'  # noqa: E501
+        )
         ang = a1
     parts.append(f'<circle cx="{cx}" cy="{cy}" r="{r * 0.58}" fill="#fff"/>')
     parts.append(f'<text x="{cx}" y="{cy - 2}" text-anchor="middle" font-size="13" fill="#616567">合计</text>')
-    parts.append(f'<text x="{cx}" y="{cy + 20}" text-anchor="middle" font-size="20" font-weight="700" fill="#0F1115">{_fmt(total)}{_html.escape(unit or "")}</text>')
+    parts.append(
+        f'<text x="{cx}" y="{cy + 20}" text-anchor="middle" font-size="20" font-weight="700" fill="#0F1115">{_fmt(total)}{_html.escape(unit or "")}</text>'  # noqa: E501
+    )
     lx = 480
     for i, it in enumerate(items):
         v = values[i] or 0
         color = PALETTE[i % len(PALETTE)]
         frac = v / total
         parts.append(f'<rect x="{lx}" y="{56 + i * 30}" width="12" height="12" rx="2" fill="{color}"/>')
-        parts.append(f'<text x="{lx + 20}" y="{56 + i * 30 + 10}" font-size="12.5" fill="#0F1115">{_html.escape(str(it.get("name", f"项{i + 1}"))[:14])}</text>')
-        parts.append(f'<text x="{lx + 200}" y="{56 + i * 30 + 10}" text-anchor="end" font-size="12.5" fill="#353638">{_fmt(v)}{_html.escape(unit or "")} · {frac * 100:.1f}%</text>')
+        parts.append(
+            f'<text x="{lx + 20}" y="{56 + i * 30 + 10}" font-size="12.5" fill="#0F1115">{_html.escape(str(it.get("name", f"项{i + 1}"))[:14])}</text>'  # noqa: E501
+        )
+        parts.append(
+            f'<text x="{lx + 200}" y="{56 + i * 30 + 10}" text-anchor="end" font-size="12.5" fill="#353638">{_fmt(v)}{_html.escape(unit or "")} · {frac * 100:.1f}%</text>'  # noqa: E501
+        )
     parts.append("</svg>")
     legend = ""
     sub = f"{len(items)} 项 · 合计 {_fmt(total)}{_html.escape(unit or '')}"
@@ -286,16 +311,24 @@ def _scatter_map(title: str, points: list[dict], unit: str) -> str:
     for t in lng_ticks:
         tx_px = _px(t)
         parts.append(f'<line x1="{tx_px:.1f}" y1="{my}" x2="{tx_px:.1f}" y2="{my + ph}" stroke="#F1F3F5" stroke-width="1"/>')
-        parts.append(f'<text x="{tx_px:.1f}" y="{my + ph + 18}" text-anchor="middle" font-size="10.5" fill="#818588">{_fmt(t)}</text>')
+        parts.append(
+            f'<text x="{tx_px:.1f}" y="{my + ph + 18}" text-anchor="middle" font-size="10.5" fill="#818588">{_fmt(t)}</text>'
+        )
     parts.append(f'<text x="{mx + pw / 2}" y="{my + ph + 32}" text-anchor="middle" font-size="11" fill="#616567">经度</text>')
     for lng, lat, name, value in pts:
         cx, cy = _px(lng), _py(lat)
         tip = f"{_html.escape(name)}（{lng:.4f},{lat:.4f}）" + (f" · {_html.escape(str(value))}" if value is not None else "")
-        parts.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="5" fill="#D97706" stroke="#fff" stroke-width="1.5" data-tip="{tip}"/>')
+        parts.append(
+            f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="5" fill="#D97706" stroke="#fff" stroke-width="1.5" data-tip="{tip}"/>'
+        )
         if name:
-            parts.append(f'<text x="{cx:.1f}" y="{cy - 8:.1f}" text-anchor="middle" font-size="9.5" fill="#616567">{_html.escape(name[:12])}</text>')
+            parts.append(
+                f'<text x="{cx:.1f}" y="{cy - 8:.1f}" text-anchor="middle" font-size="9.5" fill="#616567">{_html.escape(name[:12])}</text>'  # noqa: E501
+            )
     parts.append("</svg>")
-    sub = f"{len(pts)} 个点位 · 经度 {lng0:.2f}~{lng1:.2f} · 纬度 {lat0:.2f}~{lat1:.2f}" + (f" · 单位 {_html.escape(unit)}" if unit else "")
+    sub = f"{len(pts)} 个点位 · 经度 {lng0:.2f}~{lng1:.2f} · 纬度 {lat0:.2f}~{lat1:.2f}" + (
+        f" · 单位 {_html.escape(unit)}" if unit else ""
+    )
     return _TMPL.format(title=_html.escape(title), sub=sub, body="".join(parts), legend="")
 
 
@@ -348,6 +381,12 @@ def render_chart(
         msg = _html.escape(str(e))
         return f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"></head>
 <body style="margin:0;font:14px -apple-system,'PingFang SC',sans-serif;background:#fff;color:#EF4444;
-padding:24px;">图表生成失败：{msg}<br><pre style="font-size:11px;color:#616567;">args={_html.escape(json.dumps(
-    {"type": type, "title": title, "x_labels": x_labels, "series": series, "unit": unit, "pie_data": pie_data},
-    ensure_ascii=False, default=str)[:600])}</pre></body></html>"""
+padding:24px;">图表生成失败：{msg}<br><pre style="font-size:11px;color:#616567;">args={
+            _html.escape(
+                json.dumps(
+                    {"type": type, "title": title, "x_labels": x_labels, "series": series, "unit": unit, "pie_data": pie_data},
+                    ensure_ascii=False,
+                    default=str,
+                )[:600]
+            )
+        }</pre></body></html>"""

@@ -72,9 +72,10 @@ python3 scripts/login.py
 
 ```python
 import ddddocr, re
+
 ocr = ddddocr.DdddOcr(show_ad=False)
 code = ocr.classification(image_bytes)  # e.g. "5+29"
-result = str(eval(re.findall(r'[\d+\-*]+', code)[0]))  # compute answer
+result = str(eval(re.findall(r"[\d+\-*]+", code)[0]))  # compute answer
 ```
 
 ## 关键 API（探索中）
@@ -101,9 +102,9 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 import base64
 
-key = b'boandaxxjsgfyxgs'
+key = b"boandaxxjsgfyxgs"
 cipher = AES.new(key, AES.MODE_ECB)
-password_b64 = base64.b64encode('Hnzfyth@2022'.encode()).decode()
+password_b64 = base64.b64encode("Hnzfyth@2022".encode()).decode()
 encrypted = base64.b64encode(cipher.encrypt(pad(password_b64.encode(), 16))).decode()
 ```
 

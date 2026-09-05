@@ -12,15 +12,15 @@ evolution_v2.py — Eco Agent 自进化引擎 v2
   python agent_core/evolution_v2.py
 """
 
-import json
-import time
-import uuid
 import hashlib
+import json
 import logging
 import re
-from pathlib import Path
-from datetime import datetime
+import time
+import uuid
 from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("evolution_v2")
 
@@ -33,6 +33,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 # 1. Active Learning — 主动学习
 # ═══════════════════════════════════
 
+
 class ActiveLearner:
     """主动学习——基于使用模式预测并预生成技能"""
 
@@ -43,18 +44,23 @@ class ActiveLearner:
 
     def _load(self):
         if self._db_path.exists():
-            try: self._patterns = json.loads(self._db_path.read_text("utf-8", errors="replace"))
-            except Exception: pass
+            try:
+                self._patterns = json.loads(self._db_path.read_text("utf-8", errors="replace"))
+            except Exception:
+                pass
 
     def _save(self):
         self._db_path.write_text(json.dumps(self._patterns[-200:], ensure_ascii=False, indent=2), encoding="utf-8")
 
     def record_action(self, action_type: str, context: dict):
         """记录用户操作"""
-        self._patterns.append({
-            "type": action_type, "context": context,
-            "timestamp": datetime.now().isoformat(),
-        })
+        self._patterns.append(
+            {
+                "type": action_type,
+                "context": context,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self._save()
 
     def predict_next(self) -> list[dict]:
@@ -70,11 +76,13 @@ class ActiveLearner:
         predictions = []
         for ftype, count in frequent[:3]:
             if count >= 2:
-                predictions.append({
-                    "predicted_type": ftype,
-                    "confidence": count / len(recent),
-                    "based_on": f"最近{len(recent)}次操作中出现了{count}次",
-                })
+                predictions.append(
+                    {
+                        "predicted_type": ftype,
+                        "confidence": count / len(recent),
+                        "based_on": f"最近{len(recent)}次操作中出现了{count}次",
+                    }
+                )
         return predictions
 
     def identify_pattern(self) -> dict | None:
@@ -84,9 +92,10 @@ class ActiveLearner:
         recent = self._patterns[-20:]
         sequences = []
         for i in range(len(recent) - 2):
-            seq = (recent[i]["type"], recent[i+1]["type"], recent[i+2]["type"])
+            seq = (recent[i]["type"], recent[i + 1]["type"], recent[i + 2]["type"])
             sequences.append(seq)
         from collections import Counter
+
         common = Counter(sequences).most_common(1)
         if common and common[0][1] >= 2:
             seq, count = common[0]
@@ -98,6 +107,7 @@ class ActiveLearner:
 # 2. Skill Composition — 技能组合
 # ═══════════════════════════════════
 
+
 class SkillComposer:
     """技能组合——技能可组合/可继承/可版本控制"""
 
@@ -107,7 +117,7 @@ class SkillComposer:
             "id": f"combo_{uuid.uuid4().hex[:8]}",
             "base_skills": base_skills,
             "goal": goal,
-            "steps": [f"Step {i+1}: 调用 {s}" for i, s in enumerate(base_skills)],
+            "steps": [f"Step {i + 1}: 调用 {s}" for i, s in enumerate(base_skills)],
             "created_at": datetime.now().isoformat(),
         }
 
@@ -126,6 +136,7 @@ class SkillComposer:
 # 3. A/B Testing — 自动对比评测
 # ═══════════════════════════════════
 
+
 class ABTest:
     """A/B 测试——技能上线前自动对比评测"""
 
@@ -142,8 +153,8 @@ class ABTest:
     @staticmethod
     def _heuristic_score(skill_text: str, test_case: str) -> float:
         """确定性评分：技能描述与用例的关键词重合度（可复现，无随机）"""
-        kw_skill = set(re.findall(r'[一-鿿]{2,4}|\w{3,}', skill_text))
-        kw_case = set(re.findall(r'[一-鿿]{2,4}|\w{3,}', test_case))
+        kw_skill = set(re.findall(r"[一-鿿]{2,4}|\w{3,}", skill_text))
+        kw_case = set(re.findall(r"[一-鿿]{2,4}|\w{3,}", test_case))
         if not kw_case:
             return 0.5
         return round(0.5 + 0.5 * len(kw_skill & kw_case) / len(kw_case), 2)
@@ -152,9 +163,11 @@ class ABTest:
         """创建 A/B 测试"""
         test_id = f"ab_{uuid.uuid4().hex[:8]}"
         self._tests[test_id] = {
-            "skill_a": skill_a, "skill_b": skill_b,
+            "skill_a": skill_a,
+            "skill_b": skill_b,
             "test_cases": test_cases or ["默认测试"],
-            "status": "running", "results": [],
+            "status": "running",
+            "results": [],
             "created_at": datetime.now().isoformat(),
         }
         return test_id
@@ -168,8 +181,14 @@ class ABTest:
         for case in test["test_cases"]:
             score_a = self._scorer(test["skill_a"], case)
             score_b = self._scorer(test["skill_b"], case)
-            results.append({"case": case, "score_a": round(score_a, 2), "score_b": round(score_b, 2),
-                           "winner": "A" if score_a > score_b else "B"})
+            results.append(
+                {
+                    "case": case,
+                    "score_a": round(score_a, 2),
+                    "score_b": round(score_b, 2),
+                    "winner": "A" if score_a > score_b else "B",
+                }
+            )
         avg_a = sum(r["score_a"] for r in results) / len(results)
         avg_b = sum(r["score_b"] for r in results) / len(results)
         test["status"] = "completed"
@@ -184,6 +203,7 @@ class ABTest:
 # ═══════════════════════════════════
 # 4. Swarm Intelligence — 群体智慧
 # ═══════════════════════════════════
+
 
 class SwarmIntelligence:
     """群体智慧——匿名化跨用户技能共享"""
@@ -225,10 +245,12 @@ class SwarmIntelligence:
 
 # ===== 测试 =====
 
+
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
     print("[TEST] Evolution v2 Engine", flush=True)
 
     al = ActiveLearner()
@@ -255,7 +277,7 @@ def test():
     trending = sw.get_trending()
     print(f"[Swarm] 共享技能评分: {trending[0]['rating'] if trending else 'N/A'}", flush=True)
 
-    print(f"\n{'='*30}", flush=True)
+    print(f"\n{'=' * 30}", flush=True)
     print("[OK] Evolution v2 测试通过", flush=True)
 
 

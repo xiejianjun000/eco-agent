@@ -23,7 +23,6 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger("eco.trace_audit")
 
@@ -44,9 +43,9 @@ class TraceAudit:
 
     # ── 记录 ─────────────────────────────────────────────
 
-    def record_tool_call(self, tool: str, args: dict, result: str,
-                         duration_ms: int, level: str = "L1",
-                         decision: str = "allow") -> dict:
+    def record_tool_call(
+        self, tool: str, args: dict, result: str, duration_ms: int, level: str = "L1", decision: str = "allow"
+    ) -> dict:
         """记录一次工具调用（五要素 + SM3 入链）。"""
         entry = {
             "when": time.time(),
@@ -59,8 +58,7 @@ class TraceAudit:
         }
         return self._append(entry, operation="tool_call", operator="eco-agent")
 
-    def record_llm_call(self, model: str, round_idx: int, duration_ms: int,
-                        input_chars: int = 0) -> dict:
+    def record_llm_call(self, model: str, round_idx: int, duration_ms: int, input_chars: int = 0) -> dict:
         """记录一次 LLM 调用（轨迹中的思考轮）。"""
         entry = {
             "when": time.time(),
@@ -71,8 +69,7 @@ class TraceAudit:
         }
         return self._append(entry, operation="llm_call", operator="eco-agent")
 
-    def record_trace(self, user_msg: str, reply: str, trace_len: int,
-                     duration_ms: int, model: str = "") -> dict:
+    def record_trace(self, user_msg: str, reply: str, trace_len: int, duration_ms: int, model: str = "") -> dict:
         """记录整条对话轨迹摘要（含用户输入与最终回答指纹）。"""
         entry = {
             "when": time.time(),
@@ -98,8 +95,17 @@ class TraceAudit:
         from govmcp.crypto.sm import sm3_hash
 
         # 审计元字段（重算 input 时排除，其余字段即入链时的业务 entry）
-        meta_fields = {"input_data", "timestamp", "current_hash", "prev_hash",
-                       "entry_id", "input_hash", "output_hash", "operation", "operator"}
+        meta_fields = {
+            "input_data",
+            "timestamp",
+            "current_hash",
+            "prev_hash",
+            "entry_id",
+            "input_hash",
+            "output_hash",
+            "operation",
+            "operator",
+        }
         lines = self._raw_lines()
         prev_hash = GENESIS_PREV_HASH  # 创世前驱与 govmcp AuditChain 一致
         entries = []
@@ -118,8 +124,7 @@ class TraceAudit:
             hash_source = f"{prev_hash}{e.get('timestamp', '')}{e.get('operation', '')}{input_hash}{output_hash}"
             recomputed = sm3_hash(hash_source.encode("utf-8"))
             if recomputed != e.get("current_hash", ""):
-                return {"ok": False, "error": f"第 {i + 1} 行内容被篡改（哈希失配）",
-                        "entries": len(entries)}
+                return {"ok": False, "error": f"第 {i + 1} 行内容被篡改（哈希失配）", "entries": len(entries)}
             prev_hash = e.get("current_hash", "")
             entries.append(e)
         return {"ok": True, "entries": len(entries), "last_hash": prev_hash[:16]}
@@ -151,10 +156,19 @@ class TraceAudit:
         if last:
             from govmcp.crypto.audit import AuditEntry
 
-            chain.entries.append(AuditEntry(
-                id=0, timestamp=0.0, operation="", operator="",
-                input_hash="", output_hash="", approval_status="",
-                prev_hash="", current_hash=last))
+            chain.entries.append(
+                AuditEntry(
+                    id=0,
+                    timestamp=0.0,
+                    operation="",
+                    operator="",
+                    input_hash="",
+                    output_hash="",
+                    approval_status="",
+                    prev_hash="",
+                    current_hash=last,
+                )
+            )
         audit_entry = chain.add_entry(
             operation=operation,
             operator=operator,
@@ -180,6 +194,7 @@ class TraceAudit:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
             f.flush()
             import os
+
             os.fsync(f.fileno())
         return record
 

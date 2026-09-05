@@ -31,9 +31,22 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "memory-tree" / "data"
 LESSONS_FILE = DATA_DIR / "lessons.jsonl"
 
 # 失败特征（触发提炼的信号）
-_FAILURE_HINTS = ("找不到", "未收录", "404", "未找到", "不在", "失败", "被拒",
-                  "没有找到", "未检索到", "无结果", "不存在",
-                  "超时", "timed out", "timeout")
+_FAILURE_HINTS = (
+    "找不到",
+    "未收录",
+    "404",
+    "未找到",
+    "不在",
+    "失败",
+    "被拒",
+    "没有找到",
+    "未检索到",
+    "无结果",
+    "不存在",
+    "超时",
+    "timed out",
+    "timeout",
+)
 
 
 class LessonStore:
@@ -68,17 +81,16 @@ class LessonStore:
         """按关键词交集检索相关教训（简单可靠，无向量依赖）。"""
         text = str(text)
         scored = []
-        for l in self._lessons:
-            kws = l.get("keywords", [])
+        for line in self._lessons:
+            kws = line.get("keywords", [])
             hits = sum(1 for kw in kws if kw and kw in text)
             if hits:
-                scored.append((hits, l))
+                scored.append((hits, line))
         scored.sort(key=lambda x: -x[0])
-        return [l for _, l in scored[:limit]]
+        return [line for _, line in scored[:limit]]
 
     def stats(self) -> dict:
-        return {"lessons": len(self._lessons),
-                "size_bytes": self.path.stat().st_size if self.path.exists() else 0}
+        return {"lessons": len(self._lessons), "size_bytes": self.path.stat().st_size if self.path.exists() else 0}
 
 
 def extract_lesson(user_msg: str, reply: str, tool_names: list[str]) -> dict | None:
@@ -99,8 +111,7 @@ def extract_lesson(user_msg: str, reply: str, tool_names: list[str]) -> dict | N
 
     # 教训主题 = 用户消息里的关键名词（去停用词）
     stopwords = {"的", "了", "吗", "呢", "在", "是", "有", "和", "与", "请", "帮", "我", "你"}
-    kws = [w for w in re.findall(r"[\u4e00-\u9fff]{2,8}", str(user_msg))
-           if w not in stopwords][:8]
+    kws = [w for w in re.findall(r"[\u4e00-\u9fff]{2,8}", str(user_msg)) if w not in stopwords][:8]
 
     # 失败原因（从回复提取第一句含失败特征的话）
     reason_m = re.search(rf"[^。]*(?:{'|'.join(_FAILURE_HINTS)})[^。]*。", reply)
@@ -109,7 +120,7 @@ def extract_lesson(user_msg: str, reply: str, tool_names: list[str]) -> dict | N
     return {
         "keywords": kws,
         "lesson": f"曾尝试用 {', '.join(tool_names[:4])} 处理此问题，结果：{reason}。"
-                  f"下次先原样重试一次（多为瞬时网络故障），仍失败再换关键词/渠道。",
+        f"下次先原样重试一次（多为瞬时网络故障），仍失败再换关键词/渠道。",
         "source": "auto-extract",
         "when": time.time(),
     }

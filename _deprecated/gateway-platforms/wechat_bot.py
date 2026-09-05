@@ -17,10 +17,10 @@ wechat_bot.py — 微信集成工具
   python -c "from gateway.platforms.wechat_bot import WechatBot; bot=WechatBot(); bot.send_template_msg('open_id','消息内容')"
 """
 
-import os
-import time
 import hashlib
 import logging
+import os
+import time
 
 try:
     import requests
@@ -78,6 +78,7 @@ class WechatBot:
     def handle_official_account_message(self, xml_data: str) -> str:
         """处理公众号消息（XML 格式），返回回复 XML"""
         import xml.etree.ElementTree as ET
+
         root = ET.fromstring(xml_data)
         msg_type = root.findtext("MsgType", "")
         content = root.findtext("Content", "")
@@ -119,11 +120,7 @@ class WechatBot:
                 "💡 如需详细裁量建议，请提供具体的违法事实描述。"
             )
         else:
-            return (
-                f"收到：{content[:80]}\n\n"
-                "正在检索相关法规...\n"
-                "💡 发送「帮助」查看使用说明"
-            )
+            return f"收到：{content[:80]}\n\n正在检索相关法规...\n💡 发送「帮助」查看使用说明"
 
     def _build_xml_reply(self, from_user: str, to_user: str, content: str) -> str:
         """构建 XML 回复"""

@@ -15,27 +15,29 @@ provider_config.py — ECO AGENT 多模型提供者配置与验证
   python _scripts/provider_config.py --router  # 测试智能路由
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass
 
 logger = logging.getLogger("provider_config")
 
 # ===== 模型定义 =====
 
+
 @dataclass
 class ModelProvider:
     """模型提供者"""
+
     name: str
     display_name: str
-    api_mode: str                  # anthropic_messages / chat_completions
+    api_mode: str  # anthropic_messages / chat_completions
     model_id: str
-    base_url: str                  # API 地址
-    api_key_env: str               # 环境变量名
-    temperature: float = 0.1       # 执法场景低温度
+    base_url: str  # API 地址
+    api_key_env: str  # 环境变量名
+    temperature: float = 0.1  # 执法场景低温度
     max_tokens: int = 8192
-    priority: int = 10             # 路由优先级数字越小越优先
-    category: str = "primary"      # primary / fallback / domestic
+    priority: int = 10  # 路由优先级数字越小越优先
+    category: str = "primary"  # primary / fallback / domestic
     requires_key: bool = True
     notes: str = ""
 
@@ -159,7 +161,10 @@ class ProviderRouter:
         fallback = self.get_fallback()
         return {
             "primary": {"name": primary.name if primary else None, "available": primary.is_available() if primary else False},
-            "fallback": {"name": fallback.name if fallback else None, "available": fallback.is_available() if fallback else False},
+            "fallback": {
+                "name": fallback.name if fallback else None,
+                "available": fallback.is_available() if fallback else False,
+            },
             "all_available": [p.name for p in self.list_available()],
             "failover_threshold": self._failover_threshold,
             "current_failures": dict(self._failures),
@@ -187,7 +192,7 @@ class ProviderRouter:
             return "[无可用模型]"
 
         try:
-            config = provider.to_aisuite_config()
+            provider.to_aisuite_config()
             client = ai.Client()
 
             messages = []
@@ -197,6 +202,7 @@ class ProviderRouter:
 
             # 温度统一经 llm_client._resolve_temperature 收口（kimi-k2.x 强制 temp=1）
             from agent_core.llm_client import LLMClient
+
             response = client.chat.completions.create(
                 model=f"{provider.name}:{provider.model_id}",
                 messages=messages,
@@ -221,7 +227,8 @@ class ProviderRouter:
         if provider_name:
             for p in self._providers:
                 if p.name == provider_name and p.is_available():
-                    provider = p; break
+                    provider = p
+                    break
         if not provider:
             provider = self.get_primary() or self.get_fallback()
         if not provider:
@@ -229,11 +236,15 @@ class ProviderRouter:
 
         try:
             import anthropic
+
             client = anthropic.Anthropic(api_key=os.environ.get(provider.api_key_env, ""))
             messages = [{"role": "user", "content": prompt}]
-            resp = client.messages.create(model=provider.model_id, messages=messages,
-                                          system=system_prompt if system_prompt else None,
-                                          max_tokens=provider.max_tokens)
+            resp = client.messages.create(
+                model=provider.model_id,
+                messages=messages,
+                system=system_prompt if system_prompt else None,
+                max_tokens=provider.max_tokens,
+            )
             self.record_success(provider.name)
             return resp.content[0].text
         except Exception as e:
@@ -248,10 +259,11 @@ class ProviderRouter:
 
 # ===== 验证 =====
 
+
 def verify_all():
     """验证全部配置"""
     router = ProviderRouter()
-    available = router.list_available()
+    router.list_available()
     print("=" * 50)
     print("  ECO AGENT 模型提供者配置验证")
     print("=" * 50)

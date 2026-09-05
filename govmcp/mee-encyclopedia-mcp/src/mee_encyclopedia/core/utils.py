@@ -1,4 +1,5 @@
 """通用工具：配置加载、日志、审计、路径安全。"""
+
 from __future__ import annotations
 
 import logging

@@ -53,8 +53,7 @@ _ERROR_FOLLOWUPS = [
 ]
 
 
-def build_suggestions(message: str, reply: str, trace: list | None = None,
-                      phase: str = "inspection") -> list[str]:
+def build_suggestions(message: str, reply: str, trace: list | None = None, phase: str = "inspection") -> list[str]:
     """规则引擎：生成 1-3 条后续提问建议（确定性、零 API 成本）。"""
     trace = trace or []
     used_tools: list[str] = []
@@ -79,8 +78,7 @@ def build_suggestions(message: str, reply: str, trace: list | None = None,
             break
 
     # 3. 落盘纪律：回复含结论/清单/报告但未落盘 → 建议落盘
-    if not is_error and "save_document" not in used_tools and (
-        re.search(r"清单|报告|要点|台账|结论|记录", reply[:400])):
+    if not is_error and "save_document" not in used_tools and (re.search(r"清单|报告|要点|台账|结论|记录", reply[:400])):
         candidate = "把以上内容落盘为 Markdown 报告"
         if candidate not in out:
             out.append(candidate)
@@ -126,8 +124,7 @@ def _llm_suggestions(message: str, reply: str) -> list[str]:
         return []
 
 
-def build_suggestions_hybrid(message: str, reply: str, trace: list | None = None,
-                             phase: str = "inspection") -> list[str]:
+def build_suggestions_hybrid(message: str, reply: str, trace: list | None = None, phase: str = "inspection") -> list[str]:
     """规则 + 可选 LLM 混合：LLM 建议前置，规则兜底补齐到 3 条。"""
     rules = build_suggestions(message, reply, trace, phase)
     if os.environ.get("ECO_SUGGEST_LLM", "").strip().lower() not in ("1", "true", "yes"):

@@ -12,11 +12,11 @@ agent_orchestrator.py — ECO AGENT 多 Agent 编排引擎
     → 返回用户
 """
 
+import importlib.util
 import json
 import logging
-import importlib.util
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("orchestrator")
@@ -57,12 +57,14 @@ class AgentOrchestrator:
             try:
                 result = self._call_agent(agent_name, context)
                 elapsed = (datetime.now() - step_start).total_seconds()
-                steps.append({
-                    "agent": agent_name,
-                    "status": "ok",
-                    "elapsed_s": round(elapsed, 2),
-                    "result_summary": str(result)[:100],
-                })
+                steps.append(
+                    {
+                        "agent": agent_name,
+                        "status": "ok",
+                        "elapsed_s": round(elapsed, 2),
+                        "result_summary": str(result)[:100],
+                    }
+                )
                 # 传递上下文到下一 Agent
                 if isinstance(result, dict):
                     context.update(result)
@@ -116,7 +118,10 @@ class AgentOrchestrator:
             vault = mod.find_vault_path()
             if vault and vault.exists():
                 results = mod.search_in_files(mod.collect_wiki_files(vault), query, 5)
-                return {"search_results": [{"title": r["title"], "path": r["path"]} for r in results], "total_found": len(results)}
+                return {
+                    "search_results": [{"title": r["title"], "path": r["path"]} for r in results],
+                    "total_found": len(results),
+                }
         except Exception as e:
             logger.warning(f"Searcher 异常: {e}")
         return {"search_results": [], "total_found": 0, "note": "检索不可用"}
@@ -126,7 +131,11 @@ class AgentOrchestrator:
         issues = []
         if not search_results:
             issues.append("未检索到相关法规")
-        return {"review_status": "passed" if not issues else "issues_found", "issues": issues, "reviewed_count": len(search_results)}
+        return {
+            "review_status": "passed" if not issues else "issues_found",
+            "issues": issues,
+            "reviewed_count": len(search_results),
+        }
 
     def _agent_writer(self, query: str, ctx: dict) -> dict:
         search_results = ctx.get("search_results", [])
@@ -149,17 +158,25 @@ class AgentOrchestrator:
         return {"statute_status": "现行有效", "last_checked": datetime.now().isoformat()}
 
     def get_stats(self) -> dict:
-        return {"total_workflows": len(self._workflows), "executed": len(self._results), "success_rate": sum(1 for r in self._results if r["success"]) / max(len(self._results), 1)}
+        return {
+            "total_workflows": len(self._workflows),
+            "executed": len(self._results),
+            "success_rate": sum(1 for r in self._results if r["success"]) / max(len(self._results), 1),
+        }
 
 
 # ===== 测试 =====
+
 
 def test():
     orch = AgentOrchestrator()
     print(f"[TEST] 注册工作流: {list(orch._workflows.keys())}")
 
     # 跑一个完整的执法问答工作流
-    result = orch.run("执法问答", {"query": "某钢铁公司超标排放二氧化硫", "category": "大气", "facts": "烧结机头二氧化硫150mg/m³超限值100mg/m³"})
+    result = orch.run(
+        "执法问答",
+        {"query": "某钢铁公司超标排放二氧化硫", "category": "大气", "facts": "烧结机头二氧化硫150mg/m³超限值100mg/m³"},
+    )
     print(f"[TEST] 工作流: {result['workflow']} -> {'OK' if result['success'] else 'FAIL'}")
     for s in result["steps"]:
         print(f"  [{s['status']}] {s['agent']} ({s.get('elapsed_s', 0):.1f}s)")

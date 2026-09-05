@@ -7,7 +7,6 @@ import argparse
 import re
 from pathlib import Path
 
-
 PATTERNS = [
     ("WARN", r"显著成效|重大突破|全面完成|圆满完成|走在前列", "判断较强，需有事实、数据或正式评价支撑。"),
     ("INFO", r"高度重视|切实加强|扎实推进|形成合力|持续发力|不断提升", "表述偏泛，建议补充具体动作、责任或结果。"),

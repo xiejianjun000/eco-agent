@@ -15,15 +15,15 @@ Phase 1 核心交付：任务分解、智能体池动态管理、并行执行。
   python agent_core/commander.py
 """
 
+import logging
+import queue
+import threading
 import time
 import uuid
-import logging
-import threading
-import queue
-from pathlib import Path
-from datetime import datetime
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
+from pathlib import Path
 
 logger = logging.getLogger("commander")
 
@@ -33,6 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # ═══════════════════════════════════
 # 数据模型
 # ═══════════════════════════════════
+
 
 class AgentRole(str, Enum):
     CODER = "coder"
@@ -46,6 +47,7 @@ class AgentRole(str, Enum):
     COORDINATOR = "coordinator"
     CUSTOM = "custom"
 
+
 class TaskStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
@@ -53,9 +55,11 @@ class TaskStatus(str, Enum):
     FAILED = "failed"
     SKIPPED = "skipped"
 
+
 @dataclass
 class Task:
     """任务单元"""
+
     id: str = ""
     description: str = ""
     agent_role: AgentRole = AgentRole.CUSTOM
@@ -76,9 +80,11 @@ class Task:
         if not self.created_at:
             self.created_at = datetime.now().isoformat()
 
+
 @dataclass
 class AgentInstance:
     """Agent 实例"""
+
     id: str = ""
     name: str = ""
     role: AgentRole = AgentRole.CUSTOM
@@ -101,6 +107,7 @@ class AgentInstance:
 # Agent 池
 # ═══════════════════════════════════
 
+
 class AgentPool:
     """专业 Agent 池——动态创建、按需扩缩、生命周期管理"""
 
@@ -111,13 +118,9 @@ class AgentPool:
         self._workers: list[threading.Thread] = []
         self._max_workers = 10
 
-    def spawn(self, role: AgentRole = AgentRole.CUSTOM, name: str = "",
-              model: str = "") -> AgentInstance:
+    def spawn(self, role: AgentRole = AgentRole.CUSTOM, name: str = "", model: str = "") -> AgentInstance:
         """动态生成 Agent"""
-        agent = AgentInstance(
-            name=name or f"{role.value}_{len(self._agents) + 1}",
-            role=role, model=model or "auto"
-        )
+        agent = AgentInstance(name=name or f"{role.value}_{len(self._agents) + 1}", role=role, model=model or "auto")
         with self._lock:
             self._agents[agent.id] = agent
         logger.info(f"[Pool] 生成 Agent: {agent.name} ({role.value})")
@@ -174,7 +177,7 @@ class AgentPool:
                 self.spawn(role)
         elif current > target_count:
             idle = [a for a in self._agents.values() if a.role == role and a.status == "idle"]
-            for a in idle[:current - target_count]:
+            for a in idle[: current - target_count]:
                 self.dispose(a.id)
 
     def get_stats(self) -> dict:
@@ -188,13 +191,14 @@ class AgentPool:
                 "idle": sum(1 for a in self._agents.values() if a.status == "idle"),
                 "busy": sum(1 for a in self._agents.values() if a.status == "busy"),
                 "total_tasks": sum(a.task_count for a in self._agents.values()),
-                "success_rate": f"{sum(a.success_count for a in self._agents.values()) / max(sum(a.task_count for a in self._agents.values()), 1) * 100:.0f}%",
+                "success_rate": f"{sum(a.success_count for a in self._agents.values()) / max(sum(a.task_count for a in self._agents.values()), 1) * 100:.0f}%",  # noqa: E501
             }
 
 
 # ═══════════════════════════════════
 # 任务分解器
 # ═══════════════════════════════════
+
 
 class TaskDecomposer:
     """任务分解器——将用户需求分解为可执行的任务链"""
@@ -236,7 +240,7 @@ class TaskDecomposer:
                     ("执行任务", AgentRole.CUSTOM),
                     ("验证结果", AgentRole.REVIEWER),
                 ]
-            }
+            },
         }
 
     def decompose(self, goal: str, context: dict = None) -> list[Task]:
@@ -251,7 +255,7 @@ class TaskDecomposer:
         tasks = []
         for i, (desc, role) in enumerate(pattern["tasks"]):
             task = Task(
-                description=f"[{i+1}/{len(pattern['tasks'])}] {desc}：{goal[:50]}",
+                description=f"[{i + 1}/{len(pattern['tasks'])}] {desc}：{goal[:50]}",
                 agent_role=role,
                 priority=10 - i,
                 depends_on=[tasks[-1].id] if tasks else [],
@@ -263,6 +267,7 @@ class TaskDecomposer:
 # ═══════════════════════════════════
 # 指挥官 Agent
 # ═══════════════════════════════════
+
 
 class Commander:
     """指挥官 Agent——负责任务分解、调度、Agent 池管理"""
@@ -342,28 +347,39 @@ class Commander:
             "failed": failed,
             "skipped": sum(1 for t in tasks if t.status == TaskStatus.SKIPPED),
             "total_time_ms": round(total_time, 1),
-            "tasks": [{"id": t.id, "desc": t.description[:50], "status": t.status.value,
-                       "agent": t.agent_role.value, "time_ms": round(t.execution_time_ms, 1)} for t in self._tasks.values()],
+            "tasks": [
+                {
+                    "id": t.id,
+                    "desc": t.description[:50],
+                    "status": t.status.value,
+                    "agent": t.agent_role.value,
+                    "time_ms": round(t.execution_time_ms, 1),
+                }
+                for t in self._tasks.values()
+            ],
         }
 
     def get_stats(self) -> dict:
         return {
             "pool": self.pool.get_stats(),
             "tasks_completed": len(self._results),
-            "missions": [{"total": r["total_tasks"], "completed": r["completed"],
-                          "time_ms": r["total_time_ms"]} for r in self._results],
+            "missions": [
+                {"total": r["total_tasks"], "completed": r["completed"], "time_ms": r["total_time_ms"]} for r in self._results
+            ],
         }
 
 
 # ===== 测试 =====
 
+
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     print("[TEST] Commander Agent + Agent Pool", flush=True)
-    print(f"  {'='*40}", flush=True)
+    print(f"  {'=' * 40}", flush=True)
 
     cmd = Commander()
 
@@ -376,21 +392,22 @@ def test():
 
     # 测试任务分解与执行
     result = cmd.execute("开发一个 Python 法规检索工具")
-    print(f"\n[Mission] 任务数: {result['total_tasks']}, 完成: {result['completed']}, "
-          f"耗时: {result['total_time_ms']:.0f}ms", flush=True)
+    print(
+        f"\n[Mission] 任务数: {result['total_tasks']}, 完成: {result['completed']}, 耗时: {result['total_time_ms']:.0f}ms",
+        flush=True,
+    )
 
     # 测试动态扩缩
     pool.scale(5, AgentRole.CODER)
     print(f"\n[Scale] 扩容后: {pool.get_stats()}", flush=True)
 
     stats = cmd.get_stats()
-    missions = stats.get('tasks_completed', [])
+    missions = stats.get("tasks_completed", [])
     print(f"\n[Stats] 已完成任务数: {sum(r.get('total_tasks', 0) for r in missions)}", flush=True)
-    print(f"\n{'='*40}", flush=True)
+    print(f"\n{'=' * 40}", flush=True)
     print("[OK] Commander + Agent Pool 测试通过", flush=True)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s [%(name)s] %(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
     test()

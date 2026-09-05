@@ -2,16 +2,15 @@
 ECO AGENT sandbox — 安全代码执行环境（对标 HERMES Docker Sandbox）
 支持: Python/Shell/Node 代码在隔离容器中执行
 """
-import os
-import sys
-import json
-import tempfile
-import subprocess
+
 import asyncio
+import json
 import logging
 import shutil
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
-from typing import Optional
 
 log = logging.getLogger("sandbox")
 
@@ -21,6 +20,7 @@ except Exception:  # pragma: no cover - os_sandbox 缺失时不影响旧路径
     os_sandbox = None
 
 # ─── Docker Sandbox ───────────────────────────
+
 
 class DockerSandbox:
     """Docker 容器沙箱 — 安全执行不可信代码"""
@@ -48,11 +48,9 @@ class DockerSandbox:
             result = await self._run_docker(code, language)
             # Docker 守护进程掉线/连接失败：标记不可用并降级，后续调用跳过 docker
             if not result.get("success") and any(
-                k in str(result.get("stderr", "")).lower()
-                for k in ("daemon", "connect", "socket", "no such file")
+                k in str(result.get("stderr", "")).lower() for k in ("daemon", "connect", "socket", "no such file")
             ):
-                log.warning("docker daemon unavailable → os/local sandbox 降级: %s",
-                            str(result.get("stderr"))[:120])
+                log.warning("docker daemon unavailable → os/local sandbox 降级: %s", str(result.get("stderr"))[:120])
                 self._available = False
             else:
                 return result
@@ -73,26 +71,29 @@ class DockerSandbox:
             script_path.write_text(code)
 
         cmd = [
-            "docker", "run", "--rm",
-            "--memory", self._memory_limit,
-            "--network", "none",
+            "docker",
+            "run",
+            "--rm",
+            "--memory",
+            self._memory_limit,
+            "--network",
+            "none",
             "--read-only",
-            "-v", f"{script_path}:/script{ext}:ro",
+            "-v",
+            f"{script_path}:/script{ext}:ro",
             self.IMAGE,
         ]
         exec_cmd = {"python": ["python", "/script.py"], "shell": ["bash", "/script.sh"], "node": ["node", "/script.js"]}
         cmd += exec_cmd.get(language, ["python", "/script.py"])
 
         try:
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=self._timeout
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=self._timeout)
             return {
                 "success": result.returncode == 0,
                 "stdout": result.stdout[:5000],
                 "stderr": result.stderr[:2000],
                 "exit_code": result.returncode,
-                "sandbox": "docker"
+                "sandbox": "docker",
             }
         except subprocess.TimeoutExpired:
             return {"success": False, "stdout": "", "stderr": f"Timeout ({self._timeout}s)", "sandbox": "docker"}
@@ -119,7 +120,7 @@ class DockerSandbox:
         policy = os_sandbox.SandboxPolicy(
             allowed_paths=[str(work_dir)],
             readonly_paths=[],
-            network_allowlist=[],          # 默认断网
+            network_allowlist=[],  # 默认断网
             max_seconds=self._timeout,
             max_output_bytes=64 * 1024,
         )
@@ -144,6 +145,7 @@ class DockerSandbox:
         """本地安全执行（受限环境）"""
         if language == "python":
             import ast
+
             try:
                 ast.parse(code)
             except SyntaxError as e:
@@ -164,6 +166,7 @@ class DockerSandbox:
 
         return {"success": False, "stdout": "", "stderr": "Docker unavailable, only Python local fallback", "sandbox": "none"}
 
+
 # ─── Tool 注册 ────────────────────────────────
 def get_sandbox_tool_def():
     return {
@@ -175,20 +178,24 @@ def get_sandbox_tool_def():
                 "type": "object",
                 "properties": {
                     "code": {"type": "string", "description": "要执行的代码"},
-                    "language": {"type": "string", "enum": ["python", "shell", "node"], "description": "代码语言"}
+                    "language": {"type": "string", "enum": ["python", "shell", "node"], "description": "代码语言"},
                 },
-                "required": ["code", "language"]
-            }
-        }
+                "required": ["code", "language"],
+            },
+        },
     }
 
+
 _sandbox = None
+
+
 async def execute_code(code: str, language: str = "python") -> str:
     global _sandbox
     if _sandbox is None:
         _sandbox = DockerSandbox()
     result = await _sandbox.execute(code, language)
     return json.dumps(result, ensure_ascii=False)
+
 
 # ─── Test ────────────────────────────────────
 if __name__ == "__main__":

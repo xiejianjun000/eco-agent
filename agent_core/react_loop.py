@@ -14,13 +14,13 @@ react_loop.py — Eco Agent L1 微观行动循环 (ReAct++)
 """
 
 import json
-import time
 import logging
-from pathlib import Path
-from datetime import datetime
-from typing import Any
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger("react_loop")
 
@@ -32,6 +32,7 @@ except Exception:  # 直接脚本运行时包导入失败
     try:
         from llm_client import get_default_client
     except Exception:
+
         def get_default_client():
             return None
 
@@ -40,9 +41,11 @@ except Exception:  # 直接脚本运行时包导入失败
 # 循环状态
 # ═══════════════════════════════════
 
+
 @dataclass
 class ReActState:
     """ReAct++ 循环状态"""
+
     step: int = 0
     observation: str = ""
     thought: str = ""
@@ -77,11 +80,9 @@ class ReActPlusPlus:
             logger.warning(f"[ReAct++] LLM 客户端不可用: {e}")
         return None
 
-    def register_tool(self, name: str, handler: Callable, description: str = "",
-                      schema: dict = None) -> None:
+    def register_tool(self, name: str, handler: Callable, description: str = "", schema: dict = None) -> None:
         """注册工具。schema 为该工具的 parameters JSON Schema（供 LLM 结构化决策用）"""
-        self._tools[name] = {"handler": handler, "description": description,
-                             "schema": schema or {}}
+        self._tools[name] = {"handler": handler, "description": description, "schema": schema or {}}
 
     # ── 主执行入口 ──
 
@@ -190,8 +191,7 @@ class ReActPlusPlus:
                     f"请用一两句话说明下一步应该怎么思考和行动。"
                     f"{reflect_tail}"
                 )
-                thought = client.complete(prompt, system="你是 Eco Agent 的推理引擎，简洁输出下一步思考。",
-                                          max_tokens=512)
+                thought = client.complete(prompt, system="你是 Eco Agent 的推理引擎，简洁输出下一步思考。", max_tokens=512)
                 if thought:
                     return thought
                 logger.warning("[ReAct++] LLM 思考返回空，降级规则模式")
@@ -216,6 +216,7 @@ class ReActPlusPlus:
                 text = client.complete(prompt, system="你只输出数字。", max_tokens=16)
                 if text:
                     import re
+
                     m = re.search(r"0?\.\d+|^[01](?:\.0+)?$", text.strip())
                     if m:
                         val = float(m.group(0))
@@ -251,9 +252,13 @@ class ReActPlusPlus:
                 raw = client.complete(prompt, system="你是 Eco Agent 的反思模块，输出结构化诊断。", max_tokens=512)
                 if raw:
                     parsed = self._parse_reflect(raw)
-                    result = {"action": "continue", "new_confidence": 0.7,
-                              "diagnosis": parsed["diagnosis"], "correction": parsed["correction"],
-                              "llm_diagnosis": raw}
+                    result = {
+                        "action": "continue",
+                        "new_confidence": 0.7,
+                        "diagnosis": parsed["diagnosis"],
+                        "correction": parsed["correction"],
+                        "llm_diagnosis": raw,
+                    }
                     self._inject_correction(parsed["correction"], state)
                     return result
                 logger.warning("[ReAct++] LLM 反思返回空，降级规则模式")
@@ -264,7 +269,7 @@ class ReActPlusPlus:
             alternatives.append(f"使用工具: {tool_name}")
 
         if state.error and state.retry_count < self._max_retries:
-            return {"action": "retry", "new_confidence": 0.7, "suggestion": f"重试(第{state.retry_count+1}次)"}
+            return {"action": "retry", "new_confidence": 0.7, "suggestion": f"重试(第{state.retry_count + 1}次)"}
 
         if state.retry_count >= self._max_retries:
             return {"abort": True, "reason": "超过最大重试次数"}
@@ -281,8 +286,7 @@ class ReActPlusPlus:
             except Exception:
                 return ""
         try:
-            injs = [i for i in get_prompt_engine().list_injections()
-                    if i["source"] == "reflect"]
+            injs = [i for i in get_prompt_engine().list_injections() if i["source"] == "reflect"]
         except Exception:
             return ""
         if not injs:
@@ -317,8 +321,7 @@ class ReActPlusPlus:
                 return False
         engine = get_prompt_engine()
         task_id = (state.rollback_point or {}).get("task", "")[:60]
-        return engine.inject(f"【L1反思修正指令】{correction}",
-                             source="reflect", task_id=task_id)
+        return engine.inject(f"【L1反思修正指令】{correction}", source="reflect", task_id=task_id)
 
     # ── ACT 阶段 ──
 
@@ -352,9 +355,12 @@ class ReActPlusPlus:
         """LLM 结构化决策：schema 进 prompt，JSON 出决策。解析失败返回 None 走规则降级"""
         try:
             catalog = json.dumps(
-                [{"name": n, "description": t.get("description", ""),
-                  "parameters": t.get("schema") or {}}
-                 for n, t in self._tools.items()], ensure_ascii=False)
+                [
+                    {"name": n, "description": t.get("description", ""), "parameters": t.get("schema") or {}}
+                    for n, t in self._tools.items()
+                ],
+                ensure_ascii=False,
+            )
             prompt = (
                 f"任务: {state.observation[:300]}\n"
                 f"当前步骤: {state.step}\n"
@@ -367,8 +373,7 @@ class ReActPlusPlus:
                 "注意：已收集的信息足以产出交付物时必须 complete；"
                 "不要重复调用已经成功过的工具。"
             )
-            raw = client.complete(prompt, system="你是行动决策器，只输出 JSON，不输出解释。",
-                                  max_tokens=300)
+            raw = client.complete(prompt, system="你是行动决策器，只输出 JSON，不输出解释。", max_tokens=300)
             parsed = self._parse_action_json(raw or "")
             if parsed is None:
                 return None
@@ -411,7 +416,7 @@ class ReActPlusPlus:
                     depth -= 1
                     if depth == 0:
                         try:
-                            return json.loads(raw[start:i + 1])
+                            return json.loads(raw[start : i + 1])
                         except (json.JSONDecodeError, ValueError):
                             break
             start = raw.find("{", start + 1)
@@ -444,9 +449,9 @@ class ReActPlusPlus:
                 )
                 text = client.complete(
                     prompt,
-                    system="你是交付合成器：基于已完成的行动产出最终交付物，"
-                           "输出交付内容本身，不输出计划或步骤。",
-                    max_tokens=1500)
+                    system="你是交付合成器：基于已完成的行动产出最终交付物，输出交付内容本身，不输出计划或步骤。",
+                    max_tokens=1500,
+                )
                 if text and text.strip():
                     return text.strip()
                 logger.warning("[ReAct++] 交付合成返回空，降级旧逻辑")
@@ -501,26 +506,31 @@ class ReActPlusPlus:
 
 # ===== 快速测试 =====
 
+
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     loop = ReActPlusPlus()
     loop.register_tool("search", lambda query: f"[搜索] 找到关于'{query}'的结果", "搜索工具")
 
     # 执行任务
     result = loop.execute("搜索大气污染防治法")
-    print(f"[ReAct++] 任务: {result['task'][:20]}.. 步骤: {result['steps']}, "
-          f"耗时: {result['total_time_ms']:.0f}ms, 置信度: {result['confidence']:.2f}")
+    print(
+        f"[ReAct++] 任务: {result['task'][:20]}.. 步骤: {result['steps']}, "
+        f"耗时: {result['total_time_ms']:.0f}ms, 置信度: {result['confidence']:.2f}"
+    )
 
     result2 = loop.execute("分析超标排放案例")
-    print(f"[ReAct++] 任务: {result2['task'][:20]}.. 步骤: {result2['steps']}, "
-          f"耗时: {result2['total_time_ms']:.0f}ms, 置信度: {result2['confidence']:.2f}")
+    print(
+        f"[ReAct++] 任务: {result2['task'][:20]}.. 步骤: {result2['steps']}, "
+        f"耗时: {result2['total_time_ms']:.0f}ms, 置信度: {result2['confidence']:.2f}"
+    )
 
     stats = loop.get_stats()
-    print(f"[Stats] 执行: {stats['total_executions']}, 平均步骤: {stats['avg_steps']}, "
-          f"平均耗时: {stats['avg_time_ms']:.0f}ms")
+    print(f"[Stats] 执行: {stats['total_executions']}, 平均步骤: {stats['avg_steps']}, 平均耗时: {stats['avg_time_ms']:.0f}ms")
 
     print("[OK] ReAct++ 测试通过")
 

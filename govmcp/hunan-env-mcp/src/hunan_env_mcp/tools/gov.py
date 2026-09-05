@@ -1,4 +1,5 @@
 """政务栏目类 MCP 工具（数据源：sthjt.hunan.gov.cn 静态栏目页）。"""
+
 from __future__ import annotations
 
 import re
@@ -19,9 +20,7 @@ def _detail_public(detail_url: str) -> dict:
     return web_crawler.get_detail(detail_url)
 
 
-def eia_publicity_search(
-    type: str = "accept", keyword: str | None = None, page: int = 1
-) -> list[dict]:
+def eia_publicity_search(type: str = "accept", keyword: str | None = None, page: int = 1) -> list[dict]:
     """检索湖南省建设项目环境影响评价（环评）公示信息。
 
     Args:
@@ -37,9 +36,7 @@ def eia_publicity_search(
     return _channel_list(key, page=page, keyword=keyword)
 
 
-def policy_document_search(
-    category: str = "policy", keyword: str | None = None, page: int = 1
-) -> list[dict]:
+def policy_document_search(category: str = "policy", keyword: str | None = None, page: int = 1) -> list[dict]:
     """检索湖南省生态环境厅政策文件（规范性文件/政策解读）。
 
     Args:
@@ -146,25 +143,25 @@ def document_detail(detail_url: str) -> dict:
 # ---- P0 扩展工具（2026-08-27 全站穿透实测） ----
 
 _NEWS_CHANNELS = {
-    "zxdt": "news_zxdt",      # 环保动态
-    "hjyw": "news_hjyw",      # 环境要闻
-    "szxw": "news_szxw",      # 市州新闻
+    "zxdt": "news_zxdt",  # 环保动态
+    "hjyw": "news_hjyw",  # 环境要闻
+    "szxw": "news_szxw",  # 市州新闻
     "c101666": "news_c101666",  # 时政关注
-    "tpxw": "news_tpxw",      # 图片新闻
+    "tpxw": "news_tpxw",  # 图片新闻
 }
 
 _INTERACTION_CHANNELS = {
-    "survey_topic": "survey_topic",      # 调查征集主题
+    "survey_topic": "survey_topic",  # 调查征集主题
     "survey_feedback": "survey_feedback",  # 调查征集反馈
-    "interview": "online_interview",     # 在线访谈
+    "interview": "online_interview",  # 在线访谈
 }
 
 _DOMAIN_CHANNELS = {
-    "nuclear": "nuclear_radiation",      # 核与辐射
-    "eia": "eia_field",                  # 环境影响评价
-    "emergency": "emergency",            # 应急管理
-    "eco": "eco_protection",             # 生态保护（示范创建）
-    "soil": "soil_pollution",            # 土壤污染防治
+    "nuclear": "nuclear_radiation",  # 核与辐射
+    "eia": "eia_field",  # 环境影响评价
+    "emergency": "emergency",  # 应急管理
+    "eco": "eco_protection",  # 生态保护（示范创建）
+    "soil": "soil_pollution",  # 土壤污染防治
 }
 
 
@@ -202,7 +199,8 @@ def key_domain_list(domain: str = "nuclear", keyword: str | None = None, page: i
     """查询湖南省生态环境厅重点领域公开信息（核与辐射/环评/应急管理/生态保护/土壤污染防治）。
 
     Args:
-        domain: 领域，可选 nuclear(核与辐射) / eia(环境影响评价) / emergency(应急管理) / eco(生态保护-示范创建) / soil(土壤污染防治)，默认 nuclear。
+        domain: 领域，可选 nuclear(核与辐射) / eia(环境影响评价) / emergency(应急管理) / eco(生态保护-示范创建)
+            soil(土壤污染防治)，默认 nuclear。
         keyword: 可选，标题关键词。
         page: 页码，从 1 开始。
 
@@ -217,16 +215,16 @@ def key_domain_list(domain: str = "nuclear", keyword: str | None = None, page: i
 
 _LEGAL_CHANNELS = {
     "local_regulation": "local_regulation",  # 地方性法规
-    "case_example": "case_example",          # 以案说法
+    "case_example": "case_example",  # 以案说法
 }
 
 _MGMT_CHANNELS = {
     "enforce_supervision": "enforce_supervision",  # 行政执法事前事中
-    "special_fund": "special_fund",                # 专项资金管理
-    "plan": "plan_program",                        # 规划计划
-    "cppcc": "proposal_cppcc",                     # 政协提案答复
-    "annual_report": "annual_report",              # 信息公开年报
-    "complaint": "complaint_report",               # 投诉举报情况
+    "special_fund": "special_fund",  # 专项资金管理
+    "plan": "plan_program",  # 规划计划
+    "cppcc": "proposal_cppcc",  # 政协提案答复
+    "annual_report": "annual_report",  # 信息公开年报
+    "complaint": "complaint_report",  # 投诉举报情况
 }
 
 
@@ -248,8 +246,9 @@ def legal_document_list(category: str = "local_regulation", keyword: str | None 
 def management_public_list(category: str = "plan", keyword: str | None = None, page: int = 1) -> list[dict]:
     """查询湖南省生态环境厅管理与监督公开信息（执法事前事中/专项资金/规划计划/政协提案/公开年报/投诉举报）。
 
-    Args:
-        category: 类别，可选 enforce_supervision(执法事前事中) / special_fund(专项资金) / plan(规划计划) / cppcc(政协提案答复) / annual_report(信息公开年报) / complaint(投诉举报情况)，默认 plan。
+        category: 类别，可选 enforce_supervision(执法事前事中) / special_fund(专项资金) /
+            plan(规划计划) / cppcc(政协提案答复) / annual_report(信息公开年报) /
+            complaint(投诉举报情况)，默认 plan。
         keyword: 可选，标题关键词。
         page: 页码，从 1 开始。
 
@@ -263,16 +262,16 @@ def management_public_list(category: str = "plan", keyword: str | None = None, p
 # ---- P2/P3 扩展工具（2026-08-27 全站穿透实测） ----
 
 _ORG_CHANNELS = {
-    "leader": "org_leader",    # 机构领导
-    "depart": "org_depart",    # 内设机构
-    "unit": "org_unit",        # 直属机构
-    "hr": "hr_info",           # 人事信息
+    "leader": "org_leader",  # 机构领导
+    "depart": "org_depart",  # 内设机构
+    "unit": "org_unit",  # 直属机构
+    "hr": "hr_info",  # 人事信息
 }
 
 _MEDIA_CHANNELS = {
-    "video": "media_video",    # 环保视频
-    "press": "media_press",    # 新闻发布会
-    "qa": "media_qa",          # 新媒体问政
+    "video": "media_video",  # 环保视频
+    "press": "media_press",  # 新闻发布会
+    "qa": "media_qa",  # 新媒体问政
 }
 
 

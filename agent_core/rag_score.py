@@ -27,7 +27,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 
@@ -319,10 +318,7 @@ class RAGScorer:
             try:
                 query_vec = self._embedding_provider.embed(query)
                 context_vec = self._embedding_provider.embed(combined_context)
-                semantic_sim = float(
-                    np.dot(query_vec, context_vec)
-                    / (np.linalg.norm(query_vec) * np.linalg.norm(context_vec))
-                )
+                semantic_sim = float(np.dot(query_vec, context_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(context_vec)))
                 # 综合评分
                 return 0.4 * coverage + 0.6 * max(0.0, semantic_sim)
             except Exception:
@@ -441,11 +437,7 @@ class RAGScorer:
             # 如果没有实体，检查关键词重叠
             claim_keywords = set(self._extract_keywords(claim))
             context_keywords = set(self._extract_keywords(context))
-            overlap = (
-                len(claim_keywords & context_keywords) / len(claim_keywords)
-                if claim_keywords
-                else 0
-            )
+            overlap = len(claim_keywords & context_keywords) / len(claim_keywords) if claim_keywords else 0
             return overlap >= 0.3
 
         # 检查实体是否在上下文中
@@ -474,9 +466,7 @@ class RAGScorer:
         entities.update(laws)
 
         # 中文专有名词（2-4字）
-        chinese_terms = re.findall(
-            r"[\u4e00-\u9fa5]{2,4}(?:法|条例|规定|标准|办法|制度|体系|机制)", text
-        )
+        chinese_terms = re.findall(r"[\u4e00-\u9fa5]{2,4}(?:法|条例|规定|标准|办法|制度|体系|机制)", text)
         entities.update(chinese_terms)
 
         return entities

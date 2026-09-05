@@ -18,8 +18,8 @@ import asyncio
 import base64
 import json
 import sys
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 from govmcp.crypto.sm import generate_sm4_key, sm3_hash, sm4_decrypt, sm4_encrypt
 
@@ -207,9 +207,7 @@ class GovMCPServer:
             self._sampling_manager: SamplingManager = SamplingManager()
             self._elicitation_manager: ElicitationManager = ElicitationManager()
             self._authorization_manager: AuthorizationManager = AuthorizationManager()
-            self._permission_manager: FineGrainedPermissionManager = FineGrainedPermissionManager(
-                self._authorization_manager
-            )
+            self._permission_manager: FineGrainedPermissionManager = FineGrainedPermissionManager(self._authorization_manager)
         else:
             self._task_manager = None
             self._sampling_manager = None
@@ -769,17 +767,13 @@ class GovMCPServer:
                 error_resp = self._jsonrpc_error(None, JSONRPC_PARSE_ERROR, f"Parse error: {exc}")
                 self._write_message(error_resp)
             except Exception as exc:
-                error_resp = self._jsonrpc_error(
-                    None, JSONRPC_INTERNAL_ERROR, f"Internal error: {exc}"
-                )
+                error_resp = self._jsonrpc_error(None, JSONRPC_INTERNAL_ERROR, f"Internal error: {exc}")
                 try:
                     self._write_message(error_resp)
                 except Exception:
                     pass
 
-    async def _async_handle_message(
-        self, client_id: str, message: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    async def _async_handle_message(self, client_id: str, message: dict[str, Any]) -> dict[str, Any] | None:
         """异步处理消息（用于 WebSocket/HTTP）"""
         if "_sm3" in message:
             if not self._verify_inbound_sm3(message):

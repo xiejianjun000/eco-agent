@@ -25,7 +25,7 @@ import re
 import secrets as _secrets
 import shutil
 import stat
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -40,11 +40,13 @@ SECRET_FILE = _ECO_DIR / "ecoskills_secret"
 # 信任分级
 # ═══════════════════════════════════
 
+
 class TrustTier:
-    OFFICIAL = "official"      # 官方签名，免审
-    CERTIFIED = "certified"    # 经审核签名
-    COMMUNITY = "community"    # 未签名，安装需 --force 且强制扫描告警
+    OFFICIAL = "official"  # 官方签名，免审
+    CERTIFIED = "certified"  # 经审核签名
+    COMMUNITY = "community"  # 未签名，安装需 --force 且强制扫描告警
     ALL = (OFFICIAL, CERTIFIED, COMMUNITY)
+
 
 TIER_BADGE = {
     TrustTier.OFFICIAL: "[官方]",
@@ -59,6 +61,7 @@ CATEGORIES = ("法规查询", "文书生成", "数据分析", "监测工具", "�
 # SkillManifest
 # ═══════════════════════════════════
 
+
 @dataclass
 class SkillManifest:
     name: str = ""
@@ -68,8 +71,8 @@ class SkillManifest:
     category: str = "其他"
     tags: list[str] = field(default_factory=list)
     trust_tier: str = TrustTier.COMMUNITY
-    signature: str = ""                    # SM3-HMAC hex
-    entry: str = "SKILL.md"                # 入口文件相对路径
+    signature: str = ""  # SM3-HMAC hex
+    entry: str = "SKILL.md"  # 入口文件相对路径
     requires: list[str] = field(default_factory=list)
     min_eco_version: str = "5.0.0"
 
@@ -103,6 +106,7 @@ class SkillManifest:
 # SM3-HMAC 签名 / 验签（grants 风格本机密钥）
 # ═══════════════════════════════════
 
+
 def _sm3_hexdigest(data: bytes) -> str:
     return hashlib.new("sm3", data).hexdigest()
 
@@ -125,8 +129,7 @@ def _local_secret(create: bool = True) -> str:
 def sign_manifest(manifest: SkillManifest, secret: str | None = None) -> str:
     """SM3-HMAC 签名。secret 缺省用本机密钥（官方签发场景）。"""
     key = (secret or _local_secret()).encode("utf-8")
-    sig = hmac.new(key, manifest.canonical_payload().encode("utf-8"),
-                   digestmod=lambda d=b"": hashlib.new("sm3", d)).hexdigest()
+    sig = hmac.new(key, manifest.canonical_payload().encode("utf-8"), digestmod=lambda d=b"": hashlib.new("sm3", d)).hexdigest()
     manifest.signature = sig
     return sig
 
@@ -136,8 +139,9 @@ def verify_manifest(manifest: SkillManifest, secret: str | None = None) -> tuple
     if not manifest.signature:
         return False, "无签名"
     key = (secret or _local_secret()).encode("utf-8")
-    expect = hmac.new(key, manifest.canonical_payload().encode("utf-8"),
-                      digestmod=lambda d=b"": hashlib.new("sm3", d)).hexdigest()
+    expect = hmac.new(
+        key, manifest.canonical_payload().encode("utf-8"), digestmod=lambda d=b"": hashlib.new("sm3", d)
+    ).hexdigest()
     if hmac.compare_digest(expect, manifest.signature):
         return True, "签名有效"
     return False, "签名不匹配（内容可能被篡改）"
@@ -149,21 +153,24 @@ def verify_manifest(manifest: SkillManifest, secret: str | None = None) -> tuple
 
 # 外联常见域名白名单；其余 URL 一律告警
 _COMMON_DOMAINS = {
-    "github.com", "raw.githubusercontent.com", "pypi.org", "files.pythonhosted.org",
-    "npmjs.com", "registry.npmjs.org", "mee.gov.cn", "gov.cn", "epa.gov",
+    "github.com",
+    "raw.githubusercontent.com",
+    "pypi.org",
+    "files.pythonhosted.org",
+    "npmjs.com",
+    "registry.npmjs.org",
+    "mee.gov.cn",
+    "gov.cn",
+    "epa.gov",
     "ecoskills.eco-agent.com",
 }
 
 _DANGER_PATTERNS: list[tuple[str, str]] = [
-    (r"(?:curl|wget)[^|\n]*(?:https?://)[^|\n]*\|\s*(?:sudo\s+)?(?:ba)?sh",
-     "curl/wget 直链管道执行远程脚本"),
-    (r"\brm\s+-[a-zA-Z]*r[a-zA-Z]*f|\brm\s+-[a-zA-Z]*f[a-zA-Z]*r",
-     "rm -rf 危险删除命令"),
+    (r"(?:curl|wget)[^|\n]*(?:https?://)[^|\n]*\|\s*(?:sudo\s+)?(?:ba)?sh", "curl/wget 直链管道执行远程脚本"),
+    (r"\brm\s+-[a-zA-Z]*r[a-zA-Z]*f|\brm\s+-[a-zA-Z]*f[a-zA-Z]*r", "rm -rf 危险删除命令"),
     (r"\b(?:eval|exec)\s*[\(\"']", "eval/exec 动态代码执行"),
-    (r"\bos\.system\s*\(|\bsubprocess\.[A-Za-z_]+\s*\(\s*['\"](?:sh|bash)\b",
-     "shell 派生执行"),
-    (r"base64\.b64decode\s*\([^)]*\)\s*(?:\)|\.)?\s*(?:.*\bexec\b)?",
-     "base64 解码载荷"),
+    (r"\bos\.system\s*\(|\bsubprocess\.[A-Za-z_]+\s*\(\s*['\"](?:sh|bash)\b", "shell 派生执行"),
+    (r"base64\.b64decode\s*\([^)]*\)\s*(?:\)|\.)?\s*(?:.*\bexec\b)?", "base64 解码载荷"),
 ]
 
 _URL_RE = re.compile(r"https?://([a-zA-Z0-9.\-]+)")
@@ -184,14 +191,12 @@ def scan_skill(path: str | Path) -> dict:
         except Exception:
             pass
 
-    report = {"safe": True, "risk_level": "low", "findings": [],
-              "entry": str(entry), "scanned_at": datetime.now().isoformat()}
+    report = {"safe": True, "risk_level": "low", "findings": [], "entry": str(entry), "scanned_at": datetime.now().isoformat()}
 
     if not entry.exists():
         report["safe"] = False
         report["risk_level"] = "high"
-        report["findings"].append({"level": "high", "type": "missing_entry",
-                                   "detail": f"入口文件不存在: {entry}", "line": 0})
+        report["findings"].append({"level": "high", "type": "missing_entry", "detail": f"入口文件不存在: {entry}", "line": 0})
         return report
 
     text = entry.read_text(encoding="utf-8", errors="replace")
@@ -211,13 +216,15 @@ def scan_skill(path: str | Path) -> dict:
     for lineno, line in enumerate(text.splitlines(), 1):
         for pattern, desc in _DANGER_PATTERNS:
             if re.search(pattern, line):
-                report["findings"].append({"level": "high", "type": "dangerous_command",
-                                           "detail": f"{desc}: {line.strip()[:120]}", "line": lineno})
+                report["findings"].append(
+                    {"level": "high", "type": "dangerous_command", "detail": f"{desc}: {line.strip()[:120]}", "line": lineno}
+                )
         for m in _URL_RE.finditer(line):
             domain = m.group(1).lower()
             if not any(domain == d or domain.endswith("." + d) for d in _COMMON_DOMAINS):
-                report["findings"].append({"level": "medium", "type": "untrusted_outbound",
-                                           "detail": f"外联非常见域名: {domain}", "line": lineno})
+                report["findings"].append(
+                    {"level": "medium", "type": "untrusted_outbound", "detail": f"外联非常见域名: {domain}", "line": lineno}
+                )
 
     levels = {f["level"] for f in report["findings"]}
     report["risk_level"] = "high" if "high" in levels else ("medium" if "medium" in levels else "low")
@@ -233,13 +240,15 @@ def _scan_injection(seg_text: str, seg_no: int, report: dict, validate_injection
         # 语言白名单命中多为技能名拼音/产品标识符误报，降级为提示；
         # 禁止 pattern/禁止词（ignore previous instructions 等）才是高危注入
         level = "low" if "语言白名单" in reason else "high"
-        report["findings"].append({"level": level, "type": "prompt_injection",
-                                   "detail": f"段{seg_no} 疑似提示注入: {reason}", "line": 0})
+        report["findings"].append(
+            {"level": level, "type": "prompt_injection", "detail": f"段{seg_no} 疑似提示注入: {reason}", "line": 0}
+        )
 
 
 # ═══════════════════════════════════
 # SkillRegistry — 本地索引
 # ═══════════════════════════════════
+
 
 class SkillRegistry:
     """本地技能注册表：~/.eco/ecoskills/index.json"""
@@ -264,8 +273,7 @@ class SkillRegistry:
 
     def _save(self):
         try:
-            self._index_path.write_text(json.dumps(self._index, ensure_ascii=False, indent=2),
-                                        encoding="utf-8")
+            self._index_path.write_text(json.dumps(self._index, ensure_ascii=False, indent=2), encoding="utf-8")
         except OSError as e:  # 只读/受限环境：索引仅内存态
             logger.warning("EcoSkills 索引落盘失败（内存态运行）: %s", e)
 
@@ -288,19 +296,25 @@ class SkillRegistry:
         tier = manifest.trust_tier
         if tier in (TrustTier.OFFICIAL, TrustTier.CERTIFIED):
             if not verified:
-                return {"success": False, "error": f"{tier} 级技能验签失败: {reason}",
-                        "trust_tier": tier}
+                return {"success": False, "error": f"{tier} 级技能验签失败: {reason}", "trust_tier": tier}
         else:  # community
             if not force:
-                return {"success": False,
-                        "error": "community 级技能未签名，安装需显式 --force（将强制安全扫描告警）",
-                        "trust_tier": tier, "requires_force": True}
+                return {
+                    "success": False,
+                    "error": "community 级技能未签名，安装需显式 --force（将强制安全扫描告警）",
+                    "trust_tier": tier,
+                    "requires_force": True,
+                }
 
         # 2) 安装前扫描
         report = scan_skill(p)
         if not report["safe"] and not force:
-            return {"success": False, "error": "安全扫描发现高风险内容，已阻断（--force 可强行安装）",
-                    "trust_tier": tier, "scan": report}
+            return {
+                "success": False,
+                "error": "安全扫描发现高风险内容，已阻断（--force 可强行安装）",
+                "trust_tier": tier,
+                "scan": report,
+            }
 
         # 3) 登记 + 落盘
         target = self._home / "skills" / manifest.name
@@ -316,8 +330,14 @@ class SkillRegistry:
         }
         self._save()
         logger.info(f"[EcoSkills] 安装: {manifest.name} v{manifest.version} ({tier})")
-        return {"success": True, "name": manifest.name, "trust_tier": tier,
-                "verified": verified, "scan": report, "path": str(target)}
+        return {
+            "success": True,
+            "name": manifest.name,
+            "trust_tier": tier,
+            "verified": verified,
+            "scan": report,
+            "path": str(target),
+        }
 
     # ---------- 其余 CRUD ----------
 

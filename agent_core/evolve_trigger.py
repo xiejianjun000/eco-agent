@@ -23,8 +23,8 @@ import json
 import logging
 import os
 import time
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("evolve_trigger")
 
@@ -35,16 +35,15 @@ DEFAULT_STATE_DIR = ROOT / "memory-tree" / "data" / "evolution"
 class EvolveTrigger:
     """L4 自动触发器：经验沉淀 + 条件判断 + 调起 Evolve"""
 
-    def __init__(self, state_dir: Path | None = None, evolve_runner=None,
-                 threshold: int | None = None, cooldown_s: float = 4 * 3600):
-        self._dir = Path(state_dir or os.environ.get("ECO_EVOLVE_STATE_DIR")
-                         or DEFAULT_STATE_DIR)
+    def __init__(
+        self, state_dir: Path | None = None, evolve_runner=None, threshold: int | None = None, cooldown_s: float = 4 * 3600
+    ):
+        self._dir = Path(state_dir or os.environ.get("ECO_EVOLVE_STATE_DIR") or DEFAULT_STATE_DIR)
         self._dir.mkdir(parents=True, exist_ok=True)
         self._jsonl = self._dir / "experience.jsonl"
         self._state = self._dir / "trigger_state.json"
         self._runner = evolve_runner or self._default_runner
-        self._threshold = threshold if threshold is not None else int(
-            os.environ.get("ECO_EVOLVE_THRESHOLD", "5"))
+        self._threshold = threshold if threshold is not None else int(os.environ.get("ECO_EVOLVE_THRESHOLD", "5"))
         self._cooldown = cooldown_s
 
     # ── 经验沉淀 ──
@@ -54,13 +53,16 @@ class EvolveTrigger:
         entry = {
             "recorded_at": datetime.now().isoformat(),
             "summary": summary,
-            "tasks": [{
-                "description": getattr(t, "description", "")[:80],
-                "status": str(getattr(t, "status", "")),
-                "expectation": getattr(t, "expectation", ""),
-                "output": str(getattr(t, "output", ""))[:500],
-                "verdict": getattr(t, "verdict", ""),
-            } for t in tasks],
+            "tasks": [
+                {
+                    "description": getattr(t, "description", "")[:80],
+                    "status": str(getattr(t, "status", "")),
+                    "expectation": getattr(t, "expectation", ""),
+                    "output": str(getattr(t, "output", ""))[:500],
+                    "verdict": getattr(t, "verdict", ""),
+                }
+                for t in tasks
+            ],
         }
         with open(self._jsonl, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -129,10 +131,12 @@ class EvolveTrigger:
     @staticmethod
     def _default_runner(history: list[dict]) -> dict:
         from agent_core.meta_evolution import MetaEvolution
+
         return MetaEvolution().run_full_cycle(history)
 
 
 # ── CommanderV2 接线（方案A：ECO_AUTO_EVOLVE=1 显式启用）──
+
 
 def mission_hook(summary: dict, tasks: list):
     """供 CommanderV2.execute() 收尾调用。未启用时完全 no-op。"""

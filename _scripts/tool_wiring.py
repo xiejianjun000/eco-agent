@@ -24,12 +24,13 @@ sys.path.insert(0, str(ROOT))
 def chat_tool_names() -> set[str]:
     """聊天通道实际暴露给 LLM 的工具名（server/api/chat.py 工具清单）。"""
     from server.api.chat import _codex_tools
+
     return {t["function"]["name"] for t in _codex_tools()}
 
 
 def registry_view() -> tuple[list[str], set[str], set[str]]:
     """(全部工具名, 有 handler 的, MCP 远程的)"""
-    from agent_core.tools_registry import ALL_TOOL_DEFS, _HANDLERS
+    from agent_core.tools_registry import _HANDLERS, ALL_TOOL_DEFS
 
     names = [d["function"]["name"] for d in ALL_TOOL_DEFS]
     handled = set(_HANDLERS.keys())
@@ -40,6 +41,7 @@ def registry_view() -> tuple[list[str], set[str], set[str]]:
 def handler_lines(name: str) -> int:
     try:
         from agent_core.tools_registry import _HANDLERS
+
         return len(inspect.getsource(_HANDLERS[name]).splitlines())
     except Exception:
         return 0
@@ -58,8 +60,7 @@ def main() -> int:
     def_only = sorted(n for n in names if n not in handled and n not in mcp)
 
     print("=" * 66)
-    print(f"工具接线治理报告 · 注册 {len(names)} · 有实现 {len(handled)} · "
-          f"MCP {len(mcp)} · 已接聊天 {len(wired)}")
+    print(f"工具接线治理报告 · 注册 {len(names)} · 有实现 {len(handled)} · MCP {len(mcp)} · 已接聊天 {len(wired)}")
     print("=" * 66)
 
     if not args.short:
@@ -78,6 +79,7 @@ def main() -> int:
     print(f"\n[MCP 远程工具] {len(mcp)}（经 ECO_MCP_SERVERS 挂载，不入接线讨论）")
 
     from agent_core.wiring_manifest import WIRED_REQUIRED
+
     missing = [n for n in WIRED_REQUIRED if n not in wired]
     if missing:
         print(f"\n❌ 接线清单缺口（WIRED_REQUIRED 未接线）: {missing}")

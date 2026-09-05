@@ -25,10 +25,12 @@ from agent_core.mcp_connector import (
 
 def _close_return(value):
     """side_effect 工厂：关闭传入协程并返回固定值"""
+
     def _f(coro, timeout=None):
         if hasattr(coro, "close"):
             coro.close()
         return value
+
     return _f
 
 
@@ -52,9 +54,7 @@ def make_connection(name="test_srv", tools=None):
     conn._loop = None
     conn._session = None
     conn._cm_stack = []
-    conn.tools = tools if tools is not None else [
-        {"name": "query_air_quality", "description": "查空气质量", "inputSchema": {}}
-    ]
+    conn.tools = tools if tools is not None else [{"name": "query_air_quality", "description": "查空气质量", "inputSchema": {}}]
     conn.connected = False
     conn.last_error = ""
     return conn
@@ -75,14 +75,15 @@ class FakeResult:
 
 class TestConfig(unittest.TestCase):
     def test_from_dict_defaults(self):
-        cfg = MCPServerConfig.from_dict({"name": "a", "transport": "sse",
-                                         "url": "http://x/sse/"})
+        cfg = MCPServerConfig.from_dict({"name": "a", "transport": "sse", "url": "http://x/sse/"})
         self.assertEqual(cfg.timeout, DEFAULT_TIMEOUT)
         self.assertEqual(cfg.command, [])
 
     def test_load_from_env_json(self):
-        payload = '[{"name":"kb","transport":"sse","url":"http://h/sse/"},' \
-                  ' {"name":"gov","transport":"stdio","command":["python","s.py"]}]'
+        payload = (
+            '[{"name":"kb","transport":"sse","url":"http://h/sse/"},'
+            ' {"name":"gov","transport":"stdio","command":["python","s.py"]}]'
+        )
         with mock.patch.dict(os.environ, {"ECO_MCP_SERVERS": payload}):
             cfgs = load_configs_from_env()
         self.assertEqual([c.name for c in cfgs], ["kb", "gov"])
@@ -101,10 +102,12 @@ class TestConnectDegrade(unittest.TestCase):
 
     def test_connect_failure_graceful(self):
         conn = make_connection()
+
         def refuse(coro, timeout=None):
             if hasattr(coro, "close"):
                 coro.close()
             raise RuntimeError("conn refused")
+
         with mock.patch.object(MCPServerConnection, "_run", side_effect=refuse):
             ok = conn.connect()
         self.assertFalse(ok)
@@ -113,10 +116,12 @@ class TestConnectDegrade(unittest.TestCase):
 
     def test_connect_success(self):
         conn = make_connection()
+
         def fake_run(coro, timeout=None):
             coro.close()
             conn.connected = True
             return None
+
         with mock.patch.object(MCPServerConnection, "_run", side_effect=fake_run):
             self.assertTrue(conn.connect())
         self.assertTrue(conn.connected)
@@ -127,8 +132,7 @@ class TestCallTool(unittest.TestCase):
         conn = make_connection()
         conn.connected = True
         conn._session = object()
-        with mock.patch.object(MCPServerConnection, "_run",
-                               side_effect=_close_return(FakeResult('{"aqi": 18}'))):
+        with mock.patch.object(MCPServerConnection, "_run", side_effect=_close_return(FakeResult('{"aqi": 18}'))):
             r = conn.call_tool("query_air_quality", {"region": "娄底"})
         self.assertTrue(r["success"])
         self.assertEqual(r["text"], '{"aqi": 18}')
@@ -145,8 +149,7 @@ class TestCallTool(unittest.TestCase):
         conn = make_connection()
         conn.connected = True
         conn._session = object()
-        with mock.patch.object(MCPServerConnection, "_run",
-                               side_effect=_close_return(FakeResult("bad", is_error=True))):
+        with mock.patch.object(MCPServerConnection, "_run", side_effect=_close_return(FakeResult("bad", is_error=True))):
             r = conn.call_tool("t", {})
         self.assertFalse(r["success"])
         self.assertTrue(r["is_error"])
@@ -166,8 +169,10 @@ class TestCallTool(unittest.TestCase):
                 raise TimeoutError("30s timeout")
             return FakeResult("recovered")
 
-        with mock.patch.object(MCPServerConnection, "_run", side_effect=fake_run), \
-             mock.patch.object(MCPServerConnection, "reconnect", return_value=True) as rc:
+        with (
+            mock.patch.object(MCPServerConnection, "_run", side_effect=fake_run),
+            mock.patch.object(MCPServerConnection, "reconnect", return_value=True) as rc,
+        ):
             r = conn.call_tool("t", {})
         self.assertTrue(r["success"])
         self.assertEqual(r["text"], "recovered")
@@ -178,12 +183,16 @@ class TestCallTool(unittest.TestCase):
         conn = make_connection()
         conn.connected = True
         conn._session = object()
+
         def boom(coro, timeout=None):
             if hasattr(coro, "close"):
                 coro.close()
             raise TimeoutError("boom")
-        with mock.patch.object(MCPServerConnection, "_run", side_effect=boom), \
-             mock.patch.object(MCPServerConnection, "reconnect", return_value=False):
+
+        with (
+            mock.patch.object(MCPServerConnection, "_run", side_effect=boom),
+            mock.patch.object(MCPServerConnection, "reconnect", return_value=False),
+        ):
             r = conn.call_tool("t", {})
         self.assertFalse(r["success"])
         self.assertIn("TimeoutError", r["error"])
@@ -210,8 +219,7 @@ class TestManager(unittest.TestCase):
         mgr = self._make_manager()
         good = make_connection("govmcp")
         good.connected = True
-        bad = make_connection("ehs_kb", tools=[{"name": "kb_search",
-                                                "description": "检索", "inputSchema": {}}])
+        bad = make_connection("ehs_kb", tools=[{"name": "kb_search", "description": "检索", "inputSchema": {}}])
         bad.connected = False
         mgr._servers = {"govmcp": good, "ehs_kb": bad}
         react = _FakeReAct()
@@ -229,8 +237,7 @@ class TestManager(unittest.TestCase):
         mgr.register_into_react(react)
         handler, desc = react.tools["mcp__govmcp__query_air_quality"]
         self.assertIn("[MCP:govmcp]", desc)
-        with mock.patch.object(MCPServerConnection, "_run",
-                               side_effect=_close_return(FakeResult("data"))):
+        with mock.patch.object(MCPServerConnection, "_run", side_effect=_close_return(FakeResult("data"))):
             out = handler(region="娄底")
         self.assertTrue(out["success"])
         self.assertEqual(out["tool"], "query_air_quality")
@@ -257,20 +264,24 @@ class TestHttpTransportConfig(unittest.TestCase):
     """Streamable HTTP 传输（腾讯文档官方 MCP 等）配置解析"""
 
     def test_http_transport_from_dict(self):
-        cfg = MCPServerConfig.from_dict({
-            "name": "tencent_docs",
-            "transport": "http",
-            "url": "https://docs.qq.com/openapi/mcp",
-            "headers": {"Authorization": "tk-123"},
-        })
+        cfg = MCPServerConfig.from_dict(
+            {
+                "name": "tencent_docs",
+                "transport": "http",
+                "url": "https://docs.qq.com/openapi/mcp",
+                "headers": {"Authorization": "tk-123"},
+            }
+        )
         self.assertEqual(cfg.transport, "http")
         self.assertEqual(cfg.url, "https://docs.qq.com/openapi/mcp")
         self.assertEqual(cfg.headers["Authorization"], "tk-123")
 
     def test_http_transport_in_env_config(self):
-        payload = ('[{"name":"tencent_docs","transport":"http",'
-                   '"url":"https://docs.qq.com/openapi/mcp",'
-                   '"headers":{"Authorization":"tk-456"}}]')
+        payload = (
+            '[{"name":"tencent_docs","transport":"http",'
+            '"url":"https://docs.qq.com/openapi/mcp",'
+            '"headers":{"Authorization":"tk-456"}}]'
+        )
         with mock.patch.dict(os.environ, {"ECO_MCP_SERVERS": payload}):
             cfgs = load_configs_from_env()
         self.assertEqual(len(cfgs), 1)
@@ -283,10 +294,10 @@ class TestTencentDocsSetupScript(unittest.TestCase):
 
     def _load_script(self, env_path):
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
-            "setup_tencent_docs",
-            str(Path(__file__).resolve().parent.parent.parent
-                / "_scripts" / "setup_tencent_docs.py"))
+            "setup_tencent_docs", str(Path(__file__).resolve().parent.parent.parent / "_scripts" / "setup_tencent_docs.py")
+        )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         mod.set_token(env_path, "tk_abc123")  # 复用脚本写入路径
@@ -300,8 +311,8 @@ class TestTencentDocsSetupScript(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             env_path = Path(td) / ".env"
             env_path.write_text(
-                'ECO_MCP_SERVERS=[{"name":"eia","transport":"stdio","command":["node","x.js"]}]',
-                encoding="utf-8")
+                'ECO_MCP_SERVERS=[{"name":"eia","transport":"stdio","command":["node","x.js"]}]', encoding="utf-8"
+            )
 
             mod = self._load_script(env_path)
             # set：追加 tencent_docs 条目并写入 token
@@ -316,8 +327,7 @@ class TestTencentDocsSetupScript(unittest.TestCase):
             self.assertEqual(status["url"], "https://docs.qq.com/openapi/mcp")
 
             # 其他条目不受影响
-            line = [l for l in env_path.read_text(encoding="utf-8").splitlines()
-                    if l.startswith("ECO_MCP_SERVERS=")][0]
+            line = [ln for ln in env_path.read_text(encoding="utf-8").splitlines() if ln.startswith("ECO_MCP_SERVERS=")][0]
             servers = json.loads(line.split("=", 1)[1])
             self.assertEqual([s["name"] for s in servers], ["eia", "tencent_docs"])
 

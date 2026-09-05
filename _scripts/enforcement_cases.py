@@ -23,12 +23,12 @@ enforcement_cases.py — ECO AGENT 执法案例模块
 """
 
 import json
-import re
 import logging
-from pathlib import Path
+import re
 from datetime import datetime
-from typing import Any
 from difflib import SequenceMatcher
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger("enforcement_cases")
 
@@ -37,41 +37,41 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # ===== 案例数据模型 =====
 
 CASE_TEMPLATE = {
-    "case_id": "",            # ECO-CASE-YYYY-NNNN
-    "type": "penalty",        # penalty / review / lawsuit / inspection
+    "case_id": "",  # ECO-CASE-YYYY-NNNN
+    "type": "penalty",  # penalty / review / lawsuit / inspection
     "title": "",
-    "status": "closed",       # closed / active / appeal
-    "confidence": "high",     # high / medium / low
+    "status": "closed",  # closed / active / appeal
+    "confidence": "high",  # high / medium / low
     "tags": [],
     "region": "",
-    "pollutant_type": "",     # 污染物类型
-    "penalty_amount": 0.0,    # 处罚金额（元）
-    "law_basis": [],          # 法律依据列表
-    "benchmark_refs": [],     # 引用裁量基准
-    "facts": "",              # 案情摘要
-    "analysis": "",           # 违法要件分析
-    "decision": "",           # 处罚决定
-    "key_points": "",         # 经验要点
-    "source_refs": [],        # 原文指针
+    "pollutant_type": "",  # 污染物类型
+    "penalty_amount": 0.0,  # 处罚金额（元）
+    "law_basis": [],  # 法律依据列表
+    "benchmark_refs": [],  # 引用裁量基准
+    "facts": "",  # 案情摘要
+    "analysis": "",  # 违法要件分析
+    "decision": "",  # 处罚决定
+    "key_points": "",  # 经验要点
+    "source_refs": [],  # 原文指针
     "created_at": "",
     "updated_at": "",
 }
 
 BENCHMARK_TEMPLATE = {
-    "benchmark_id": "",       # BM-NNNN
-    "category": "",           # 大气/水/土壤/固废/噪声等
-    "region": "national",     # 适用地区
+    "benchmark_id": "",  # BM-NNNN
+    "category": "",  # 大气/水/土壤/固废/噪声等
+    "region": "national",  # 适用地区
     "title": "",
     "law_basis": "",
-    "violation": "",          # 违法情形描述
-    "penalty_range": {        # 处罚幅度
+    "violation": "",  # 违法情形描述
+    "penalty_range": {  # 处罚幅度
         "min": 0,
         "max": 0,
-        "unit": "元"
+        "unit": "元",
     },
-    "aggravating": [],        # 从重情节
-    "mitigating": [],         # 从轻情节
-    "exemption": [],          # 免罚情形
+    "aggravating": [],  # 从重情节
+    "mitigating": [],  # 从轻情节
+    "exemption": [],  # 免罚情形
     "effective_date": "",
     "source": "",
 }
@@ -107,7 +107,7 @@ class CaseManager:
                 tags.append(f"pollutant/{case['pollutant_type']}")
             tags.append(f"case/{case.get('type', 'penalty')}")
 
-            mt_node = self._mt.create_node(
+            self._mt.create_node(
                 type="case",
                 title=case["title"],
                 content=content,
@@ -170,9 +170,7 @@ class CaseManager:
         scores.sort(key=lambda x: x[0], reverse=True)
         return [case for _, case in scores[:top_k]]
 
-    def list_cases(self, type: str | None = None,
-                   region: str | None = None,
-                   limit: int = 50) -> list[dict[str, Any]]:
+    def list_cases(self, type: str | None = None, region: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
         """列出案例"""
         cases = []
         for f in self._case_dir.rglob("*.md"):
@@ -219,7 +217,7 @@ class CaseManager:
         if not case:
             return []
         query = f"{case.get('title', '')} {case.get('facts', '')}"
-        return self.find_similar(query, top_k + 1)[1:top_k + 1]
+        return self.find_similar(query, top_k + 1)[1 : top_k + 1]
 
     # ── 内部方法 ──
 
@@ -250,9 +248,7 @@ class CaseManager:
         if case.get("key_points"):
             lines.append(f"## 经验要点\n\n{case['key_points']}\n")
         if case.get("source_refs"):
-            lines.append(
-                f"## 原文指针\n\n{chr(10).join(f'- {ref}' for ref in case['source_refs'])}"
-            )
+            lines.append(f"## 原文指针\n\n{chr(10).join(f'- {ref}' for ref in case['source_refs'])}")
         return "\n".join(lines)
 
     def _write_case_file(self, file_path: Path, case: dict[str, Any]):
@@ -265,7 +261,7 @@ class CaseManager:
             f'status: "{case.get("status", "closed")}"',
             f'confidence: "{case.get("confidence", "high")}"',
             f'region: "{case.get("region", "")}"',
-            f'penalty_amount: {case.get("penalty_amount", 0)}',
+            f"penalty_amount: {case.get('penalty_amount', 0)}",
             "tags:",
         ]
         for tag in case.get("tags", []):
@@ -291,13 +287,13 @@ class CaseManager:
             end = content.find("---", 3)
             if end != -1:
                 yaml_text = content[3:end]
-                body = content[end + 3:].strip()
+                body = content[end + 3 :].strip()
                 for line in yaml_text.split("\n"):
                     line = line.strip()
                     if ":" in line:
                         key, _, value = line.partition(":")
                         key = key.strip()
-                        value = value.strip().strip('"\'')
+                        value = value.strip().strip("\"'")
                         if key == "tags":
                             continue
                         if key == "penalty_amount":
@@ -316,7 +312,7 @@ class CaseManager:
                         continue
                     if in_tags:
                         if line.strip().startswith("- "):
-                            tags.append(line.strip()[2:].strip().strip('"\''))
+                            tags.append(line.strip()[2:].strip().strip("\"'"))
                         else:
                             in_tags = False
                 case["tags"] = tags
@@ -387,8 +383,7 @@ class BenchmarkManager:
         logger.info(f"裁量基准添加成功: {bm_id}")
         return bm_id
 
-    def match_benchmark(self, category: str, violation_desc: str,
-                        region: str = "national") -> list[dict[str, Any]]:
+    def match_benchmark(self, category: str, violation_desc: str, region: str = "national") -> list[dict[str, Any]]:
         """匹配裁量基准"""
         benchmarks = self.list_benchmarks(category=category, region=region)
         if not benchmarks:
@@ -415,8 +410,7 @@ class BenchmarkManager:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [bm for _, bm in scored[:5]]
 
-    def list_benchmarks(self, category: str | None = None,
-                        region: str | None = None) -> list[dict[str, Any]]:
+    def list_benchmarks(self, category: str | None = None, region: str | None = None) -> list[dict[str, Any]]:
         """列出裁量基准"""
         benchmarks = []
         for f in self._benchmark_dir.rglob("*.md"):
@@ -454,8 +448,8 @@ class BenchmarkManager:
             f'title: "{bm.get("title", "")}"',
             f'law_basis: "{bm.get("law_basis", "")}"',
             f'effective_date: "{bm.get("effective_date", "")}"',
-            f'penalty_min: {bm.get("penalty_range", {}).get("min", 0)}',
-            f'penalty_max: {bm.get("penalty_range", {}).get("max", 0)}',
+            f"penalty_min: {bm.get('penalty_range', {}).get('min', 0)}",
+            f"penalty_max: {bm.get('penalty_range', {}).get('max', 0)}",
             "---\n",
         ]
         body_parts = [
@@ -486,19 +480,17 @@ class BenchmarkManager:
                     if ":" in line:
                         key, _, value = line.partition(":")
                         key = key.strip()
-                        value = value.strip().strip('"\'')
+                        value = value.strip().strip("\"'")
                         if key in ("penalty_min", "penalty_max"):
                             try:
                                 value = float(value)
                             except ValueError:
                                 value = 0
-                            bm.setdefault("penalty_range", {})[
-                                "min" if key == "penalty_min" else "max"
-                            ] = value
+                            bm.setdefault("penalty_range", {})["min" if key == "penalty_min" else "max"] = value
                         else:
                             bm[key] = value
 
-                body = content[end + 3:]
+                body = content[end + 3 :]
                 bm["violation"] = self._extract_section_text(body, "违法情形")
                 return bm
         return None
@@ -521,6 +513,7 @@ class BenchmarkManager:
 
 
 # ===== 种子数据 =====
+
 
 def seed_demo_data():
     """创建演示数据"""
@@ -583,10 +576,10 @@ def seed_demo_data():
             "penalty_amount": 350000,
             "law_basis": ["《生态环境法典》第二编第二分编第XX条"],
             "tags": ["env/air", "enforcement/penalty", "case/penalty"],
-            "facts": "2026年3月，XX钢铁有限公司烧结机头排放口二氧化硫浓度为 150mg/m³，超过《钢铁烧结、球团工业大气污染物排放标准》(GB 28662-2012) 规定的 100mg/m³ 限值，超标 0.5 倍。",
-            "analysis": "1. 行为要件：该公司作为排污单位，存在超过标准排放大气污染物的行为\n2. 结果要件：超标 0.5 倍，属于一般情节\n3. 因果关系：排放行为与超标结果之间存在直接因果关系",
-            "decision": "1. 责令立即改正违法行为\n2. 处罚款人民币 35 万元\n3. 按照《环境保护主管部门实施限制生产、停产整治办法》责令限制生产三个月",
-            "key_points": "1. 超标倍数认定：以实测浓度与标准限值的比值计算\n2. 裁量适用：属一般情节，按中限处罚\n3. 配套措施：限制生产作为辅助手段",
+            "facts": "2026年3月，XX钢铁有限公司烧结机头排放口二氧化硫浓度为 150mg/m³，超过《钢铁烧结、球团工业大气污染物排放标准》(GB 28662-2012) 规定的 100mg/m³ 限值，超标 0.5 倍。",  # noqa: E501
+            "analysis": "1. 行为要件：该公司作为排污单位，存在超过标准排放大气污染物的行为\n2. 结果要件：超标 0.5 倍，属于一般情节\n3. 因果关系：排放行为与超标结果之间存在直接因果关系",  # noqa: E501
+            "decision": "1. 责令立即改正违法行为\n2. 处罚款人民币 35 万元\n3. 按照《环境保护主管部门实施限制生产、停产整治办法》责令限制生产三个月",  # noqa: E501
+            "key_points": "1. 超标倍数认定：以实测浓度与标准限值的比值计算\n2. 裁量适用：属一般情节，按中限处罚\n3. 配套措施：限制生产作为辅助手段",  # noqa: E501
             "confidence": "high",
         },
         {
@@ -597,8 +590,8 @@ def seed_demo_data():
             "penalty_amount": 500000,
             "law_basis": ["《生态环境法典》第二编第三分编第XX条"],
             "tags": ["env/water", "enforcement/penalty", "case/penalty"],
-            "facts": "2026年4月，XX化工有限公司废水总排放口 COD 浓度为 180mg/L，超过《化学工业水污染物排放标准》(GB 31571-2015) 规定的 100mg/L 限值，超标 0.8 倍。",
-            "analysis": "1. 行为要件：该公司超过标准排放水污染物\n2. 结果要件：超标 0.8 倍，属于较重情节\n3. 因果关系：排放行为与超标结果之间有直接因果关系",
+            "facts": "2026年4月，XX化工有限公司废水总排放口 COD 浓度为 180mg/L，超过《化学工业水污染物排放标准》(GB 31571-2015) 规定的 100mg/L 限值，超标 0.8 倍。",  # noqa: E501
+            "analysis": "1. 行为要件：该公司超过标准排放水污染物\n2. 结果要件：超标 0.8 倍，属于较重情节\n3. 因果关系：排放行为与超标结果之间有直接因果关系",  # noqa: E501
             "decision": "1. 责令立即改正违法行为\n2. 处罚款人民币 50 万元\n3. 责令停产整治",
             "key_points": "1. 超标 0.8 倍属于较重情节\n2. 处罚额度在裁量基准中上区间\n3. 同时适用停产整治措施",
             "confidence": "high",
@@ -612,7 +605,7 @@ def seed_demo_data():
             "law_basis": ["《生态环境法典》第二编第六分编第XX条", "《危险废物转移环境管理办法》"],
             "tags": ["env/solid_waste", "enforcement/penalty", "case/penalty"],
             "facts": "2026年5月，XX废物处置公司未按照危险废物经营许可证规定，将 5.2 吨废酸非法倾倒至非指定场所。",
-            "analysis": "1. 行为要件：该公司非法倾倒危险废物\n2. 数量认定：5.2 吨（超过 3 吨，属于严重情节）\n3. 主观故意：明知故犯",
+            "analysis": "1. 行为要件：该公司非法倾倒危险废物\n2. 数量认定：5.2 吨（超过 3 吨，属于严重情节）\n3. 主观故意：明知故犯",  # noqa: E501
             "decision": "1. 责令立即清理处置非法倾倒的危险废物\n2. 处罚款人民币 80 万元\n3. 吊销危险废物经营许可证",
             "key_points": "1. 危险废物数量认定是关键\n2. 超过 3 吨从重处罚\n3. 情节严重叠加吊证处罚",
             "confidence": "high",
@@ -633,11 +626,13 @@ def seed_demo_data():
 def test():
     """测试案例模块"""
     import sys as _sys
+
     _sys.path.insert(0, str(PROJECT_ROOT))
-    from _scripts.memory_tree import MemoryTree
-    import tempfile
     import shutil
+    import tempfile
     import time as _time
+
+    from _scripts.memory_tree import MemoryTree
 
     db_path = Path(tempfile.mkdtemp()) / "test.db"
     mt = MemoryTree(db_path)
@@ -645,19 +640,30 @@ def test():
     cm = CaseManager(mt)
     bm = BenchmarkManager(mt)
 
-    bm.add_benchmark({
-        "category": "大气", "region": "national", "title": "超标排放大气污染物",
-        "law_basis": "《生态环境法典》第二编",
-        "violation": "超过大气污染物排放标准排放大气污染物",
-        "penalty_range": {"min": 100000, "max": 1000000, "unit": "元"},
-    })
+    bm.add_benchmark(
+        {
+            "category": "大气",
+            "region": "national",
+            "title": "超标排放大气污染物",
+            "law_basis": "《生态环境法典》第二编",
+            "violation": "超过大气污染物排放标准排放大气污染物",
+            "penalty_range": {"min": 100000, "max": 1000000, "unit": "元"},
+        }
+    )
 
-    cm.add_case({
-        "type": "penalty", "title": "测试案例", "region": "浙江省",
-        "penalty_amount": 100000,
-        "law_basis": ["《生态环境法典》"], "tags": ["env/air", "enforcement/penalty"],
-        "facts": "某企业超标排放大气污染物", "analysis": "超标0.5倍", "decision": "罚款10万元",
-    })
+    cm.add_case(
+        {
+            "type": "penalty",
+            "title": "测试案例",
+            "region": "浙江省",
+            "penalty_amount": 100000,
+            "law_basis": ["《生态环境法典》"],
+            "tags": ["env/air", "enforcement/penalty"],
+            "facts": "某企业超标排放大气污染物",
+            "analysis": "超标0.5倍",
+            "decision": "罚款10万元",
+        }
+    )
 
     results = cm.find_similar("超标排放大气")
     print(f"[TEST] 相似案例检索: {len(results)} 条")
@@ -670,9 +676,14 @@ def test():
     print(f"[TEST] 案例统计: {json.dumps(cm.get_stats(), ensure_ascii=False)}")
     print(f"[TEST] 基准统计: {json.dumps(bm.get_stats(), ensure_ascii=False)}")
 
-    import gc; gc.collect(); _time.sleep(0.1)
-    try: shutil.rmtree(db_path.parent)
-    except PermissionError: pass
+    import gc
+
+    gc.collect()
+    _time.sleep(0.1)
+    try:
+        shutil.rmtree(db_path.parent)
+    except PermissionError:
+        pass
     print("[OK] 执法案例模块测试通过")
 
 

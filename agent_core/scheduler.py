@@ -14,11 +14,12 @@ L4 Evolve 每日自动触发、主动建议推送等后台任务统一由此调�
 """
 
 import json
-import time
 import logging
 import threading
-from pathlib import Path
+import time
 from datetime import datetime
+from pathlib import Path
+
 from croniter import croniter
 
 logger = logging.getLogger("scheduler")
@@ -75,8 +76,7 @@ def nl_to_cron(description: str) -> str | None:
 class ScheduledJob:
     """单个定时任务"""
 
-    def __init__(self, job_id: str, cron_expr: str, task_desc: str,
-                 handler_name: str = "", enabled: bool = True):
+    def __init__(self, job_id: str, cron_expr: str, task_desc: str, handler_name: str = "", enabled: bool = True):
         self.job_id = job_id
         self.cron_expr = cron_expr
         self.task_desc = task_desc
@@ -101,17 +101,20 @@ class ScheduledJob:
 
     def to_dict(self) -> dict:
         return {
-            "job_id": self.job_id, "cron_expr": self.cron_expr,
-            "task_desc": self.task_desc, "handler_name": self.handler_name,
-            "enabled": self.enabled, "last_run": self.last_run,
-            "next_run": self.next_run, "run_count": self.run_count,
+            "job_id": self.job_id,
+            "cron_expr": self.cron_expr,
+            "task_desc": self.task_desc,
+            "handler_name": self.handler_name,
+            "enabled": self.enabled,
+            "last_run": self.last_run,
+            "next_run": self.next_run,
+            "run_count": self.run_count,
             "fail_count": self.fail_count,
         }
 
     @classmethod
     def from_dict(cls, d: dict) -> "ScheduledJob":
-        job = cls(d["job_id"], d["cron_expr"], d["task_desc"],
-                  d.get("handler_name", ""), d.get("enabled", True))
+        job = cls(d["job_id"], d["cron_expr"], d["task_desc"], d.get("handler_name", ""), d.get("enabled", True))
         job.last_run = d.get("last_run")
         job.next_run = d.get("next_run")
         job.run_count = d.get("run_count", 0)
@@ -136,10 +139,10 @@ class CronScheduler:
         """注册任务处理器"""
         self._handlers[name] = handler
 
-    def add_job(self, cron_expr: str, task_desc: str,
-                handler_name: str = "") -> str:
+    def add_job(self, cron_expr: str, task_desc: str, handler_name: str = "") -> str:
         """添加定时任务，返回 job_id"""
         import uuid
+
         job_id = f"job_{uuid.uuid4().hex[:8]}"
         job = ScheduledJob(job_id, cron_expr, task_desc, handler_name)
         self._jobs[job_id] = job
@@ -227,10 +230,14 @@ class CronScheduler:
 
     def _save_jobs(self):
         self._jobs_file.parent.mkdir(parents=True, exist_ok=True)
-        self._jobs_file.write_text(json.dumps(
-            {"jobs": [j.to_dict() for j in self._jobs.values()],
-             "updated_at": datetime.now().isoformat()},
-            ensure_ascii=False, indent=2), encoding="utf-8")
+        self._jobs_file.write_text(
+            json.dumps(
+                {"jobs": [j.to_dict() for j in self._jobs.values()], "updated_at": datetime.now().isoformat()},
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
     def get_stats(self) -> dict:
         return {

@@ -5,21 +5,25 @@ Endpoints:
   GET  /v1/models
   POST /v1/chat/completions (SSE streaming support)
 """
-import sys
-import logging
-import json
-import os
+
 import asyncio
+import json
+import logging
+import os
+import sys
 import time
 from pathlib import Path
+
 log = logging.getLogger("eco.serve")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 ROOT = Path(__file__).resolve().parent.parent.parent
+
 
 def run(args):
     host, port, api_key = args.host, args.port, args.api_key
     try:
         import importlib.util
+
         if importlib.util.find_spec("fastapi") is None:
             raise ImportError("fastapi")
         import uvicorn
@@ -34,15 +38,18 @@ def run(args):
     uvicorn.run(app, host=host, port=port, log_level="warning")
     return 0
 
+
 def _build_app(api_key):
     from fastapi import FastAPI, HTTPException, Request
-    from fastapi.responses import StreamingResponse, JSONResponse
+    from fastapi.responses import JSONResponse, StreamingResponse
     from pydantic import BaseModel
 
     from eco import __version__
+
     app = FastAPI(title="ECO AGENT API", version=__version__)
 
     if api_key:
+
         @app.middleware("http")
         async def auth_mw(request: Request, call_next):
             auth = request.headers.get("Authorization", "")
@@ -51,8 +58,10 @@ def _build_app(api_key):
             return await call_next(request)
 
     PROVIDER_MODELS = {
-        "deepseek": "deepseek-chat", "openai": "gpt-4o",
-        "anthropic": "claude-sonnet-4", "qwen": "qwen-max",
+        "deepseek": "deepseek-chat",
+        "openai": "gpt-4o",
+        "anthropic": "claude-sonnet-4",
+        "qwen": "qwen-max",
         "doubao": "doubao-pro",
     }
     provider = os.environ.get("ECO_PROVIDER", "deepseek")
@@ -102,15 +111,18 @@ def _build_app(api_key):
 
     return app
 
+
 def _token_totals():
     """stats.jsonl 累计 token 数（请求前后取差值得到本次用量）"""
     try:
         sys.path.insert(0, str(ROOT))
         from agent_core.llm_client import summarize_llm_stats
+
         s = summarize_llm_stats()
         return s["prompt_tokens"], s["completion_tokens"]
     except Exception:
         return 0, 0
+
 
 def _usage_since(before):
     """根据请求前的累计快照计算本次请求的 usage（含 EcoLoops 多轮调用）"""
@@ -119,15 +131,17 @@ def _usage_since(before):
     pt, ct = max(pt1 - pt0, 0), max(ct1 - ct0, 0)
     return {"prompt_tokens": pt, "completion_tokens": ct, "total_tokens": pt + ct}
 
+
 async def _stream_response(query, model_id):
     rid = f"chatcmpl-{int(time.time())}"
     ts = int(time.time())
     before = _token_totals()
     # Role chunk
-    yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})}\n\n"
+    yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})}\n\n"  # noqa: E501
     try:
         sys.path.insert(0, str(ROOT))
         from agent_core.eco_loops_integration import EcoLoops
+
         loops = EcoLoops()
         loops.start()
         result = await asyncio.to_thread(loops.execute_task, query)
@@ -140,24 +154,27 @@ async def _stream_response(query, model_id):
             output = str(result)
         if not output or output == "任务完成":
             from agent_core.llm_client import get_default_client
+
             c = get_default_client()
             if c.available():
-                r = c.chat([{"role":"user","content":query}])
-                output = r.get("choices",[{}])[0].get("message",{}).get("content","")
+                r = c.chat([{"role": "user", "content": query}])
+                output = r.get("choices", [{}])[0].get("message", {}).get("content", "")
         for i in range(0, len(output), 100):
-            chunk = output[i:i+100]
-            yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'content': chunk}, 'finish_reason': None}]})}\n\n"
+            chunk = output[i : i + 100]
+            yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'content': chunk}, 'finish_reason': None}]})}\n\n"  # noqa: E501
             await asyncio.sleep(0.01)
     except Exception as e:
-        yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'content': f'[Error: {e}]'}, 'finish_reason': None}]})}\n\n"
-    yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}], 'usage': _usage_since(before)})}\n\n"
+        yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'content': f'[Error: {e}]'}, 'finish_reason': None}]})}\n\n"  # noqa: E501
+    yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}], 'usage': _usage_since(before)})}\n\n"  # noqa: E501
     yield "data: [DONE]\n\n"
+
 
 async def _sync_response(query, model_id):
     before = _token_totals()
     try:
         sys.path.insert(0, str(ROOT))
         from agent_core.eco_loops_integration import EcoLoops
+
         loops = EcoLoops()
         loops.start()
         result = await asyncio.to_thread(loops.execute_task, query)
@@ -169,10 +186,11 @@ async def _sync_response(query, model_id):
                 output = obs
             else:
                 from agent_core.llm_client import get_default_client
+
                 c = get_default_client()
                 if c.available():
-                    r = c.chat([{"role":"user","content":query}])
-                    output = r.get("choices",[{}])[0].get("message",{}).get("content","")
+                    r = c.chat([{"role": "user", "content": query}])
+                    output = r.get("choices", [{}])[0].get("message", {}).get("content", "")
                 else:
                     output = str(result)
         else:

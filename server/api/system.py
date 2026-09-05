@@ -32,9 +32,13 @@ async def version() -> dict:
 
     rev = ""
     try:
-        p = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
-                           capture_output=True, text=True, timeout=5,
-                           cwd=str(Path(__file__).resolve().parent.parent.parent))
+        p = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            cwd=str(Path(__file__).resolve().parent.parent.parent),
+        )
         if p.returncode == 0:
             rev = p.stdout.strip()[:10]
     except Exception:  # noqa: BLE001
@@ -53,11 +57,12 @@ async def set_permission_gate(body: PermissionGateBody) -> dict:
         PromptAuditChain().append(
             source="permission",
             content=f"permission gate set to {'on' if body.enabled else 'off'} via system API",
-            accepted=True, reason="gate_toggle_api")
+            accepted=True,
+            reason="gate_toggle_api",
+        )
     except Exception:  # noqa: BLE001 — 审计失败不影响切换
         logger.warning("permission gate 审计写入失败")
-    return {"enabled": body.enabled,
-            "note": "已切换；重启服务后回到 .env 配置值"}
+    return {"enabled": body.enabled, "note": "已切换；重启服务后回到 .env 配置值"}
 
 
 @router.get("/system/presets")
@@ -69,15 +74,18 @@ async def list_presets() -> dict:
     presets = []
     main_dir = root / "eco-agent"
     if main_dir.is_dir():
-        presets.append({"id": "eco-agent", "role": "main",
-                        "name": "ECO AGENT（主预设）",
-                        "files": sorted(p.name for p in main_dir.glob("*.md")) + ["config.yaml"]})
+        presets.append(
+            {
+                "id": "eco-agent",
+                "role": "main",
+                "name": "ECO AGENT（主预设）",
+                "files": sorted(p.name for p in main_dir.glob("*.md")) + ["config.yaml"],
+            }
+        )
     agents_dir = root / "agents"
     if agents_dir.is_dir():
         for p in sorted(agents_dir.glob("*")):
-            presets.append({"id": p.stem, "role": "agent",
-                            "name": p.stem.replace("_soul", " 人格"),
-                            "files": [p.name]})
+            presets.append({"id": p.stem, "role": "agent", "name": p.stem.replace("_soul", " 人格"), "files": [p.name]})
     return {"presets": presets, "count": len(presets)}
 
 
@@ -161,6 +169,7 @@ async def metrics() -> dict:
         out["scheduler"] = {"jobs": 0}
     return out
 
+
 @router.get("/system/cordis")
 async def cordis_snapshot() -> dict:
     """组合内核诊断：服务/插件/事件目录（对标 DSH Inspect list）。"""
@@ -170,7 +179,6 @@ async def cordis_snapshot() -> dict:
         return get_app_context().snapshot()
     except Exception as e:  # noqa: BLE001
         return {"error": str(e)}
-
 
 
 @router.post("/system/reload")
@@ -185,6 +193,7 @@ async def reload_system() -> dict:
     result: dict = {"env_reloaded": False, "mcp": []}
     try:
         from agent_core.envboot import load_env_into_process
+
         load_env_into_process()
         result["env_reloaded"] = True
     except Exception as e:  # noqa: BLE001

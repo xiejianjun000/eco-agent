@@ -7,6 +7,7 @@
 不依赖 mcporter CLI：直接用 mcp SDK 开 Streamable HTTP 会话调用官方 MCP
 （https://docs.qq.com/openapi/mcp，Authorization: TENCENT_DOCS_TOKEN）。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -27,17 +28,18 @@ TENCENT_MCP_URL = "https://docs.qq.com/openapi/mcp"
 TENCENT_TOKEN_ENV = "TENCENT_DOCS_TOKEN"
 PACK_SCRIPT = pathlib.Path(__file__).resolve().parent.parent / "ecoskills" / "tencent-docs" / "aipage_pack.js"
 
-POLL_INTERVAL = 3.0       # import_progress 轮询间隔（秒）
-POLL_DEADLINE = 60.0      # 轮询总时限（秒）
-MCP_TIMEOUT = 60.0        # 单次 MCP 调用超时
-UPLOAD_TIMEOUT = 120.0    # COS PUT 上传超时
-MAX_MCP_RETRY = 2         # pre_import/async_import 失败重试次数
+POLL_INTERVAL = 3.0  # import_progress 轮询间隔（秒）
+POLL_DEADLINE = 60.0  # 轮询总时限（秒）
+MCP_TIMEOUT = 60.0  # 单次 MCP 调用超时
+UPLOAD_TIMEOUT = 120.0  # COS PUT 上传超时
+MAX_MCP_RETRY = 2  # pre_import/async_import 失败重试次数
 RETRY_INTERVAL = 5.0
 
 
 # ═══════════════════════════════════
 # 内部工具
 # ═══════════════════════════════════
+
 
 def _md5(path: pathlib.Path) -> str:
     h = hashlib.md5()
@@ -102,6 +104,7 @@ def _mcp_session(token: str):
     """开一个带鉴权头的 Streamable HTTP MCP 会话上下文管理器."""
     from mcp import ClientSession
     from mcp.client.streamable_http import streamablehttp_client
+
     return _SessionCtx(token, ClientSession, streamablehttp_client)
 
 
@@ -136,7 +139,7 @@ class _SessionCtx:
 async def _call_tool(session: Any, name: str, arguments: dict[str, Any]) -> Any:
     """调用 MCP 工具并把 content 里第一段 text 解析成 JSON（失败回退原始文本）."""
     result = await asyncio.wait_for(session.call_tool(name, arguments=arguments), timeout=MCP_TIMEOUT)
-    for item in (result.content or []):
+    for item in result.content or []:
         if getattr(item, "type", "") == "text":
             try:
                 return json.loads(item.text)
@@ -156,11 +159,15 @@ async def _run_pipeline(html_path: str, title: str = "") -> dict[str, Any]:
         last_err: Exception | None = None
         for attempt in range(MAX_MCP_RETRY + 1):
             try:
-                pre = await _call_tool(session, "manage.pre_import", {
-                    "file_name": pathlib.Path(packed["path"]).name,
-                    "file_size": packed["size"],
-                    "file_md5": packed["md5"],
-                })
+                pre = await _call_tool(
+                    session,
+                    "manage.pre_import",
+                    {
+                        "file_name": pathlib.Path(packed["path"]).name,
+                        "file_size": packed["size"],
+                        "file_md5": packed["md5"],
+                    },
+                )
                 break
             except Exception as e:  # noqa: BLE001
                 last_err = e
@@ -190,13 +197,17 @@ async def _run_pipeline(html_path: str, title: str = "") -> dict[str, Any]:
         imported = None
         for attempt in range(MAX_MCP_RETRY + 1):
             try:
-                imported = await _call_tool(session, "manage.async_import", {
-                    "task_id": task_id,
-                    "file_key": file_key,
-                    "file_name": pathlib.Path(packed["path"]).name,
-                    "file_md5": packed["md5"],
-                    "file_size": packed["size"],
-                })
+                imported = await _call_tool(
+                    session,
+                    "manage.async_import",
+                    {
+                        "task_id": task_id,
+                        "file_key": file_key,
+                        "file_name": pathlib.Path(packed["path"]).name,
+                        "file_md5": packed["md5"],
+                        "file_size": packed["size"],
+                    },
+                )
                 break
             except Exception as e:  # noqa: BLE001
                 last_err = e
@@ -216,8 +227,7 @@ async def _run_pipeline(html_path: str, title: str = "") -> dict[str, Any]:
             deadline = asyncio.get_event_loop().time() + POLL_DEADLINE
             while asyncio.get_event_loop().time() < deadline:
                 try:
-                    prog = await _call_tool(session, "manage.import_progress",
-                                            {"task_id": poll_task_id})
+                    prog = await _call_tool(session, "manage.import_progress", {"task_id": poll_task_id})
                 except Exception as e:  # noqa: BLE001 — 任务注册延迟会瞬时报错(如11607 docID)，容忍继续轮询
                     logger.warning("[tdocs_import] import_progress 瞬时错误（继续轮询）: %s", str(e)[:120])
                     prog = None
@@ -248,6 +258,7 @@ async def _run_pipeline(html_path: str, title: str = "") -> dict[str, Any]:
 # 对外入口
 # ═══════════════════════════════════
 
+
 def tdocs_upload_html(html_path: str, title: str = "") -> dict[str, Any]:
     """把本地 HTML 数据报告打包上传为腾讯文档，返回 {ok,file_id,file_url,...}.
 
@@ -259,6 +270,7 @@ def tdocs_upload_html(html_path: str, title: str = "") -> dict[str, Any]:
         if "asyncio.run() cannot be called" in str(e):
             # 已在事件循环内（如被 MCP 工具在线程池调用时罕见）：走线程池降级
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
                 return pool.submit(asyncio.run, _run_pipeline(html_path, title)).result()
         raise

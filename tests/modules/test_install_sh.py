@@ -4,6 +4,7 @@
 config.yaml / SOUL.md / MEMORY.md / USER.md / PERMISSION.md 与 skills、memory-tree
 目录全部就位；未检测到 hermes CLI 时打印可选宿主跳过提示，属预期分支。
 """
+
 import os
 import shutil
 import subprocess
@@ -21,8 +22,7 @@ def test_install_sh_end_to_end(tmp_path):
     home = tmp_path / "home"
     home.mkdir()
     env = dict(os.environ, HOME=str(home))
-    proc = subprocess.run(["bash", str(INSTALL_SH)], env=env,
-                          capture_output=True, text=True, timeout=120)
+    proc = subprocess.run(["bash", str(INSTALL_SH)], env=env, capture_output=True, text=True, timeout=120)
     assert proc.returncode == 0, f"install.sh 失败: {proc.stderr}\n{proc.stdout}"
     profile = home / ".eco" / "profiles" / "eco-agent"
     for f in ("config.yaml", "SOUL.md", "MEMORY.md", "USER.md", "PERMISSION.md"):

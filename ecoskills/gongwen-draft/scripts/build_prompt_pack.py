@@ -7,7 +7,6 @@ import argparse
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REFERENCES = [
     "references/core-rules.md",
@@ -30,9 +29,7 @@ def extract_doc_section(doc_type: str | None) -> str:
     if not doc_type:
         return text
 
-    pattern = re.compile(
-        rf"(?ms)^##\s+{re.escape(doc_type)}\s*$\n(?P<body>.*?)(?=^##\s+|\Z)"
-    )
+    pattern = re.compile(rf"(?ms)^##\s+{re.escape(doc_type)}\s*$\n(?P<body>.*?)(?=^##\s+|\Z)")
     match = pattern.search(text)
     if not match:
         raise SystemExit(f"Unknown or unsupported doc type: {doc_type}")
@@ -44,7 +41,7 @@ def extract_doc_section(doc_type: str | None) -> str:
 def build_prompt(doc_type: str | None, task: str | None, material: str | None) -> str:
     parts = [
         "# gongwen-draft Offline Prompt Pack",
-        "Use the following rules to draft, revise, review, or format Chinese official documents and formal materials. Treat all missing facts as placeholders; never invent authority, data, signatures, document numbers, or policy basis.",
+        "Use the following rules to draft, revise, review, or format Chinese official documents and formal materials. Treat all missing facts as placeholders; never invent authority, data, signatures, document numbers, or policy basis.",  # noqa: E501
         "## Skill Entry",
         read(ROOT / "SKILL.md"),
         "## Document Type Rules",

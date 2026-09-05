@@ -98,8 +98,7 @@ def nav() -> dict:
         if not bm:
             continue
         chapters = [m.group(2).strip() for m in zhang_re.finditer(content)]
-        out.append({"num": _BIAN_NUM.get(bm.group(1), 0), "name": bm.group(2).strip(),
-                    "chapters": chapters})
+        out.append({"num": _BIAN_NUM.get(bm.group(1), 0), "name": bm.group(2).strip(), "chapters": chapters})
     return {"bians": out}
 
 

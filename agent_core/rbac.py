@@ -12,6 +12,7 @@
 授权令牌角色维度：grant_with_role() 在 grants.grant 基础上附加 role 字段
 并就地重签名（不修改 grants.py，签名体含 role，防篡改）。
 """
+
 from __future__ import annotations
 
 import json
@@ -44,16 +45,29 @@ _ALL_CAPS = frozenset(Capability)
 
 PERMISSION_MATRIX: dict[Role, frozenset[Capability]] = {
     Role.ADMIN: _ALL_CAPS,
-    Role.COMMANDER: frozenset({
-        Capability.CHAT, Capability.EVOLUTION, Capability.AUTH_GRANT,
-        Capability.CORRECTIONS, Capability.TRACE_EXPORT, Capability.CHANNEL_MANAGE,
-    }),
-    Role.ENFORCER: frozenset({
-        Capability.CHAT, Capability.CORRECTIONS, Capability.TRACE_EXPORT,
-    }),
-    Role.AUDITOR: frozenset({
-        Capability.CHAT, Capability.TRACE_EXPORT,
-    }),
+    Role.COMMANDER: frozenset(
+        {
+            Capability.CHAT,
+            Capability.EVOLUTION,
+            Capability.AUTH_GRANT,
+            Capability.CORRECTIONS,
+            Capability.TRACE_EXPORT,
+            Capability.CHANNEL_MANAGE,
+        }
+    ),
+    Role.ENFORCER: frozenset(
+        {
+            Capability.CHAT,
+            Capability.CORRECTIONS,
+            Capability.TRACE_EXPORT,
+        }
+    ),
+    Role.AUDITOR: frozenset(
+        {
+            Capability.CHAT,
+            Capability.TRACE_EXPORT,
+        }
+    ),
     Role.READONLY_VISITOR: frozenset({Capability.CHAT}),
 }
 
@@ -112,8 +126,7 @@ def capabilities_of(role) -> frozenset[Capability]:
     return PERMISSION_MATRIX.get(r, frozenset())
 
 
-def grant_with_role(level: str = "L4", ttl: int = 3600, scope: str = "*",
-                    role=None, grants_dir: Path | None = None) -> dict:
+def grant_with_role(level: str = "L4", ttl: int = 3600, scope: str = "*", role=None, grants_dir: Path | None = None) -> dict:
     """签发带角色维度的授权令牌：在 grants.grant 基础上附加 role 并重签名。
     ECO_RBAC 启用时，调用方会话角色须具备 auth_grant 能力。"""
     if not require_capability(Capability.AUTH_GRANT):
@@ -124,9 +137,7 @@ def grant_with_role(level: str = "L4", ttl: int = 3600, scope: str = "*",
     g = grants_mod.grant(level=level, ttl=ttl, scope=scope, grants_dir=grants_dir)
     if r is not None:
         g["role"] = r.value
-        g["signature"] = grants_mod._sign(
-            {k: v for k, v in g.items() if k != "signature"})
+        g["signature"] = grants_mod._sign({k: v for k, v in g.items() if k != "signature"})
         d = Path(grants_dir) if grants_dir else grants_mod.GRANTS_DIR
-        (d / f"{g['id']}.json").write_text(
-            json.dumps(g, ensure_ascii=False, indent=1), encoding="utf-8")
+        (d / f"{g['id']}.json").write_text(json.dumps(g, ensure_ascii=False, indent=1), encoding="utf-8")
     return g

@@ -55,6 +55,7 @@ class RuntimeExecutor:
     def _get_client():
         try:
             from agent_core.llm_client import get_default_client
+
             c = get_default_client()
             if c and c.available():
                 return c
@@ -71,14 +72,15 @@ class RuntimeExecutor:
 
     def _run_react(self, task) -> str:
         from agent_core.react_loop import ReActPlusPlus
+
         loop = ReActPlusPlus()
         loop._max_steps = self._max_steps
         self._register_tools(loop, role=task.agent_role.value)
 
         prompt = self._build_prompt(task)
-        result = loop.execute(prompt, context={"task_id": task.id,
-                                               "role": task.agent_role.value,
-                                               "expectation": task.expectation})
+        result = loop.execute(
+            prompt, context={"task_id": task.id, "role": task.agent_role.value, "expectation": task.expectation}
+        )
         self.llm_loops += 1
 
         final = (result.get("final_observation") or "").strip()
@@ -109,7 +111,7 @@ class RuntimeExecutor:
         角色感知过滤：分析类角色只注册 L1 只读工具，执行类角色给全量。
         权限闸门（L1-L4）在 execute_tool 内部统一生效，本层不重复设卡。"""
         try:
-            from agent_core.tools_registry import get_tools, execute_tool
+            from agent_core.tools_registry import execute_tool, get_tools
         except Exception as e:
             logger.warning(f"[RuntimeExecutor] tools_registry 不可用，无工具运行: {e}")
             return 0
@@ -119,6 +121,7 @@ class RuntimeExecutor:
         if readonly:
             try:
                 from agent_core.permissions import tool_risk_level
+
                 risk_level = tool_risk_level
             except Exception:
                 risk_level = None  # 权限模块缺席时退化为全量（闸门仍在 execute_tool 内）
@@ -126,6 +129,7 @@ class RuntimeExecutor:
         def _make_sync(name):
             def _handler(**kwargs):
                 return _run_async(execute_tool(name, kwargs))
+
             return _handler
 
         count = 0
@@ -136,10 +140,7 @@ class RuntimeExecutor:
                 continue
             if readonly and risk_level is not None and risk_level(name) != "L1":
                 continue
-            loop.register_tool(name, _make_sync(name),
-                               description=fn.get("description", ""),
-                               schema=fn.get("parameters") or {})
+            loop.register_tool(name, _make_sync(name), description=fn.get("description", ""), schema=fn.get("parameters") or {})
             count += 1
-        logger.info(f"[RuntimeExecutor] 注入 {count} 个工具（role={role or 'default'}"
-                    f"{'，只读过滤' if readonly else ''}）")
+        logger.info(f"[RuntimeExecutor] 注入 {count} 个工具（role={role or 'default'}{'，只读过滤' if readonly else ''}）")
         return count

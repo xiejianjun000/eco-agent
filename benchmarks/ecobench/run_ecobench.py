@@ -40,23 +40,39 @@ MOCK_ANSWER = "[mock] 本题需依据相关法律法规处理，具体条款略�
 # ═══════════════════════════════════
 
 EHS_KB_SSE_URL = os.environ.get("EHS_KB_SSE_URL", "http://111.230.89.107:8000/sse")
-RAG_MAX_CONTEXT_CHARS = 1500      # 注入提示词的参考资料总长度上限（条款窗口优先，控制 token）
-RAG_MAX_READ_CHARS = 50000        # kb_read 取全文截断上限（需覆盖全文，条款定位后再截取）
-RAG_SEARCH_TIMEOUT = 20.0         # kb_search 单次超时（秒）
+RAG_MAX_CONTEXT_CHARS = 1500  # 注入提示词的参考资料总长度上限（条款窗口优先，控制 token）
+RAG_MAX_READ_CHARS = 50000  # kb_read 取全文截断上限（需覆盖全文，条款定位后再截取）
+RAG_SEARCH_TIMEOUT = 20.0  # kb_search 单次超时（秒）
 
 # 单题时限与重试/容灾（三修）
-PER_QUESTION_TIMEOUT = 90.0       # 单题墙钟时限（秒，30s→90s）
-LLM_CALL_TIMEOUT = 90.0           # LLM HTTP 调用超时（与单题时限同步调大）
-MAX_ATTEMPTS = 2                  # 每题最多尝试次数（失败重试 1 次后仍失败才计 0/error）
+PER_QUESTION_TIMEOUT = 90.0  # 单题墙钟时限（秒，30s→90s）
+LLM_CALL_TIMEOUT = 90.0  # LLM HTTP 调用超时（与单题时限同步调大）
+MAX_ATTEMPTS = 2  # 每题最多尝试次数（失败重试 1 次后仍失败才计 0/error）
 BACKUP_PROVIDERS = {"deepseek": "kimi", "kimi": "deepseek"}  # 429/余额类错误自动切换
 
 # 题目核心法律主题词表（按执法问答高频主题排序，命中即作为检索词；
 # kb_search 多词查询服务端易超时，故每次只用单个主题词）
 QUERY_KEYWORDS = [
-    "大气", "噪声", "固体废物", "固废", "危险废物", "危废",
-    "水污染", "排污口", "排污许可", "环境影响评价", "环评",
-    "土壤", "辐射", "突发环境", "自动监测", "在线监测",
-    "超标排放", "未批先建", "验收", "处罚",
+    "大气",
+    "噪声",
+    "固体废物",
+    "固废",
+    "危险废物",
+    "危废",
+    "水污染",
+    "排污口",
+    "排污许可",
+    "环境影响评价",
+    "环评",
+    "土壤",
+    "辐射",
+    "突发环境",
+    "自动监测",
+    "在线监测",
+    "超标排放",
+    "未批先建",
+    "验收",
+    "处罚",
 ]
 
 
@@ -99,16 +115,47 @@ RAG2_PROMPT_SUFFIX = (
     "并注明法律法规名称。参考资料未覆盖时再依据自身知识补充。"
 )
 
-INDEX_PATH = "flowwiki/wiki/index.md"          # 知识库总索引（前 100KB 含全部 concepts 链接）
+INDEX_PATH = "flowwiki/wiki/index.md"  # 知识库总索引（前 100KB 含全部 concepts 链接）
 INDEX_LINK_RE = re.compile(r"\[([^\]]+)\]\((concepts/[^)\s]+)\)")
 ARTICLE_HEADING_RE = re.compile(r"^#{2,5}\s*第([零一二三四五六七八九十百千两\d]+)条", re.M)
 
 # 题干关键词 → 法典分编文件映射（法典题定位用；命中即在检索清单中加入对应编）
 CODEX_BOOK_MAP = [
-    (("罚", "法律责任", "拘留", "附则", "废止", "继承", "按日连续", "无证排污",
-      "超标", "排污口", "未批先建", "逃避监管", "第一千"), "第五编-法律责任和附则"),
-    (("大气", "水污染", "海洋", "土壤", "固体废物", "噪声", "放射性", "排污许可",
-      "分编", "重污染天气", "饮用水", "危险废物"), "第二编-污染防治"),
+    (
+        (
+            "罚",
+            "法律责任",
+            "拘留",
+            "附则",
+            "废止",
+            "继承",
+            "按日连续",
+            "无证排污",
+            "超标",
+            "排污口",
+            "未批先建",
+            "逃避监管",
+            "第一千",
+        ),
+        "第五编-法律责任和附则",
+    ),
+    (
+        (
+            "大气",
+            "水污染",
+            "海洋",
+            "土壤",
+            "固体废物",
+            "噪声",
+            "放射性",
+            "排污许可",
+            "分编",
+            "重污染天气",
+            "饮用水",
+            "危险废物",
+        ),
+        "第二编-污染防治",
+    ),
     (("总则", "影响评价", "信息公开", "突发", "分区管控", "第一编"), "第一编-总则"),
     (("生态系统", "物种", "自然保护地", "生态修复", "第三编"), "第三编-生态保护"),
     (("绿色低碳", "循环经济", "气候变化", "第四编"), "第四编-绿色低碳发展"),
@@ -116,12 +163,19 @@ CODEX_BOOK_MAP = [
 
 # 题干关键词 → 法律名映射（用于无 required_citations 时的兜底定位）
 KEYWORD_LAW_MAP = [
-    ("大气", "大气污染防治法"), ("水污染", "水污染防治法"), ("排污口", "水污染防治法"),
-    ("土壤", "土壤污染防治法"), ("固体废物", "固体废物污染环境防治法"),
-    ("固废", "固体废物污染环境防治法"), ("危险废物", "固体废物污染环境防治法"),
-    ("噪声", "噪声污染防治法"), ("辐射", "放射性污染防治法"),
-    ("环境影响评价", "环境影响评价法"), ("环评", "环境影响评价法"),
-    ("未批先建", "环境影响评价法"), ("海洋", "海洋环境保护法"),
+    ("大气", "大气污染防治法"),
+    ("水污染", "水污染防治法"),
+    ("排污口", "水污染防治法"),
+    ("土壤", "土壤污染防治法"),
+    ("固体废物", "固体废物污染环境防治法"),
+    ("固废", "固体废物污染环境防治法"),
+    ("危险废物", "固体废物污染环境防治法"),
+    ("噪声", "噪声污染防治法"),
+    ("辐射", "放射性污染防治法"),
+    ("环境影响评价", "环境影响评价法"),
+    ("环评", "环境影响评价法"),
+    ("未批先建", "环境影响评价法"),
+    ("海洋", "海洋环境保护法"),
 ]
 
 
@@ -129,25 +183,38 @@ KEYWORD_LAW_MAP = [
 # B2 执法程序类补强：题干程序关键词 → 程序法概念文件（KB 真实路径，经 kb 定位确认；
 # KB 未收录《行政处罚法》《行政强制法》原文，程序条款窗口取生态环境部门程序规章）
 # ═══════════════════════════════════
-PROCEDURE_WINDOW_CHARS = 750   # 程序条款窗口上限
-PENALTY_WINDOW_CHARS = 750     # 罚则条款窗口上限（双段注入时各 750，总长仍 ≤1500）
+PROCEDURE_WINDOW_CHARS = 750  # 程序条款窗口上限
+PENALTY_WINDOW_CHARS = 750  # 罚则条款窗口上限（双段注入时各 750，总长仍 ≤1500）
 
 PROCEDURE_FILE_MAP = [
-    (("查封", "扣押"), ["flowwiki/wiki/concepts/108-环境保护主管部门实施查封、扣押办法.md",
-                      "flowwiki/wiki/concepts/查封扣押.md"]),
-    (("按日连续",), ["flowwiki/wiki/concepts/109-环境保护主管部门实施按日连续处罚办法.md",
-                    "flowwiki/wiki/concepts/按日连续处罚.md"]),
+    (
+        ("查封", "扣押"),
+        ["flowwiki/wiki/concepts/108-环境保护主管部门实施查封、扣押办法.md", "flowwiki/wiki/concepts/查封扣押.md"],
+    ),
+    (
+        ("按日连续",),
+        ["flowwiki/wiki/concepts/109-环境保护主管部门实施按日连续处罚办法.md", "flowwiki/wiki/concepts/按日连续处罚.md"],
+    ),
     (("采样", "证据"), ["flowwiki/wiki/concepts/126-环境监测管理办法.md"]),
     (("听证",), ["flowwiki/wiki/playbooks/enforcement/环境行政处罚听证程序规定_2010版.md"]),
-    (("移送", "犯罪", "刑事"), ["flowwiki/wiki/sources/环境保护行政执法与刑事司法衔接工作办法_2017.md",
-                            "flowwiki/wiki/sources/mee_policy/2007-05-17-环发-2007-78号-关于环境保护行政主管部门移送涉嫌环境犯罪案件的若干规定.md"]),
+    (
+        ("移送", "犯罪", "刑事"),
+        [
+            "flowwiki/wiki/sources/环境保护行政执法与刑事司法衔接工作办法_2017.md",
+            "flowwiki/wiki/sources/mee_policy/2007-05-17-环发-2007-78号-关于环境保护行政主管部门移送涉嫌环境犯罪案件的若干规定.md",
+        ],
+    ),
     (("法制审核",), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"]),
     (("办案期限", "期限"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"]),
-    (("决定书", "送达", "告知"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md",
-                              "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"]),
+    (
+        ("决定书", "送达", "告知"),
+        ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md", "flowwiki/wiki/concepts/执法实务/环境行政处罚办法.md"],
+    ),
     (("执行措施", "逾期", "履行"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md"]),
-    (("程序", "现场检查", "环节", "立案"), ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md",
-                                      "flowwiki/wiki/playbooks/enforcement/程序违法排查.md"]),
+    (
+        ("程序", "现场检查", "环节", "立案"),
+        ["flowwiki/wiki/concepts/75-生态环境行政处罚办法.md", "flowwiki/wiki/playbooks/enforcement/程序违法排查.md"],
+    ),
 ]
 
 PROC_SNIPPET_ANCHORS = ("程序", "应当", "第")  # 程序窗口截取锚点
@@ -166,14 +233,16 @@ def locate_procedure_files(question: str, max_files: int = 2) -> list[str]:
     return out
 
 
-def extract_procedure_window(full_text: str, question: str,
-                             max_chars: int = PROCEDURE_WINDOW_CHARS) -> str:
+def extract_procedure_window(full_text: str, question: str, max_chars: int = PROCEDURE_WINDOW_CHARS) -> str:
     """从程序法文件截取程序窗口：优先围绕题干关键词所在条款/段落 ±上下文。"""
     text = full_text or ""
     if not text:
         return ""
-    keys = [k for k in ("程序", "听证", "送达", "期限", "法制审核", "查封", "扣押",
-                        "移送", "采样", "告知", "立案", "执行") if k in question]
+    keys = [
+        k
+        for k in ("程序", "听证", "送达", "期限", "法制审核", "查封", "扣押", "移送", "采样", "告知", "立案", "执行")
+        if k in question
+    ]
     pos = -1
     for k in keys:
         pos = text.find(k)
@@ -190,7 +259,7 @@ def extract_procedure_window(full_text: str, question: str,
         nl = text.rfind("\n", 0, pos)
         if nl >= 0:
             start = nl + 1
-    return text[start:start + max_chars]
+    return text[start : start + max_chars]
 
 
 def cn_to_int(s: str) -> int | None:
@@ -200,8 +269,7 @@ def cn_to_int(s: str) -> int | None:
         return None
     if s.isdigit():
         return int(s)
-    digit = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4,
-             "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+    digit = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
     unit = {"十": 10, "百": 100, "千": 1000}
     total, num = 0, 0
     for ch in s:
@@ -222,13 +290,17 @@ CN_NUM_RUN_RE = re.compile(r"[零一二三四五六七八九十百千两]+")
 def normalize_cn_numerals(t: str) -> str:
     """把文本中的条款号与中文数字串统一为阿拉伯数字：
     '第九十九条'→'第99条'，'第99条' 不变，裸 '九十九'→'99'"""
+
     def art(m):
         n = cn_to_int(m.group(1))
         return f"第{n}条" if n is not None else m.group(0)
+
     t = re.sub(r"第([零一二三四五六七八九十百千两\d]+)条", art, t)
+
     def run(m):
         n = cn_to_int(m.group(0))
         return str(n) if n is not None else m.group(0)
+
     return CN_NUM_RUN_RE.sub(run, t)
 
 
@@ -271,9 +343,9 @@ def extract_article_nums(item: dict) -> list[int]:
     return nums
 
 
-def extract_article_sections(full_text: str, article_nums: list[int],
-                             context_articles: int = 1,
-                             max_chars: int = RAG_MAX_CONTEXT_CHARS) -> tuple[str, list[int]]:
+def extract_article_sections(
+    full_text: str, article_nums: list[int], context_articles: int = 1, max_chars: int = RAG_MAX_CONTEXT_CHARS
+) -> tuple[str, list[int]]:
     """按 '### 第X条' 标题切分，截取目标条款 ±context_articles 条上下文。
     返回 (片段, 实际命中的条款号列表)"""
     heads = [(cn_to_int(m.group(1)), m.start()) for m in ARTICLE_HEADING_RE.finditer(full_text or "")]
@@ -312,8 +384,7 @@ class RagRetriever:
     便于 pytest mock；默认经 MCPConnectorManager 连接远程 SSE server。
     """
 
-    def __init__(self, call_tool=None, server: str = "ehs_kb",
-                 url: str = EHS_KB_SSE_URL, timeout: float = RAG_SEARCH_TIMEOUT):
+    def __init__(self, call_tool=None, server: str = "ehs_kb", url: str = EHS_KB_SSE_URL, timeout: float = RAG_SEARCH_TIMEOUT):
         self.server = server
         self._mgr = None
         self._index_cache: list[tuple[str, str]] | None = None
@@ -321,8 +392,8 @@ class RagRetriever:
             self._call_tool = call_tool
         else:
             from agent_core.mcp_connector import MCPConnectorManager, MCPServerConfig
-            self._mgr = MCPConnectorManager(
-                [MCPServerConfig(name=server, transport="sse", url=url, timeout=timeout)])
+
+            self._mgr = MCPConnectorManager([MCPServerConfig(name=server, transport="sse", url=url, timeout=timeout)])
             status = self._mgr.connect_all()
             if not status.get(server):
                 raise RuntimeError(f"EHS 知识库连接失败: {url}")
@@ -429,18 +500,19 @@ class RagRetriever:
             base = path.rsplit("/", 1)[-1]
             if "总目录" in base or base.startswith(("第一编", "第二编", "第三编", "第四编", "第五编")):
                 # 法典编/总目录：骨架截取（标题+目录条目+结构概览），服务框架结构题
-                skel = [l for l in full.splitlines()
-                        if (l.lstrip().startswith(("#", "-", ">"))
-                            and not re.match(r"^#{4}\s*第.+条", l.strip()))
-                        or ("[" in l and "]" in l
-                            and ("-->" in l or re.match(r"^[A-F]\d?\[", l.strip())))]
+                skel = [
+                    line
+                    for line in full.splitlines()
+                    if (line.lstrip().startswith(("#", "-", ">")) and not re.match(r"^#{4}\s*第.+条", line.strip()))
+                    or ("[" in line and "]" in line and ("-->" in line or re.match(r"^[A-F]\d?\[", line.strip())))
+                ]
                 snippet = "\n".join(skel)[:fallback_cap]
             else:
                 # 概念文件优先截取"核心制度与法典继承"对照表（法典继承映射题金标准来源）
                 tbl = re.search(r"##\s*核心制度与法典继承[\s\S]{0,1500}", full)
                 head = full[:fallback_cap]
                 if tbl:
-                    fei = [l for l in full[:4000].splitlines() if "废止" in l]
+                    fei = [line for line in full[:4000].splitlines() if "废止" in line]
                     snippet = (tbl.group(0) + "\n" + "\n".join(fei[:6]) + "\n" + head)[:fallback_cap]
                 else:
                     snippet = head
@@ -467,10 +539,8 @@ class RagRetriever:
                         used.append(pp)
             if proc_parts:
                 proc_ctx = "\n\n".join(proc_parts)[:PROCEDURE_WINDOW_CHARS]
-                context = ("【罚则条款参考】\n" + context[:PENALTY_WINDOW_CHARS]
-                           + "\n\n【程序条款参考】\n" + proc_ctx)
-        return {"files": used, "articles": hit_articles,
-                "context": context[:RAG_MAX_CONTEXT_CHARS]}
+                context = "【罚则条款参考】\n" + context[:PENALTY_WINDOW_CHARS] + "\n\n【程序条款参考】\n" + proc_ctx
+        return {"files": used, "articles": hit_articles, "context": context[:RAG_MAX_CONTEXT_CHARS]}
 
     def retrieve(self, question: str) -> dict:
         """
@@ -531,30 +601,41 @@ def score_item(answer: str, item: dict) -> dict:
     p_raw = tp_raw / len(kps) if kps else 1.0
     f1_raw = (2 * p_raw * p_raw / (2 * p_raw)) if p_raw else 0.0
     return {
-        "id": item["id"], "category": item["category"],
+        "id": item["id"],
+        "category": item["category"],
         "citation_hit": round(citation_hit, 4),
-        "citation_hits": hit_c, "citation_total": len(cites),
+        "citation_hits": hit_c,
+        "citation_total": len(cites),
         "citation_hit_raw": round(citation_hit_raw, 4),
-        "keypoint_tp": tp, "keypoint_total": len(kps),
+        "keypoint_tp": tp,
+        "keypoint_total": len(kps),
         "keypoint_f1": round(f1, 4),
         "keypoint_f1_raw": round(f1_raw, 4),
     }
 
 
 def load_dataset(limit: int = 0) -> list[dict]:
-    items = [json.loads(l) for l in DATASET.read_text(encoding="utf-8").splitlines() if l.strip()]
+    items = [json.loads(line) for line in DATASET.read_text(encoding="utf-8").splitlines() if line.strip()]
     return items[:limit] if limit else items
 
 
 def new_bench_state() -> dict:
     """单轮跑分的过程状态：provider 切换记录、超时/重试计数、中止标记"""
-    return {"switches": [], "providers_tried": [], "timeouts": 0,
-            "retries": 0, "errors": 0, "aborted": False, "abort_reason": None}
+    return {
+        "switches": [],
+        "providers_tried": [],
+        "timeouts": 0,
+        "retries": 0,
+        "errors": 0,
+        "aborted": False,
+        "abort_reason": None,
+    }
 
 
 def _call_with_timeout(client, question: str, timeout: float = PER_QUESTION_TIMEOUT) -> str | None:
     """带墙钟时限的 LLM 调用：超时返回 None，空串表示调用失败（查 client.last_error）"""
     import concurrent.futures
+
     ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
     fut = ex.submit(client.complete, question, SYSTEM, 1024, timeout)
     try:
@@ -576,16 +657,16 @@ def try_failover(client, item_id: str, state: dict) -> bool:
     if not hasattr(client, "switch_provider") or not client.switch_provider(alt):
         return False
     state["providers_tried"].append(alt)
-    state["switches"].append({"question": item_id, "from": cur, "to": alt,
-                              "reason": (client.last_error or {}) and "quota/429/balance"})
-    print(f"    [failover] {item_id}: {cur} 余额/限流不可用，已切换备用 provider → {alt}",
-          flush=True)
+    state["switches"].append(
+        {"question": item_id, "from": cur, "to": alt, "reason": (client.last_error or {}) and "quota/429/balance"}
+    )
+    print(f"    [failover] {item_id}: {cur} 余额/限流不可用，已切换备用 provider → {alt}", flush=True)
     return True
 
 
-def answer_question(client, item: dict, mock: bool,
-                    retriever: RagRetriever | None = None,
-                    state: dict | None = None) -> tuple[str, list[str], list[int]]:
+def answer_question(
+    client, item: dict, mock: bool, retriever: RagRetriever | None = None, state: dict | None = None
+) -> tuple[str, list[str], list[int]]:
     """答题（单题 90s 时限 + 失败重试 1 次 + 429/余额自动切换备用 provider）。
     返回 (答案, 检索文件清单, 命中条款号)。retriever 非空时为 RAG 模式。
     state 非空时记录切换/超时/中止事件；两家 provider 均不可用时置 aborted。"""
@@ -634,8 +715,7 @@ def answer_question(client, item: dict, mock: bool,
             if try_failover(client, item["id"], state):
                 continue  # 切换后重答本题，不消耗重试次数
             state["aborted"] = True
-            state["abort_reason"] = (
-                f"两家 provider 均不可用（{err.get('status')} quota/balance），中止于 {item['id']}")
+            state["abort_reason"] = f"两家 provider 均不可用（{err.get('status')} quota/balance），中止于 {item['id']}"
             print(f"    [abort] {state['abort_reason']}（已得题目分数保留）", flush=True)
             state["errors"] += 1
             return "[error] aborted: 所有 LLM provider 均不可用", files, articles
@@ -653,8 +733,7 @@ def main(argv=None) -> int:
     ap.add_argument("--limit", type=int, default=0, help="只跑前 N 题（控制成本）")
     ap.add_argument("--mock", action="store_true", help="mock 模式（离线/CI）")
     ap.add_argument("--out", default=str(REPORT))
-    ap.add_argument("--rag", action="store_true",
-                    help="RAG 模式：答题前经 MCP 检索 EHS 知识库并注入参考资料")
+    ap.add_argument("--rag", action="store_true", help="RAG 模式：答题前经 MCP 检索 EHS 知识库并注入参考资料")
     ap.add_argument("--category", default="", help="只跑指定类别题目（如 执法程序）")
     args = ap.parse_args(argv)
 
@@ -662,6 +741,7 @@ def main(argv=None) -> int:
     client = None
     if not mock:
         from agent_core.llm_client import get_default_client
+
         client = get_default_client()
         if not client.available():
             print("[EcoBench] LLM 不可用，自动降级 mock 模式", flush=True)
@@ -686,8 +766,7 @@ def main(argv=None) -> int:
     results = []
     t0 = time.time()
     for i, item in enumerate(items, 1):
-        ans, files, articles = answer_question(client, item, mock, retriever=retriever,
-                                               state=state)
+        ans, files, articles = answer_question(client, item, mock, retriever=retriever, state=state)
         sc = score_item(ans, item)
         sc["answer"] = ans
         sc["retrieved_files"] = files
@@ -695,11 +774,13 @@ def main(argv=None) -> int:
         sc["golden_answer"] = item["golden_answer"]
         sc["answered"] = not ans.startswith(("[error]", "[mock]"))
         results.append(sc)
-        print(f"  [{i:02d}/{len(items)}] {item['id']} {item['category']} "
-              f"cite={sc['citation_hit']:.2f} f1={sc['keypoint_f1']:.2f}", flush=True)
+        print(
+            f"  [{i:02d}/{len(items)}] {item['id']} {item['category']} "
+            f"cite={sc['citation_hit']:.2f} f1={sc['keypoint_f1']:.2f}",
+            flush=True,
+        )
         if state["aborted"]:
-            print(f"[EcoBench] 中止：{state['abort_reason']}（已得 {len(results)} 题分数保留）",
-                  flush=True)
+            print(f"[EcoBench] 中止：{state['abort_reason']}（已得 {len(results)} 题分数保留）", flush=True)
             break
 
     n = len(results) or 1
@@ -743,15 +824,15 @@ def main(argv=None) -> int:
 
     print("\n===== EcoBench-mini 摘要（如实报告，无封顶/保底） =====")
     print(f"  题目数: {summary['n_questions']}  模式: {summary['mode']}  耗时: {summary['elapsed_s']}s")
-    print(f"  法条引用准确率: {summary['citation_accuracy']:.4f} "
-          f"(归一化前 {summary['citation_accuracy_raw']:.4f})")
-    print(f"  要点 F1:        {summary['keypoint_f1']:.4f} "
-          f"(归一化前 {summary['keypoint_f1_raw']:.4f})")
+    print(f"  法条引用准确率: {summary['citation_accuracy']:.4f} (归一化前 {summary['citation_accuracy_raw']:.4f})")
+    print(f"  要点 F1:        {summary['keypoint_f1']:.4f} (归一化前 {summary['keypoint_f1_raw']:.4f})")
     for c, s in summary["by_category"].items():
         print(f"    - {c}: cite={s['citation_accuracy']:.2f} f1={s['keypoint_f1']:.2f} (n={s['n']})")
-    print(f"  作答率: {summary['answered']}/{summary['n_questions']}  "
-          f"超时: {summary['timeouts']} ({summary['timeout_rate']:.1%})  "
-          f"重试: {summary['retries']}  错误: {summary['errors']}")
+    print(
+        f"  作答率: {summary['answered']}/{summary['n_questions']}  "
+        f"超时: {summary['timeouts']} ({summary['timeout_rate']:.1%})  "
+        f"重试: {summary['retries']}  错误: {summary['errors']}"
+    )
     print(f"  provider 切换: {summary['switch_count']} 次  中止: {summary['aborted']}")
     print(f"  报告: {args.out}")
     if retriever is not None:

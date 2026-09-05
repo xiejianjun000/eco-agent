@@ -31,6 +31,7 @@ def _client(handler) -> EcoClient:
 def _json_handler(payload: dict):
     async def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=payload)
+
     return handler
 
 
@@ -45,6 +46,7 @@ def test_health():
         assert data["status"] == "ok"
 
     import asyncio
+
     asyncio.run(run())
 
 
@@ -56,6 +58,7 @@ def test_version():
         assert v.version == "5.0.0a8"
 
     import asyncio
+
     asyncio.run(run())
 
 
@@ -69,6 +72,7 @@ def test_chat_parse():
         assert r.usage["total_tokens"] == 42
 
     import asyncio
+
     asyncio.run(run())
 
 
@@ -86,7 +90,7 @@ def test_chat_stream():
     lines = [
         'data: {"delta": "你"}\n\n',
         'data: {"delta": "好"}\n\n',
-        'data: [DONE]\n\n',
+        "data: [DONE]\n\n",
     ]
 
     async def handler(request: httpx.Request) -> httpx.Response:
@@ -105,6 +109,7 @@ def test_chat_stream():
         assert "".join(chunks) == "你好"
 
     import asyncio
+
     asyncio.run(run())
 
 
@@ -120,6 +125,7 @@ def test_api_error():
         assert ei.value.status_code == 500
 
     import asyncio
+
     asyncio.run(run())
 
 
@@ -131,13 +137,18 @@ def test_connection_error():
             await client.version()
 
     import asyncio
+
     asyncio.run(run())
 
 
 def test_memory_types():
-    client = _client(_json_handler({
-        "nodes": [{"id": "n1", "type": "statute", "title": "法典第1054条", "score": 88}],
-    }))
+    client = _client(
+        _json_handler(
+            {
+                "nodes": [{"id": "n1", "type": "statute", "title": "法典第1054条", "score": 88}],
+            }
+        )
+    )
 
     async def run():
         nodes = await client.memory_nodes()
@@ -146,13 +157,18 @@ def test_memory_types():
         assert nodes[0].score == 88.0
 
     import asyncio
+
     asyncio.run(run())
 
 
 def test_skills_types():
-    client = _client(_json_handler({
-        "skills": [{"name": "fagui-query", "manifest": {"description": "法规速查", "tags": ["law"]}}],
-    }))
+    client = _client(
+        _json_handler(
+            {
+                "skills": [{"name": "fagui-query", "manifest": {"description": "法规速查", "tags": ["law"]}}],
+            }
+        )
+    )
 
     async def run():
         skills = await client.list_skills()
@@ -160,14 +176,27 @@ def test_skills_types():
         assert skills[0].description == "法规速查"
 
     import asyncio
+
     asyncio.run(run())
 
 
 def test_tools_types():
-    client = _client(_json_handler({
-        "tools": [{"source": "govmcp", "name": "env_query_air_quality", "description": "查询空气质量",
-                   "category": "环境监测-大气", "tags": [], "approval_required": False}],
-    }))
+    client = _client(
+        _json_handler(
+            {
+                "tools": [
+                    {
+                        "source": "govmcp",
+                        "name": "env_query_air_quality",
+                        "description": "查询空气质量",
+                        "category": "环境监测-大气",
+                        "tags": [],
+                        "approval_required": False,
+                    }
+                ],
+            }
+        )
+    )
 
     async def run():
         tools = await client.list_tools()
@@ -175,6 +204,7 @@ def test_tools_types():
         assert tools[0].category == "环境监测-大气"
 
     import asyncio
+
     asyncio.run(run())
 
 

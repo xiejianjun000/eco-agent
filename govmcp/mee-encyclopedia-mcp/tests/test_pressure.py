@@ -14,6 +14,7 @@
 运行: python tests/test_pressure.py
 输出: 逐项 PASS/FAIL + 统计摘要
 """
+
 from __future__ import annotations
 
 import sys
@@ -128,7 +129,13 @@ run("下载目录列举", lambda: server.list_downloads(".pressure"), expect="co
 print("=" * 70)
 print("阶段 6: RAG 知识库")
 print("=" * 70)
-run("RAG 灌入", lambda: server.rag_ingest("pt1", "碳排放权交易管理暂行办法测试", "全国碳排放权交易市场覆盖发电行业，实行配额管理。", "压力测试"), expect="truthy")
+run(
+    "RAG 灌入",
+    lambda: server.rag_ingest(
+        "pt1", "碳排放权交易管理暂行办法测试", "全国碳排放权交易市场覆盖发电行业，实行配额管理。", "压力测试"
+    ),
+    expect="truthy",
+)
 run("RAG 检索", lambda: server.rag_query("碳排放配额", top_k=3), expect="hits")
 
 print("=" * 70)
@@ -165,8 +172,8 @@ print("=" * 70)
 r1 = server.read_mee_list("时政要闻", limit=3)
 r2 = server.read_mee_list("时政要闻", limit=3)
 ok = r2.get("cache") == "hit"
-RESULTS.append(("缓存命中", ok, 0, f"first={r1.get('cache','-')} second={r2.get('cache','-')}"))
-print(f"[{'PASS' if ok else 'FAIL'}] 缓存命中 first={r1.get('cache','-')} second={r2.get('cache','-')}")
+RESULTS.append(("缓存命中", ok, 0, f"first={r1.get('cache', '-')} second={r2.get('cache', '-')}"))
+print(f"[{'PASS' if ok else 'FAIL'}] 缓存命中 first={r1.get('cache', '-')} second={r2.get('cache', '-')}")
 
 print("=" * 70)
 total = len(RESULTS)

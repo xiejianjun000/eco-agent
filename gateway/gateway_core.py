@@ -17,16 +17,16 @@ Phase 1 交付物 1/7：统一会话管理 + 多通道抽象层
 """
 
 import json
-import time
-import uuid
 import logging
 import threading
+import time
+import uuid
 from abc import ABC, abstractmethod
-from pathlib import Path
-from datetime import datetime
 from collections.abc import Callable
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from enum import Enum
+from pathlib import Path
 
 logger = logging.getLogger("gateway_core")
 
@@ -39,6 +39,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 # 数据模型
 # ═══════════════════════════════════
 
+
 class MessageType(str, Enum):
     TEXT = "text"
     IMAGE = "image"
@@ -46,6 +47,7 @@ class MessageType(str, Enum):
     AUDIO = "audio"
     VIDEO = "video"
     INTERACTIVE = "interactive"  # 卡片/按钮回调
+
 
 class Platform(str, Enum):
     FEISHU = "feishu"
@@ -61,19 +63,21 @@ class Platform(str, Enum):
     API = "api"
     WEB = "web"
 
+
 @dataclass
 class UnifiedMessage:
     """统一消息——所有通道的输入输出归一化为此格式"""
+
     id: str = ""
     platform: str = ""
-    channel_id: str = ""           # 通道内唯一标识（会话ID/群ID/用户ID）
+    channel_id: str = ""  # 通道内唯一标识（会话ID/群ID/用户ID）
     user_id: str = ""
     user_name: str = ""
     msg_type: MessageType = MessageType.TEXT
     content: str = ""
     raw: dict = field(default_factory=dict)
     timestamp: str = ""
-    reply_to: str = ""             # 回复的消息ID
+    reply_to: str = ""  # 回复的消息ID
     metadata: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -82,9 +86,11 @@ class UnifiedMessage:
         if not self.timestamp:
             self.timestamp = datetime.now().isoformat()
 
+
 @dataclass
 class Session:
     """会话——跨通道共享上下文"""
+
     session_id: str = ""
     user_id: str = ""
     platform: str = ""
@@ -97,12 +103,14 @@ class Session:
     metadata: dict = field(default_factory=dict)
 
     def add_message(self, msg: UnifiedMessage, response: str = ""):
-        self.history.append({
-            "msg_id": msg.id,
-            "content": msg.content[:200],
-            "response": response[:200] if response else "",
-            "timestamp": msg.timestamp,
-        })
+        self.history.append(
+            {
+                "msg_id": msg.id,
+                "content": msg.content[:200],
+                "response": response[:200] if response else "",
+                "timestamp": msg.timestamp,
+            }
+        )
         self.updated_at = datetime.now().isoformat()
         if len(self.history) > 100:  # 只保留最近100条
             self.history = self.history[-100:]
@@ -111,6 +119,7 @@ class Session:
 # ═══════════════════════════════════
 # 通道适配器——所有通道实现此接口
 # ═══════════════════════════════════
+
 
 class ChannelAdapter(ABC):
     """通道适配器抽象接口——所有通道必须实现以下四个成员
@@ -143,6 +152,7 @@ class ChannelAdapter(ABC):
 # 会话管理器
 # ═══════════════════════════════════
 
+
 class SessionManager:
     """跨通道会话管理——统一状态、持久化、过期回收"""
 
@@ -154,8 +164,10 @@ class SessionManager:
 
     def _load(self):
         if self._db_path.exists():
-            try: data = json.loads(self._db_path.read_text("utf-8", errors="replace"))
-            except Exception: data = {}
+            try:
+                data = json.loads(self._db_path.read_text("utf-8", errors="replace"))
+            except Exception:
+                data = {}
             for sid, sdata in data.items():
                 self._sessions[sid] = Session(**sdata)
 
@@ -174,10 +186,12 @@ class SessionManager:
             if session_id in self._sessions:
                 return self._sessions[session_id]
             session = Session(
-                session_id=session_id, user_id=user_id or channel_id,
-                platform=platform, channel_id=channel_id,
+                session_id=session_id,
+                user_id=user_id or channel_id,
+                platform=platform,
+                channel_id=channel_id,
                 created_at=datetime.now().isoformat(),
-                updated_at=datetime.now().isoformat()
+                updated_at=datetime.now().isoformat(),
             )
             self._sessions[session_id] = session
             self._save()
@@ -195,7 +209,8 @@ class SessionManager:
                 updated = datetime.fromisoformat(session.updated_at)
                 if (now - updated).total_seconds() > max_hours * 3600:
                     stale.append(sid)
-            except Exception: stale.append(sid)
+            except Exception:
+                stale.append(sid)
         with self._lock:
             for sid in stale:
                 del self._sessions[sid]
@@ -204,14 +219,17 @@ class SessionManager:
             logger.info(f"[Session] 清理 {len(stale)} 个过期会话")
 
     def get_stats(self) -> dict:
-        return {"total_sessions": len(self._sessions),
-                "active": sum(1 for s in self._sessions.values() if s.active),
-                "stale": sum(1 for s in self._sessions.values() if not s.active)}
+        return {
+            "total_sessions": len(self._sessions),
+            "active": sum(1 for s in self._sessions.values() if s.active),
+            "stale": sum(1 for s in self._sessions.values() if not s.active),
+        }
 
 
 # ═══════════════════════════════════
 # 消息路由器
 # ═══════════════════════════════════
+
 
 class MessageRouter:
     """消息路由器——按内容/平台/用户路由到对应处理器"""
@@ -231,9 +249,7 @@ class MessageRouter:
         start = time.time()
 
         # 获取/创建会话
-        session = self._session_mgr.get_or_create(
-            msg.platform, msg.channel_id, msg.user_id, msg.user_name
-        )
+        session = self._session_mgr.get_or_create(msg.platform, msg.channel_id, msg.user_id, msg.user_name)
 
         # 找出匹配的处理器
         handler_name = self._select_handler(msg)
@@ -254,14 +270,24 @@ class MessageRouter:
 
         # 审计日志
         elapsed = (time.time() - start) * 1000
-        self._audit({
-            "msg_id": msg.id, "platform": msg.platform, "user": msg.user_id[:20],
-            "content_truncated": msg.content[:50], "handler": handler_name,
-            "elapsed_ms": round(elapsed, 1), "timestamp": datetime.now().isoformat(),
-        })
+        self._audit(
+            {
+                "msg_id": msg.id,
+                "platform": msg.platform,
+                "user": msg.user_id[:20],
+                "content_truncated": msg.content[:50],
+                "handler": handler_name,
+                "elapsed_ms": round(elapsed, 1),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
-        return {"session_id": session.session_id, "response": response, "handler": handler_name,
-                "elapsed_ms": round(elapsed, 1)}
+        return {
+            "session_id": session.session_id,
+            "response": response,
+            "handler": handler_name,
+            "elapsed_ms": round(elapsed, 1),
+        }
 
     def _select_handler(self, msg: UnifiedMessage) -> str:
         """选择处理器"""
@@ -279,16 +305,20 @@ class MessageRouter:
         try:
             with open(self._audit_log, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        except Exception: pass
+        except Exception:
+            pass
 
     def get_stats(self) -> dict:
-        return {"handlers": list(self._handlers.keys()),
-                "audit_size": self._audit_log.stat().st_size if self._audit_log.exists() else 0}
+        return {
+            "handlers": list(self._handlers.keys()),
+            "audit_size": self._audit_log.stat().st_size if self._audit_log.exists() else 0,
+        }
 
 
 # ═══════════════════════════════════
 # 通道工厂——注册所有通道
 # ═══════════════════════════════════
+
 
 class ChannelFactory:
     def __init__(self):
@@ -310,14 +340,17 @@ class ChannelFactory:
         for p in targets:
             adapter = self.get(p)
             if adapter:
-                try: results[p] = adapter.send_message("broadcast", message)
-                except Exception: results[p] = False
+                try:
+                    results[p] = adapter.send_message("broadcast", message)
+                except Exception:
+                    results[p] = False
         return results
 
 
 # ═══════════════════════════════════
 # 网关主服务
 # ═══════════════════════════════════
+
 
 class GatewayService:
     """统一网关服务"""
@@ -351,13 +384,23 @@ class GatewayService:
                 logger.warning(f"[Gateway] 后台异常: {e}")
             time.sleep(3600)  # 每小时维护一次
 
-    def process_message(self, platform: str, channel_id: str, content: str,
-                        user_id: str = "", user_name: str = "",
-                        msg_type: MessageType = MessageType.TEXT) -> dict:
+    def process_message(
+        self,
+        platform: str,
+        channel_id: str,
+        content: str,
+        user_id: str = "",
+        user_name: str = "",
+        msg_type: MessageType = MessageType.TEXT,
+    ) -> dict:
         """统一消息入口——任何通道调用此方法即可发送消息进系统"""
         msg = UnifiedMessage(
-            platform=platform, channel_id=channel_id, user_id=user_id,
-            user_name=user_name, msg_type=msg_type, content=content,
+            platform=platform,
+            channel_id=channel_id,
+            user_id=user_id,
+            user_name=user_name,
+            msg_type=msg_type,
+            content=content,
         )
         return self.router.route(msg)
 
@@ -370,6 +413,7 @@ class GatewayService:
 
 
 # ===== 测试 =====
+
 
 def test():
     gw = GatewayService()
@@ -387,6 +431,5 @@ def test():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s [%(name)s] %(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
     test()

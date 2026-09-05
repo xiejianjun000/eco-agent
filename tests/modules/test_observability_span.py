@@ -5,6 +5,7 @@
   2) 落盘失败优雅降级（logger.warning，不抛错）
   3) _chat_with_codex_loop 产生 llm_call/tool_call span 并落盘的冒烟（mock LLM 客户端）
 """
+
 import asyncio
 
 import pytest
@@ -59,13 +60,22 @@ class TestChatLoopSpans:
             _provider_name = "test-provider"
 
             def __init__(self):
-                self.rounds = iter([
-                    {"role": "assistant", "content": None,
-                     "tool_calls": [{"id": "call_1", "type": "function",
-                                     "function": {"name": "statute_lookup",
-                                                  "arguments": '{"article": "1054"}'}}]},
-                    {"role": "assistant", "content": "根据法典第1054条……"},
-                ])
+                self.rounds = iter(
+                    [
+                        {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": [
+                                {
+                                    "id": "call_1",
+                                    "type": "function",
+                                    "function": {"name": "statute_lookup", "arguments": '{"article": "1054"}'},
+                                }
+                            ],
+                        },
+                        {"role": "assistant", "content": "根据法典第1054条……"},
+                    ]
+                )
 
             def _call_chat_with_tools(self, model, messages, tools):
                 try:
@@ -81,9 +91,7 @@ class TestChatLoopSpans:
                 return {}
 
         # 避免真实 TraceAudit 写 repo 内 memory-tree/data/audit
-        monkeypatch.setattr(
-            chat_mod, "_svc",
-            lambda name, fallback: FakeAudit() if name == "trace_audit" else fallback())
+        monkeypatch.setattr(chat_mod, "_svc", lambda name, fallback: FakeAudit() if name == "trace_audit" else fallback())
 
         async def fake_run_tool(name, args, web_client=False):
             return "条文原文（mock）"
@@ -92,8 +100,9 @@ class TestChatLoopSpans:
 
         reply, trace, _usage, _fllm, _ftok = asyncio.run(
             chat_mod._chat_with_codex_loop(
-                FakeClient(), [{"role": "user", "content": "查1054条"}],
-                "test-model", session_id="s1"))
+                FakeClient(), [{"role": "user", "content": "查1054条"}], "test-model", session_id="s1"
+            )
+        )
 
         # mock 客户端不回声条号，断言其本意：循环产出回复与 span 树
         assert reply and isinstance(reply, str)

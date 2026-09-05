@@ -3,6 +3,7 @@
 - 意见征集/留言选登/常见问题/党建/专题/曝光台：复用 news.read_mee_list 栏目读取
 - 英文版（english.mee.gov.cn）：独立列表读取
 """
+
 from __future__ import annotations
 
 import logging
@@ -93,8 +94,10 @@ def read_english_list(fetcher, cache, section: str = "新闻发布", limit: int 
 
         links = parse_links(html, base_url=url, limit=120)
         items = [
-            lk for lk in links
-            if lk["title"] and len(lk["title"]) >= 5
+            lk
+            for lk in links
+            if lk["title"]
+            and len(lk["title"]) >= 5
             and lk["title"].strip() != lk["url"].rstrip("/")
             and "english.mee.gov.cn" in lk["url"]
         ][:limit]

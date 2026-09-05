@@ -102,7 +102,7 @@ client = OpenAI()
 md = MarkItDown(
     llm_client=client,
     llm_model="anthropic/claude-sonnet-4.5",
-    llm_prompt="Describe this scientific slide, focusing on data and key findings"
+    llm_prompt="Describe this scientific slide, focusing on data and key findings",
 )
 
 result = md.convert("conference_talk.pptx")
@@ -126,10 +126,7 @@ from markitdown import MarkItDown
 from openai import OpenAI
 
 # Initialize OpenRouter client
-client = OpenAI(
-    api_key="your-openrouter-api-key",
-    base_url="https://openrouter.ai/api/v1"
-)
+client = OpenAI(api_key="your-openrouter-api-key", base_url="https://openrouter.ai/api/v1")
 
 # Scientific diagram analysis
 scientific_prompt = """
@@ -144,7 +141,7 @@ Be technical and precise.
 md = MarkItDown(
     llm_client=client,
     llm_model="anthropic/claude-sonnet-4.5",  # recommended for scientific vision
-    llm_prompt=scientific_prompt
+    llm_prompt=scientific_prompt,
 )
 
 # Convert paper with figures
@@ -159,23 +156,18 @@ from markitdown import MarkItDown
 from openai import OpenAI
 
 # Initialize OpenRouter client
-client = OpenAI(
-    api_key="your-openrouter-api-key",
-    base_url="https://openrouter.ai/api/v1"
-)
+client = OpenAI(api_key="your-openrouter-api-key", base_url="https://openrouter.ai/api/v1")
 
 # Scientific papers - use Claude for technical analysis
 scientific_md = MarkItDown(
     llm_client=client,
     llm_model="anthropic/claude-sonnet-4.5",
-    llm_prompt="Describe scientific figures with technical precision"
+    llm_prompt="Describe scientific figures with technical precision",
 )
 
 # Presentations - use GPT-4o for visual understanding
 presentation_md = MarkItDown(
-    llm_client=client,
-    llm_model="anthropic/claude-sonnet-4.5",
-    llm_prompt="Summarize slide content and key visual elements"
+    llm_client=client, llm_model="anthropic/claude-sonnet-4.5", llm_prompt="Summarize slide content and key visual elements"
 )
 
 # Use appropriate instance for each file
@@ -193,21 +185,16 @@ from pathlib import Path
 
 md = MarkItDown()
 
-files_to_convert = [
-    "paper1.pdf",
-    "data.xlsx",
-    "presentation.pptx",
-    "notes.docx"
-]
+files_to_convert = ["paper1.pdf", "data.xlsx", "presentation.pptx", "notes.docx"]
 
 for file in files_to_convert:
     try:
         result = md.convert(file)
         output = Path(file).stem + ".md"
-        
+
         with open(output, "w") as f:
             f.write(result.text_content)
-        
+
         print(f"✓ {file} -> {output}")
     except Exception as e:
         print(f"✗ Error converting {file}: {e}")
@@ -220,21 +207,23 @@ from markitdown import MarkItDown
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
+
 def convert_file(filepath):
     md = MarkItDown()
     result = md.convert(filepath)
-    
+
     output = Path(filepath).stem + ".md"
     with open(output, "w") as f:
         f.write(result.text_content)
-    
+
     return filepath, output
+
 
 files = list(Path("documents/").glob("*.pdf"))
 
 with ThreadPoolExecutor(max_workers=4) as executor:
     results = executor.map(convert_file, [str(f) for f in files])
-    
+
     for input_file, output_file in results:
         print(f"Converted: {input_file} -> {output_file}")
 ```
@@ -259,18 +248,20 @@ catalog = []
 
 for paper in papers_dir.glob("*.pdf"):
     result = md.convert(str(paper))
-    
+
     # Save Markdown
     md_file = output_dir / f"{paper.stem}.md"
     md_file.write_text(result.text_content)
-    
+
     # Store metadata
-    catalog.append({
-        "title": result.title or paper.stem,
-        "source": paper.name,
-        "markdown": str(md_file),
-        "word_count": len(result.text_content.split())
-    })
+    catalog.append(
+        {
+            "title": result.title or paper.stem,
+            "source": paper.name,
+            "markdown": str(md_file),
+            "word_count": len(result.text_content.split()),
+        }
+    )
 
 # Save catalog
 with open(output_dir / "catalog.json", "w") as f:
@@ -293,21 +284,21 @@ tables = []
 current_table = []
 in_table = False
 
-for line in result.text_content.split('\n'):
-    if line.strip().startswith('|'):
+for line in result.text_content.split("\n"):
+    if line.strip().startswith("|"):
         in_table = True
         current_table.append(line)
     elif in_table:
         if current_table:
-            tables.append('\n'.join(current_table))
+            tables.append("\n".join(current_table))
             current_table = []
         in_table = False
 
 # Process each table
 for i, table in enumerate(tables):
-    print(f"Table {i+1}:")
+    print(f"Table {i + 1}:")
     print(table)
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 ```
 
 ### YouTube Transcript Analysis
@@ -342,29 +333,31 @@ logger = logging.getLogger(__name__)
 
 md = MarkItDown()
 
+
 def safe_convert(filepath):
     """Convert file with error handling."""
     try:
         result = md.convert(filepath)
         output = Path(filepath).stem + ".md"
-        
+
         with open(output, "w") as f:
             f.write(result.text_content)
-        
+
         logger.info(f"Successfully converted {filepath}")
         return True
-    
+
     except FileNotFoundError:
         logger.error(f"File not found: {filepath}")
         return False
-    
+
     except ValueError as e:
         logger.error(f"Invalid file format for {filepath}: {e}")
         return False
-    
+
     except Exception as e:
         logger.error(f"Unexpected error converting {filepath}: {e}")
         return False
+
 
 # Use it
 files = ["paper.pdf", "data.xlsx", "slides.pptx"]
@@ -384,36 +377,38 @@ from datetime import datetime
 
 md = MarkItDown()
 
+
 def convert_with_metadata(filepath):
     result = md.convert(filepath)
-    
+
     # Extract metadata from content
     metadata = {
         "file": filepath,
         "title": result.title,
         "converted_at": datetime.now().isoformat(),
         "word_count": len(result.text_content.split()),
-        "char_count": len(result.text_content)
+        "char_count": len(result.text_content),
     }
-    
+
     # Try to find author
-    author_match = re.search(r'(?:Author|By):\s*(.+?)(?:\n|$)', result.text_content)
+    author_match = re.search(r"(?:Author|By):\s*(.+?)(?:\n|$)", result.text_content)
     if author_match:
         metadata["author"] = author_match.group(1).strip()
-    
+
     # Create formatted output
     output = f"""---
-title: {metadata['title']}
-author: {metadata.get('author', 'Unknown')}
-source: {metadata['file']}
-converted: {metadata['converted_at']}
-words: {metadata['word_count']}
+title: {metadata["title"]}
+author: {metadata.get("author", "Unknown")}
+source: {metadata["file"]}
+converted: {metadata["converted_at"]}
+words: {metadata["word_count"]}
 ---
 
 {result.text_content}
 """
-    
+
     return output, metadata
+
 
 # Use it
 content, meta = convert_with_metadata("paper.pdf")
@@ -428,33 +423,35 @@ from pathlib import Path
 
 md = MarkItDown()
 
+
 def process_by_format(filepath):
     path = Path(filepath)
     result = md.convert(filepath)
-    
-    if path.suffix == '.pdf':
+
+    if path.suffix == ".pdf":
         # Add PDF-specific metadata
         output = f"# PDF Document: {path.stem}\n\n"
         output += result.text_content
-    
-    elif path.suffix == '.xlsx':
+
+    elif path.suffix == ".xlsx":
         # Add table count
-        table_count = result.text_content.count('|---')
+        table_count = result.text_content.count("|---")
         output = f"# Excel Data: {path.stem}\n\n"
         output += f"**Tables**: {table_count}\n\n"
         output += result.text_content
-    
-    elif path.suffix == '.pptx':
+
+    elif path.suffix == ".pptx":
         # Add slide count
-        slide_count = result.text_content.count('## Slide')
+        slide_count = result.text_content.count("## Slide")
         output = f"# Presentation: {path.stem}\n\n"
         output += f"**Slides**: {slide_count}\n\n"
         output += result.text_content
-    
+
     else:
         output = result.text_content
-    
+
     return output
+
 
 # Use it
 content = process_by_format("presentation.pptx")

@@ -27,12 +27,13 @@ import logging
 import sys
 from pathlib import Path
 
+from fastapi import FastAPI, Request
+
 # 保证 repo 根在 sys.path（_scripts、agent_core 等包可直接导入）
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from fastapi import Request, FastAPI
 
 logger = logging.getLogger("eco.server")
 
@@ -63,7 +64,26 @@ def create_app() -> FastAPI:
     except Exception:  # noqa: BLE001 — 装配失败不阻断 API
         pass
 
-    from server.api import approvals, chat, documents, dynamic_plugins, files, goals, inspect, memory, plugins, prompt, sessions, skills, slots, subagents, system, terminal, tools, workflow
+    from server.api import (
+        approvals,
+        chat,
+        documents,
+        dynamic_plugins,
+        files,
+        goals,
+        inspect,
+        memory,
+        plugins,
+        prompt,
+        sessions,
+        skills,
+        slots,
+        subagents,
+        system,
+        terminal,
+        tools,
+        workflow,
+    )
 
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
     app.include_router(files.router, prefix="/api/v1", tags=["files"])
@@ -98,16 +118,14 @@ def _mount_web_gui(app: FastAPI) -> None:
     if not web_dist.is_dir():
         logger.info("web/dist not found — Web GUI 未构建（cd web && npm run build），仅 API 可用")
         return
-    from fastapi.staticfiles import StaticFiles
-
     # 整个 dist 作为静态根（含 public/ 拷贝产物：favicon.svg、eco-logo.svg 等）。
     # 注册在所有 API 路由之后：/api/v1、/healthz 等由路由优先处理，其余路径回退 SPA 静态文件。
     # index.html 禁缓存（改版后刷新即取新 bundle）；哈希资产文件名自带版本，可长缓存
     from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
 
     async def _no_cache_index(request: Request):
-        return FileResponse(web_dist / "index.html", headers={
-            "Cache-Control": "no-store"})
+        return FileResponse(web_dist / "index.html", headers={"Cache-Control": "no-store"})
 
     app.mount("/assets", StaticFiles(directory=str(web_dist / "assets")), name="web-assets")
     app.add_api_route("/", _no_cache_index, methods=["GET"])

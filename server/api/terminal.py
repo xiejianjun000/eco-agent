@@ -44,8 +44,14 @@ async def terminal_ws(ws: WebSocket) -> None:
     cwd = os.environ.get("ECO_WORKSPACE_DIR") or os.path.expanduser("~")
     proc = subprocess.Popen(
         [SHELL],
-        stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
-        preexec_fn=os.setsid, env=os.environ.copy(), cwd=cwd, close_fds=True)
+        stdin=slave_fd,
+        stdout=slave_fd,
+        stderr=slave_fd,
+        preexec_fn=os.setsid,
+        env=os.environ.copy(),
+        cwd=cwd,
+        close_fds=True,
+    )
     os.close(slave_fd)
     loop = asyncio.get_running_loop()
     closed = False
@@ -81,9 +87,7 @@ async def terminal_ws(ws: WebSocket) -> None:
             if data.startswith(b"\x01"):  # 控制帧：JSON resize
                 try:
                     ctl = json.loads(data[1:].decode("utf-8", "replace"))
-                    _resize_pty(master_fd,
-                                int(ctl.get("rows", DEFAULT_ROWS)),
-                                int(ctl.get("cols", DEFAULT_COLS)))
+                    _resize_pty(master_fd, int(ctl.get("rows", DEFAULT_ROWS)), int(ctl.get("cols", DEFAULT_COLS)))
                 except Exception:  # noqa: BLE001
                     pass
             else:

@@ -18,6 +18,7 @@ checkpoint.py — 会话检查点/回滚（对标 Claude Code checkpoint+rewind 
 
 损坏快照容错：单文件 JSON 损坏只跳过该检查点，不影响其它。
 """
+
 import hashlib
 import json
 import logging
@@ -126,8 +127,7 @@ class CheckpointStore:
                 pass
 
     # ── 能力 ──
-    def create(self, history: list | None = None, ws=None,
-               decisions_file: Path = None) -> dict:
+    def create(self, history: list | None = None, ws=None, decisions_file: Path = None) -> dict:
         """创建检查点：会话历史 + decisions 计数 + 工作区文件快照"""
         n = self._next_id()
         ws_info = {"slug": "", "files": {}}
@@ -144,8 +144,7 @@ class CheckpointStore:
             "decisions_count": _decisions_count(decisions_file),
             "workspace": ws_info,
         }
-        self._cp_path(n).write_text(json.dumps(cp, ensure_ascii=False, indent=2),
-                                    encoding="utf-8")
+        self._cp_path(n).write_text(json.dumps(cp, ensure_ascii=False, indent=2), encoding="utf-8")
         self._evict()
         return cp
 

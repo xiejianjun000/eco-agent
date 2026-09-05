@@ -129,13 +129,7 @@ class AuditChain:
                 return False
 
             # 重新计算 current_hash
-            hash_source = (
-                f"{entry.prev_hash}"
-                f"{entry.timestamp}"
-                f"{entry.operation}"
-                f"{entry.input_hash}"
-                f"{entry.output_hash}"
-            )
+            hash_source = f"{entry.prev_hash}{entry.timestamp}{entry.operation}{entry.input_hash}{entry.output_hash}"
             computed_hash = sm3_hash(hash_source.encode("utf-8"))
 
             if computed_hash != entry.current_hash:

@@ -1,4 +1,5 @@
 """RBAC 角色矩阵测试：矩阵判定 / 默认关闭兼容 / grant 角色流 / 篡改容错"""
+
 import json
 
 import pytest
@@ -137,8 +138,7 @@ class TestGrantRoleFlow:
         assert not grants_mod.list_grants()[0]["_valid_sig"]
 
     def test_cmd_auth_grant_with_role(self, grants_env, capsys):
-        rc = cmd_auth.run(_Args(auth_action="grant", level="L4", ttl=300,
-                                scope="*", role="审计员"))
+        rc = cmd_auth.run(_Args(auth_action="grant", level="L4", ttl=300, scope="*", role="审计员"))
         assert rc == 0
         out = capsys.readouterr().out
         assert "role=审计员" in out
@@ -153,8 +153,7 @@ class TestGrantRoleFlow:
     def test_cmd_auth_grant_denied_by_rbac(self, grants_env, monkeypatch, capsys):
         monkeypatch.setenv("ECO_RBAC", "1")
         monkeypatch.setenv("ECO_ROLE", "执法员")  # 无 auth_grant 能力
-        rc = cmd_auth.run(_Args(auth_action="grant", level="L4", ttl=300,
-                                scope="*", role="执法员"))
+        rc = cmd_auth.run(_Args(auth_action="grant", level="L4", ttl=300, scope="*", role="执法员"))
         assert rc == 1
         assert "拒绝" in capsys.readouterr().out
         assert grants_mod.list_grants() == []

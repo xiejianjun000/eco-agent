@@ -3,9 +3,11 @@
 方案 A：默认占位，ECO_RUNTIME_EXECUTOR=1 或显式传参才启用真实 executor。
 离线约束：无 API key 时必须降级占位，全套测试不耗配额。
 """
-import sys
+
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from agent_core.commander_v2 import CommanderV2, Task
 from agent_core.task_executor import RuntimeExecutor
 
@@ -23,6 +25,7 @@ class _FakeLLM:
 
 class _FakeLoop:
     """模拟 ReActPlusPlus：记录工具注册与 prompt，返回固定结果"""
+
     instances = []
 
     def __init__(self):
@@ -43,6 +46,7 @@ class TestDegradation:
 
     def test_llm_absent_returns_placeholder(self, monkeypatch):
         import agent_core.llm_client as llm_mod
+
         monkeypatch.setattr(llm_mod, "get_default_client", lambda: _FakeLLM(usable=False))
         ex = RuntimeExecutor()
         out = ex(Task(description="分析需求：测试"))
@@ -51,6 +55,7 @@ class TestDegradation:
 
     def test_no_client_at_all(self, monkeypatch):
         import agent_core.llm_client as llm_mod
+
         monkeypatch.setattr(llm_mod, "get_default_client", lambda: None)
         ex = RuntimeExecutor()
         out = ex(Task(description="收集资料：测试"))
@@ -65,14 +70,18 @@ class TestRealLoop:
 
     def test_react_loop_driven_with_context(self, monkeypatch):
         import agent_core.llm_client as llm_mod
+
         monkeypatch.setattr(llm_mod, "get_default_client", lambda: _FakeLLM())
         import agent_core.react_loop as react_mod
+
         monkeypatch.setattr(react_mod, "ReActPlusPlus", _FakeLoop)
 
         ex = RuntimeExecutor(max_steps=5)
-        task = Task(description="撰写报告：法规综述",
-                    expectation="报告结构完整，结论与证据对应",
-                    input={"upstream": {"收集资料": "资料A/B/C"}})
+        task = Task(
+            description="撰写报告：法规综述",
+            expectation="报告结构完整，结论与证据对应",
+            input={"upstream": {"收集资料": "资料A/B/C"}},
+        )
         out = ex(task)
 
         assert "真实产出" in out
@@ -84,8 +93,10 @@ class TestRealLoop:
 
     def test_tools_registered_as_sync_handlers(self, monkeypatch):
         import agent_core.llm_client as llm_mod
+
         monkeypatch.setattr(llm_mod, "get_default_client", lambda: _FakeLLM())
         import agent_core.react_loop as react_mod
+
         monkeypatch.setattr(react_mod, "ReActPlusPlus", _FakeLoop)
 
         ex = RuntimeExecutor()
@@ -98,12 +109,14 @@ class TestRealLoop:
     def test_empty_final_raises_for_replan(self, monkeypatch):
         """ReAct 循环无产出 → 抛异常走 L2 replan 路径（统一失败语义）"""
         import agent_core.llm_client as llm_mod
+
         monkeypatch.setattr(llm_mod, "get_default_client", lambda: _FakeLLM())
         import agent_core.react_loop as react_mod
 
         class _EmptyLoop(_FakeLoop):
             def execute(self, task, context=None, observer=None):
                 return {"final_observation": "", "steps": 1}
+
         monkeypatch.setattr(react_mod, "ReActPlusPlus", _EmptyLoop)
 
         ex = RuntimeExecutor()

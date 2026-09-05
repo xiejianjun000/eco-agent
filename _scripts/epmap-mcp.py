@@ -74,18 +74,32 @@ def _audit(tool: str, args: dict, result: str, duration_ms: int) -> None:
         from govmcp.crypto.audit import AuditChain
 
         chain = AuditChain()
-        chain.add_entry(operation=f"mcp_call:{tool}", operator="epmap-mcp",
-                        input_data=json.dumps(args, ensure_ascii=False).encode("utf-8"),
-                        output_data=(str(result)[:300]).encode("utf-8"),
-                        approval_status="approved")
+        chain.add_entry(
+            operation=f"mcp_call:{tool}",
+            operator="epmap-mcp",
+            input_data=json.dumps(args, ensure_ascii=False).encode("utf-8"),
+            output_data=(str(result)[:300]).encode("utf-8"),
+            approval_status="approved",
+        )
         audit_file = ROOT / "memory-tree" / "data" / "audit" / "epmap_mcp_audit.jsonl"
         audit_file.parent.mkdir(parents=True, exist_ok=True)
         entry = chain.entries[-1]
         with audit_file.open("a", encoding="utf-8") as f:
-            f.write(json.dumps({"when": time.time(), "tool": tool, "args": args,
-                                "result_preview": str(result)[:200],
-                                "cost": f"{duration_ms}ms", "prev_hash": entry.prev_hash,
-                                "current_hash": entry.current_hash}, ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "when": time.time(),
+                        "tool": tool,
+                        "args": args,
+                        "result_preview": str(result)[:200],
+                        "cost": f"{duration_ms}ms",
+                        "prev_hash": entry.prev_hash,
+                        "current_hash": entry.current_hash,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
     except Exception:  # noqa: BLE001
         pass
 
@@ -108,11 +122,10 @@ def _sign_headers() -> dict:
     import uuid
 
     secret_id, secret_key = _cred()
-    dt = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+    dt = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
     sign_str = f"x-date: {dt}"
-    digest = hmac.new(secret_key.encode('utf-8'), sign_str.encode('utf-8'),
-                      hashlib.sha1).digest()
-    signature = base64.b64encode(digest).decode('utf-8')
+    digest = hmac.new(secret_key.encode("utf-8"), sign_str.encode("utf-8"), hashlib.sha1).digest()
+    signature = base64.b64encode(digest).decode("utf-8")
     auth = json.dumps({"id": secret_id, "x-date": dt, "signature": signature})
     return {"request-id": str(uuid.uuid1()), "Authorization": auth}
 
@@ -130,9 +143,7 @@ def _fetch_epmap(endpoint: str, params: dict) -> dict:
     import urllib.parse
     import urllib.request
 
-    base_url = os.environ.get(
-        "EPMAP_BASE_URL",
-        "https://ap-shanghai.cloudmarket-apigw.com/service-q53mzqub/api/v2").rstrip("/")
+    base_url = os.environ.get("EPMAP_BASE_URL", "https://ap-shanghai.cloudmarket-apigw.com/service-q53mzqub/api/v2").rstrip("/")
     url = f"{base_url}/{endpoint}"
     if params:
         url += "?" + urllib.parse.urlencode(params)
@@ -144,7 +155,7 @@ def _fetch_epmap(endpoint: str, params: dict) -> dict:
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     with urllib.request.urlopen(req, context=ctx, timeout=30) as resp:
-        return json.loads(resp.read().decode('utf-8'))
+        return json.loads(resp.read().decode("utf-8"))
 
 
 def _token() -> str:
@@ -156,14 +167,16 @@ def _hmac_sha1(key: bytes, msg: str) -> str:
     import hashlib
     import hmac
 
-    return base64.b64encode(
-        hmac.new(key, msg.encode("utf-8"), hashlib.sha1).digest()).decode()
+    return base64.b64encode(hmac.new(key, msg.encode("utf-8"), hashlib.sha1).digest()).decode()
 
 
 def _no_token(tool: str, args: dict, t0: float) -> dict:
-    result = {"error": "EPMAP 接入参数不全——需要 EPMAP_SECRET_ID / EPMAP_SECRET_KEY / "
-                       "EPMAP_SOURCE（签名水印）/ EPMAP_BASE_URL（网关端点），"
-                       "见青悦申请 API 时提供的接入文档", "status": "skeleton"}
+    result = {
+        "error": "EPMAP 接入参数不全——需要 EPMAP_SECRET_ID / EPMAP_SECRET_KEY / "
+        "EPMAP_SOURCE（签名水印）/ EPMAP_BASE_URL（网关端点），"
+        "见青悦申请 API 时提供的接入文档",
+        "status": "skeleton",
+    }
     _audit(tool, args, result, int((time.monotonic() - t0) * 1000))
     return result
 
@@ -194,27 +207,35 @@ def handle_request(request: dict) -> dict:
     params = request.get("params", {})
 
     if method == "initialize":
-        return {"jsonrpc": "2.0", "id": req_id, "result": {
-            "protocolVersion": params.get("protocolVersion", "2024-11-05"),
-            "capabilities": {"tools": {}},
-            "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION,
-                           "title": "环境数据云 govMCP（骨架：待 EPMAP_TOKEN）"},
-        }}
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": params.get("protocolVersion", "2024-11-05"),
+                "capabilities": {"tools": {}},
+                "serverInfo": {
+                    "name": SERVER_NAME,
+                    "version": SERVER_VERSION,
+                    "title": "环境数据云 govMCP（骨架：待 EPMAP_TOKEN）",
+                },
+            },
+        }
     if method in ("tools/list", "mcp.list_tools"):
         return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": TOOLS}}
     if method in ("tools/call", "mcp.call_tool"):
         name, args = params.get("name", ""), params.get("arguments", {})
-        data = _call(name, args) if name in {t["name"] for t in TOOLS} else \
-            {"error": f"未知工具: {name}"}
-        return {"jsonrpc": "2.0", "id": req_id, "result": {
-            "content": [{"type": "text", "text": json.dumps(data, ensure_ascii=False)}],
-            "isError": "error" in data,
-        }}
+        data = _call(name, args) if name in {t["name"] for t in TOOLS} else {"error": f"未知工具: {name}"}
+        return {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "content": [{"type": "text", "text": json.dumps(data, ensure_ascii=False)}],
+                "isError": "error" in data,
+            },
+        }
     if method in ("ping", "mcp.ping"):
-        return {"jsonrpc": "2.0", "id": req_id,
-                "result": {"status": "ok", "timestamp": datetime.now().isoformat()}}
-    return {"jsonrpc": "2.0", "id": req_id,
-            "error": {"code": -32601, "message": f"Method '{method}' not found"}}
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"status": "ok", "timestamp": datetime.now().isoformat()}}
+    return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Method '{method}' not found"}}
 
 
 def main() -> int:
@@ -232,16 +253,26 @@ def main() -> int:
             print(json.dumps(result, ensure_ascii=False, indent=1)[:400])
         except Exception as e:  # noqa: BLE001
             import urllib.error
+
             if isinstance(e, urllib.error.HTTPError):
-                print("接口调用失败:", e.code, e.read().decode('utf-8', errors='replace')[:300])
+                print("接口调用失败:", e.code, e.read().decode("utf-8", errors="replace")[:300])
             else:
                 print("接口调用失败:", e)
         return 0
 
-    sys.stderr.write(json.dumps({
-        "event": "mcp.startup", "server_name": SERVER_NAME,
-        "version": SERVER_VERSION, "tools_count": len(TOOLS),
-        "token": "configured" if _token() else "missing"}, ensure_ascii=False) + "\n")
+    sys.stderr.write(
+        json.dumps(
+            {
+                "event": "mcp.startup",
+                "server_name": SERVER_NAME,
+                "version": SERVER_VERSION,
+                "tools_count": len(TOOLS),
+                "token": "configured" if _token() else "missing",
+            },
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
     sys.stderr.flush()
 
     for line in sys.stdin:
@@ -251,8 +282,9 @@ def main() -> int:
         try:
             request = json.loads(line)
         except json.JSONDecodeError:
-            sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": None,
-                                         "error": {"code": -32700, "message": "Parse error"}}) + "\n")
+            sys.stdout.write(
+                json.dumps({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}}) + "\n"
+            )
             sys.stdout.flush()
             continue
         if "id" not in request:

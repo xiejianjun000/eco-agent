@@ -4,10 +4,12 @@
 向记忆树检索的 type 过滤器传入恶意 SQL 片段，断言参数化生效：
 不返回全表、不抛语法错误（被当作字面量）。
 """
+
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from _scripts.memory_tree import MemoryTree
 

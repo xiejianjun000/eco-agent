@@ -22,21 +22,24 @@ router = APIRouter()
 def _govmcp_catalog() -> list[dict]:
     """govmcp 政务工具目录（懒加载注册，按 category 分组返回）。"""
     try:
-        from govmcp_tools import register_all, registry as govmcp_registry
+        from govmcp_tools import register_all
+        from govmcp_tools import registry as govmcp_registry
 
         if govmcp_registry.count() == 0:
             register_all()
         out = []
         for name, tool in sorted(govmcp_registry.tools.items()):
             meta = getattr(tool.handler, "_govmcp_meta", {})
-            out.append({
-                "source": "govmcp",
-                "name": name,
-                "description": tool.description,
-                "category": meta.get("category", ""),
-                "tags": meta.get("tags", []),
-                "approval_required": tool.approval_required,
-            })
+            out.append(
+                {
+                    "source": "govmcp",
+                    "name": name,
+                    "description": tool.description,
+                    "category": meta.get("category", ""),
+                    "tags": meta.get("tags", []),
+                    "approval_required": tool.approval_required,
+                }
+            )
         return out
     except Exception as e:  # noqa: BLE001
         logger.warning("govmcp catalog unavailable: %s", e)
@@ -54,9 +57,9 @@ async def list_tools(
     if q:
         ql = q.lower()
         tools = [
-            t for t in tools
-            if ql in t["name"].lower() or ql in t["description"].lower()
-            or any(ql in tag.lower() for tag in t["tags"])
+            t
+            for t in tools
+            if ql in t["name"].lower() or ql in t["description"].lower() or any(ql in tag.lower() for tag in t["tags"])
         ]
     categories: dict[str, int] = {}
     for t in tools:

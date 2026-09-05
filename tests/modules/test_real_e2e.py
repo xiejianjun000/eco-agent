@@ -6,6 +6,7 @@
 运行方式（需要有效 KIMI_API_KEY 或已配置的备用 provider Key）：
     ECO_E2E=1 pytest tests/modules/test_real_e2e.py -v
 """
+
 import os
 
 import pytest
@@ -51,14 +52,19 @@ class TestRealE2E:
         chunks = []
         answer = client.chat_with_tools(
             messages=[
-                {"role": "system",
-                 "content": "你是生态环境执法文书助手。凡需保存文件，必须调用 save_document 工具，"
-                            "不得凭空声称已保存。"},
-                {"role": "user",
-                 "content": "请把以下内容保存为 e2e-check.md：合力砖厂排污许可证编号 "
-                            "XS-2024-001，有效期至 2026-12-31。保存后用一句话确认。"},
+                {
+                    "role": "system",
+                    "content": "你是生态环境执法文书助手。凡需保存文件，必须调用 save_document 工具，不得凭空声称已保存。",
+                },
+                {
+                    "role": "user",
+                    "content": "请把以下内容保存为 e2e-check.md：合力砖厂排污许可证编号 "
+                    "XS-2024-001，有效期至 2026-12-31。保存后用一句话确认。",
+                },
             ],
-            tools=tools, stream=True, on_chunk=chunks.append,
+            tools=tools,
+            stream=True,
+            on_chunk=chunks.append,
         )
 
         deliv = ws.path / "deliverables"
@@ -78,9 +84,10 @@ class TestRealE2E:
 
         chunks = []
         answer = client.chat_with_tools(
-            messages=[{"role": "user",
-                       "content": "用三句话介绍生态环境执法中的“双随机一公开”，不要调用任何工具。"}],
-            tools=[], stream=True, on_chunk=chunks.append,
+            messages=[{"role": "user", "content": "用三句话介绍生态环境执法中的“双随机一公开”，不要调用任何工具。"}],
+            tools=[],
+            stream=True,
+            on_chunk=chunks.append,
         )
         content_chunks = [c for c in chunks if c and not c.startswith("\n")]
         assert answer and "[API 错误]" not in answer

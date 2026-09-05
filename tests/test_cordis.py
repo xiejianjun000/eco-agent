@@ -127,16 +127,17 @@ def test_timer() -> None:
 
 def test_composition_and_boot() -> None:
     print("== 组合加载与标准装配 ==")
-    from agent_core.cordis.boot import get_app_context
     import agent_core.cordis.boot as boot
+    from agent_core.cordis.boot import get_app_context
 
     boot._app_ctx = None
     ctx = get_app_context()
     snap = ctx.snapshot()
-    check("标准服务已注册（lessons/subagents/llm/trace_audit）",
-          {"lessons", "subagents", "llm", "trace_audit"} <= set(snap["services"]))
-    check("组合插件 active（subagent_cleaner）",
-          snap["plugins"].get("agent_core.cordis_plugins.subagent_cleaner") == "active")
+    check(
+        "标准服务已注册（lessons/subagents/llm/trace_audit）",
+        {"lessons", "subagents", "llm", "trace_audit"} <= set(snap["services"]),
+    )
+    check("组合插件 active（subagent_cleaner）", snap["plugins"].get("agent_core.cordis_plugins.subagent_cleaner") == "active")
     ctx.stop()
     check("stop 全量卸载", all(f.status == "disposed" for f in ctx._plugins.values()))
 

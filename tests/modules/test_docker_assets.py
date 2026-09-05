@@ -1,4 +1,5 @@
 """任务 F：Docker 镜像与离线部署资产的静态断言测试（全静态，无需 docker）。"""
+
 import re
 from pathlib import Path
 
@@ -20,8 +21,11 @@ def dockerfile_text():
 @pytest.fixture(scope="module")
 def dockerignore_lines():
     assert DOCKERIGNORE.is_file(), ".dockerignore 缺失"
-    return [ln.strip() for ln in DOCKERIGNORE.read_text(encoding="utf-8").splitlines()
-            if ln.strip() and not ln.strip().startswith("#")]
+    return [
+        ln.strip()
+        for ln in DOCKERIGNORE.read_text(encoding="utf-8").splitlines()
+        if ln.strip() and not ln.strip().startswith("#")
+    ]
 
 
 @pytest.fixture(scope="module")
@@ -37,6 +41,7 @@ def unit_text():
 
 
 # ---------- Dockerfile ----------
+
 
 def test_dockerfile_base_image(dockerfile_text):
     assert re.search(r"^FROM\s+python:3\.12-slim", dockerfile_text, re.M)
@@ -75,6 +80,7 @@ def test_dockerfile_no_hardcoded_secrets(dockerfile_text):
 
 # ---------- .dockerignore ----------
 
+
 @pytest.mark.parametrize("rule", [".git", "tests", "docs", "output", "backup"])
 def test_dockerignore_required_rules(dockerignore_lines, rule):
     assert rule in dockerignore_lines
@@ -85,6 +91,7 @@ def test_dockerignore_excludes_env(dockerignore_lines):
 
 
 # ---------- build_offline.sh ----------
+
 
 def test_build_script_pip_download(build_script_text):
     assert "pip download" in build_script_text
@@ -104,6 +111,7 @@ def test_build_script_strict_mode_and_no_secrets(build_script_text):
 
 
 # ---------- systemd unit ----------
+
 
 def test_unit_service_section(unit_text):
     assert "[Service]" in unit_text

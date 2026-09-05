@@ -7,10 +7,12 @@ tools_registry.py - ECO AGENT Complete Tool Registry
 DeepSeek/Kimi 直接 400 拒绝。注册/导出时统一规范化为合法 slug，
 维护 slug↔原始名映射，执行工具调用时反查原始实现。
 """
+
 from __future__ import annotations
+
+import asyncio
 import json
 import logging
-import asyncio
 import re
 import sys
 from collections.abc import Callable
@@ -47,11 +49,12 @@ def _slugify(name: str) -> str:
             name = parts[2]
         else:
             prefix = "mcp__"
-            name = name[len(prefix):]
+            name = name[len(prefix) :]
     slug = re.sub(r"[^a-zA-Z0-9_-]", "_", name)
     slug = re.sub(r"_+", "_", slug).strip("_")
     if not slug or not re.search(r"[a-zA-Z0-9]", slug):
         import hashlib
+
         slug = "tool_" + hashlib.md5(name.encode("utf-8")).hexdigest()[:8]
     return (prefix + slug)[:64]
 
@@ -64,6 +67,7 @@ def normalize_tool_name(name: str) -> str:
     slug = _slugify(name)
     if slug in _SLUG_TO_ORIGINAL and _SLUG_TO_ORIGINAL[slug] != name:
         import hashlib
+
         slug = (slug[:55] + "_" + hashlib.md5(name.encode("utf-8")).hexdigest()[:8])[:64]
     _SLUG_TO_ORIGINAL[slug] = name
     _RENAMED_TOOLS[name] = slug
@@ -83,12 +87,15 @@ def get_renamed_tools() -> dict[str, str]:
 
 def tool(name):
     slug = normalize_tool_name(name)
+
     def dec(f):
         _HANDLERS[name] = f
         if slug != name:
             _HANDLERS[slug] = f
         return f
+
     return dec
+
 
 # ── LLM 可见表白名单（ALL_TOOL_DEFS 内）────────────────────────────
 # 内置定义表中只有以下工具是真实实现；其余（govmcp 占位 status:ok 假数据、
@@ -96,13 +103,17 @@ def tool(name):
 # 占位工具暴露给模型会污染回答（模型拿到假数据后可能编造结论）。
 # 外部注册工具（statute_*/devtools/MCP）不在此表，不受此过滤影响。
 ALL_TOOL_DEFS_KEEP: set[str] = {
-    "execute_code", "query_air_quality", "analyze_document",
-    "save_document", "search_regulation",
+    "execute_code",
+    "query_air_quality",
+    "analyze_document",
+    "save_document",
+    "search_regulation",
 }
 
 # 历史占位工具黑名单（保留记录：接真实政务后端后从这里移除对应名即上架）
-TOOL_EXCLUDE_LIST: set[str] = set(json.loads(
-    r'''[
+TOOL_EXCLUDE_LIST: set[str] = set(
+    json.loads(
+        r"""[
   "approval_cross_department",
   "approval_query_archive",
   "approval_query_audit_trail",
@@ -208,2483 +219,1549 @@ TOOL_EXCLUDE_LIST: set[str] = set(json.loads(
   "smart_query_traffic_congestion",
   "smart_query_waste_management",
   "smart_query_water_supply"
-]'''))
+]"""
+    )
+)
 
 ALL_TOOL_DEFS = [
-  {
-    "type": "function",
-    "function": {
-      "name": "query_air_quality",
-      "description": "query real-time air quality (CNEMC)",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "city": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "city"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "search_regulation",
-      "description": "search environmental regulations",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "keyword": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "keyword"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "get_emission_standard",
-      "description": "query emission standard limits",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "standard_code": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "standard_code"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_environmental_penalty",
-      "description": "query penalty records",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "company": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "company"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "calculate_carbon_emission",
-      "description": "calculate carbon emissions",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "industry": {
-            "type": "string"
-          },
-          "energy_consumption": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "industry",
-          "energy_consumption"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_pollution_discharge_permit",
-      "description": "query discharge permit",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "company_name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "company_name"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_environmental_impact_assessment",
-      "description": "query EIA info",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "project_name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "project_name"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_water_quality",
-      "description": "query water quality",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "water_body": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "water_body"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_noise_monitoring",
-      "description": "query noise data",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "location": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "location"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "vision_analyze",
-      "description": "analyze image content",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "image_path": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "image_path"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "ocr_extract",
-      "description": "OCR text extraction",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "image_path": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "image_path"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "analyze_document",
-      "description": "read local plain-text document by path (txt/md/csv/log); PDF/DOCX not supported",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "file_path": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "file_path"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "execute_code",
-      "description": "execute code in sandbox",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "language": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "language"
-        ]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "analyze_industrial_carbon_emission",
-      "description": "工业碳排放分析",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，用于匹配其工业碳排放台账"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "分析年度（YYYY），定位对应年度排放数据"
-                },
-                "industry": {
-                        "type": "string",
-                        "description": "可选，行业类别（钢铁/化工/电力等），用于同行业对标"
-                }
-        },
-        "required": [
-                "company_name",
-                "year"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_approval_digital_signature",
-      "description": "审批电子签章",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "审批事项编号，定位需签章的审批单"
-                },
-                "signer_name": {
-                        "type": "string",
-                        "description": "签章人姓名，用于核验签章权限"
-                }
-        },
-        "required": [
-                "approval_id",
-                "signer_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_business_license",
-      "description": "办理营业执照",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "拟注册企业名称，用于核名与登记"
-                },
-                "legal_person": {
-                        "type": "string",
-                        "description": "法定代表人姓名"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，登记机关所在地区（如 赣州市）"
-                }
-        },
-        "required": [
-                "company_name",
-                "legal_person"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_carbon_verification",
-      "description": "申请碳核查",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申请碳核查的企业全称"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "核查年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name",
-                "year"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_cleaner_production_audit",
-      "description": "申请清洁生产审核",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申请清洁生产审核的企业全称"
-                },
-                "industry": {
-                        "type": "string",
-                        "description": "可选，所属行业，用于匹配审核技术规范"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_disability_subsidy",
-      "description": "申请残疾人补贴",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "申请人姓名"
-                },
-                "disability_level": {
-                        "type": "string",
-                        "description": "可选，残疾等级（一至四级），用于核定补贴标准"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，户籍所在地区"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_drug_operation_license",
-      "description": "申请药品经营许可证",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申请药品经营许可的企业全称"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，经营场所所在地区"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_elderly_benefit_card",
-      "description": "申请老年人优待证",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "老年人姓名"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，常住地区，用于确定发卡机构"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_food_business_license",
-      "description": "申请食品经营许可证",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申请食品经营许可的主体名称"
-                },
-                "business_type": {
-                        "type": "string",
-                        "description": "可选，经营业态（餐饮/销售/食堂等）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_high_tech_enterprise",
-      "description": "申请高新技术企业认定",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申报高新技术企业认定的企业全称"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，申报批次年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_housing_fund_account_enterprise",
-      "description": "办理公积金开户",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "办理公积金开户的企业全称"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，公积金管理中心所在城市"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_housing_fund_withdrawal",
-      "description": "申请公积金提取",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "提取人姓名"
-                },
-                "reason": {
-                        "type": "string",
-                        "description": "可选，提取事由（购房/租房/退休等）"
-                },
-                "amount": {
-                        "type": "string",
-                        "description": "可选，拟提取金额（元）"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_intellectual_property",
-      "description": "申请知识产权保护",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申请知识产权保护的主体名称"
-                },
-                "ip_type": {
-                        "type": "string",
-                        "description": "可选，知识产权类型（专利/商标/著作权）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_invoice",
-      "description": "申领发票",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申领发票的纳税人名称"
-                },
-                "invoice_type": {
-                        "type": "string",
-                        "description": "可选，发票种类（增值税专用/普通发票）"
-                },
-                "amount": {
-                        "type": "string",
-                        "description": "可选，申领数量（份）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_low_income_assistance",
-      "description": "申请低保救助",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "低保申请人姓名"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，户籍所在地，用于确定受理街道"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_medical_device_license",
-      "description": "申请医疗器械经营许可证",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申请医疗器械经营许可的企业全称"
-                },
-                "device_class": {
-                        "type": "string",
-                        "description": "可选，器械类别（二类/三类）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_social_security_account",
-      "description": "办理社保开户",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "办理社保开户的企业全称"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，参保登记地"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "apply_tech_project",
-      "description": "申报科技项目",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "project_name": {
-                        "type": "string",
-                        "description": "申报科技项目的名称"
-                },
-                "company_name": {
-                        "type": "string",
-                        "description": "可选，申报单位全称"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，申报年度（YYYY）"
-                }
-        },
-        "required": [
-                "project_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "book_marriage_registration",
-      "description": "预约婚姻登记",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "预约人姓名"
-                },
-                "partner_name": {
-                        "type": "string",
-                        "description": "可选，配偶姓名"
-                },
-                "date": {
-                        "type": "string",
-                        "description": "可选，预约登记日期（YYYY-MM-DD）"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "book_smart_medical",
-      "description": "智慧医疗预约",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "patient_name": {
-                        "type": "string",
-                        "description": "就诊人姓名"
-                },
-                "hospital": {
-                        "type": "string",
-                        "description": "可选，目标医院名称"
-                },
-                "department": {
-                        "type": "string",
-                        "description": "可选，挂号科室"
-                },
-                "date": {
-                        "type": "string",
-                        "description": "可选，预约日期（YYYY-MM-DD）"
-                }
-        },
-        "required": [
-                "patient_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "calculate_carbon_footprint",
-      "description": "计算碳足迹",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "核算主体的企业全称"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "核算年度（YYYY）"
-                },
-                "scope": {
-                        "type": "string",
-                        "description": "可选，核算边界（范围一/二/三）"
-                }
-        },
-        "required": [
-                "company_name",
-                "year"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "configure_approval_permission",
-      "description": "配置审批权限",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "role_name": {
-                        "type": "string",
-                        "description": "待配置的角色名称"
-                },
-                "permission_level": {
-                        "type": "string",
-                        "description": "权限级别（查看/办理/审批/管理）"
-                }
-        },
-        "required": [
-                "role_name",
-                "permission_level"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "control_smart_traffic_light",
-      "description": "智慧交通信号灯控制",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "intersection_id": {
-                        "type": "string",
-                        "description": "路口编号，定位受控信号灯"
-                },
-                "action": {
-                        "type": "string",
-                        "description": "控制动作（延长绿灯/强制红灯/恢复自动）"
-                }
-        },
-        "required": [
-                "intersection_id",
-                "action"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "detect_soil_pollution",
-      "description": "土壤污染检测",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "site_name": {
-                        "type": "string",
-                        "description": "地块名称或编号，定位检测场地"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，地块所在地区"
-                },
-                "pollutant": {
-                        "type": "string",
-                        "description": "可选，目标污染物（重金属/VOCs 等）"
-                }
-        },
-        "required": [
-                "site_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "dispatch_emergency_command",
-      "description": "应急指挥调度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "event_id": {
-                        "type": "string",
-                        "description": "突发事件编号，定位调度对象"
-                },
-                "command_type": {
-                        "type": "string",
-                        "description": "指令类型（人员调度/物资调拨/现场封控）"
-                }
-        },
-        "required": [
-                "event_id",
-                "command_type"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "generate_approval_document",
-      "description": "生成审批文书",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "审批事项编号，关联待生成文书的审批单"
-                },
-                "doc_type": {
-                        "type": "string",
-                        "description": "文书类型（批复/许可证/不予许可决定书）"
-                }
-        },
-        "required": [
-                "approval_id",
-                "doc_type"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "generate_carbon_emission_report",
-      "description": "生成碳排放报告",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "报告主体的企业全称"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "报告年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name",
-                "year"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "handle_approval_counter_sign",
-      "description": "审批加签处理",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "需加签的审批事项编号"
-                },
-                "signer_name": {
-                        "type": "string",
-                        "description": "加签人姓名"
-                }
-        },
-        "required": [
-                "approval_id",
-                "signer_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "handle_approval_delegation",
-      "description": "审批委托代理",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "待委托的审批事项编号"
-                },
-                "delegate_to": {
-                        "type": "string",
-                        "description": "被委托代理人姓名"
-                }
-        },
-        "required": [
-                "approval_id",
-                "delegate_to"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "handle_approval_joint_sign",
-      "description": "审批会签处理",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "需会签的审批事项编号"
-                },
-                "departments": {
-                        "type": "string",
-                        "description": "可选，参与会签的部门列表"
-                }
-        },
-        "required": [
-                "approval_id"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "handle_approval_suspend_resume",
-      "description": "审批挂起恢复",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "目标审批事项编号"
-                },
-                "action": {
-                        "type": "string",
-                        "description": "操作类型（suspend 挂起 / resume 恢复）"
-                }
-        },
-        "required": [
-                "approval_id",
-                "action"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "handle_approval_transfer",
-      "description": "审批改签处理",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "待改签的审批事项编号"
-                },
-                "transfer_to": {
-                        "type": "string",
-                        "description": "改签目标办理人姓名"
-                }
-        },
-        "required": [
-                "approval_id",
-                "transfer_to"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "initiate_approval_workflow",
-      "description": "发起审批流程",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "workflow_type": {
-                        "type": "string",
-                        "description": "流程类型（许可/备案/处罚等）"
-                },
-                "applicant": {
-                        "type": "string",
-                        "description": "发起人姓名或单位"
-                },
-                "title": {
-                        "type": "string",
-                        "description": "可选，审批事项标题"
-                }
-        },
-        "required": [
-                "workflow_type",
-                "applicant"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "input_carbon_emission_data",
-      "description": "录入企业碳排放数据",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "数据所属企业全称"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "数据年度（YYYY）"
-                },
-                "emission_amount": {
-                        "type": "string",
-                        "description": "可选，排放量数值（吨CO2当量）"
-                }
-        },
-        "required": [
-                "company_name",
-                "year"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "manage_approval_archive",
-      "description": "审批归档管理",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "审批事项编号，定位归档案卷"
-                },
-                "action": {
-                        "type": "string",
-                        "description": "可选，操作类型（归档/借阅/移交）"
-                }
-        },
-        "required": [
-                "approval_id"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "manage_approval_template",
-      "description": "审批模板管理",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "template_name": {
-                        "type": "string",
-                        "description": "审批模板名称"
-                },
-                "action": {
-                        "type": "string",
-                        "description": "可选，操作类型（新增/修改/停用）"
-                }
-        },
-        "required": [
-                "template_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "manage_smart_heating",
-      "description": "智慧供热管理",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "community_name": {
-                        "type": "string",
-                        "description": "供热小区名称"
-                },
-                "action": {
-                        "type": "string",
-                        "description": "可选，操作类型（升温/降温/检修）"
-                },
-                "temperature": {
-                        "type": "string",
-                        "description": "可选，目标供水温度（℃）"
-                }
-        },
-        "required": [
-                "community_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "manage_smart_streetlight",
-      "description": "智慧路灯管理",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "road_name": {
-                        "type": "string",
-                        "description": "道路名称，定位路灯分组"
-                },
-                "action": {
-                        "type": "string",
-                        "description": "可选，操作类型（开灯/关灯/调光）"
-                },
-                "brightness": {
-                        "type": "string",
-                        "description": "可选，目标亮度百分比"
-                }
-        },
-        "required": [
-                "road_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "monitor_smart_water",
-      "description": "智慧水务监控",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "监控区域名称（城区/流域）"
-                },
-                "indicator": {
-                        "type": "string",
-                        "description": "可选，监控指标（水压/流量/水质）"
-                }
-        },
-        "required": [
-                "region"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "predict_carbon_emission",
-      "description": "碳排放预测分析",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "预测对象企业全称"
-                },
-                "target_year": {
-                        "type": "string",
-                        "description": "预测目标年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name",
-                "target_year"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_approval_progress",
-      "description": "查询审批进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "审批事项编号，查询其办理进度"
-                }
-        },
-        "required": [
-                "approval_id"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_approval_statistics",
-      "description": "查询审批统计分析",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "可选，统计区域"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "统计年度（YYYY）"
-                }
-        },
-        "required": [
-                "year"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_approval_warning",
-      "description": "查询审批时限预警",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "可选，预警查询区域"
-                },
-                "days": {
-                        "type": "string",
-                        "description": "可选，临期天数阈值（默认 3 天）"
-                }
-        }
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_building_permit",
-      "description": "查询建筑许可审批进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "project_name": {
-                        "type": "string",
-                        "description": "建设项目名称，查询其施工许可进度"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，项目所在地区"
-                }
-        },
-        "required": [
-                "project_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_business_registration",
-      "description": "查询企业工商登记信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询其工商登记信息"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_carbon_asset_account",
-      "description": "查询碳资产账户",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询其碳资产账户"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_carbon_monitoring_data",
-      "description": "查询碳排放监测数据",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询其碳监测数据"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，数据年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_carbon_quota",
-      "description": "查询碳排放配额",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询其碳配额"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，配额年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_driver_license",
-      "description": "查询驾驶证信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "id_number": {
-                        "type": "string",
-                        "description": "身份证号，查询驾驶证信息"
-                }
-        },
-        "required": [
-                "id_number"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_ecological_red_line",
-      "description": "查询生态红线保护区信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "地区名称，查询生态保护红线范围"
-                }
-        },
-        "required": [
-                "region"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_energy_consumption",
-      "description": "查询能源消耗统计",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询其能耗统计"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，统计年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_enterprise_credit_report",
-      "description": "查询企业信用报告",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询其信用报告"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_environmental_acceptance",
-      "description": "查询环保竣工验收信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "project_name": {
-                        "type": "string",
-                        "description": "建设项目名称，查询环保竣工验收信息"
-                }
-        },
-        "required": [
-                "project_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_environmental_emergency_response",
-      "description": "查询环境应急响应信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "地区名称，查询环境应急响应记录"
-                },
-                "level": {
-                        "type": "string",
-                        "description": "可选，响应级别（Ⅰ-Ⅳ级）"
-                }
-        },
-        "required": [
-                "region"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_environmental_facility_operation",
-      "description": "查询环保设施运行数据",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询其环保设施运行数据"
-                },
-                "facility_type": {
-                        "type": "string",
-                        "description": "可选，设施类型（废水/废气/固废）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_environmental_impact_approval",
-      "description": "查询环评审批进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "project_name": {
-                        "type": "string",
-                        "description": "建设项目名称，查询环评审批进度"
-                }
-        },
-        "required": [
-                "project_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_fire_approval",
-      "description": "查询消防审批进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "project_name": {
-                        "type": "string",
-                        "description": "工程名称，查询消防审批进度"
-                }
-        },
-        "required": [
-                "project_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_government_procurement",
-      "description": "查询政府采购招标信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "project_name": {
-                        "type": "string",
-                        "description": "可选，采购项目名称"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，采购地区"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，公告年度（YYYY）"
-                }
-        }
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_green_electricity_trade",
-      "description": "查询绿电交易",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "交易主体企业全称"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，交易年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_grid_management",
-      "description": "网格化管理查询",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "grid_id": {
-                        "type": "string",
-                        "description": "网格编号，查询网格化管理信息"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，网格所在地区"
-                }
-        },
-        "required": [
-                "grid_id"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_hazardous_waste_transfer",
-      "description": "查询危险废物转移联单",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询其危废转移联单"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，联单年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_household_registration",
-      "description": "查询户籍信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "id_number": {
-                        "type": "string",
-                        "description": "身份证号，查询户籍信息"
-                }
-        },
-        "required": [
-                "id_number"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_housing_fund_account",
-      "description": "查询公积金账户",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "缴存人姓名"
-                },
-                "id_number": {
-                        "type": "string",
-                        "description": "可选，身份证号，用于精确匹配"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_housing_fund_loan",
-      "description": "查询公积金贷款进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "借款人姓名，查询公积金贷款进度"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_id_card_progress",
-      "description": "查询身份证办理进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "id_number": {
-                        "type": "string",
-                        "description": "身份证号，查询身份证办理进度"
-                }
-        },
-        "required": [
-                "id_number"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_listing_guidance_progress",
-      "description": "查询上市辅导进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询上市辅导进度"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_medical_insurance_account",
-      "description": "查询医保账户",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "参保人姓名"
-                },
-                "id_number": {
-                        "type": "string",
-                        "description": "可选，身份证号"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_medical_settlement",
-      "description": "查询医保结算记录",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "参保人姓名，查询医保结算记录"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，结算年度（YYYY）"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_patent_application",
-      "description": "查询专利申请进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申请人（企业）全称"
-                },
-                "patent_name": {
-                        "type": "string",
-                        "description": "可选，专利名称，用于精确查询"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_property_registration",
-      "description": "查询不动产登记信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "property_address": {
-                        "type": "string",
-                        "description": "不动产坐落地址"
-                },
-                "owner_name": {
-                        "type": "string",
-                        "description": "可选，权利人姓名"
-                }
-        },
-        "required": [
-                "property_address"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_public_bicycle",
-      "description": "查询公共自行车",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "城区名称，查询公共自行车站点"
-                },
-                "station_name": {
-                        "type": "string",
-                        "description": "可选，站点名称"
-                }
-        },
-        "required": [
-                "region"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_public_parking",
-      "description": "查询公共停车位",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "城区名称，查询公共停车位分布"
-                }
-        },
-        "required": [
-                "region"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_radiation_monitoring",
-      "description": "查询辐射环境监测数据",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "地区名称，查询辐射环境监测数据"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，数据年度（YYYY）"
-                }
-        },
-        "required": [
-                "region"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_residence_permit",
-      "description": "查询居住证办理进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "id_number": {
-                        "type": "string",
-                        "description": "身份证号，查询居住证办理进度"
-                }
-        },
-        "required": [
-                "id_number"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_smart_city_enforcement",
-      "description": "智慧城管执法查询",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "城区名称，查询城管执法案件"
-                },
-                "case_type": {
-                        "type": "string",
-                        "description": "可选，案件类型（占道/违建/扬尘等）"
-                }
-        },
-        "required": [
-                "region"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_smart_community",
-      "description": "智慧社区服务查询",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "community_name": {
-                        "type": "string",
-                        "description": "社区名称，查询社区服务事项"
-                },
-                "service_type": {
-                        "type": "string",
-                        "description": "可选，服务类型（报修/缴费/活动）"
-                }
-        },
-        "required": [
-                "community_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_smart_education",
-      "description": "智慧教育服务查询",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "school_name": {
-                        "type": "string",
-                        "description": "可选，学校名称"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，所在地区"
-                },
-                "service_type": {
-                        "type": "string",
-                        "description": "可选，服务类型（招生/成绩/资助）"
-                }
-        }
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_smart_elderly_care",
-      "description": "智慧养老服务查询",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "community_name": {
-                        "type": "string",
-                        "description": "社区名称，查询养老服务资源"
-                },
-                "service_type": {
-                        "type": "string",
-                        "description": "可选，服务类型（助餐/护理/日间照料）"
-                }
-        },
-        "required": [
-                "community_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_snow_xueliang_video",
-      "description": "雪亮工程视频监控查询",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "地区名称，查询雪亮工程监控点位"
-                },
-                "camera_id": {
-                        "type": "string",
-                        "description": "可选，监控点位编号"
-                }
-        },
-        "required": [
-                "region"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_social_security_account",
-      "description": "查询社保账户信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "参保人姓名"
-                },
-                "id_number": {
-                        "type": "string",
-                        "description": "可选，身份证号"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_social_security_payment",
-      "description": "查询社保缴费记录",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "缴费单位全称"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，缴费年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_solid_waste_disposal",
-      "description": "查询固废处理监管信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "企业全称，查询其固废处理监管信息"
-                },
-                "waste_type": {
-                        "type": "string",
-                        "description": "可选，固废类别（一般工业固废/危废）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_tax_registration",
-      "description": "查询税务登记信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "纳税人名称，查询税务登记信息"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_trademark_registration",
-      "description": "查询商标注册进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "申请人（企业）全称"
-                },
-                "trademark_name": {
-                        "type": "string",
-                        "description": "可选，商标名称"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_traffic_violation",
-      "description": "查询交通违章记录",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "plate_number": {
-                        "type": "string",
-                        "description": "车牌号（如 赣B12345），查询违章记录"
-                }
-        },
-        "required": [
-                "plate_number"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_utility_bill",
-      "description": "查询水电气缴费记录",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "household_id": {
-                        "type": "string",
-                        "description": "户号，查询水电气缴费记录"
-                },
-                "utility_type": {
-                        "type": "string",
-                        "description": "可选，费用类型（水/电/气）"
-                }
-        },
-        "required": [
-                "household_id"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "query_vehicle_info",
-      "description": "查询车辆信息",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "plate_number": {
-                        "type": "string",
-                        "description": "车牌号，查询车辆登记信息"
-                }
-        },
-        "required": [
-                "plate_number"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "register_ccer_project",
-      "description": "CCER项目登记",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "project_name": {
-                        "type": "string",
-                        "description": "CCER 项目名称"
-                },
-                "company_name": {
-                        "type": "string",
-                        "description": "项目业主企业全称"
-                },
-                "reduction_amount": {
-                        "type": "string",
-                        "description": "可选，预计减排量（吨CO2当量）"
-                }
-        },
-        "required": [
-                "project_name",
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "register_fertility_service",
-      "description": "生育服务登记",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "applicant_name": {
-                        "type": "string",
-                        "description": "登记人姓名"
-                },
-                "spouse_name": {
-                        "type": "string",
-                        "description": "可选，配偶姓名"
-                },
-                "region": {
-                        "type": "string",
-                        "description": "可选，登记地区"
-                }
-        },
-        "required": [
-                "applicant_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "set_emission_reduction_target",
-      "description": "设定减排目标",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "目标企业全称"
-                },
-                "target_year": {
-                        "type": "string",
-                        "description": "目标年度（YYYY）"
-                },
-                "reduction_percent": {
-                        "type": "string",
-                        "description": "可选，减排目标百分比"
-                }
-        },
-        "required": [
-                "company_name",
-                "target_year"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "submit_approval_comment",
-      "description": "提交审批意见",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "approval_id": {
-                        "type": "string",
-                        "description": "审批事项编号"
-                },
-                "comment": {
-                        "type": "string",
-                        "description": "审批意见内容"
-                },
-                "reviewer": {
-                        "type": "string",
-                        "description": "可选，意见提交人姓名"
-                }
-        },
-        "required": [
-                "approval_id",
-                "comment"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "supervise_smart_gas",
-      "description": "智慧燃气监管",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "region": {
-                        "type": "string",
-                        "description": "监管区域名称"
-                },
-                "indicator": {
-                        "type": "string",
-                        "description": "可选，监管指标（管网压力/泄漏报警/用气量）"
-                }
-        },
-        "required": [
-                "region"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "track_carbon_neutrality_progress",
-      "description": "追踪碳中和进度",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "追踪对象企业全称"
-                },
-                "year": {
-                        "type": "string",
-                        "description": "可选，进度年度（YYYY）"
-                }
-        },
-        "required": [
-                "company_name"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "trade_carbon_emission_allowance",
-      "description": "碳排放权交易",
-      "parameters": {
-        "type": "object",
-        "properties": {
-                "company_name": {
-                        "type": "string",
-                        "description": "交易主体企业全称"
-                },
-                "amount": {
-                        "type": "string",
-                        "description": "交易数量（吨配额）"
-                },
-                "direction": {
-                        "type": "string",
-                        "description": "可选，交易方向（买入/卖出）"
-                }
-        },
-        "required": [
-                "company_name",
-                "amount"
-        ]
-}
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "save_document",
-      "description": "将生成的文书/清单/报告等产物真实写入工作区 deliverables 目录并落盘，返回真实文件绝对路径；只有拿到本工具返回的 path 后才允许向用户声称“已保存”",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "filename": {
-            "type": "string",
-            "description": "目标文件名（可含中文，如 现场检查清单.md）；不允许包含路径分隔符"
-          },
-          "content": {
-            "type": "string",
-            "description": "要写入文件的完整文本内容（UTF-8 编码落盘）"
-          },
-          "workspace": {
-            "type": "string",
-            "description": "可选，目标工作区名称或 slug；缺省使用当前激活工作区，无激活工作区时写入 default 工作区"
-          }
-        },
-        "required": [
-          "filename",
-          "content"
-        ]
-      }
-    }
-  }
+    {
+        "type": "function",
+        "function": {
+            "name": "query_air_quality",
+            "description": "query real-time air quality (CNEMC)",
+            "parameters": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_regulation",
+            "description": "search environmental regulations",
+            "parameters": {"type": "object", "properties": {"keyword": {"type": "string"}}, "required": ["keyword"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_emission_standard",
+            "description": "query emission standard limits",
+            "parameters": {
+                "type": "object",
+                "properties": {"standard_code": {"type": "string"}},
+                "required": ["standard_code"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_environmental_penalty",
+            "description": "query penalty records",
+            "parameters": {"type": "object", "properties": {"company": {"type": "string"}}, "required": ["company"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "calculate_carbon_emission",
+            "description": "calculate carbon emissions",
+            "parameters": {
+                "type": "object",
+                "properties": {"industry": {"type": "string"}, "energy_consumption": {"type": "string"}},
+                "required": ["industry", "energy_consumption"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_pollution_discharge_permit",
+            "description": "query discharge permit",
+            "parameters": {"type": "object", "properties": {"company_name": {"type": "string"}}, "required": ["company_name"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_environmental_impact_assessment",
+            "description": "query EIA info",
+            "parameters": {"type": "object", "properties": {"project_name": {"type": "string"}}, "required": ["project_name"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_water_quality",
+            "description": "query water quality",
+            "parameters": {"type": "object", "properties": {"water_body": {"type": "string"}}, "required": ["water_body"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_noise_monitoring",
+            "description": "query noise data",
+            "parameters": {"type": "object", "properties": {"location": {"type": "string"}}, "required": ["location"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "vision_analyze",
+            "description": "analyze image content",
+            "parameters": {"type": "object", "properties": {"image_path": {"type": "string"}}, "required": ["image_path"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ocr_extract",
+            "description": "OCR text extraction",
+            "parameters": {"type": "object", "properties": {"image_path": {"type": "string"}}, "required": ["image_path"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_document",
+            "description": "read local plain-text document by path (txt/md/csv/log); PDF/DOCX not supported",
+            "parameters": {"type": "object", "properties": {"file_path": {"type": "string"}}, "required": ["file_path"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "execute_code",
+            "description": "execute code in sandbox",
+            "parameters": {
+                "type": "object",
+                "properties": {"code": {"type": "string"}, "language": {"type": "string"}},
+                "required": ["code", "language"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_industrial_carbon_emission",
+            "description": "工业碳排放分析",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "企业全称，用于匹配其工业碳排放台账"},
+                    "year": {"type": "string", "description": "分析年度（YYYY），定位对应年度排放数据"},
+                    "industry": {"type": "string", "description": "可选，行业类别（钢铁/化工/电力等），用于同行业对标"},
+                },
+                "required": ["company_name", "year"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_approval_digital_signature",
+            "description": "审批电子签章",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "approval_id": {"type": "string", "description": "审批事项编号，定位需签章的审批单"},
+                    "signer_name": {"type": "string", "description": "签章人姓名，用于核验签章权限"},
+                },
+                "required": ["approval_id", "signer_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_business_license",
+            "description": "办理营业执照",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "拟注册企业名称，用于核名与登记"},
+                    "legal_person": {"type": "string", "description": "法定代表人姓名"},
+                    "region": {"type": "string", "description": "可选，登记机关所在地区（如 赣州市）"},
+                },
+                "required": ["company_name", "legal_person"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_carbon_verification",
+            "description": "申请碳核查",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申请碳核查的企业全称"},
+                    "year": {"type": "string", "description": "核查年度（YYYY）"},
+                },
+                "required": ["company_name", "year"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_cleaner_production_audit",
+            "description": "申请清洁生产审核",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申请清洁生产审核的企业全称"},
+                    "industry": {"type": "string", "description": "可选，所属行业，用于匹配审核技术规范"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_disability_subsidy",
+            "description": "申请残疾人补贴",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "申请人姓名"},
+                    "disability_level": {"type": "string", "description": "可选，残疾等级（一至四级），用于核定补贴标准"},
+                    "region": {"type": "string", "description": "可选，户籍所在地区"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_drug_operation_license",
+            "description": "申请药品经营许可证",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申请药品经营许可的企业全称"},
+                    "region": {"type": "string", "description": "可选，经营场所所在地区"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_elderly_benefit_card",
+            "description": "申请老年人优待证",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "老年人姓名"},
+                    "region": {"type": "string", "description": "可选，常住地区，用于确定发卡机构"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_food_business_license",
+            "description": "申请食品经营许可证",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申请食品经营许可的主体名称"},
+                    "business_type": {"type": "string", "description": "可选，经营业态（餐饮/销售/食堂等）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_high_tech_enterprise",
+            "description": "申请高新技术企业认定",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申报高新技术企业认定的企业全称"},
+                    "year": {"type": "string", "description": "可选，申报批次年度（YYYY）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_housing_fund_account_enterprise",
+            "description": "办理公积金开户",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "办理公积金开户的企业全称"},
+                    "region": {"type": "string", "description": "可选，公积金管理中心所在城市"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_housing_fund_withdrawal",
+            "description": "申请公积金提取",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "提取人姓名"},
+                    "reason": {"type": "string", "description": "可选，提取事由（购房/租房/退休等）"},
+                    "amount": {"type": "string", "description": "可选，拟提取金额（元）"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_intellectual_property",
+            "description": "申请知识产权保护",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申请知识产权保护的主体名称"},
+                    "ip_type": {"type": "string", "description": "可选，知识产权类型（专利/商标/著作权）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_invoice",
+            "description": "申领发票",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申领发票的纳税人名称"},
+                    "invoice_type": {"type": "string", "description": "可选，发票种类（增值税专用/普通发票）"},
+                    "amount": {"type": "string", "description": "可选，申领数量（份）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_low_income_assistance",
+            "description": "申请低保救助",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "低保申请人姓名"},
+                    "region": {"type": "string", "description": "可选，户籍所在地，用于确定受理街道"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_medical_device_license",
+            "description": "申请医疗器械经营许可证",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申请医疗器械经营许可的企业全称"},
+                    "device_class": {"type": "string", "description": "可选，器械类别（二类/三类）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_social_security_account",
+            "description": "办理社保开户",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "办理社保开户的企业全称"},
+                    "region": {"type": "string", "description": "可选，参保登记地"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_tech_project",
+            "description": "申报科技项目",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "project_name": {"type": "string", "description": "申报科技项目的名称"},
+                    "company_name": {"type": "string", "description": "可选，申报单位全称"},
+                    "year": {"type": "string", "description": "可选，申报年度（YYYY）"},
+                },
+                "required": ["project_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "book_marriage_registration",
+            "description": "预约婚姻登记",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "预约人姓名"},
+                    "partner_name": {"type": "string", "description": "可选，配偶姓名"},
+                    "date": {"type": "string", "description": "可选，预约登记日期（YYYY-MM-DD）"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "book_smart_medical",
+            "description": "智慧医疗预约",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "patient_name": {"type": "string", "description": "就诊人姓名"},
+                    "hospital": {"type": "string", "description": "可选，目标医院名称"},
+                    "department": {"type": "string", "description": "可选，挂号科室"},
+                    "date": {"type": "string", "description": "可选，预约日期（YYYY-MM-DD）"},
+                },
+                "required": ["patient_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "calculate_carbon_footprint",
+            "description": "计算碳足迹",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "核算主体的企业全称"},
+                    "year": {"type": "string", "description": "核算年度（YYYY）"},
+                    "scope": {"type": "string", "description": "可选，核算边界（范围一/二/三）"},
+                },
+                "required": ["company_name", "year"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "configure_approval_permission",
+            "description": "配置审批权限",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "role_name": {"type": "string", "description": "待配置的角色名称"},
+                    "permission_level": {"type": "string", "description": "权限级别（查看/办理/审批/管理）"},
+                },
+                "required": ["role_name", "permission_level"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "control_smart_traffic_light",
+            "description": "智慧交通信号灯控制",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "intersection_id": {"type": "string", "description": "路口编号，定位受控信号灯"},
+                    "action": {"type": "string", "description": "控制动作（延长绿灯/强制红灯/恢复自动）"},
+                },
+                "required": ["intersection_id", "action"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "detect_soil_pollution",
+            "description": "土壤污染检测",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "site_name": {"type": "string", "description": "地块名称或编号，定位检测场地"},
+                    "region": {"type": "string", "description": "可选，地块所在地区"},
+                    "pollutant": {"type": "string", "description": "可选，目标污染物（重金属/VOCs 等）"},
+                },
+                "required": ["site_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "dispatch_emergency_command",
+            "description": "应急指挥调度",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "event_id": {"type": "string", "description": "突发事件编号，定位调度对象"},
+                    "command_type": {"type": "string", "description": "指令类型（人员调度/物资调拨/现场封控）"},
+                },
+                "required": ["event_id", "command_type"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_approval_document",
+            "description": "生成审批文书",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "approval_id": {"type": "string", "description": "审批事项编号，关联待生成文书的审批单"},
+                    "doc_type": {"type": "string", "description": "文书类型（批复/许可证/不予许可决定书）"},
+                },
+                "required": ["approval_id", "doc_type"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_carbon_emission_report",
+            "description": "生成碳排放报告",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "报告主体的企业全称"},
+                    "year": {"type": "string", "description": "报告年度（YYYY）"},
+                },
+                "required": ["company_name", "year"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "handle_approval_counter_sign",
+            "description": "审批加签处理",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "approval_id": {"type": "string", "description": "需加签的审批事项编号"},
+                    "signer_name": {"type": "string", "description": "加签人姓名"},
+                },
+                "required": ["approval_id", "signer_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "handle_approval_delegation",
+            "description": "审批委托代理",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "approval_id": {"type": "string", "description": "待委托的审批事项编号"},
+                    "delegate_to": {"type": "string", "description": "被委托代理人姓名"},
+                },
+                "required": ["approval_id", "delegate_to"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "handle_approval_joint_sign",
+            "description": "审批会签处理",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "approval_id": {"type": "string", "description": "需会签的审批事项编号"},
+                    "departments": {"type": "string", "description": "可选，参与会签的部门列表"},
+                },
+                "required": ["approval_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "handle_approval_suspend_resume",
+            "description": "审批挂起恢复",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "approval_id": {"type": "string", "description": "目标审批事项编号"},
+                    "action": {"type": "string", "description": "操作类型（suspend 挂起 / resume 恢复）"},
+                },
+                "required": ["approval_id", "action"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "handle_approval_transfer",
+            "description": "审批改签处理",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "approval_id": {"type": "string", "description": "待改签的审批事项编号"},
+                    "transfer_to": {"type": "string", "description": "改签目标办理人姓名"},
+                },
+                "required": ["approval_id", "transfer_to"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "initiate_approval_workflow",
+            "description": "发起审批流程",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "workflow_type": {"type": "string", "description": "流程类型（许可/备案/处罚等）"},
+                    "applicant": {"type": "string", "description": "发起人姓名或单位"},
+                    "title": {"type": "string", "description": "可选，审批事项标题"},
+                },
+                "required": ["workflow_type", "applicant"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "input_carbon_emission_data",
+            "description": "录入企业碳排放数据",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "数据所属企业全称"},
+                    "year": {"type": "string", "description": "数据年度（YYYY）"},
+                    "emission_amount": {"type": "string", "description": "可选，排放量数值（吨CO2当量）"},
+                },
+                "required": ["company_name", "year"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "manage_approval_archive",
+            "description": "审批归档管理",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "approval_id": {"type": "string", "description": "审批事项编号，定位归档案卷"},
+                    "action": {"type": "string", "description": "可选，操作类型（归档/借阅/移交）"},
+                },
+                "required": ["approval_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "manage_approval_template",
+            "description": "审批模板管理",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "template_name": {"type": "string", "description": "审批模板名称"},
+                    "action": {"type": "string", "description": "可选，操作类型（新增/修改/停用）"},
+                },
+                "required": ["template_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "manage_smart_heating",
+            "description": "智慧供热管理",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "community_name": {"type": "string", "description": "供热小区名称"},
+                    "action": {"type": "string", "description": "可选，操作类型（升温/降温/检修）"},
+                    "temperature": {"type": "string", "description": "可选，目标供水温度（℃）"},
+                },
+                "required": ["community_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "manage_smart_streetlight",
+            "description": "智慧路灯管理",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "road_name": {"type": "string", "description": "道路名称，定位路灯分组"},
+                    "action": {"type": "string", "description": "可选，操作类型（开灯/关灯/调光）"},
+                    "brightness": {"type": "string", "description": "可选，目标亮度百分比"},
+                },
+                "required": ["road_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "monitor_smart_water",
+            "description": "智慧水务监控",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "监控区域名称（城区/流域）"},
+                    "indicator": {"type": "string", "description": "可选，监控指标（水压/流量/水质）"},
+                },
+                "required": ["region"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "predict_carbon_emission",
+            "description": "碳排放预测分析",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "预测对象企业全称"},
+                    "target_year": {"type": "string", "description": "预测目标年度（YYYY）"},
+                },
+                "required": ["company_name", "target_year"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_approval_progress",
+            "description": "查询审批进度",
+            "parameters": {
+                "type": "object",
+                "properties": {"approval_id": {"type": "string", "description": "审批事项编号，查询其办理进度"}},
+                "required": ["approval_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_approval_statistics",
+            "description": "查询审批统计分析",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "可选，统计区域"},
+                    "year": {"type": "string", "description": "统计年度（YYYY）"},
+                },
+                "required": ["year"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_approval_warning",
+            "description": "查询审批时限预警",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "可选，预警查询区域"},
+                    "days": {"type": "string", "description": "可选，临期天数阈值（默认 3 天）"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_building_permit",
+            "description": "查询建筑许可审批进度",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "project_name": {"type": "string", "description": "建设项目名称，查询其施工许可进度"},
+                    "region": {"type": "string", "description": "可选，项目所在地区"},
+                },
+                "required": ["project_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_business_registration",
+            "description": "查询企业工商登记信息",
+            "parameters": {
+                "type": "object",
+                "properties": {"company_name": {"type": "string", "description": "企业全称，查询其工商登记信息"}},
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_carbon_asset_account",
+            "description": "查询碳资产账户",
+            "parameters": {
+                "type": "object",
+                "properties": {"company_name": {"type": "string", "description": "企业全称，查询其碳资产账户"}},
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_carbon_monitoring_data",
+            "description": "查询碳排放监测数据",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "企业全称，查询其碳监测数据"},
+                    "year": {"type": "string", "description": "可选，数据年度（YYYY）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_carbon_quota",
+            "description": "查询碳排放配额",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "企业全称，查询其碳配额"},
+                    "year": {"type": "string", "description": "可选，配额年度（YYYY）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_driver_license",
+            "description": "查询驾驶证信息",
+            "parameters": {
+                "type": "object",
+                "properties": {"id_number": {"type": "string", "description": "身份证号，查询驾驶证信息"}},
+                "required": ["id_number"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_ecological_red_line",
+            "description": "查询生态红线保护区信息",
+            "parameters": {
+                "type": "object",
+                "properties": {"region": {"type": "string", "description": "地区名称，查询生态保护红线范围"}},
+                "required": ["region"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_energy_consumption",
+            "description": "查询能源消耗统计",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "企业全称，查询其能耗统计"},
+                    "year": {"type": "string", "description": "可选，统计年度（YYYY）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_enterprise_credit_report",
+            "description": "查询企业信用报告",
+            "parameters": {
+                "type": "object",
+                "properties": {"company_name": {"type": "string", "description": "企业全称，查询其信用报告"}},
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_environmental_acceptance",
+            "description": "查询环保竣工验收信息",
+            "parameters": {
+                "type": "object",
+                "properties": {"project_name": {"type": "string", "description": "建设项目名称，查询环保竣工验收信息"}},
+                "required": ["project_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_environmental_emergency_response",
+            "description": "查询环境应急响应信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "地区名称，查询环境应急响应记录"},
+                    "level": {"type": "string", "description": "可选，响应级别（Ⅰ-Ⅳ级）"},
+                },
+                "required": ["region"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_environmental_facility_operation",
+            "description": "查询环保设施运行数据",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "企业全称，查询其环保设施运行数据"},
+                    "facility_type": {"type": "string", "description": "可选，设施类型（废水/废气/固废）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_environmental_impact_approval",
+            "description": "查询环评审批进度",
+            "parameters": {
+                "type": "object",
+                "properties": {"project_name": {"type": "string", "description": "建设项目名称，查询环评审批进度"}},
+                "required": ["project_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_fire_approval",
+            "description": "查询消防审批进度",
+            "parameters": {
+                "type": "object",
+                "properties": {"project_name": {"type": "string", "description": "工程名称，查询消防审批进度"}},
+                "required": ["project_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_government_procurement",
+            "description": "查询政府采购招标信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "project_name": {"type": "string", "description": "可选，采购项目名称"},
+                    "region": {"type": "string", "description": "可选，采购地区"},
+                    "year": {"type": "string", "description": "可选，公告年度（YYYY）"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_green_electricity_trade",
+            "description": "查询绿电交易",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "交易主体企业全称"},
+                    "year": {"type": "string", "description": "可选，交易年度（YYYY）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_grid_management",
+            "description": "网格化管理查询",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "grid_id": {"type": "string", "description": "网格编号，查询网格化管理信息"},
+                    "region": {"type": "string", "description": "可选，网格所在地区"},
+                },
+                "required": ["grid_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_hazardous_waste_transfer",
+            "description": "查询危险废物转移联单",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "企业全称，查询其危废转移联单"},
+                    "year": {"type": "string", "description": "可选，联单年度（YYYY）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_household_registration",
+            "description": "查询户籍信息",
+            "parameters": {
+                "type": "object",
+                "properties": {"id_number": {"type": "string", "description": "身份证号，查询户籍信息"}},
+                "required": ["id_number"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_housing_fund_account",
+            "description": "查询公积金账户",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "缴存人姓名"},
+                    "id_number": {"type": "string", "description": "可选，身份证号，用于精确匹配"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_housing_fund_loan",
+            "description": "查询公积金贷款进度",
+            "parameters": {
+                "type": "object",
+                "properties": {"applicant_name": {"type": "string", "description": "借款人姓名，查询公积金贷款进度"}},
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_id_card_progress",
+            "description": "查询身份证办理进度",
+            "parameters": {
+                "type": "object",
+                "properties": {"id_number": {"type": "string", "description": "身份证号，查询身份证办理进度"}},
+                "required": ["id_number"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_listing_guidance_progress",
+            "description": "查询上市辅导进度",
+            "parameters": {
+                "type": "object",
+                "properties": {"company_name": {"type": "string", "description": "企业全称，查询上市辅导进度"}},
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_medical_insurance_account",
+            "description": "查询医保账户",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "参保人姓名"},
+                    "id_number": {"type": "string", "description": "可选，身份证号"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_medical_settlement",
+            "description": "查询医保结算记录",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "参保人姓名，查询医保结算记录"},
+                    "year": {"type": "string", "description": "可选，结算年度（YYYY）"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_patent_application",
+            "description": "查询专利申请进度",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申请人（企业）全称"},
+                    "patent_name": {"type": "string", "description": "可选，专利名称，用于精确查询"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_property_registration",
+            "description": "查询不动产登记信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "property_address": {"type": "string", "description": "不动产坐落地址"},
+                    "owner_name": {"type": "string", "description": "可选，权利人姓名"},
+                },
+                "required": ["property_address"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_public_bicycle",
+            "description": "查询公共自行车",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "城区名称，查询公共自行车站点"},
+                    "station_name": {"type": "string", "description": "可选，站点名称"},
+                },
+                "required": ["region"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_public_parking",
+            "description": "查询公共停车位",
+            "parameters": {
+                "type": "object",
+                "properties": {"region": {"type": "string", "description": "城区名称，查询公共停车位分布"}},
+                "required": ["region"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_radiation_monitoring",
+            "description": "查询辐射环境监测数据",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "地区名称，查询辐射环境监测数据"},
+                    "year": {"type": "string", "description": "可选，数据年度（YYYY）"},
+                },
+                "required": ["region"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_residence_permit",
+            "description": "查询居住证办理进度",
+            "parameters": {
+                "type": "object",
+                "properties": {"id_number": {"type": "string", "description": "身份证号，查询居住证办理进度"}},
+                "required": ["id_number"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_smart_city_enforcement",
+            "description": "智慧城管执法查询",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "城区名称，查询城管执法案件"},
+                    "case_type": {"type": "string", "description": "可选，案件类型（占道/违建/扬尘等）"},
+                },
+                "required": ["region"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_smart_community",
+            "description": "智慧社区服务查询",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "community_name": {"type": "string", "description": "社区名称，查询社区服务事项"},
+                    "service_type": {"type": "string", "description": "可选，服务类型（报修/缴费/活动）"},
+                },
+                "required": ["community_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_smart_education",
+            "description": "智慧教育服务查询",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "school_name": {"type": "string", "description": "可选，学校名称"},
+                    "region": {"type": "string", "description": "可选，所在地区"},
+                    "service_type": {"type": "string", "description": "可选，服务类型（招生/成绩/资助）"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_smart_elderly_care",
+            "description": "智慧养老服务查询",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "community_name": {"type": "string", "description": "社区名称，查询养老服务资源"},
+                    "service_type": {"type": "string", "description": "可选，服务类型（助餐/护理/日间照料）"},
+                },
+                "required": ["community_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_snow_xueliang_video",
+            "description": "雪亮工程视频监控查询",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "地区名称，查询雪亮工程监控点位"},
+                    "camera_id": {"type": "string", "description": "可选，监控点位编号"},
+                },
+                "required": ["region"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_social_security_account",
+            "description": "查询社保账户信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "参保人姓名"},
+                    "id_number": {"type": "string", "description": "可选，身份证号"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_social_security_payment",
+            "description": "查询社保缴费记录",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "缴费单位全称"},
+                    "year": {"type": "string", "description": "可选，缴费年度（YYYY）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_solid_waste_disposal",
+            "description": "查询固废处理监管信息",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "企业全称，查询其固废处理监管信息"},
+                    "waste_type": {"type": "string", "description": "可选，固废类别（一般工业固废/危废）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_tax_registration",
+            "description": "查询税务登记信息",
+            "parameters": {
+                "type": "object",
+                "properties": {"company_name": {"type": "string", "description": "纳税人名称，查询税务登记信息"}},
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_trademark_registration",
+            "description": "查询商标注册进度",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "申请人（企业）全称"},
+                    "trademark_name": {"type": "string", "description": "可选，商标名称"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_traffic_violation",
+            "description": "查询交通违章记录",
+            "parameters": {
+                "type": "object",
+                "properties": {"plate_number": {"type": "string", "description": "车牌号（如 赣B12345），查询违章记录"}},
+                "required": ["plate_number"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_utility_bill",
+            "description": "查询水电气缴费记录",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "household_id": {"type": "string", "description": "户号，查询水电气缴费记录"},
+                    "utility_type": {"type": "string", "description": "可选，费用类型（水/电/气）"},
+                },
+                "required": ["household_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_vehicle_info",
+            "description": "查询车辆信息",
+            "parameters": {
+                "type": "object",
+                "properties": {"plate_number": {"type": "string", "description": "车牌号，查询车辆登记信息"}},
+                "required": ["plate_number"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "register_ccer_project",
+            "description": "CCER项目登记",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "project_name": {"type": "string", "description": "CCER 项目名称"},
+                    "company_name": {"type": "string", "description": "项目业主企业全称"},
+                    "reduction_amount": {"type": "string", "description": "可选，预计减排量（吨CO2当量）"},
+                },
+                "required": ["project_name", "company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "register_fertility_service",
+            "description": "生育服务登记",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "applicant_name": {"type": "string", "description": "登记人姓名"},
+                    "spouse_name": {"type": "string", "description": "可选，配偶姓名"},
+                    "region": {"type": "string", "description": "可选，登记地区"},
+                },
+                "required": ["applicant_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_emission_reduction_target",
+            "description": "设定减排目标",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "目标企业全称"},
+                    "target_year": {"type": "string", "description": "目标年度（YYYY）"},
+                    "reduction_percent": {"type": "string", "description": "可选，减排目标百分比"},
+                },
+                "required": ["company_name", "target_year"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "submit_approval_comment",
+            "description": "提交审批意见",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "approval_id": {"type": "string", "description": "审批事项编号"},
+                    "comment": {"type": "string", "description": "审批意见内容"},
+                    "reviewer": {"type": "string", "description": "可选，意见提交人姓名"},
+                },
+                "required": ["approval_id", "comment"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "supervise_smart_gas",
+            "description": "智慧燃气监管",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "监管区域名称"},
+                    "indicator": {"type": "string", "description": "可选，监管指标（管网压力/泄漏报警/用气量）"},
+                },
+                "required": ["region"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "track_carbon_neutrality_progress",
+            "description": "追踪碳中和进度",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "追踪对象企业全称"},
+                    "year": {"type": "string", "description": "可选，进度年度（YYYY）"},
+                },
+                "required": ["company_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "trade_carbon_emission_allowance",
+            "description": "碳排放权交易",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "company_name": {"type": "string", "description": "交易主体企业全称"},
+                    "amount": {"type": "string", "description": "交易数量（吨配额）"},
+                    "direction": {"type": "string", "description": "可选，交易方向（买入/卖出）"},
+                },
+                "required": ["company_name", "amount"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_document",
+            "description": "将生成的文书/清单/报告等产物真实写入工作区 deliverables 目录并落盘，返回真实文件绝对路径；只有拿到本工具返回的 path 后才允许向用户声称“已保存”",  # noqa: E501
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "目标文件名（可含中文，如 现场检查清单.md）；不允许包含路径分隔符",
+                    },
+                    "content": {"type": "string", "description": "要写入文件的完整文本内容（UTF-8 编码落盘）"},
+                    "workspace": {
+                        "type": "string",
+                        "description": "可选，目标工作区名称或 slug；缺省使用当前激活工作区，无激活工作区时写入 default 工作区",
+                    },
+                },
+                "required": ["filename", "content"],
+            },
+        },
+    },
 ]
+
 
 # ── 内置工具 handler（执行层）─────────────────────────────
 @tool("query_air_quality")
 def _h_query_air_quality(city: str, station: str = ""):
     try:
         from agent_core.cnemc import get_city_realtime_air_quality
+
         d = get_city_realtime_air_quality(city)
-        return {"city": d["city"], "aqi": d["aqi"], "level": d["level"],
-                "pm25": d["pm25"], "pm10": d["pm10"],
-                "o3": d.get("o3"), "no2": d.get("no2"), "so2": d.get("so2"),
-                "co": d.get("co"), "source": "CNEMC"}
+        return {
+            "city": d["city"],
+            "aqi": d["aqi"],
+            "level": d["level"],
+            "pm25": d["pm25"],
+            "pm10": d["pm10"],
+            "o3": d.get("o3"),
+            "no2": d.get("no2"),
+            "so2": d.get("so2"),
+            "co": d.get("co"),
+            "source": "CNEMC",
+        }
     except Exception as e:
         return {"city": city, "aqi": None, "level": "unavailable", "error": str(e)}
+
 
 @tool("search_regulation")
 def _h_search_regulation(keyword: str, law_name: str = ""):
@@ -2705,13 +1782,16 @@ def _h_search_regulation(keyword: str, law_name: str = ""):
         "results": [{"codex": h.get("file", ""), "text": h.get("text", "")[:200]} for h in hits],
     }
 
+
 @tool("get_emission_standard")
 def _h_get_emission_standard(standard_code: str, pollutant: str = ""):
     return {"standard": standard_code, "pollutant": pollutant or "综合"}
 
+
 @tool("query_environmental_penalty")
 def _h_query_environmental_penalty(company: str):
     return {"company": company, "total": 0}
+
 
 @tool("calculate_carbon_emission")
 def _h_calculate_carbon_emission(industry: str, energy_consumption: str):
@@ -2722,14 +1802,15 @@ def _h_calculate_carbon_emission(industry: str, energy_consumption: str):
     f = {"钢铁": 1.8, "化工": 2.1, "电力": 0.85, "水泥": 1.5}.get(industry, 1.0)
     return {"industry": industry, "emission_t": round(ec * f, 2)}
 
+
 @tool("query_pollution_discharge_permit")
 def _h_query_permit(company_name: str):
     return {"company": company_name}
 
+
 @tool("query_water_quality")
 def _h_query_water_quality(water_body: str, section: str = ""):
     return {"water_body": water_body, "section": section}
-
 
 
 @tool("analyze_document")
@@ -2737,6 +1818,7 @@ def _h_analyze_document(file_path: str):
     """真实读取本地文档：纯文本(txt/md/csv/log/json) + PDF(PyMuPDF) + DOCX(原生解析)。
     权限级别 L1（analyze_ 前缀，只读）。内容截断 20000 字符防撑爆上下文。"""
     from pathlib import Path as _P
+
     p = _P(str(file_path or "")).expanduser()
     if not p.is_file():
         return {"error": f"file not found: {file_path}"}
@@ -2754,27 +1836,30 @@ def _h_analyze_document(file_path: str):
             doc.close()
         except Exception as e:  # noqa: BLE001
             return {"error": f"PDF 解析失败: {e}", "file_path": str(p)}
-        return {"file_path": str(p), "kind": "pdf", "pages": len(pages),
-                "chars": len(content), "truncated": len(content) > cap,
-                "content": content[:cap]}
+        return {
+            "file_path": str(p),
+            "kind": "pdf",
+            "pages": len(pages),
+            "chars": len(content),
+            "truncated": len(content) > cap,
+            "content": content[:cap],
+        }
     if suffix in (".docx",):
         return _read_docx(p, cap)
     if suffix == ".doc":
-        return {"error": ".doc（旧二进制格式）不支持，请另存为 .docx 或 .txt",
-                "file_path": str(p)}
+        return {"error": ".doc（旧二进制格式）不支持，请另存为 .docx 或 .txt", "file_path": str(p)}
     try:
         content = p.read_text(encoding="utf-8", errors="replace")
     except Exception as e:  # noqa: BLE001
         return {"error": str(e), "file_path": str(p)}
-    return {"file_path": str(p), "chars": len(content),
-            "truncated": len(content) > cap, "content": content[:cap]}
+    return {"file_path": str(p), "chars": len(content), "truncated": len(content) > cap, "content": content[:cap]}
 
 
 def _read_docx(p, cap: int) -> dict:
     """原生解析 .docx（zip + word/document.xml），无需 python-docx 依赖。"""
     import zipfile
-    import re as _re
     from xml.etree import ElementTree as _ET
+
     try:
         with zipfile.ZipFile(str(p)) as z:
             xml = z.read("word/document.xml")
@@ -2792,19 +1877,23 @@ def _read_docx(p, cap: int) -> dict:
         content = "\n".join(paras)
     except Exception as e:  # noqa: BLE001
         return {"error": f"DOCX 解析失败: {e}", "file_path": str(p)}
-    return {"file_path": str(p), "kind": "docx",
-            "chars": len(content), "truncated": len(content) > cap,
-            "content": content[:cap]}
-
+    return {
+        "file_path": str(p),
+        "kind": "docx",
+        "chars": len(content),
+        "truncated": len(content) > cap,
+        "content": content[:cap],
+    }
 
 
 @tool("save_document")
 def _h_save_document(filename: str, content: str, workspace: str = ""):
     """真实落盘：写入 <workspace>/deliverables/<filename>，返回真实路径。
     权限级别 L2（save_ 前缀，本地安全区写入）。文件名做路径穿越防护。"""
-    import re as _re
     from pathlib import Path as _P
+
     from agent_core.workspace import get_workspace_manager, slugify
+
     fname = _P(str(filename or "")).name  # 剥离任何目录成分，防路径穿越
     if not fname or fname in (".", ".."):
         return {"error": "invalid filename", "saved": False}
@@ -2837,17 +1926,20 @@ def _h_save_document(filename: str, content: str, workspace: str = ""):
         ws.add_event("deliverable", f"save_document -> {target.name} ({target.stat().st_size}B)")
     except Exception:
         pass
-    return {"saved": True, "path": str(target.resolve()),
-            "workspace": ws.meta.get("slug", ws.path.name),
-            "bytes": target.stat().st_size}
+    return {
+        "saved": True,
+        "path": str(target.resolve()),
+        "workspace": ws.meta.get("slug", ws.path.name),
+        "bytes": target.stat().st_size,
+    }
 
 
 def _gen_docx(md_text: str, target: str) -> None:
     """原生生成 .docx（zip + OOXML，无需 python-docx 依赖）。
     支持：标题(#)/无序列表(-)/表格(|)/加粗(**)/普通段落。"""
+    import re as _re
     import zipfile
     from xml.sax.saxutils import escape as _esc
-    import re as _re
 
     def _inline(text: str) -> str:
         # **加粗** → <w:r><w:rPr><w:b/></w:rPr><w:t>
@@ -2857,7 +1949,7 @@ def _gen_docx(md_text: str, target: str) -> None:
                 parts.append(f'<w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">{_esc(seg)}</w:t></w:r>')
             elif seg:
                 parts.append(f'<w:r><w:t xml:space="preserve">{_esc(seg)}</w:t></w:r>')
-        return "".join(parts) or '<w:r><w:t></w:t></w:r>'
+        return "".join(parts) or "<w:r><w:t></w:t></w:r>"
 
     body = []
     table_buf: list[list[str]] = []
@@ -2869,16 +1961,15 @@ def _gen_docx(md_text: str, target: str) -> None:
             return
         rows_xml = []
         for ri, row in enumerate(table_buf):
-            cells = "".join(
-                f'<w:tc><w:p>{_inline(c)}</w:p></w:tc>' for c in row)
-            rows_xml.append(
-                f'<w:tr><w:trPr>{"<w:tblHeader/>" if ri == 0 else ""}</w:trPr>{cells}</w:tr>')
+            cells = "".join(f"<w:tc><w:p>{_inline(c)}</w:p></w:tc>" for c in row)
+            rows_xml.append(f"<w:tr><w:trPr>{'<w:tblHeader/>' if ri == 0 else ''}</w:trPr>{cells}</w:tr>")
         body.append(
             '<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders>'
             '<w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/>'
             '<w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/>'
             '<w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/>'
-            '</w:tblBorders></w:tblPr>' + "".join(rows_xml) + '</w:tbl>')
+            "</w:tblBorders></w:tblPr>" + "".join(rows_xml) + "</w:tbl>"
+        )
         table_buf = []
         in_table = False
 
@@ -2911,22 +2002,21 @@ def _gen_docx(md_text: str, target: str) -> None:
     document = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-        '<w:body>' + "".join(body) +
-        '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/></w:sectPr></w:body></w:document>'
+        "<w:body>" + "".join(body) + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/></w:sectPr></w:body></w:document>'
     )
     content_types = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
         '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
         '<Default Extension="xml" ContentType="application/xml"/>'
-        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-        '</Types>'
+        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'  # noqa: E501
+        "</Types>"
     )
     rels = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
-        '</Relationships>'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'  # noqa: E501
+        "</Relationships>"
     )
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("[Content_Types].xml", content_types)
@@ -2934,20 +2024,38 @@ def _gen_docx(md_text: str, target: str) -> None:
         z.writestr("word/document.xml", document)
 
 
-
 # ── Schema 质量增强：批量补齐描述（≥20字符）与参数说明 ─────────────
 _CATEGORY_BY_PREFIX = [
-    ("query_", "数据检索查询"), ("apply_", "在线申办受理"), ("book_", "预约办理"),
-    ("handle_", "审批流程办理"), ("manage_", "配置管理"), ("monitor_", "运行监控"),
-    ("control_", "设备控制"), ("calculate_", "指标核算"), ("generate_", "文书报告生成"),
-    ("register_", "登记备案"), ("predict_", "预测分析"), ("track_", "进度追踪"),
-    ("trade_", "交易办理"), ("detect_", "检测识别"), ("dispatch_", "指挥调度"),
-    ("configure_", "参数配置"), ("input_", "数据录入"), ("submit_", "意见提交"),
-    ("supervise_", "监督管理"), ("set_", "目标设定"), ("analyze_", "分析解析"),
-    ("search_", "检索查询"), ("get_", "数据获取"), ("vision_", "图像识别"),
-    ("ocr_", "文字识别"), ("execute_", "沙箱执行"), ("save_", "本地产物落盘"),
+    ("query_", "数据检索查询"),
+    ("apply_", "在线申办受理"),
+    ("book_", "预约办理"),
+    ("handle_", "审批流程办理"),
+    ("manage_", "配置管理"),
+    ("monitor_", "运行监控"),
+    ("control_", "设备控制"),
+    ("calculate_", "指标核算"),
+    ("generate_", "文书报告生成"),
+    ("register_", "登记备案"),
+    ("predict_", "预测分析"),
+    ("track_", "进度追踪"),
+    ("trade_", "交易办理"),
+    ("detect_", "检测识别"),
+    ("dispatch_", "指挥调度"),
+    ("configure_", "参数配置"),
+    ("input_", "数据录入"),
+    ("submit_", "意见提交"),
+    ("supervise_", "监督管理"),
+    ("set_", "目标设定"),
+    ("analyze_", "分析解析"),
+    ("search_", "检索查询"),
+    ("get_", "数据获取"),
+    ("vision_", "图像识别"),
+    ("ocr_", "文字识别"),
+    ("execute_", "沙箱执行"),
+    ("save_", "本地产物落盘"),
     ("initiate_", "流程发起"),
 ]
+
 
 # 核心工具参数说明（按参数名通用映射 + 工具级覆盖）
 @tool("detect_data_anomaly")
@@ -2964,16 +2072,20 @@ def _h_detect_data_anomaly(series, method: str = "auto", threshold: float = 3.0)
         return {"error": "数据点不足（<4），无法做统计检验", "series_len": len(vals)}
     mean = sum(vals) / len(vals)
     var = sum((x - mean) ** 2 for x in vals) / len(vals)
-    std = var ** 0.5
+    std = var**0.5
     if std == 0:
-        return {"series_len": len(vals), "mean": mean, "note": "标准差为 0，无变异，无离群点",
-                "suspicious": [], "cusum_shifts": []}
+        return {
+            "series_len": len(vals),
+            "mean": mean,
+            "note": "标准差为 0，无变异，无离群点",
+            "suspicious": [],
+            "cusum_shifts": [],
+        }
     out: dict = {"series_len": len(vals), "mean": round(mean, 4), "std": round(std, 4)}
     if method in ("grubbs", "auto"):
         z = [(x - mean) / std for x in vals]
         out["z_scores"] = [round(zz, 3) for zz in z]
-        out["suspicious"] = [{"index": i, "value": vals[i], "z": round(zz, 3)}
-                             for i, zz in enumerate(z) if abs(zz) > threshold]
+        out["suspicious"] = [{"index": i, "value": vals[i], "z": round(zz, 3)} for i, zz in enumerate(z) if abs(zz) > threshold]
     if method in ("cusum", "auto"):
         k = 0.5 * std
         h = 5.0 * std
@@ -3001,6 +2113,7 @@ async def _h_execute_code(code: str, language: str = "python"):
     """沙箱代码执行：Docker → OS 级隔离(bwrap/rlimit) → 本地受限降级，30s 超时。
     权限闸门按「沙箱即边界」自动放行（见 permissions.gate_tool_call），全程 SM3 审计。"""
     from agent_core.sandbox import execute_code as _sandbox_exec
+
     try:
         return json.loads(await _sandbox_exec(code, language))
     except Exception as e:  # noqa: BLE001 — 沙箱异常如实回传，不让主流程崩
@@ -3008,7 +2121,8 @@ async def _h_execute_code(code: str, language: str = "python"):
 
 
 _PARAM_DESC = {
-    "city": "城市名称（如 北京、赣州），用于定位监测站点数据",    "station": "可选，监测站点名称，缺省取城市全部国控站点",
+    "city": "城市名称（如 北京、赣州），用于定位监测站点数据",
+    "station": "可选，监测站点名称，缺省取城市全部国控站点",
     "keyword": "检索关键词（法规名、污染物、行业等），支持中文",
     "law_name": "可选，限定法规名称以缩小检索范围",
     "standard_code": "排放标准编号（如 GB 29620-2013）",
@@ -3047,8 +2161,7 @@ def _enrich_function_schema(fn: dict) -> dict:
     desc = (fn.get("description") or "").strip()
     if len(desc) < 20:
         cat = _schema_category(name)
-        desc = (f"{desc}——面向生态环境执法/政务服务的{cat}工具，"
-                f"入参为 JSON 对象，返回结构化 JSON 结果供业务使用。")
+        desc = f"{desc}——面向生态环境执法/政务服务的{cat}工具，入参为 JSON 对象，返回结构化 JSON 结果供业务使用。"
     fn["description"] = desc
     params = fn.get("parameters")
     if isinstance(params, dict):
@@ -3065,8 +2178,10 @@ def _enrich_function_schema(fn: dict) -> dict:
             fn["parameters"] = params
     return fn
 
+
 # ── 对外接口（名称统一规范化导出）──────────────────────────
 _DUPLICATE_TOOLS: list[str] = []  # 重复注册被去重的名字
+
 
 def _sanitized_defs() -> list:
     """返回名称全部合法化且去重的工具定义（拷贝，不改静态表）。
@@ -3080,9 +2195,7 @@ def _sanitized_defs() -> list:
         # 白名单制：内置定义仅真实实现可见；外部注册工具（插件/法典/MCP）
         # 豁免：_EXTERNAL_TOOL_SOURCES 标记（register_external_tool）与
         # mcp__ 前缀（attach_mcp_tools 直接并入）
-        if (slug not in ALL_TOOL_DEFS_KEEP
-                and slug not in _EXTERNAL_TOOL_SOURCES
-                and not slug.startswith("mcp__")):
+        if slug not in ALL_TOOL_DEFS_KEEP and slug not in _EXTERNAL_TOOL_SOURCES and not slug.startswith("mcp__"):
             excluded += 1
             continue
         if slug in seen:
@@ -3099,14 +2212,24 @@ def _sanitized_defs() -> list:
             out.append({**t, "function": fn2})
     return out
 
+
 def get_duplicate_tools() -> list[str]:
     """返回因重复注册被去重的工具名清单（报告/审计用）。"""
     _sanitized_defs()
     return list(_DUPLICATE_TOOLS)
 
-def get_tools() -> list: return _sanitized_defs()
-def get_tool_names() -> list[str]: return [t["function"]["name"] for t in _sanitized_defs()]
-def get_tools_summary() -> str: return f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools"
+
+def get_tools() -> list:
+    return _sanitized_defs()
+
+
+def get_tool_names() -> list[str]:
+    return [t["function"]["name"] for t in _sanitized_defs()]
+
+
+def get_tools_summary() -> str:
+    return f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools"
+
 
 # ── 外部工具注册（插件系统接入）──────────────────────────────
 # 插件（plugins/）通过 register_external_tool 把工具注册进 LLM 可见定义表，
@@ -3117,9 +2240,9 @@ _EXTERNAL_RISK_OVERRIDES: dict[str, str] = {}
 _EXTERNAL_TOOL_SOURCES: dict[str, str] = {}  # name -> plugin_name
 
 
-def register_external_tool(name: str, description: str, parameters: dict,
-                           handler: Callable, risk_level: str = "L3",
-                           source: str = "plugin") -> None:
+def register_external_tool(
+    name: str, description: str, parameters: dict, handler: Callable, risk_level: str = "L3", source: str = "plugin"
+) -> None:
     """注册外部（插件）工具：进入 LLM 工具表 + 执行分发 + 风险级声明。
 
     Args:
@@ -3138,10 +2261,12 @@ def register_external_tool(name: str, description: str, parameters: dict,
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
         raise ValueError(f"工具名非法（OpenAI 函数名规范）: {name}")
     _HANDLERS[name] = handler
-    ALL_TOOL_DEFS.append({
-        "type": "function",
-        "function": {"name": name, "description": description, "parameters": parameters},
-    })
+    ALL_TOOL_DEFS.append(
+        {
+            "type": "function",
+            "function": {"name": name, "description": description, "parameters": parameters},
+        }
+    )
     _EXTERNAL_RISK_OVERRIDES[name] = risk_level
     _EXTERNAL_TOOL_SOURCES[name] = source
     log.info("[tools_registry] 外部工具已注册: %s (%s, %s)", name, risk_level, source)
@@ -3184,12 +2309,15 @@ def _merged_risk_overrides(load_overrides_fn) -> dict[str, str]:
         log.warning("[tools_registry] PERMISSION.md 覆盖解析失败: %s", e)
     return merged
 
+
 _GATE_DISABLED_WARNED = False
+
 
 async def execute_tool(name: str, args: dict) -> str:
     # 权限闸门（L1-L4）：执行前检查，全部决策写 SM3 审计链（source=permission）
     # 可用 ECO_PERMISSION_GATE=0 关闭（测试/受控环境）；关闭时写审计链并告警
     import os
+
     if os.environ.get("ECO_PERMISSION_GATE", "1").strip().lower() in ("0", "false", "no"):
         global _GATE_DISABLED_WARNED
         if not _GATE_DISABLED_WARNED:
@@ -3197,20 +2325,27 @@ async def execute_tool(name: str, args: dict) -> str:
             log.warning("[tools_registry] ⚠️ 权限闸门已被 ECO_PERMISSION_GATE=0 整体关闭（仅测试/受控环境允许）")
             try:
                 from agent_core.prompt_engine import PromptAuditChain
+
                 PromptAuditChain().append(
                     source="permission",
                     content="ECO_PERMISSION_GATE=0: permission gate globally disabled",
-                    accepted=True, reason="gate_disabled_by_env")
+                    accepted=True,
+                    reason="gate_disabled_by_env",
+                )
             except Exception:
                 pass
     else:
         from agent_core.permissions import gate_tool_call, load_overrides
+
         allowed, level, reason = gate_tool_call(name, args, overrides=_merged_risk_overrides(load_overrides))
         if not allowed:
             return json.dumps(
-                {"error": f"permission denied [{level}]: {reason}",
-                 "permission": {"level": level, "decision": "deny", "reason": reason}},
-                ensure_ascii=False)
+                {
+                    "error": f"permission denied [{level}]: {reason}",
+                    "permission": {"level": level, "decision": "deny", "reason": reason},
+                },
+                ensure_ascii=False,
+            )
     # slug 与原始名均可调用，反查原始实现
     h = _HANDLERS.get(name) or _HANDLERS.get(resolve_tool_name(name))
     if h:
@@ -3224,6 +2359,7 @@ async def execute_tool(name: str, args: dict) -> str:
         except Exception as e:
             return json.dumps({"error": str(e)}, ensure_ascii=False)
     return json.dumps({"error": f"tool {name} not found"}, ensure_ascii=False)
+
 
 if __name__ == "__main__":
     print(f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools")
@@ -3247,7 +2383,8 @@ def attach_mcp_tools() -> list[str]:
         return [n for n in _HANDLERS if n.startswith("mcp__")]
     _MCP_ATTACHED = True
     try:
-        from agent_core.mcp_connector import MCPConnectorManager, MCP_AVAILABLE
+        from agent_core.mcp_connector import MCP_AVAILABLE, MCPConnectorManager
+
         if not MCP_AVAILABLE:
             return []
         mgr = MCPConnectorManager()
@@ -3272,17 +2409,23 @@ def attach_mcp_tools() -> list[str]:
         if slug in _HANDLERS or full in _HANDLERS:
             continue
         schema = t.get("inputSchema") or {"type": "object", "properties": {}}
-        ALL_TOOL_DEFS.append({
-            "type": "function",
-            "function": {"name": slug,
-                         "description": f"[MCP:{t['server']}] {t.get('description', '')}",
-                         "parameters": schema},
-        })
+        ALL_TOOL_DEFS.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": slug,
+                    "description": f"[MCP:{t['server']}] {t.get('description', '')}",
+                    "parameters": schema,
+                },
+            }
+        )
 
         def _make(srv=t["server"], tool=t["name"]):
             def _h(**kwargs):
                 return _MCP_MGR.call_tool(srv, tool, kwargs)
+
             return _h
+
         _HANDLERS[slug] = _make()
         if full != slug:
             _HANDLERS[full] = _make()  # 原名也可直达（execute_tool 反查兜底）
@@ -3296,6 +2439,7 @@ def attach_mcp_tools() -> list[str]:
 # 知识在 ecoskills/eco-codex/kb/（五编全文 + 索引），本工具只做条级/词级检索，
 # L1 只读自动放行。法典 1242 条、2026-08-15 施行。
 
+
 def _ecocodex_article(article: str) -> str:
     """按条号检索法典条文（支持 '1054' / '第一千零五十四条' / '第1054条'）。"""
     import subprocess
@@ -3303,8 +2447,7 @@ def _ecocodex_article(article: str) -> str:
 
     script = Path(__file__).resolve().parent.parent / "ecoskills" / "eco-codex" / "scripts" / "lookup.py"
     try:
-        r = subprocess.run([sys.executable, str(script), "article", article],
-                           capture_output=True, text=True, timeout=15)
+        r = subprocess.run([sys.executable, str(script), "article", article], capture_output=True, text=True, timeout=15)
         return r.stdout.strip() or f"检索失败: {r.stderr.strip()[:200]}"
     except (subprocess.SubprocessError, OSError) as e:
         return f"法典检索不可用: {e}"
@@ -3317,8 +2460,7 @@ def _ecocodex_search(keyword: str, limit: int = 5) -> str:
 
     script = Path(__file__).resolve().parent.parent / "ecoskills" / "eco-codex" / "scripts" / "lookup.py"
     try:
-        r = subprocess.run([sys.executable, str(script), "search", keyword],
-                           capture_output=True, text=True, timeout=20)
+        r = subprocess.run([sys.executable, str(script), "search", keyword], capture_output=True, text=True, timeout=20)
         return r.stdout.strip() or f"检索失败: {r.stderr.strip()[:200]}"
     except (subprocess.SubprocessError, OSError) as e:
         return f"法典检索不可用: {e}"
@@ -3326,11 +2468,14 @@ def _ecocodex_search(keyword: str, limit: int = 5) -> str:
 
 register_external_tool(
     name="statute_lookup",
-    description="生态环境法典条文检索——按条号（如 1054 或 第一千零五十四条）精确查询条文原文，2026-08-15 施行的《中华人民共和国生态环境法典》1242 条全文",
+    description="生态环境法典条文检索——按条号（如 1054 或 第一千零五十四条）精确查询条文原文，2026-08-15 施行的《中华人民共和国生态环境法典》1242 条全文",  # noqa: E501
     parameters={
         "type": "object",
         "properties": {
-            "article": {"type": "string", "description": "条号：阿拉伯数字（1054）或中文数字（第一千零五十四条）或完整引用（第1054条）"},
+            "article": {
+                "type": "string",
+                "description": "条号：阿拉伯数字（1054）或中文数字（第一千零五十四条）或完整引用（第1054条）",
+            },
         },
         "required": ["article"],
     },

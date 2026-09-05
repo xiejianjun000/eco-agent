@@ -1,4 +1,5 @@
 """质量门禁（DSH guard 对标）单测：条号↔内容一致性 / 表格行数一致性。"""
+
 from server.api.chat import _quality_gate
 
 
@@ -24,7 +25,7 @@ def test_gate_table_row_count():
 
 def test_gate_ok_table():
     # 行数相符 → 通过
-    text = ("共 2 个断面。\n| a | b |\n|---|---|\n| 1 | x |\n| 2 | y |")
+    text = "共 2 个断面。\n| a | b |\n|---|---|\n| 1 | x |\n| 2 | y |"
     needs, _ = _quality_gate(text, [])
     assert needs is False
 
@@ -36,12 +37,14 @@ def test_gate_nonexistent_article_skipped():
 
 
 # ─── 交互图表卡片提取 ───
-from server.api.chat import _extract_cards
+from server.api.chat import _extract_cards  # noqa: E402
 
 
 def test_extract_cards_replaces_block():
-    text = ("✅ 趋势如下：\n```card\n<title>PM2.5趋势</title>\n"
-            "<div id='c'></div><script>echarts.init(c)</script>\n```\n要点：全部达标")
+    text = (
+        "✅ 趋势如下：\n```card\n<title>PM2.5趋势</title>\n"
+        "<div id='c'></div><script>echarts.init(c)</script>\n```\n要点：全部达标"
+    )
     out, cards = _extract_cards(text)
     assert "```card" not in out
     assert "📊 PM2.5趋势" in out
@@ -58,7 +61,7 @@ def test_extract_cards_no_block():
 
 
 # ─── 「详细版」承诺兑现 ───
-from agent_core import full_replies as fr
+from agent_core import full_replies as fr  # noqa: E402
 
 
 def test_full_replies_save_and_get(tmp_path, monkeypatch):

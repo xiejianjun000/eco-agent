@@ -14,18 +14,18 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 
-
 def _load_script(rel_path: str):
     """按路径加载 ecoskills 下无包的脚本模块（测试用）。"""
     import importlib.util
-    spec = importlib.util.spec_from_file_location(
-        rel_path.replace("/", "_").replace(".py", ""), str(ROOT / rel_path))
+
+    spec = importlib.util.spec_from_file_location(rel_path.replace("/", "_").replace(".py", ""), str(ROOT / rel_path))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
 
 
 # ── 1. meta-audit ────────────────────────────────────────────────
+
 
 def test_audit_atom_skills_pass(tmp_path, monkeypatch):
     audit_mod = _load_script("ecoskills/meta-audit/scripts/audit.py")
@@ -51,6 +51,7 @@ def test_audit_detects_bad_skill(tmp_path, monkeypatch):
 
 # ── 2. meta-test ────────────────────────────────────────────────
 
+
 def test_meta_test_generates_cases(tmp_path, monkeypatch):
     test_mod = _load_script("ecoskills/meta-test/scripts/test.py")
 
@@ -73,6 +74,7 @@ def test_meta_test_citation_articles_extracted(tmp_path, monkeypatch):
 
 
 # ── 3. meta-interview ───────────────────────────────────────────
+
 
 def test_interview_batch_mode(tmp_path, monkeypatch):
     import json
@@ -106,11 +108,11 @@ def test_interview_batch_mode(tmp_path, monkeypatch):
 
 # ── 4. run_evals 机械校验 ───────────────────────────────────────
 
+
 def test_evals_suites_parse():
     from _scripts.run_evals import parse_suite
 
-    for name, min_q in (("statute-application", 4), ("case-review", 7),
-                        ("document-drafting", 4)):
+    for name, min_q in (("statute-application", 4), ("case-review", 7), ("document-drafting", 4)):
         qs = parse_suite(ROOT / "evals" / f"{name}.md")
         assert len(qs) >= min_q, f"{name} 题目数不足: {len(qs)}"
         assert all(q["question"] and q["golden"] for q in qs)
@@ -119,15 +121,13 @@ def test_evals_suites_parse():
 def test_mechanical_article_check_mock(monkeypatch):
     import _scripts.run_evals as ev
 
-    ok, note = ev.mechanical_check(
-        {"citation": "article=164", "question": "", "dimension": "", "golden": ""})
+    ok, note = ev.mechanical_check({"citation": "article=164", "question": "", "dimension": "", "golden": ""})
     assert ok and "命中" in note  # 真实法典库校验（164 条存在）
     ok2, _ = ev.mechanical_check(
-        {"citation": "path=evals/statute-application.md", "question": "",
-         "dimension": "", "golden": ""})
+        {"citation": "path=evals/statute-application.md", "question": "", "dimension": "", "golden": ""}
+    )
     assert ok2
-    ok3, note3 = ev.mechanical_check(
-        {"citation": "article=999999", "question": "", "dimension": "", "golden": ""})
+    ok3, note3 = ev.mechanical_check({"citation": "article=999999", "question": "", "dimension": "", "golden": ""})
     assert not ok3
 
 

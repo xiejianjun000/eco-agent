@@ -11,16 +11,16 @@ smoke_kimi.py — 真实 Kimi LLM 冒烟测试
   python scripts/smoke_kimi.py
 """
 
-import sys
 import logging
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from agent_core.llm_client import get_default_client
-from agent_core.react_loop import ReActPlusPlus, ReActState
-from agent_core.meta_evolution import MetaEvolution
+from agent_core.llm_client import get_default_client  # noqa: E402
+from agent_core.meta_evolution import MetaEvolution  # noqa: E402
+from agent_core.react_loop import ReActPlusPlus, ReActState  # noqa: E402
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -57,7 +57,7 @@ def main():
     if has_llm:
         idx = report.index("## 元认知分析")
         print("  -- LLM 元认知分析摘录 --")
-        print("\n".join("  " + l for l in report[idx:].splitlines()[2:6]))
+        print("\n".join("  " + line for line in report[idx:].splitlines()[2:6]))
     assert has_llm, "进化报告缺少 LLM 元认知分析章节"
 
     print("[OK] Kimi 冒烟测试全部通过")

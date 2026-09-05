@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """eco workspace - 项目工作区管理（Phase B1）"""
+
 import json
 
 
 def run(args):
     from agent_core.workspace import get_workspace_manager
+
     mgr = get_workspace_manager()
 
     if args.action == "create":
@@ -28,8 +30,10 @@ def run(args):
         cur = mgr.current_name()
         for m in items:
             mark = "*" if m.get("slug") == cur else " "
-            print(f"{mark} {m.get('name')}  slug={m.get('slug')}  事件数={m.get('n_events', 0)}"
-                  f"  最近活跃={m.get('updated_at', '')}")
+            print(
+                f"{mark} {m.get('name')}  slug={m.get('slug')}  事件数={m.get('n_events', 0)}"
+                f"  最近活跃={m.get('updated_at', '')}"
+            )
         return 0
 
     if args.action == "open":

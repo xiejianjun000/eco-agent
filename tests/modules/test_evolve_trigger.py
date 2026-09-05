@@ -4,26 +4,33 @@
 目标：L2 mission 结束沉淀 (expectation, output, verdict) 三元组 →
       满足条件自动触发 Evolve；默认关闭（ECO_AUTO_EVOLVE=1 显式开启）。
 """
-import sys
-import os
+
 import json
+import os
+import sys
 import time
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
-from agent_core.evolve_trigger import EvolveTrigger
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from agent_core.commander_v2 import CommanderV2
+from agent_core.evolve_trigger import EvolveTrigger
 
 
 def _summary(completed=5, failed=0):
-    return {"total_tasks": completed + failed, "completed": completed,
-            "failed": failed, "verified": completed, "mission_replans": 0}
+    return {
+        "total_tasks": completed + failed,
+        "completed": completed,
+        "failed": failed,
+        "verified": completed,
+        "mission_replans": 0,
+    }
 
 
 def _tasks(n=2, with_triples=True):
     from agent_core.commander_v2 import Task, TaskStatus
+
     out = []
     for i in range(n):
-        t = Task(description=f"任务{i}", expectation=f"判据{i}",
-                 status=TaskStatus.COMPLETED)
+        t = Task(description=f"任务{i}", expectation=f"判据{i}", status=TaskStatus.COMPLETED)
         t.output = f"产出{i}"
         t.verdict = f"结论{i}"
         out.append(t)
@@ -44,8 +51,7 @@ class TestExperienceRecording:
         assert entry["tasks"][0]["output"] == "产出0"
 
     def test_multiple_missions_accumulate(self, tmp_path):
-        trig = EvolveTrigger(state_dir=tmp_path, evolve_runner=lambda h: {"ok": True},
-                             threshold=100)
+        trig = EvolveTrigger(state_dir=tmp_path, evolve_runner=lambda h: {"ok": True}, threshold=100)
         for _ in range(3):
             trig.record_mission(_summary(), _tasks(1))
         assert len((tmp_path / "experience.jsonl").read_text().strip().splitlines()) == 3
@@ -54,8 +60,7 @@ class TestExperienceRecording:
 class TestTriggerConditions:
     def test_threshold_not_reached_no_trigger(self, tmp_path):
         calls = []
-        trig = EvolveTrigger(state_dir=tmp_path, threshold=5,
-                             evolve_runner=lambda h: calls.append(h) or {"ok": True})
+        trig = EvolveTrigger(state_dir=tmp_path, threshold=5, evolve_runner=lambda h: calls.append(h) or {"ok": True})
         for _ in range(4):
             trig.record_mission(_summary(), _tasks(1))
             assert trig.maybe_trigger() is None
@@ -64,8 +69,7 @@ class TestTriggerConditions:
     def test_threshold_reached_triggers_with_history(self, tmp_path):
         """第 5 次 mission 触发，Evolve 收到全部经验历史"""
         calls = []
-        trig = EvolveTrigger(state_dir=tmp_path, threshold=5,
-                             evolve_runner=lambda h: calls.append(h) or {"ok": True})
+        trig = EvolveTrigger(state_dir=tmp_path, threshold=5, evolve_runner=lambda h: calls.append(h) or {"ok": True})
         for _ in range(5):
             trig.record_mission(_summary(), _tasks(1))
         assert trig.maybe_trigger() is not None
@@ -74,8 +78,7 @@ class TestTriggerConditions:
     def test_failures_halve_threshold(self, tmp_path):
         """含失败任务的 mission 更有进化价值：阈值减半提前触发"""
         calls = []
-        trig = EvolveTrigger(state_dir=tmp_path, threshold=6,
-                             evolve_runner=lambda h: calls.append(h) or {"ok": True})
+        trig = EvolveTrigger(state_dir=tmp_path, threshold=6, evolve_runner=lambda h: calls.append(h) or {"ok": True})
         for _ in range(3):  # 3 条带失败的经验 = 6 等效 → 触发
             trig.record_mission(_summary(completed=3, failed=2), _tasks(1))
         assert trig.maybe_trigger() is not None
@@ -84,8 +87,9 @@ class TestTriggerConditions:
     def test_cooldown_prevents_immediate_retrigger(self, tmp_path):
         """触发后冷却期内不得重复触发"""
         calls = []
-        trig = EvolveTrigger(state_dir=tmp_path, threshold=2, cooldown_s=3600,
-                             evolve_runner=lambda h: calls.append(h) or {"ok": True})
+        trig = EvolveTrigger(
+            state_dir=tmp_path, threshold=2, cooldown_s=3600, evolve_runner=lambda h: calls.append(h) or {"ok": True}
+        )
         for _ in range(2):
             trig.record_mission(_summary(), _tasks(1))
         assert trig.maybe_trigger() is not None
@@ -96,8 +100,7 @@ class TestTriggerConditions:
 
     def test_daily_schedule(self, tmp_path):
         """每日调度：距上次进化 >24h 应触发每日检查"""
-        trig = EvolveTrigger(state_dir=tmp_path, threshold=100,
-                             evolve_runner=lambda h: {"ok": True})
+        trig = EvolveTrigger(state_dir=tmp_path, threshold=100, evolve_runner=lambda h: {"ok": True})
         assert trig.should_evolve_daily() is True, "从未进化过应需要每日进化"
         trig._stamp_last_run(time.time() - 25 * 3600)
         assert trig.should_evolve_daily() is True

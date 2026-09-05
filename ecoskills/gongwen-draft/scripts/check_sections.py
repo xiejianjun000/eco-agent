@@ -7,7 +7,6 @@ import argparse
 import re
 from pathlib import Path
 
-
 DOC_TYPES = {
     "决议",
     "决定",
@@ -37,16 +36,14 @@ DOC_TYPES = {
 
 CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 
-from front_matter import parse_front_matter
+from front_matter import parse_front_matter  # noqa: E402
+
 ASCII_PUNCT_NEAR_CJK_RE = re.compile(
     r"[\u3400-\u4dbf\u4e00-\u9fff][,:;!?()\[\]{}\"']|"
     r"[,:;!?()\[\]{}\"'][\u3400-\u4dbf\u4e00-\u9fff]|"
     r"[\u3400-\u4dbf\u4e00-\u9fff]\.(?=\s|$|[\u3400-\u4dbf\u4e00-\u9fff])"
 )
-TECH_TOKEN_RE = re.compile(
-    r"`[^`]*`|https?://\S+|www\.\S+|[\w.+-]+@[\w.-]+\.\w+|[A-Za-z]:\\[^\s]+|/[^\s]+"
-)
-
+TECH_TOKEN_RE = re.compile(r"`[^`]*`|https?://\S+|www\.\S+|[\w.+-]+@[\w.-]+\.\w+|[A-Za-z]:\\[^\s]+|/[^\s]+")
 
 
 def title_from_text(text: str) -> str:

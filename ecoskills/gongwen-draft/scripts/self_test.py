@@ -9,8 +9,8 @@ from pathlib import Path
 from build_prompt_pack import build_prompt
 from check_citations import check_citations
 from check_language import check_language
-from check_type_consistency import main as check_type_consistency_main
 from check_sections import check
+from check_type_consistency import main as check_type_consistency_main
 from generate_docx import unique_output_path
 from policy_research import build_policy_research
 from prepare_dossier import build_dossier
@@ -54,7 +54,7 @@ def test_high_risk_lint() -> None:
 def test_punctuation_lint() -> None:
     issues = check(
         "通知",
-        "# 关于开展工作的通知。\n各有关单位:\n现将有关事项通知如下:\n## 一、总体要求。\n### （一）、完善机制\n1、明确责任\n附件1：工作方案\n",
+        "# 关于开展工作的通知。\n各有关单位:\n现将有关事项通知如下:\n## 一、总体要求。\n### （一）、完善机制\n1、明确责任\n附件1：工作方案\n",  # noqa: E501
     )
     messages = "\n".join(message for _, message in issues)
     assert "英文/半角标点" in messages

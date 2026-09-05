@@ -7,14 +7,13 @@
 - webhook 回调解析：{"op":0,"d":{"content":...,"author":{"id":...}}}
 - 主动发消息：POST /channels/{channel_id}/messages
 """
+
 from __future__ import annotations
 
 import os
-from typing import Optional
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import (
-    Ed25519PrivateKey, Ed25519PublicKey)
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 from .base import Channel, InboundMessage, body_bytes, body_json, http_post_json
 
@@ -47,8 +46,7 @@ class QQBotChannel(Channel):
         try:
             private_key = Ed25519PrivateKey.from_private_bytes(_seed_from_secret(secret))
             public_key: Ed25519PublicKey = private_key.public_key()
-            public_key.verify(bytes.fromhex(sig_hex),
-                              timestamp.encode("utf-8") + body_bytes(request))
+            public_key.verify(bytes.fromhex(sig_hex), timestamp.encode("utf-8") + body_bytes(request))
             return True
         except (InvalidSignature, ValueError):
             return False
@@ -68,8 +66,7 @@ class QQBotChannel(Channel):
             user_id=author.get("id", ""),
             text=content,
             msg_id=d.get("id", ""),
-            extras={"channel_id": d.get("channel_id", ""),
-                    "guild_id": d.get("guild_id", "")},
+            extras={"channel_id": d.get("channel_id", ""), "guild_id": d.get("guild_id", "")},
         )
 
     def reply(self, user_id: str, text: str, **kw) -> bool:
@@ -80,7 +77,8 @@ class QQBotChannel(Channel):
         if kw.get("msg_id"):
             payload["msg_id"] = kw["msg_id"]
         resp = http_post_json(
-            SEND_URL.format(channel_id=channel_id), payload,
-            headers={"Authorization": f"QQBot {token}" if not app_id
-                     else f"Bot {app_id}.{token}"})
+            SEND_URL.format(channel_id=channel_id),
+            payload,
+            headers={"Authorization": f"QQBot {token}" if not app_id else f"Bot {app_id}.{token}"},
+        )
         return "id" in resp or resp.get("code") == 0

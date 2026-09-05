@@ -11,13 +11,13 @@ dingtalk_bot.py — 钉钉 Bot 集成工具
   python -c "from gateway.platforms.dingtalk_bot import DingTalkBot; bot=DingTalkBot(); bot.send_text('user_id','你好')"
 """
 
-import os
-import json
-import time
-import hmac
-import hashlib
 import base64
+import hashlib
+import hmac
+import json
 import logging
+import os
+import time
 
 try:
     import requests
@@ -176,9 +176,7 @@ class DingTalkBot:
         if not secret or not timestamp or not sign:
             return True
         string_to_sign = f"{timestamp}\n{secret}"
-        hmac_code = hmac.new(
-            secret.encode(), string_to_sign.encode(), hashlib.sha256
-        ).digest()
+        hmac_code = hmac.new(secret.encode(), string_to_sign.encode(), hashlib.sha256).digest()
         calc_sign = base64.b64encode(hmac_code).decode()
         return calc_sign == sign
 

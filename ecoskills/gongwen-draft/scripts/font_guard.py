@@ -33,7 +33,7 @@ SKILL_DIR = SCRIPT_DIR.parent
 ASSET_FONT_DIR = SKILL_DIR / "assets" / "fonts"
 ASSET_FONT_CATALOG = ASSET_FONT_DIR / "catalog.toml"
 
-from front_matter import parse_front_matter, meta_text
+from front_matter import meta_text, parse_front_matter  # noqa: E402
 
 OFFICIAL_FOUNDER_OFFICE_URL = "https://www.foundertype.com/index.php/FontInfo/get_font_office.html"
 
@@ -73,9 +73,7 @@ def build_font_config(meta: dict[str, object] | None = None) -> dict[str, str]:
     meta = meta or {}
     profile = meta_text(meta, "font_profile") or "founder-gongwen"
     if profile != "custom" and profile not in FONT_PROFILES:
-        raise SystemExit(
-            f"Unknown font_profile `{profile}`. Use `founder-gongwen` or `custom` with explicit font keys."
-        )
+        raise SystemExit(f"Unknown font_profile `{profile}`. Use `founder-gongwen` or `custom` with explicit font keys.")
 
     fonts = dict(FONT_PROFILES.get(profile, FONT_PROFILES["founder-gongwen"]))
     for key, role in FONT_OVERRIDE_KEYS.items():
@@ -155,9 +153,7 @@ def asset_font_files() -> list[Path]:
     if not ASSET_FONT_DIR.exists():
         return []
     return sorted(
-        path
-        for path in ASSET_FONT_DIR.iterdir()
-        if path.is_file() and path.suffix.lower() in {".ttf", ".otf", ".ttc"}
+        path for path in ASSET_FONT_DIR.iterdir() if path.is_file() and path.suffix.lower() in {".ttf", ".otf", ".ttc"}
     )
 
 
@@ -166,9 +162,7 @@ def iter_font_files() -> set[Path]:
     files = set(registry_files)
     for directory in system_font_search_dirs():
         files.update(
-            path
-            for path in directory.rglob("*")
-            if path.is_file() and path.suffix.lower() in {".ttf", ".otf", ".ttc"}
+            path for path in directory.rglob("*") if path.is_file() and path.suffix.lower() in {".ttf", ".otf", ".ttc"}
         )
     return files
 
@@ -290,7 +284,7 @@ def official_channel_message(missing: list[str]) -> str:
         f"- 方正字库公文写作个人（家庭）版授权: {OFFICIAL_FOUNDER_OFFICE_URL}",
         "",
         "This official page requires account authorization/payment before a font package can be obtained.",
-        "Do not download these fonts from random font mirrors. Install authorized fonts locally, or place authorized font files in assets/fonts and run:",
+        "Do not download these fonts from random font mirrors. Install authorized fonts locally, or place authorized font files in assets/fonts and run:",  # noqa: E501
         "  python scripts/check_fonts.py --install-assets",
     ]
     return "\n".join(lines)
@@ -352,7 +346,11 @@ def main() -> None:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--draft", help="Controlled Markdown draft whose font front matter should be checked")
-    parser.add_argument("--install-assets", action="store_true", help="Install matching authorized fonts from assets/fonts for the current Windows user")
+    parser.add_argument(
+        "--install-assets",
+        action="store_true",
+        help="Install matching authorized fonts from assets/fonts for the current Windows user",
+    )
     parser.add_argument("--list", action="store_true", help="List detected font names")
     parser.add_argument("--list-assets", action="store_true", help="List font assets bundled with this skill")
     parser.add_argument("--verify-assets", action="store_true", help="Verify assets/fonts/catalog.toml hashes and font names")

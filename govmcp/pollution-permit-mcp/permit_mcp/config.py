@@ -15,11 +15,11 @@ URL_PRE_PUBLICITY = BASE_URL + "/perxxgkinfo/syssb/xxgk/xxgk!sqqlist.action"
 URL_REGISTER_INFO = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!getRegisterInfo.action"
 
 # 公告栏目
-URL_ANNOUNCE_CANCEL = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xkgg_zxggList.action"   # 注销
-URL_ANNOUNCE_REVOKE = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xkgg_cxggList.action"   # 撤销
-URL_ANNOUNCE_LOST = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xkgg_yssmList.action"     # 遗失
-URL_NEWS_LIST = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xkgg_zytzList.action"         # 重要通知
-URL_RECTIFY_LIST = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xxgkXqzgList.action"       # 限期整改
+URL_ANNOUNCE_CANCEL = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xkgg_zxggList.action"  # 注销
+URL_ANNOUNCE_REVOKE = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xkgg_cxggList.action"  # 撤销
+URL_ANNOUNCE_LOST = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xkgg_yssmList.action"  # 遗失
+URL_NEWS_LIST = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xkgg_zytzList.action"  # 重要通知
+URL_RECTIFY_LIST = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!xxgkXqzgList.action"  # 限期整改
 
 # 法规标准
 URL_LAWS_STANDARD = BASE_URL + "/perxxgkinfo/syssb/xkgg/xkgg!lawsStandard.action"
@@ -48,14 +48,15 @@ LAWS_COLUMNS = {
 
 # 请求行为
 DEFAULT_HEADERS = {
-    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "zh-CN,zh;q=0.9",
 }
-REQUEST_INTERVAL = 1.0      # 秒，相邻请求最小间隔（合规限速）
-RETRY_TIMES = 3             # 失败重试次数
-RETRY_BACKOFF = 2.0         # 重试退避基数（秒）
-TIMEOUT = 20                # 单请求超时
-CACHE_TTL = 3600            # 缓存默认有效期（秒），1 小时
+REQUEST_INTERVAL = 1.0  # 秒，相邻请求最小间隔（合规限速）
+RETRY_TIMES = 3  # 失败重试次数
+RETRY_BACKOFF = 2.0  # 重试退避基数（秒）
+TIMEOUT = 20  # 单请求超时
+CACHE_TTL = 3600  # 缓存默认有效期（秒），1 小时
 CACHE_DB = "permit_cache.db"

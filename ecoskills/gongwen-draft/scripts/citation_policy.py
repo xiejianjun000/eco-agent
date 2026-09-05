@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
-
 OFFICIAL_EXACT_HOSTS = {
     "gov.cn",
     "www.gov.cn",

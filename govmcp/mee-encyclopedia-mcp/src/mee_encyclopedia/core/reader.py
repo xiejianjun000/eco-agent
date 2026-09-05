@@ -1,4 +1,5 @@
 """读取工具族：网页正文、栏目列表、站点链接、全站搜索。"""
+
 from __future__ import annotations
 
 import logging

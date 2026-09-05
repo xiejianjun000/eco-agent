@@ -41,16 +41,25 @@ def test_platform_tools_have_handlers():
     from agent_core.tools_registry import _HANDLERS, resolve_tool_name
     from agent_core.wiring_manifest import CHANNEL_DISPATCHED
 
-    no_handler = [n for n in _platform_chat_tools()
-                  if n not in CHANNEL_DISPATCHED
-                  and n not in _HANDLERS and resolve_tool_name(n) not in _HANDLERS]
+    no_handler = [
+        n
+        for n in _platform_chat_tools()
+        if n not in CHANNEL_DISPATCHED and n not in _HANDLERS and resolve_tool_name(n) not in _HANDLERS
+    ]
     assert not no_handler, f"平台工具无 handler: {no_handler}"
 
 
 # 政务边界收紧（2026-08-24）：涉执法数据工具升级 L4 审批；菜单/区域/目录类保留 L1
-_KEEP_L1 = {"wryzxjc_list_regions", "sthjzf_get_menu", "sthjzf_get_view_config",
-            "sthjzf_list_depts", "sthjzf_query_view", "permit_menu",
-            "permit_area_list", "permit_industry_list"}
+_KEEP_L1 = {
+    "wryzxjc_list_regions",
+    "sthjzf_get_menu",
+    "sthjzf_get_view_config",
+    "sthjzf_list_depts",
+    "sthjzf_query_view",
+    "permit_menu",
+    "permit_area_list",
+    "permit_industry_list",
+}
 
 
 def test_platform_tools_permission_l1():
@@ -58,8 +67,7 @@ def test_platform_tools_permission_l1():
     from agent_core.permissions import load_overrides
 
     ov = load_overrides()
-    wrong = [n for n in _platform_chat_tools()
-             if ov.get(n) != ("L1" if n in _KEEP_L1 else "L4")]
+    wrong = [n for n in _platform_chat_tools() if ov.get(n) != ("L1" if n in _KEEP_L1 else "L4")]
     assert not wrong, f"平台工具权限分级不符: {wrong}"
 
 
@@ -128,6 +136,7 @@ def test_open_url_wired():
 
 # ── 维度 A/E 契约闸门 ─────────────────────────────────────────────
 
+
 def test_law_status_trigger_detection():
     """E 维度：法规时效类提问识别（机制级确定性闸门）。"""
     from server.api.chat import _law_status_trigger
@@ -157,9 +166,11 @@ def test_hallucination_format_final_sanitize():
     """终层净化：中段/尾部工具调用格式残留必须剥离（穿透测试2暴露的漏网）。"""
     import re
 
-    leaked = ('让我读取文件最后几行。  <tool_calls> <invoke name="execute_code"> '
-              '<parameter name="code" string="true"> from pathlib import Path ...</parameter>'
-              '</invoke> </tool_calls> 后面的正常分析内容')
+    leaked = (
+        '让我读取文件最后几行。  <tool_calls> <invoke name="execute_code"> '
+        '<parameter name="code" string="true"> from pathlib import Path ...</parameter>'
+        "</invoke> </tool_calls> 后面的正常分析内容"
+    )
     cleaned = re.sub(r"[<＜]\s*invoke[\s\S]*?[<＜]\s*/\s*invoke\s*>", "", leaked)
     cleaned = re.sub(r"[<＜]\s*tool_calls\s*>[\s\S]*?[<＜]\s*/\s*tool_calls\s*>", "", cleaned)
     cleaned = re.sub(r"[<＜]\s*(tool_calls|invoke)[\s\S]*$", "", cleaned).strip()
@@ -168,6 +179,7 @@ def test_hallucination_format_final_sanitize():
 
 
 # ── 执行层工具契约（路线图 1-3）──────────────────────────────────
+
 
 def test_shell_allowlist_enforces():
     """shell_run：白名单放行、危险语法/高危命令/非白名单全部拒绝。"""
@@ -193,14 +205,14 @@ def test_file_tools_path_containment():
 
     from agent_core.exec_tools import file_edit, file_read, file_write
 
-    with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent.parent.parent
-                                     / ".eco-ws" if False else None) as _:
+    with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent.parent.parent / ".eco-ws" if False else None) as _:
         pass
     # 逃逸拒绝（/etc 不在允许根内）
     assert json.loads(file_write("/etc/eco_test_x", "x"))["ok"] is False
     assert json.loads(file_read("/etc/passwd"))["ok"] is False
     # 工作区内写读往返
     import os
+
     ws = os.environ.get("ECO_WORKSPACE_DIR", "")
     if ws:
         p = Path(ws) / "_contract_test.md"
@@ -218,7 +230,6 @@ def test_file_tools_path_containment():
 def test_web_search_parse_links():
     from agent_core.web_search_tool import _parse_links
 
-    page = ('<h2><a href="https://www.gov.cn/a.htm">标题甲</a></h2>'
-            '<h2><a href="https://www.gov.cn/b.htm">标题乙</a></h2>')
-    out = _parse_links(page, [(r'<h2><a href="([^"]+)"', r'<h2><a[^>]*>(.*?)</a></h2>')])
+    page = '<h2><a href="https://www.gov.cn/a.htm">标题甲</a></h2><h2><a href="https://www.gov.cn/b.htm">标题乙</a></h2>'
+    out = _parse_links(page, [(r'<h2><a href="([^"]+)"', r"<h2><a[^>]*>(.*?)</a></h2>")])
     assert len(out) == 2 and out[0]["title"] == "标题甲"

@@ -19,13 +19,13 @@ tool_registry.py — ECO AGENT 自注册工具系统
   registry.list_tools()
 """
 
-import os
 import inspect
 import logging
-from typing import Any
+import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger("tool_registry")
 
@@ -33,6 +33,7 @@ logger = logging.getLogger("tool_registry")
 @dataclass
 class ToolEntry:
     """工具条目"""
+
     name: str
     description: str
     handler: Callable
@@ -46,6 +47,7 @@ class ToolEntry:
 
 class ToolRegistry:
     """工具注册表（单例）"""
+
     _instance = None
 
     def __new__(cls):
@@ -56,10 +58,16 @@ class ToolRegistry:
             cls._instance._discover_done = False
         return cls._instance
 
-    def register(self, name: str = None, description: str = "",
-                 toolset: str = "eco", risk_level: str = "read",
-                 requires_env: list[str] = None) -> Callable:
+    def register(
+        self,
+        name: str = None,
+        description: str = "",
+        toolset: str = "eco",
+        risk_level: str = "read",
+        requires_env: list[str] = None,
+    ) -> Callable:
         """装饰器：注册工具"""
+
         def decorator(func: Callable) -> Callable:
             tool_name = name or func.__name__
             sig = inspect.signature(func)
@@ -90,6 +98,7 @@ class ToolRegistry:
 
             logger.debug(f"[Registry] 注册工具: {tool_name} ({toolset})")
             return func
+
         return decorator
 
     def get(self, name: str) -> ToolEntry | None:
@@ -116,18 +125,20 @@ class ToolRegistry:
                 if p_info["default"] is not None:
                     props[p_name]["default"] = p_info["default"]
 
-            schemas.append({
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": props,
-                        "required": required,
+            schemas.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": {
+                            "type": "object",
+                            "properties": props,
+                            "required": required,
+                        },
                     },
-                },
-            })
+                }
+            )
         return schemas
 
     def call(self, name: str, **kwargs) -> Any:
@@ -165,8 +176,7 @@ class ToolRegistry:
                 # 跳过独立守护类脚本
                 if any(p in content for p in SKIP_PATTERNS) and "def " not in content[:500]:
                     continue
-                spec = importlib.util.spec_from_file_location(
-                    py_file.stem, str(py_file))
+                spec = importlib.util.spec_from_file_location(py_file.stem, str(py_file))
                 mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(mod)
                 logger.info(f"[Registry] 发现脚本: {py_file.name}")
@@ -180,9 +190,11 @@ registry = ToolRegistry()
 
 # ===== 内置工具 =====
 
+
 @registry.register("echo", "回显输入")
 def echo(text: str = "hello") -> str:
     return text
+
 
 @registry.register("list_tools", "列出所有已注册工具")
 def list_tools(toolset: str = "") -> str:
@@ -196,6 +208,7 @@ def list_tools(toolset: str = "") -> str:
 
 
 # ===== 测试 =====
+
 
 def test():
     registry.discover_scripts()
@@ -216,4 +229,5 @@ def test():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     import importlib.util
+
     test()

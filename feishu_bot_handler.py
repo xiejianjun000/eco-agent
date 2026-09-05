@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """飞书 Bot 自动回复处理器"""
 
-import json
-import time
-import subprocess
-import logging
 import importlib.util
+import json
+import logging
+import subprocess
+import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent
@@ -22,6 +22,8 @@ if PROCESSED_LOG.exists():
 
 # 加载 MCP 模块（文件名含短横线，需特殊加载）
 _mcp = None
+
+
 def _load_mcp():
     global _mcp
     if _mcp is None:
@@ -33,8 +35,10 @@ def _load_mcp():
             _mcp = mod
     return _mcp
 
+
 def save_processed():
     PROCESSED_LOG.write_text("\n".join(sorted(processed)))
+
 
 def handle_message(event):
     content = event.get("content", "").strip()
@@ -45,15 +49,27 @@ def handle_message(event):
     save_processed()
     reply = generate_reply(content)
     if reply:
-        cmd = [LARK_CLI, "im", "+messages-reply", "--message-id", message_id,
-               "--text", reply, "--as", "bot", "--format", "json"]
+        cmd = [
+            LARK_CLI,
+            "im",
+            "+messages-reply",
+            "--message-id",
+            message_id,
+            "--text",
+            reply,
+            "--as",
+            "bot",
+            "--format",
+            "json",
+        ]
         r = subprocess.run(cmd, capture_output=True, text=False, timeout=20)
-        out = r.stdout.decode('utf-8', errors='replace') if r.stdout else ""  # noqa: F841 预留：回执解析
-        err = r.stderr.decode('utf-8', errors='replace') if r.stderr else ""
+        out = r.stdout.decode("utf-8", errors="replace") if r.stdout else ""  # noqa: F841 预留：回执解析
+        err = r.stderr.decode("utf-8", errors="replace") if r.stderr else ""
         if r.returncode == 0:
             logger.info(f"回复成功: {content[:30]}")
         else:
             logger.warning(f"回复失败: {err[:200]}")
+
 
 def generate_reply(msg: str) -> str:
     msg = msg.strip()
@@ -82,6 +98,7 @@ def generate_reply(msg: str) -> str:
         return "ECO AGENT 运行中 | 事件监听: 在线 | 知识库: FlowWiki 同步中"
     return search_and_reply(msg)
 
+
 def search_and_reply(query: str) -> str:
     try:
         mcp = _load_mcp()
@@ -102,11 +119,8 @@ def search_and_reply(query: str) -> str:
                     return "\n".join(lines)
     except Exception as e:
         logger.warning(f"检索异常: {e}")
-    return (
-        f"收到：「{query[:60]}」\n\n"
-        "正为您检索相关法规，请稍后重试。\n"
-        "发送「帮助」查看使用说明。"
-    )
+    return f"收到：「{query[:60]}」\n\n正为您检索相关法规，请稍后重试。\n发送「帮助」查看使用说明。"
+
 
 def watch_loop():
     logger.info("飞书 Bot 自动回复处理器启动...")
@@ -121,11 +135,14 @@ def watch_loop():
                     f.unlink(missing_ok=True)
                 except Exception as e:
                     logger.warning(f"处理 {f.name}: {e}")
-                    try: f.unlink(missing_ok=True)
-                    except Exception: pass
+                    try:
+                        f.unlink(missing_ok=True)
+                    except Exception:
+                        pass
         except Exception as e:
             logger.warning(f"循环异常: {e}")
         time.sleep(3)
+
 
 if __name__ == "__main__":
     watch_loop()

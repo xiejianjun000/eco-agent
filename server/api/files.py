@@ -28,10 +28,10 @@ logger = logging.getLogger("eco.server.files")
 
 router = APIRouter()
 
-MAX_BYTES = 300 * 1024 * 1024          # 附件上限 300MB
-AUDIO_MAX_BYTES = 25 * 1024 * 1024     # 语音上限 25MB
-MIN_AUDIO_BYTES = 2 * 1024             # 低于 2KB 视为无效录音
-VOICE_TIMEOUT = 240                    # 转写总超时（秒），妙记生成异步，需耐心
+MAX_BYTES = 300 * 1024 * 1024  # 附件上限 300MB
+AUDIO_MAX_BYTES = 25 * 1024 * 1024  # 语音上限 25MB
+MIN_AUDIO_BYTES = 2 * 1024  # 低于 2KB 视为无效录音
+VOICE_TIMEOUT = 240  # 转写总超时（秒），妙记生成异步，需耐心
 LARK_MINUTES_AUDIO = (".wav", ".mp3", ".m4a", ".aac", ".ogg", ".wma", ".amr")
 
 
@@ -104,8 +104,11 @@ def _run_cli(args: list[str], timeout: float, cwd: str | None = None, json_fmt: 
             cmd += ["--format", "json"]
         proc = subprocess.run(
             cmd,
-            capture_output=True, text=True, timeout=timeout,
-            env={**os.environ}, cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env={**os.environ},
+            cwd=cwd,
         )
     except FileNotFoundError:
         return {"ok": False, "error": "lark-cli 未安装（语音转写不可用）"}
@@ -147,7 +150,9 @@ def _transcode_to_m4a(src: Path, deadline: float) -> Path:
     try:
         proc = subprocess.run(
             ["ffmpeg", "-y", "-i", str(src), "-vn", "-c:a", "aac", "-b:a", "96k", str(out)],
-            capture_output=True, text=True, timeout=max(1.0, deadline - time.time()),
+            capture_output=True,
+            text=True,
+            timeout=max(1.0, deadline - time.time()),
         )
     except FileNotFoundError:
         return src
@@ -187,26 +192,25 @@ def _transcribe_sync(audio_path: str) -> dict:
     # 0) 预检 user 身份：妙记上传/读取只支持 user，过期时直接给可操作的报错
     user_ok, user_err = _user_identity_ready()
     if not user_ok:
-        return {"ok": False,
-                "error": f"{user_err}。请在普通终端运行 lark-cli auth login 重新登录后重试；录音已保留在工作区 uploads/",
-                "audio_path": audio_path}
+        return {
+            "ok": False,
+            "error": f"{user_err}。请在普通终端运行 lark-cli auth login 重新登录后重试；录音已保留在工作区 uploads/",
+            "audio_path": audio_path,
+        }
 
     src = Path(audio_path)
     media = _transcode_to_m4a(src, deadline)
 
     # 1) 上传音频到飞书云盘（lark-cli 要求 --file 是 cwd 内的相对路径）
-    r1 = _run_cli(["drive", "+upload", "--file", media.name],
-                  remaining("云盘上传"), cwd=str(media.parent))
+    r1 = _run_cli(["drive", "+upload", "--file", media.name], remaining("云盘上传"), cwd=str(media.parent))
     if not r1["ok"]:
         return {"ok": False, "error": f"云盘上传失败: {r1['error']}", "audio_path": audio_path}
     file_token = _find_token(r1["data"], "file_token")
     if not file_token:
-        return {"ok": False, "error": "云盘上传成功但未返回 file_token（lark 授权可能过期）",
-                "audio_path": audio_path}
+        return {"ok": False, "error": "云盘上传成功但未返回 file_token（lark 授权可能过期）", "audio_path": audio_path}
 
     # 2) 生成妙记（妙记只支持 user 身份）
-    r2 = _run_cli(["minutes", "+upload", "--file-token", file_token, "--as", "user"],
-                  remaining("妙记生成"))
+    r2 = _run_cli(["minutes", "+upload", "--file-token", file_token, "--as", "user"], remaining("妙记生成"))
     if not r2["ok"]:
         return {"ok": False, "error": f"妙记生成失败: {r2['error']}", "audio_path": audio_path}
     minute_token = _find_token(r2["data"], "minute_token")
@@ -216,9 +220,21 @@ def _transcribe_sync(audio_path: str) -> dict:
     # 3) 等待转写完成，取逐字稿
     out_dir = _uploads_dir() / "transcripts"
     out_dir.mkdir(parents=True, exist_ok=True)
-    r3 = _run_cli(["minutes", "+detail", "--minute-tokens", minute_token,
-                   "--wait-ready", "--transcript", "--output-dir", str(out_dir), "--as", "user"],
-                  remaining("逐字稿获取"))
+    r3 = _run_cli(
+        [
+            "minutes",
+            "+detail",
+            "--minute-tokens",
+            minute_token,
+            "--wait-ready",
+            "--transcript",
+            "--output-dir",
+            str(out_dir),
+            "--as",
+            "user",
+        ],
+        remaining("逐字稿获取"),
+    )
     if not r3["ok"]:
         return {"ok": False, "error": f"逐字稿获取失败: {r3['error']}", "audio_path": audio_path}
 
@@ -232,19 +248,28 @@ def _transcribe_sync(audio_path: str) -> dict:
             except OSError:
                 text = ""
     if not text:
-        return {"ok": False,
-                "error": "妙记已生成但逐字稿为空（录音可能无人声，或转写仍在进行，稍后可在飞书妙记中查看）",
-                "audio_path": audio_path, "minute_token": minute_token}
-    return {"ok": True, "text": text, "audio_path": audio_path,
-            "minute_token": minute_token, "elapsed_s": round(time.time() - t0, 1)}
+        return {
+            "ok": False,
+            "error": "妙记已生成但逐字稿为空（录音可能无人声，或转写仍在进行，稍后可在飞书妙记中查看）",
+            "audio_path": audio_path,
+            "minute_token": minute_token,
+        }
+    return {
+        "ok": True,
+        "text": text,
+        "audio_path": audio_path,
+        "minute_token": minute_token,
+        "elapsed_s": round(time.time() - t0, 1),
+    }
 
 
 @router.post("/voice/transcribe")
 async def voice_transcribe(file: UploadFile = File(...)) -> dict:
     """语音转写：保存录音 → ffmpeg 转码 → 飞书妙记逐字稿。"""
     name = _safe_name(file.filename or "voice.webm")
-    if not name.lower().endswith((".webm", ".mp3", ".m4a", ".wav", ".ogg", ".mp4",
-                                  ".aac", ".flac", ".opus", ".amr", ".wma", ".mov")):
+    if not name.lower().endswith(
+        (".webm", ".mp3", ".m4a", ".wav", ".ogg", ".mp4", ".aac", ".flac", ".opus", ".amr", ".wma", ".mov")
+    ):
         name += ".webm"
     dest, size = await _save_upload(file, AUDIO_MAX_BYTES, name)
     if size < MIN_AUDIO_BYTES:

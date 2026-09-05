@@ -3,6 +3,7 @@
 主站 sthjt.hunan.gov.cn 存在 TLS/HTTP2 指纹级 WAF（curl/requests 直连会被秒断），
 因此统一使用 curl_cffi 的 impersonate="chrome" 模拟 Chrome 指纹访问。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -61,7 +62,11 @@ _api_cache: TTLCache = TTLCache(maxsize=128, ttl=config.CACHE_API_TTL)
 
 def _cache_key(url: str, params: dict | None, headers: dict | None) -> str:
     raw = json.dumps(
-        {"url": url, "params": params or {}, "headers": {k: v for k, v in (headers or {}).items() if k.lower() != "authorization"}},
+        {
+            "url": url,
+            "params": params or {},
+            "headers": {k: v for k, v in (headers or {}).items() if k.lower() != "authorization"},
+        },
         sort_keys=True,
         ensure_ascii=False,
     )

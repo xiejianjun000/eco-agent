@@ -4,9 +4,11 @@
   ① 每个计划步骤携带 expectation（预期世界状态），完成判据可验证
   ② 失败重规划冻结已成功前缀，仅重写剩余计划
 """
-import sys
+
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 from agent_core.commander_v2 import CommanderV2, TaskStatus
 
 
@@ -33,8 +35,10 @@ class TestExpectationAnchor:
 
     def test_verification_failure_marks_failed(self):
         """验证不通过 → 任务 FAILED，verdict 记录原因（不是没抛异常就算完成）"""
+
         def always_fail_verifier(task):
             return False, "产出与 expectation 不符：缺少关键条款"
+
         cmd = CommanderV2(verifier=always_fail_verifier, max_mission_replans=0)
         result = cmd.execute("写作一份报告")
         assert result["failed"] >= 1
@@ -88,11 +92,11 @@ class TestPrefixPreservingReplan:
         cmd.execute("通用任务流程测试")
 
         # 任何任务 id 不得被执行两次（失败的那次也只执行一回）
-        assert len(executed_ids) == len(set(executed_ids)), \
-            f"存在重复执行的任务: {executed_ids}"
+        assert len(executed_ids) == len(set(executed_ids)), f"存在重复执行的任务: {executed_ids}"
 
     def test_replan_budget_exhaustion(self):
         """重规划预算耗尽后：失败定格，后续依赖任务 BLOCKED，不再无限重试"""
+
         def always_fail(task):
             return False, "持续未达标"
 
@@ -142,6 +146,7 @@ class TestPrefixPreservingReplan:
 
 class _FakeLLM:
     """模拟 get_default_client：available + complete"""
+
     def __init__(self, reply: str, usable: bool = True):
         self._reply = reply
         self._usable = usable
@@ -159,8 +164,8 @@ class TestLLMVerifier:
     def test_llm_verdict_fail_blocks_completion(self, monkeypatch):
         """LLM 判未达标 → 任务 FAILED，verdict 含 LLM 理由"""
         import agent_core.llm_client as llm_mod
-        monkeypatch.setattr(llm_mod, "get_default_client",
-                            lambda: _FakeLLM("未达标\n缺少排放标准条款引用"))
+
+        monkeypatch.setattr(llm_mod, "get_default_client", lambda: _FakeLLM("未达标\n缺少排放标准条款引用"))
         cmd = CommanderV2(max_mission_replans=0)
         result = cmd.execute("通用LLM核验拦截测试")
         assert result["failed"] >= 1
@@ -170,8 +175,8 @@ class TestLLMVerifier:
     def test_llm_verdict_pass_completes(self, monkeypatch):
         """LLM 判达标 → 任务 COMPLETED，链式全跑完"""
         import agent_core.llm_client as llm_mod
-        monkeypatch.setattr(llm_mod, "get_default_client",
-                            lambda: _FakeLLM("达标\n判据逐条满足"))
+
+        monkeypatch.setattr(llm_mod, "get_default_client", lambda: _FakeLLM("达标\n判据逐条满足"))
         cmd = CommanderV2()
         result = cmd.execute("通用LLM核验放行测试")
         assert result["failed"] == 0
@@ -181,8 +186,8 @@ class TestLLMVerifier:
     def test_llm_unavailable_falls_back_to_rule(self, monkeypatch):
         """LLM 缺席 → 静默降级规则核验（产出非空即过），不报错不阻塞"""
         import agent_core.llm_client as llm_mod
-        monkeypatch.setattr(llm_mod, "get_default_client",
-                            lambda: _FakeLLM("", usable=False))
+
+        monkeypatch.setattr(llm_mod, "get_default_client", lambda: _FakeLLM("", usable=False))
         cmd = CommanderV2()
         result = cmd.execute("通用降级测试")
         assert result["failed"] == 0

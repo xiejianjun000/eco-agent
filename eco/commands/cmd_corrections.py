@@ -1,13 +1,16 @@
 """
 eco corrections - 用户纠错管理（采集自 eco chat 的 /correct 与自然语言纠错）
 """
+
 import logging
+
 log = logging.getLogger("eco.corrections")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
 def run(args):
     from agent_core.corrections import CorrectionStore
+
     store = CorrectionStore()
     match args.action:
         case "list":

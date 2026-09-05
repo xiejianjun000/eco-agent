@@ -44,13 +44,13 @@ def http_get(path: str, timeout: int = 10):
 
 
 def http_post(path: str, body: dict, timeout: int = 10):
-    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(),
-                                 headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.status, json.loads(r.read())
 
 
 # ── A. 冒烟测试 ────────────────────────────────────────────────
+
 
 def smoke() -> None:
     try:
@@ -61,14 +61,16 @@ def smoke() -> None:
         return
     try:
         _, j = http_get("/api/v1/tools")
-        check("冒烟", "govmcp 工具目录", j.get("count", 0) >= 139,
-              f"{j.get('count')} 个工具，分类 {len(j.get('categories', {}))}")
+        check(
+            "冒烟", "govmcp 工具目录", j.get("count", 0) >= 139, f"{j.get('count')} 个工具，分类 {len(j.get('categories', {}))}"
+        )
     except Exception as e:  # noqa: BLE001
         check("冒烟", "govmcp 工具目录", False, str(e))
     try:
         _, j = http_get("/api/v1/prompt/overview")
-        check("冒烟", "提示词组装", len(j.get("sections", [])) >= 4
-              and j.get("assembled_len", 0) > 500, f"phase={j.get('phase')}")
+        check(
+            "冒烟", "提示词组装", len(j.get("sections", [])) >= 4 and j.get("assembled_len", 0) > 500, f"phase={j.get('phase')}"
+        )
     except Exception as e:  # noqa: BLE001
         check("冒烟", "提示词组装", False, str(e))
     try:
@@ -78,13 +80,13 @@ def smoke() -> None:
         check("冒烟", "目标事件流", False, str(e))
     try:
         st, j = http_post("/api/v1/sessions", {"user_name": "smoke"})
-        check("冒烟", "会话创建", st == 200 and bool(j.get("session_id")),
-              str(j.get("session_id")))
+        check("冒烟", "会话创建", st == 200 and bool(j.get("session_id")), str(j.get("session_id")))
     except Exception as e:  # noqa: BLE001
         check("冒烟", "会话创建", False, str(e))
     # 技能目录（仓库技能经 skill_dir 注册表）
     try:
         from agent_core.skill_dir import get_skill_dir_registry
+
         n = len(get_skill_dir_registry().list())
         check("冒烟", "技能库", n >= 18, f"{n} 个技能")
     except Exception as e:  # noqa: BLE001
@@ -92,28 +94,27 @@ def smoke() -> None:
     # 审计链完整性（D 对齐：事件溯源 + SM3 审计）
     try:
         from agent_core.prompt_engine import PromptAuditChain
+
         v = PromptAuditChain().verify_chain()
-        check("冒烟", "SM3 审计链完整", v.get("valid", True),
-              f"{v.get('entries', 0)} 条")
+        check("冒烟", "SM3 审计链完整", v.get("valid", True), f"{v.get('entries', 0)} 条")
     except Exception as e:  # noqa: BLE001
         check("冒烟", "SM3 审计链完整", False, str(e))
     # MCP 挂载 + 热重载（挂载自闭环）
     try:
         st, j = http_post("/api/v1/system/reload", {})
-        check("冒烟", "MCP 挂载+热重载", st == 200 and j.get("env_reloaded"),
-              f"mcp={j.get('mcp_count')}")
+        check("冒烟", "MCP 挂载+热重载", st == 200 and j.get("env_reloaded"), f"mcp={j.get('mcp_count')}")
     except Exception as e:  # noqa: BLE001
         check("冒烟", "MCP 挂载+热重载", False, str(e))
 
 
 # ── B. 穿透测试（安全契约，直接函数级，不耗 LLM）──────────────
 
+
 def penetration() -> None:
-    from agent_core.exec_tools import (file_read, file_write,
-                                       run_shell)
+    from agent_core.exec_tools import file_read, file_write, run_shell
     from agent_core.prompt_engine import validate_injection
     from agent_core.web_search_tool import _parse_links
-    from server.api.chat import (_law_status_trigger, _llm_error_reply)
+    from server.api.chat import _law_status_trigger, _llm_error_reply
 
     # shell 白名单与危险语法
     check("穿透", "shell 白名单放行", json.loads(run_shell("pwd"))["ok"])
@@ -136,20 +137,20 @@ def penetration() -> None:
     check("穿透", "凭证错误自愈指引", "自愈指引" in r and "setup_credentials" in r)
     # 幻觉格式净化
     import re as _re
-    leaked = ('正常文字 <tool_calls> <invoke name="x"><parameter a="1"/></invoke>'
-              ' </tool_calls> 尾部')
+
+    leaked = '正常文字 <tool_calls> <invoke name="x"><parameter a="1"/></invoke> </tool_calls> 尾部'
     c = _re.sub(r"[<＜]\s*invoke[\s\S]*?[<＜]\s*/\s*invoke\s*>", "", leaked)
     c = _re.sub(r"[<＜]\s*tool_calls\s*>[\s\S]*?[<＜]\s*/\s*tool_calls\s*>", "", c)
     c = _re.sub(r"[<＜]\s*(tool_calls|invoke)[\s\S]*$", "", c).strip()
     check("穿透", "幻觉格式净化", "invoke" not in c and "tool_calls" not in c)
     # 搜索解析
-    page = ('<h2><a href="https://www.gov.cn/a.htm">标题甲</a></h2>'
-            '<h2><a href="https://www.gov.cn/b.htm">标题乙</a></h2>')
-    out = _parse_links(page, [(r'<h2><a href="([^"]+)"', r'<h2><a[^>]*>(.*?)</a></h2>')])
+    page = '<h2><a href="https://www.gov.cn/a.htm">标题甲</a></h2><h2><a href="https://www.gov.cn/b.htm">标题乙</a></h2>'
+    out = _parse_links(page, [(r'<h2><a href="([^"]+)"', r"<h2><a[^>]*>(.*?)</a></h2>")])
     check("穿透", "搜索链接解析", len(out) == 2 and out[0]["title"] == "标题甲")
 
 
 # ── C. 压力测试 ────────────────────────────────────────────────
+
 
 def stress() -> None:
     def hit(path):
@@ -160,15 +161,14 @@ def stress() -> None:
             return f"ERR:{e}"
 
     # 20 并发混合端点
-    paths = ["/healthz"] * 5 + ["/api/v1/tools"] * 5 + \
-            ["/api/v1/prompt/overview"] * 5 + ["/api/v1/goals/events"] * 5
+    paths = ["/healthz"] * 5 + ["/api/v1/tools"] * 5 + ["/api/v1/prompt/overview"] * 5 + ["/api/v1/goals/events"] * 5
     t0 = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as ex:
         results = list(ex.map(hit, paths))
     elapsed = (time.time() - t0) * 1000
     ok = all(r == 200 for r in results)
-    check("压力", f"20 并发混合端点 ({elapsed:.0f}ms)", ok,
-          f"{sum(1 for r in results if r == 200)}/20 成功")
+    check("压力", f"20 并发混合端点 ({elapsed:.0f}ms)", ok, f"{sum(1 for r in results if r == 200)}/20 成功")
+
     # 会话创建 ×10 并发
     def mk(_):
         try:
@@ -176,6 +176,7 @@ def stress() -> None:
             return st == 200 and bool(j.get("session_id"))
         except Exception:
             return False
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
         ok2 = all(ex.map(mk, range(10)))
     check("压力", "会话创建 ×10 并发", ok2)
@@ -191,29 +192,53 @@ def stress() -> None:
 
 # ── D. DSH 架构对齐自动检查 ────────────────────────────────────
 
+
 def dsh_alignment() -> None:
     # 接线一致性（注册了必须有 handler）
-    r = subprocess.run([sys.executable, "-m", "pytest",
-                        "tests/modules/test_capability_consistency.py",
-                        "tests/modules/test_tool_wiring.py", "-q"],
-                       capture_output=True, text=True, cwd=str(ROOT), timeout=300)
-    check("对齐", "接线一致性测试", r.returncode == 0,
-          (r.stdout.strip().splitlines() or ["?"])[-1])
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests/modules/test_capability_consistency.py",
+            "tests/modules/test_tool_wiring.py",
+            "-q",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(ROOT),
+        timeout=300,
+    )
+    check("对齐", "接线一致性测试", r.returncode == 0, (r.stdout.strip().splitlines() or ["?"])[-1])
     # 评测机械门禁（引用真实性）
-    r2 = subprocess.run([sys.executable, "_scripts/run_evals.py", "--mechanical"],
-                        capture_output=True, text=True, cwd=str(ROOT), timeout=300)
+    r2 = subprocess.run(
+        [sys.executable, "_scripts/run_evals.py", "--mechanical"], capture_output=True, text=True, cwd=str(ROOT), timeout=300
+    )
     ok2 = "通过" in r2.stdout and "❌" not in r2.stdout
-    check("对齐", "评测机械门禁（引用真实性）", ok2 and r2.returncode == 0,
-          r2.stdout.strip().splitlines()[-1] if r2.stdout.strip() else "?")
+    check(
+        "对齐",
+        "评测机械门禁（引用真实性）",
+        ok2 and r2.returncode == 0,
+        r2.stdout.strip().splitlines()[-1] if r2.stdout.strip() else "?",
+    )
     # 技能全库自审
-    r3 = subprocess.run([sys.executable, "ecoskills/meta-audit/scripts/audit.py",
-                         "--all"], capture_output=True, text=True, cwd=str(ROOT),
-                        timeout=120)
-    check("对齐", "技能全库自审 ≥70", "18/18" in r3.stdout and "❌" not in r3.stdout,
-          (r3.stdout.strip().splitlines() or ["?"])[-1])
+    r3 = subprocess.run(
+        [sys.executable, "ecoskills/meta-audit/scripts/audit.py", "--all"],
+        capture_output=True,
+        text=True,
+        cwd=str(ROOT),
+        timeout=120,
+    )
+    check(
+        "对齐",
+        "技能全库自审 ≥70",
+        "18/18" in r3.stdout and "❌" not in r3.stdout,
+        (r3.stdout.strip().splitlines() or ["?"])[-1],
+    )
     # 权限覆盖表（L1-L4 闸门）
     try:
         from agent_core.permissions import load_overrides
+
         n = len(load_overrides())
         check("对齐", "权限覆盖表（L1-L4 闸门）", n >= 60, f"{n} 项")
     except Exception as e:  # noqa: BLE001
@@ -221,8 +246,12 @@ def dsh_alignment() -> None:
     # 插槽面板（DSH Slot 对齐）
     try:
         _, j = http_get("/api/v1/slots")
-        check("对齐", "插槽面板（Slot）", "slots" in j or isinstance(j, list),
-              f"{len(j) if isinstance(j, list) else j.get('count', '?')} 个")
+        check(
+            "对齐",
+            "插槽面板（Slot）",
+            "slots" in j or isinstance(j, list),
+            f"{len(j) if isinstance(j, list) else j.get('count', '?')} 个",
+        )
     except Exception as e:  # noqa: BLE001
         check("对齐", "插槽面板（Slot）", False, str(e))
 
@@ -239,12 +268,12 @@ def main() -> None:
     dsh_alignment()
     if args.llm:
         import llm_probes
+
         llm_probes.run(CHECKS, BASE)
 
     passed = sum(1 for c in CHECKS if c["ok"])
     total = len(CHECKS)
-    report = {"passed": passed, "total": total, "checks": CHECKS,
-              "summary": f"{passed}/{total} 通过"}
+    report = {"passed": passed, "total": total, "checks": CHECKS, "summary": f"{passed}/{total} 通过"}
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=1))
     else:
@@ -253,8 +282,7 @@ def main() -> None:
             if c["group"] != cur:
                 cur = c["group"]
                 print(f"\n【{cur}】")
-            print(f"  {'✅' if c['ok'] else '❌'} {c['name']}"
-                  + (f" — {c['detail']}" if c.get("detail") else ""))
+            print(f"  {'✅' if c['ok'] else '❌'} {c['name']}" + (f" — {c['detail']}" if c.get("detail") else ""))
         print(f"\n═══ 总评: {report['summary']} ═══")
     sys.exit(0 if passed == total else 1)
 

@@ -1,4 +1,5 @@
 """LLM 决策留痕测试：mock 一轮 tool_calls 响应 + 一轮纯文本响应，断言两条留痕结构完整"""
+
 import json
 
 from agent_core.decisions import get_decision_chain, record_decision, summarize_decisions
@@ -8,17 +9,23 @@ def _run_two_rounds(monkeypatch, tmp_path):
     dec_file = tmp_path / "decisions.jsonl"
     monkeypatch.setattr("agent_core.decisions.DECISIONS_FILE", dec_file)
     from agent_core.llm_client import LLMClient
+
     c = LLMClient()
     monkeypatch.setattr(c, "_api_key", "sk-test")
     monkeypatch.setattr(c, "_disabled", False)
-    rounds = iter([
-        {"role": "assistant", "content": None,
-         "tool_calls": [{"id": "call_9", "type": "function",
-                         "function": {"name": "search_kb", "arguments": '{"q": "法"}'}}]},
-        {"role": "assistant", "content": "直接回答。"},
-    ])
-    monkeypatch.setattr(c, "_call_chat_with_tools",
-                        lambda m, msgs, t: (next(rounds), None))
+    rounds = iter(
+        [
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {"id": "call_9", "type": "function", "function": {"name": "search_kb", "arguments": '{"q": "法"}'}}
+                ],
+            },
+            {"role": "assistant", "content": "直接回答。"},
+        ]
+    )
+    monkeypatch.setattr(c, "_call_chat_with_tools", lambda m, msgs, t: (next(rounds), None))
 
     async def fake_exec(name, args):
         return "kb hit"
@@ -32,7 +39,7 @@ def _run_two_rounds(monkeypatch, tmp_path):
 
 def test_decision_records_structure(monkeypatch, tmp_path):
     dec_file = _run_two_rounds(monkeypatch, tmp_path)
-    lines = [json.loads(l) for l in dec_file.read_text(encoding="utf-8").splitlines() if l.strip()]
+    lines = [json.loads(line) for line in dec_file.read_text(encoding="utf-8").splitlines() if line.strip()]
     assert len(lines) == 2
     recs = [json.loads(e["content"]) for e in lines]
 
@@ -67,8 +74,9 @@ def test_decision_summary(monkeypatch, tmp_path):
 def test_record_decision_direct(monkeypatch, tmp_path):
     dec_file = tmp_path / "d.jsonl"
     monkeypatch.setattr("agent_core.decisions.DECISIONS_FILE", dec_file)
-    entry = record_decision(candidate_tools=0, selected_tools=[], finish_reason="stop",
-                            model="m", provider="p", prompt_phase="inspection")
+    entry = record_decision(
+        candidate_tools=0, selected_tools=[], finish_reason="stop", model="m", provider="p", prompt_phase="inspection"
+    )
     assert entry["source"] == "llm_decision"
     payload = json.loads(entry["content"])
     assert payload["prompt_phase"] == "inspection"

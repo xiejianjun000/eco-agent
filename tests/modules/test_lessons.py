@@ -13,10 +13,7 @@ from agent_core.lessons import LessonStore, extract_lesson  # noqa: E402
 
 
 def test_extract_on_failure(tmp_path):
-    lesson = extract_lesson(
-        "查中央生态环境保护督察工作规定",
-        "官网未找到该文件，多个路径404。",
-        ["web_fetch", "web_fetch"])
+    lesson = extract_lesson("查中央生态环境保护督察工作规定", "官网未找到该文件，多个路径404。", ["web_fetch", "web_fetch"])
     assert lesson is not None
     assert "web_fetch" in lesson["lesson"]
 

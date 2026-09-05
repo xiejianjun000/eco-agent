@@ -1,4 +1,5 @@
 """政策法规领域：政策文件检索、全文读取。"""
+
 from __future__ import annotations
 
 import logging
@@ -58,6 +59,7 @@ def search_policy(fetcher, cache, keyword: str, limit: int = 10) -> dict:
     try:
         html = fetcher.get_text(POLICY_INDEX)
         from ..core.parser import parse_links
+
         links = parse_links(html, base_url=POLICY_INDEX, limit=200)
         items = [lk for lk in links if keyword in lk["title"] and len(lk["title"]) >= 8][:limit]
         result["items"] = items
@@ -78,8 +80,9 @@ def read_policy(fetcher, cache, url: str) -> dict:
     result = {"url": url, "title": "", "content": "", "note": ""}
     try:
         html = fetcher.get_text(url)
-        from ..core.parser import parse_article
         import re
+
+        from ..core.parser import parse_article
 
         m = re.search(r"<title[^>]*>(.*?)</title>", html, re.S | re.I)
         result["title"] = m.group(1).strip() if m else ""

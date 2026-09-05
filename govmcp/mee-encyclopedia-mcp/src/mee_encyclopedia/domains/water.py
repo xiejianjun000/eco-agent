@@ -1,4 +1,5 @@
 """水环境领域：地表水水质、海水水质、流域监管。"""
+
 from __future__ import annotations
 
 import logging
@@ -19,6 +20,7 @@ def read_surface_water(fetcher, cache, station: str | None = None) -> dict:
     try:
         html = fetcher.get_text(SURFACE_WATER)
         from ..core.parser import parse_article, parse_table
+
         table = parse_table(html, limit=20)
         if table:
             result["table"] = table
@@ -43,6 +45,7 @@ def read_sea_water(fetcher, cache, region: str | None = None) -> dict:
     try:
         html = fetcher.get_text(SEA_WATER)
         from ..core.parser import parse_article, parse_table
+
         table = parse_table(html, limit=20)
         if table:
             result["table"] = table

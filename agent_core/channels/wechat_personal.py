@@ -16,10 +16,9 @@ wechat_personal.py — Eco Agent 微信个人号通道
 import logging
 import threading
 import time
-import re
-from pathlib import Path
-from datetime import datetime
 from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("wechat_personal")
 
@@ -47,6 +46,7 @@ class WeChatPersonal:
         config_path = DATA_DIR / "wechat_config.json"
         if config_path.exists():
             import json
+
             try:
                 config = json.loads(config_path.read_text(encoding="utf-8"))
                 self._allowed_users = config.get("allowed_users", [])
@@ -83,8 +83,7 @@ class WeChatPersonal:
         try:
             import itchat
         except ImportError:
-            logger.error(
-                "[WeChat] itchat-uos 未安装。运行: pip install itchat-uos")
+            logger.error("[WeChat] itchat-uos 未安装。运行: pip install itchat-uos")
             self._login_status = "error: itchat-uos not installed"
             return
 
@@ -142,10 +141,13 @@ class WeChatPersonal:
             return None
 
         # 记录消息
-        self._message_history.append({
-            "from": remark, "text": text,
-            "time": datetime.fromtimestamp(create_time).isoformat(),
-        })
+        self._message_history.append(
+            {
+                "from": remark,
+                "text": text,
+                "time": datetime.fromtimestamp(create_time).isoformat(),
+            }
+        )
         if len(self._message_history) > 500:
             self._message_history = self._message_history[-500:]
 
@@ -171,8 +173,7 @@ class WeChatPersonal:
 
         return None
 
-    def send_message(self, to_user: str = None, to_user_id: str = None,
-                     text: str = "") -> bool:
+    def send_message(self, to_user: str = None, to_user_id: str = None, text: str = "") -> bool:
         """主动发送微信消息"""
         if not self._bot or self._login_status != "connected":
             logger.warning("[WeChat] 未登录，无法发送消息")
@@ -222,7 +223,8 @@ wechat_bot = WeChatPersonal()
 def test():
     import io
     import sys as _sys
-    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
     print("[WeChat] 微信个人号通道模块加载正常")
     print(f"[WeChat] 数据目录: {DATA_DIR}")
     print(f"[WeChat] 状态: {wechat_bot._login_status}")

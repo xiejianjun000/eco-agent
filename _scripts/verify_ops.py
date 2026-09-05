@@ -51,9 +51,13 @@ def check_evolution_report() -> dict:
     if target is None:
         return {"exists": False, "chars": 0, "pass": False, "note": "evolution_report 不存在（未触发过进化）"}
     text = target.read_text(encoding="utf-8", errors="replace")
-    return {"exists": True, "chars": len(text), "pass": len(text) >= 500,
-            "note": ("I-01 口径: 每次进化 ≥500 字" if len(text) >= 500 else "篇幅不足 500 字"),
-            "report_file": str(target)}
+    return {
+        "exists": True,
+        "chars": len(text),
+        "pass": len(text) >= 500,
+        "note": ("I-01 口径: 每次进化 ≥500 字" if len(text) >= 500 else "篇幅不足 500 字"),
+        "report_file": str(target),
+    }
 
 
 def check_memory_tree() -> dict:
@@ -128,17 +132,21 @@ def main() -> int:
     print("ECO AGENT 7×24 运维体检")
     print(f"  时间: {report['checked_at']}")
     sl = report["session_logs"]
-    print(f"\n[会话日志] {sl['sessions']} 个会话 / {sl['events_total']} 事件 / "
-          f"校验{'通过' if sl['all_verified'] else '异常'} / 截断 {sl['truncated_total']}")
+    print(
+        f"\n[会话日志] {sl['sessions']} 个会话 / {sl['events_total']} 事件 / "
+        f"校验{'通过' if sl['all_verified'] else '异常'} / 截断 {sl['truncated_total']}"
+    )
     ta = report["trace_audit"]
     if "error" in ta:
         print(f"[轨迹审计] 异常: {ta['error']}")
     else:
-        print(f"[轨迹审计] {ta['entries']} 条 / SM3 链{'✅ 完整' if ta['ok'] else '❌ 断裂'} / "
-              f"尾哈希 {ta.get('last_hash', '')}")
+        print(
+            f"[轨迹审计] {ta['entries']} 条 / SM3 链{'✅ 完整' if ta['ok'] else '❌ 断裂'} / 尾哈希 {ta.get('last_hash', '')}"
+        )
     er = report["evolution_report"]
-    print(f"[进化报告] {'存在' if er['exists'] else '缺失'} / {er['chars']} 字 / "
-          f"{'✅ 达标' if er['pass'] else '⚠️ ' + er['note']}")
+    print(
+        f"[进化报告] {'存在' if er['exists'] else '缺失'} / {er['chars']} 字 / {'✅ 达标' if er['pass'] else '⚠️ ' + er['note']}"
+    )
     mt = report["memory_tree"]
     if "error" in mt:
         print(f"[记忆树] 异常: {mt['error']}")
@@ -149,8 +157,7 @@ def main() -> int:
     if "error" in mc:
         print(f"[记忆矛盾] 异常: {mc['error']}")
     else:
-        print(f"[记忆矛盾] 开放 {mc['open_conflicts']} / 已消解 {mc['resolved_conflicts']} / "
-              f"审计 {mc['audit_entries']} 条")
+        print(f"[记忆矛盾] 开放 {mc['open_conflicts']} / 已消解 {mc['resolved_conflicts']} / 审计 {mc['audit_entries']} 条")
     sk = report["skills"]
     if "error" in sk:
         print(f"[技能库] 异常: {sk['error']}")

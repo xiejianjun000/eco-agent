@@ -89,11 +89,7 @@ def sm3_hash(data: bytes) -> str:
         for j in range(16):
             W.append(int.from_bytes(block[j * 4 : (j + 1) * 4], "big"))
         for j in range(16, 68):
-            W.append(
-                _sm3_p1(W[j - 16] ^ W[j - 9] ^ _sm3_rotate_left(W[j - 3], 15))
-                ^ _sm3_rotate_left(W[j - 13], 7)
-                ^ W[j - 6]
-            )
+            W.append(_sm3_p1(W[j - 16] ^ W[j - 9] ^ _sm3_rotate_left(W[j - 3], 15)) ^ _sm3_rotate_left(W[j - 13], 7) ^ W[j - 6])
 
         W1 = [W[j] ^ W[j + 4] for j in range(64)]
 
@@ -101,8 +97,7 @@ def sm3_hash(data: bytes) -> str:
         for j in range(64):
             if j <= 15:
                 SS1 = _sm3_rotate_left(
-                    (_sm3_rotate_left(A, 12) + E + _sm3_rotate_left(_sm3_t(j), j % 32))
-                    & 0xFFFFFFFF,
+                    (_sm3_rotate_left(A, 12) + E + _sm3_rotate_left(_sm3_t(j), j % 32)) & 0xFFFFFFFF,
                     7,
                 )
                 SS2 = SS1 ^ _sm3_rotate_left(A, 12)
@@ -110,8 +105,7 @@ def sm3_hash(data: bytes) -> str:
                 TT2 = (_sm3_gg0(E, F, G) + H + SS1 + W[j]) & 0xFFFFFFFF
             else:
                 SS1 = _sm3_rotate_left(
-                    (_sm3_rotate_left(A, 12) + E + _sm3_rotate_left(_sm3_t(j), j % 32))
-                    & 0xFFFFFFFF,
+                    (_sm3_rotate_left(A, 12) + E + _sm3_rotate_left(_sm3_t(j), j % 32)) & 0xFFFFFFFF,
                     7,
                 )
                 SS2 = SS1 ^ _sm3_rotate_left(A, 12)
@@ -434,13 +428,7 @@ def _sm4_tau(a: int) -> int:
 
 
 def _sm4_l(b: int) -> int:
-    return (
-        b
-        ^ _sm3_rotate_left(b, 2)
-        ^ _sm3_rotate_left(b, 10)
-        ^ _sm3_rotate_left(b, 18)
-        ^ _sm3_rotate_left(b, 24)
-    )
+    return b ^ _sm3_rotate_left(b, 2) ^ _sm3_rotate_left(b, 10) ^ _sm3_rotate_left(b, 18) ^ _sm3_rotate_left(b, 24)
 
 
 def _sm4_l_prime(b: int) -> int:
@@ -510,10 +498,7 @@ def sm4_encrypt(plaintext: bytes, key: bytes, use_pkcs7: bool = True) -> bytes:
     # 加密
     result = b""
     for block_idx in range(0, len(plaintext), 16):
-        X = [
-            int.from_bytes(plaintext[block_idx + i : block_idx + i + 4], "big")
-            for i in range(0, 16, 4)
-        ]
+        X = [int.from_bytes(plaintext[block_idx + i : block_idx + i + 4], "big") for i in range(0, 16, 4)]
         for i in range(32):
             X.append(X[i] ^ _sm4_t(X[i + 1] ^ X[i + 2] ^ X[i + 3] ^ rk[i]))
         result += b"".join(x.to_bytes(4, "big") for x in reversed(X[-4:]))
@@ -566,10 +551,7 @@ def sm4_decrypt(ciphertext: bytes, key: bytes, use_pkcs7: bool = True) -> bytes:
     rk.reverse()
     result = b""
     for block_idx in range(0, len(ciphertext), 16):
-        X = [
-            int.from_bytes(ciphertext[block_idx + i : block_idx + i + 4], "big")
-            for i in range(0, 16, 4)
-        ]
+        X = [int.from_bytes(ciphertext[block_idx + i : block_idx + i + 4], "big") for i in range(0, 16, 4)]
         for i in range(32):
             X.append(X[i] ^ _sm4_t(X[i + 1] ^ X[i + 2] ^ X[i + 3] ^ rk[i]))
         result += b"".join(x.to_bytes(4, "big") for x in reversed(X[-4:]))

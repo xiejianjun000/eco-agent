@@ -19,21 +19,21 @@ content 支持静态字符串或零参 callable（动态片段，组装时求值
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # ─── 标准优先级（越小越靠前）──────────────────────────────────
 
 PRIORITY = {
-    "safety": 0,        # 安全准则（硬编码 + SOUL 硬边界）——首位不可动摇
-    "persona": 10,      # 人设 / 核心身份（SOUL 人格层）
+    "safety": 0,  # 安全准则（硬编码 + SOUL 硬边界）——首位不可动摇
+    "persona": 10,  # 人设 / 核心身份（SOUL 人格层）
     "tool_guidance": 30,  # 工具指南（能力清单 / 已挂载 MCP）
-    "phase": 35,        # 执法阶段状态机（巡查/文书/评查）——保持旧版组装顺序（工具能力在前）
-    "rules": 25,        # 领域规则与边界（法典注入、落盘纪律等）
-    "context": 40,      # 动态上下文（日期/工作区/模型/阶段等运行时信息）
-    "skill": 45,        # 技能注入（触发词匹配的 ecoskills）
-    "lessons": 50,      # 历史经验（自愈闭环教训注入）
-    "custom": 60,       # 插件/业务自定义片段
-    "injection": 90,    # 运行时人工注入（校验+审计后追加）
+    "phase": 35,  # 执法阶段状态机（巡查/文书/评查）——保持旧版组装顺序（工具能力在前）
+    "rules": 25,  # 领域规则与边界（法典注入、落盘纪律等）
+    "context": 40,  # 动态上下文（日期/工作区/模型/阶段等运行时信息）
+    "skill": 45,  # 技能注入（触发词匹配的 ecoskills）
+    "lessons": 50,  # 历史经验（自愈闭环教训注入）
+    "custom": 60,  # 插件/业务自定义片段
+    "injection": 90,  # 运行时人工注入（校验+审计后追加）
 }
 
 
@@ -67,14 +67,20 @@ class PromptSectionRegistry:
     def __init__(self) -> None:
         self._sections: dict[str, PromptSection] = {}
 
-    def register(self, section_id: str, title: str,
-                 content: str | Callable[[], str],
-                 priority: int = PRIORITY["custom"],
-                 source: str = "unknown", enabled: bool = True) -> PromptSection:
+    def register(
+        self,
+        section_id: str,
+        title: str,
+        content: str | Callable[[], str],
+        priority: int = PRIORITY["custom"],
+        source: str = "unknown",
+        enabled: bool = True,
+    ) -> PromptSection:
         if not section_id or not isinstance(section_id, str):
             raise ValueError("section_id 必须为非空字符串")
-        sec = PromptSection(section_id=section_id, title=title, content=content,
-                            priority=priority, source=source, enabled=enabled)
+        sec = PromptSection(
+            section_id=section_id, title=title, content=content, priority=priority, source=source, enabled=enabled
+        )
         self._sections[section_id] = sec
         return sec
 
@@ -100,8 +106,9 @@ class PromptSectionRegistry:
         for s in self.list():
             text = s.render()
             if text:
-                out.append({"section_id": s.section_id, "title": s.title,
-                            "content": text, "priority": s.priority, "source": s.source})
+                out.append(
+                    {"section_id": s.section_id, "title": s.title, "content": text, "priority": s.priority, "source": s.source}
+                )
         return out
 
     def assemble(self, header: bool = True) -> str:
@@ -121,8 +128,7 @@ class PromptSectionRegistry:
         """清空全部（或按来源前缀清理）片段，返回清理条数。"""
         before = len(self._sections)
         if source_prefix:
-            self._sections = {k: v for k, v in self._sections.items()
-                              if not v.source.startswith(source_prefix)}
+            self._sections = {k: v for k, v in self._sections.items() if not v.source.startswith(source_prefix)}
         else:
             self._sections = {}
         return before - len(self._sections)

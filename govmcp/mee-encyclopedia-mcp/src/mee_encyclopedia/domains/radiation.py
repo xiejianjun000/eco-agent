@@ -1,4 +1,5 @@
 """辐射与核安全领域：空气吸收剂量率、核安全监管入口。"""
+
 from __future__ import annotations
 
 import logging
@@ -48,6 +49,7 @@ def read_radiation_level(fetcher, cache, region: str | None = None) -> dict:
     try:
         html = fetcher.get_text(RADIATION_PLATFORM)
         from ..core.parser import parse_article, parse_table
+
         table = parse_table(html, limit=20)
         if table:
             result["table"] = table

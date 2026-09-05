@@ -7,7 +7,6 @@ import json
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 SKILL_PATH = ROOT / "SKILL.md"
 SKILL = SKILL_PATH.read_text(encoding="utf-8")
@@ -42,9 +41,7 @@ readme_version = require_match(
 
 package_versions = {skill_version, readme_version, str(PLUGIN.get("version", ""))}
 if len(package_versions) != 1:
-    raise SystemExit(
-        f"Use one package version in all files: {sorted(package_versions)}"
-    )
+    raise SystemExit(f"Use one package version in all files: {sorted(package_versions)}")
 
 skill_files = {path.relative_to(ROOT) for path in ROOT.rglob("SKILL.md")}
 if SKILL_PATH.is_symlink() or skill_files != {Path("SKILL.md")}:
@@ -60,25 +57,15 @@ plain_language_rules = (
     "Use `must` for requirements.",
     "Keep the full technical meaning.",
 )
-missing_plain_language_rules = [
-    rule for rule in plain_language_rules if rule not in AGENTS
-]
+missing_plain_language_rules = [rule for rule in plain_language_rules if rule not in AGENTS]
 if missing_plain_language_rules:
-    raise SystemExit(
-        "Add the missing Plain Language rules to AGENTS.md: "
-        + ", ".join(missing_plain_language_rules)
-    )
+    raise SystemExit("Add the missing Plain Language rules to AGENTS.md: " + ", ".join(missing_plain_language_rules))
 
-pattern_numbers = [
-    int(number)
-    for number in re.findall(r"(?m)^### ([0-9]+)\. ", SKILL)
-]
+pattern_numbers = [int(number) for number in re.findall(r"(?m)^### ([0-9]+)\. ", SKILL)]
 if pattern_numbers != list(range(1, 36)):
     raise SystemExit(f"Number SKILL.md patterns from 1 through 35: {pattern_numbers}")
 
-readme_numbers = {
-    int(number) for number in re.findall(r"(?m)^\| ([0-9]+) \|", README)
-}
+readme_numbers = {int(number) for number in re.findall(r"(?m)^\| ([0-9]+) \|", README)}
 if readme_numbers != set(range(1, 36)):
     raise SystemExit("List patterns 1 through 35 in the README table")
 

@@ -24,10 +24,7 @@ class Cache:
         with self._lock:
             self._conn = sqlite3.connect(self._path, check_same_thread=False)
             self._conn.execute(
-                "CREATE TABLE IF NOT EXISTS cache ("
-                " key TEXT PRIMARY KEY,"
-                " value TEXT NOT NULL,"
-                " expire_at REAL NOT NULL)"
+                "CREATE TABLE IF NOT EXISTS cache ( key TEXT PRIMARY KEY, value TEXT NOT NULL, expire_at REAL NOT NULL)"
             )
             self._conn.commit()
 
@@ -39,9 +36,7 @@ class Cache:
     def get(self, method: str, url: str, body: Any | None = None) -> str | None:
         k = self._key(method, url, body)
         with self._lock:
-            row = self._conn.execute(
-                "SELECT value, expire_at FROM cache WHERE key=?", (k,)
-            ).fetchone()
+            row = self._conn.execute("SELECT value, expire_at FROM cache WHERE key=?", (k,)).fetchone()
         if not row:
             return None
         value, expire_at = row
@@ -70,8 +65,7 @@ class Cache:
 class PermitClient:
     """平台 HTTP 客户端：自动预热会话（WebShield）、限速、重试、可选缓存。"""
 
-    def __init__(self, use_cache: bool = True, cache_db: str | None = None,
-                 interval: float = config.REQUEST_INTERVAL):
+    def __init__(self, use_cache: bool = True, cache_db: str | None = None, interval: float = config.REQUEST_INTERVAL):
         self.session = requests.Session()
         self.session.headers.update(config.DEFAULT_HEADERS)
         self._last_ts = 0.0
@@ -104,8 +98,9 @@ class PermitClient:
             self._last_ts = time.time()
 
     # ---- 核心请求 ----
-    def request(self, method: str, url: str, params: dict | None = None,
-                data: dict | None = None, use_cache: bool = True) -> str:
+    def request(
+        self, method: str, url: str, params: dict | None = None, data: dict | None = None, use_cache: bool = True
+    ) -> str:
         self._ensure_ready()
         body = {"params": params, "data": data}
 
@@ -118,9 +113,7 @@ class PermitClient:
         for attempt in range(config.RETRY_TIMES):
             try:
                 self._throttle()
-                resp = self.session.request(
-                    method, url, params=params, data=data, timeout=config.TIMEOUT
-                )
+                resp = self.session.request(method, url, params=params, data=data, timeout=config.TIMEOUT)
                 resp.raise_for_status()
                 resp.encoding = resp.apparent_encoding or resp.encoding
                 text = resp.text

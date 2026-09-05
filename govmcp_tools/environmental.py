@@ -29,10 +29,11 @@ def register_environmental(registry: ToolRegistry):
             station: 监测站点编号（可选）
 
         Returns:
-            JSON: {"aqi": int, "pm25": float, "pm10": float, "o3": float, "no2": float, "so2": float, "co": float, "level": str, "primary_pollutant": str}
+            JSON: {"aqi": int, "pm25": float, "pm10": float, "o3": float,
+                    "no2": float, "so2": float, "co": float, "level": str,
+                    "primary_pollutant": str}
         """
         return json.dumps({"status": "ok", "method": "query_air_quality", "city": city}, ensure_ascii=False)
-
 
     @govmcp_tool(
         name="env_query_water_quality",
@@ -43,7 +44,6 @@ def register_environmental(registry: ToolRegistry):
     async def query_water_quality(section: str, date_range: str = "7d") -> str:
         return json.dumps({"status": "ok", "method": "query_water_quality", "section": section}, ensure_ascii=False)
 
-
     @govmcp_tool(
         name="env_query_noise",
         description="查询功能区噪声监测数据，返回 Leq dB(A) 昼夜值",
@@ -53,7 +53,6 @@ def register_environmental(registry: ToolRegistry):
     async def query_noise(zone: str, period: str = "Ld") -> str:
         return json.dumps({"status": "ok", "method": "query_noise", "zone": zone}, ensure_ascii=False)
 
-
     @govmcp_tool(
         name="env_query_weather_forecast",
         description="查询城市72小时天气预报（温度、湿度、风向风速、降水概率）",
@@ -62,7 +61,6 @@ def register_environmental(registry: ToolRegistry):
     )
     async def query_weather_forecast(city: str, hours: int = 24) -> str:
         return json.dumps({"status": "ok", "method": "query_weather_forecast", "city": city}, ensure_ascii=False)
-
 
     @govmcp_tool(
         name="env_query_pollution_source",
@@ -80,7 +78,6 @@ def register_environmental(registry: ToolRegistry):
             ensure_ascii=False,
         )
 
-
     @govmcp_tool(
         name="env_query_emergency_monitor",
         description="查询突发环境事件应急监测报告（事故点位、扩散范围、污染物浓度）",
@@ -89,7 +86,6 @@ def register_environmental(registry: ToolRegistry):
     )
     async def query_emergency_monitor(event_id: str) -> str:
         return json.dumps({"status": "ok", "method": "query_emergency_monitor", "event_id": event_id}, ensure_ascii=False)
-
 
     @govmcp_tool(
         name="env_query_trend",
@@ -100,7 +96,6 @@ def register_environmental(registry: ToolRegistry):
     async def query_trend(city: str, indicator: str = "AQI", months: int = 12) -> str:
         return json.dumps({"status": "ok", "method": "query_trend", "city": city, "indicator": indicator}, ensure_ascii=False)
 
-
     @govmcp_tool(
         name="env_query_soil_quality",
         description="查询建设用地土壤污染状况（重金属、VOCs、SVOCs）",
@@ -109,7 +104,6 @@ def register_environmental(registry: ToolRegistry):
     )
     async def query_soil_quality(plot_id: str) -> str:
         return json.dumps({"status": "ok", "method": "query_soil_quality", "plot_id": plot_id}, ensure_ascii=False)
-
 
     @govmcp_tool(
         name="env_query_waste_transfer",
@@ -120,7 +114,6 @@ def register_environmental(registry: ToolRegistry):
     async def query_waste_transfer(manifest_id: str) -> str:
         return json.dumps({"status": "ok", "method": "query_waste_transfer", "manifest_id": manifest_id}, ensure_ascii=False)
 
-
     @govmcp_tool(
         name="env_query_radiation",
         description="查询辐射环境监测数据（γ剂量率、气溶胶、沉降物）",
@@ -129,7 +122,6 @@ def register_environmental(registry: ToolRegistry):
     )
     async def query_radiation(station: str, date: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_radiation", "station": station}, ensure_ascii=False)
-
 
     @govmcp_tool(
         name="env_query_cnemc_standard",
@@ -140,7 +132,6 @@ def register_environmental(registry: ToolRegistry):
     async def query_cnemc_standard(code: str) -> str:
         return json.dumps({"status": "ok", "method": "query_cnemc_standard", "code": code}, ensure_ascii=False)
 
-
     @govmcp_tool(
         name="env_query_eia_report",
         description="查询建设项目环境影响评价报告摘要（批复文号、主要结论、措施要求）",
@@ -149,7 +140,6 @@ def register_environmental(registry: ToolRegistry):
     )
     async def query_eia_report(project_name: str, approval_number: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_eia_report", "project_name": project_name}, ensure_ascii=False)
-
 
     @govmcp_tool(
         name="env_query_discharge_permit",
@@ -160,7 +150,6 @@ def register_environmental(registry: ToolRegistry):
     async def query_discharge_permit(enterprise: str, permit_number: str | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_discharge_permit", "enterprise": enterprise}, ensure_ascii=False)
 
-
     @govmcp_tool(
         name="env_query_ecological_redline",
         description="查询生态保护红线划定范围及管控要求",
@@ -170,7 +159,6 @@ def register_environmental(registry: ToolRegistry):
     async def query_ecological_redline(region: str, coordinates: list | None = None) -> str:
         return json.dumps({"status": "ok", "method": "query_ecological_redline", "region": region}, ensure_ascii=False)
 
-
     @govmcp_tool(
         name="env_query_carbon_data",
         description="查询区域碳排放数据（总量、强度、行业分布）",
@@ -179,7 +167,6 @@ def register_environmental(registry: ToolRegistry):
     )
     async def query_carbon_data(region: str, year: int = 2025) -> str:
         return json.dumps({"status": "ok", "method": "query_carbon_data", "region": region, "year": year}, ensure_ascii=False)
-
 
     registry.register_batch([v for k, v in locals().items() if callable(v) and hasattr(v, "_govmcp_meta")])
     return registry

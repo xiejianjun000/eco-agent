@@ -44,5 +44,4 @@ def durable_guard(slog: SessionEventLog, event_type: str) -> None:
         repaired = slog.repair_seq_gap()
     ok2, report2 = slog.durable()
     if not ok2:
-        raise SessionDurabilityError(
-            f"会话日志持久性校验失败: {report2} (repair={repaired})")
+        raise SessionDurabilityError(f"会话日志持久性校验失败: {report2} (repair={repaired})")

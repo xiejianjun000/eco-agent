@@ -5,6 +5,7 @@
 - read_mee_list 是唯一列表读取实现，支持全部栏目与关键词过滤；
 - 栏目 URL 来自 2026-08-27 官网穿透式实测（全部验证 200 且有正文）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -18,19 +19,58 @@ NNSA = "https://nnsa.mee.gov.cn"
 CATEGORY_GROUPS: dict[str, list[str]] = {
     "要闻动态": ["要闻动态", "时政要闻", "环境要闻", "地方快讯", "新闻发布", "直播访谈", "公示公告", "视频新闻"],
     "政策文件": [
-        "政策文件", "中央有关文件", "国务院有关文件", "部令", "部公告", "部文件", "部函",
-        "办公厅文件", "办公厅函", "行政审批文件", "核安全局文件", "核安全局函", "其他", "政策解读",
+        "政策文件",
+        "中央有关文件",
+        "国务院有关文件",
+        "部令",
+        "部公告",
+        "部文件",
+        "部函",
+        "办公厅文件",
+        "办公厅函",
+        "行政审批文件",
+        "核安全局文件",
+        "核安全局函",
+        "其他",
+        "政策解读",
     ],
     "业务工作": [
-        "督察", "法规标准", "政策规划与业务综合", "行政体制与人事", "科技与财务",
-        "自然生态保护", "水生态环境", "海洋生态环境", "大气环境保护", "应对气候变化",
-        "土壤生态环境", "固废化学品", "核与辐射安全监管", "环境影响评价", "排污许可",
-        "生态环境监测", "生态环境执法", "国际交流合作", "宣传教育", "环境应急", "投诉举报",
+        "督察",
+        "法规标准",
+        "政策规划与业务综合",
+        "行政体制与人事",
+        "科技与财务",
+        "自然生态保护",
+        "水生态环境",
+        "海洋生态环境",
+        "大气环境保护",
+        "应对气候变化",
+        "土壤生态环境",
+        "固废化学品",
+        "核与辐射安全监管",
+        "环境影响评价",
+        "排污许可",
+        "生态环境监测",
+        "生态环境执法",
+        "国际交流合作",
+        "宣传教育",
+        "环境应急",
+        "投诉举报",
     ],
     "环境质量": [
-        "环境质量", "生态环境状况公报", "生态环境统计年报", "海洋公报", "噪声防治报告",
-        "固废年报", "移动源年报", "地表水水质月报", "全国地表水质量状况", "海水浴场水质",
-        "全国空气质量状况", "空气质量预报", "城市空气质量报告",
+        "环境质量",
+        "生态环境状况公报",
+        "生态环境统计年报",
+        "海洋公报",
+        "噪声防治报告",
+        "固废年报",
+        "移动源年报",
+        "地表水水质月报",
+        "全国地表水质量状况",
+        "海水浴场水质",
+        "全国空气质量状况",
+        "空气质量预报",
+        "城市空气质量报告",
     ],
     "互动交流": ["意见征集-专题意见", "意见征集-网上征集", "留言选登", "常见问题"],
     "曝光台": ["行政处理", "执法信息", "通报"],
@@ -120,12 +160,28 @@ CATEGORY_URLS: dict[str, str] = {
 
 # 解析列表时需要过滤的导航/外链噪音
 _NOISE_TITLES = {
-    "更多", "更多>", "更多 >", "邮箱", "EN", "返回", "返回生态环境部首页",
-    "点击进入", "外交部", "文件", "解读", "留言选登", "常见问题",
+    "更多",
+    "更多>",
+    "更多 >",
+    "邮箱",
+    "EN",
+    "返回",
+    "返回生态环境部首页",
+    "点击进入",
+    "外交部",
+    "文件",
+    "解读",
+    "留言选登",
+    "常见问题",
 }
 _NOISE_URL_MARK = [
-    "mail.mee.gov.cn", "english.mee.gov.cn", "zwfw.mee.gov.cn",
-    "sousuo.mee.gov.cn", "/home/wbwx/", "/home/wzdt/", "fmprc.gov.cn",
+    "mail.mee.gov.cn",
+    "english.mee.gov.cn",
+    "zwfw.mee.gov.cn",
+    "sousuo.mee.gov.cn",
+    "/home/wbwx/",
+    "/home/wzdt/",
+    "fmprc.gov.cn",
 ]
 
 
@@ -155,10 +211,13 @@ def read_mee_list(fetcher, cache, category: str = "要闻动态", limit: int = 2
     try:
         html = fetcher.get_text(url)
         from ..core.parser import parse_links
+
         links = parse_links(html, base_url=url, limit=120)
         items = [
-            lk for lk in links
-            if lk["title"] and len(lk["title"]) >= 6
+            lk
+            for lk in links
+            if lk["title"]
+            and len(lk["title"]) >= 6
             and lk["title"].strip() not in _NOISE_TITLES
             and lk["title"].strip() != lk["url"].rstrip("/")
             and not any(m in lk["url"] for m in _NOISE_URL_MARK)
@@ -187,8 +246,9 @@ def read_mee_article(fetcher, cache, url: str) -> dict:
 
         # 站外跳转提示页：提取"继续访问"目标并跟随一次
         if "即将离开" in html or "继续访问" in html:
-            m = re.search(r'href=["\'](https?://[^"\']+)["\'][^>]*>\s*继续访问', html, re.S | re.I) or \
-                re.search(r'继续访问[^<]*<a[^>]+href=["\'](https?://[^"\']+)["\']', html, re.S | re.I)
+            m = re.search(r'href=["\'](https?://[^"\']+)["\'][^>]*>\s*继续访问', html, re.S | re.I) or re.search(
+                r'继续访问[^<]*<a[^>]+href=["\'](https?://[^"\']+)["\']', html, re.S | re.I
+            )
             if not m:
                 m = re.search(r'href=["\'](https?://(?!.*mee\.gov\.cn)[^"\']+)["\']', html, re.S | re.I)
             if m:

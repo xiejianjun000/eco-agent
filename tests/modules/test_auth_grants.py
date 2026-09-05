@@ -1,4 +1,5 @@
 """非交互 L4 授权令牌测试：无 grant 阻断 / grant 放行+审计 / 过期拒绝 / 篡改拒绝"""
+
 import json
 
 import pytest
@@ -16,9 +17,12 @@ def grants_env(tmp_path, monkeypatch):
     monkeypatch.setattr(grants_mod, "GRANTS_DIR", gdir)
     monkeypatch.setattr(grants_mod, "SECRET_FILE", tmp_path / "grant_secret")
     from agent_core import approval as approval_mod
-    monkeypatch.setattr(approval_mod, "_service",
-                        approval_mod.ApprovalService(policy="ask", answerers=["tester"],
-                                                     path=tmp_path / "approvals.jsonl"))
+
+    monkeypatch.setattr(
+        approval_mod,
+        "_service",
+        approval_mod.ApprovalService(policy="ask", answerers=["tester"], path=tmp_path / "approvals.jsonl"),
+    )
     monkeypatch.setenv("ECO_NONINTERACTIVE", "1")  # 强制非交互（无 tty 也能走 grant 通道）
     monkeypatch.delenv("ECO_PERMISSION_GATE", raising=False)
     return gdir
@@ -26,6 +30,7 @@ def grants_env(tmp_path, monkeypatch):
 
 def _read_audit_sources():
     from agent_core.prompt_engine import AUDIT_FILE
+
     if not AUDIT_FILE.exists():
         return []
     out = []
@@ -103,17 +108,26 @@ class TestAuthCLI:
         from eco.commands import cmd_auth
 
         class A:
-            auth_action = "grant"; level = "L4"; ttl = 600; scope = "*"; grant_id = None
+            auth_action = "grant"
+            level = "L4"
+            ttl = 600
+            scope = "*"
+            grant_id = None
+
         assert cmd_auth.run(A()) == 0
         out = capsys.readouterr().out
         gid = out.split("授权令牌")[1].split()[0].strip()
 
         class L:
-            auth_action = "list"; grant_id = None
+            auth_action = "list"
+            grant_id = None
+
         assert cmd_auth.run(L()) == 0
         assert gid in capsys.readouterr().out
 
         class R:
-            auth_action = "revoke"; grant_id = gid
+            auth_action = "revoke"
+            grant_id = gid
+
         assert cmd_auth.run(R()) == 0
         assert not grants_mod.list_grants()

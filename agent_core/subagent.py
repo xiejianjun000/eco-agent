@@ -22,7 +22,6 @@ import logging
 import threading
 import time
 import uuid
-from typing import Any
 
 logger = logging.getLogger("eco.subagent")
 
@@ -32,8 +31,14 @@ _SUBAGENT_STATUSES = ("pending", "running", "idle", "done", "failed", "killed")
 class Subagent:
     """一个子代理实例：状态 + 会话历史 + 结果 + 输出流。"""
 
-    def __init__(self, prompt: str, parent_history: list[dict] | None = None,
-                 model: str = "", label: str = "", parent_id: str | None = None) -> None:
+    def __init__(
+        self,
+        prompt: str,
+        parent_history: list[dict] | None = None,
+        model: str = "",
+        label: str = "",
+        parent_id: str | None = None,
+    ) -> None:
         self.id = uuid.uuid4().hex[:12]
         self.label = label or prompt[:24]
         self.prompt = prompt
@@ -70,8 +75,7 @@ class Subagent:
                 "created_at": self.created_at,
                 "started_at": self.started_at,
                 "finished_at": self.finished_at,
-                "duration_ms": int(((self.finished_at or time.time())
-                                    - (self.started_at or self.created_at)) * 1000),
+                "duration_ms": int(((self.finished_at or time.time()) - (self.started_at or self.created_at)) * 1000),
                 "turns": len(self.messages),
                 "usage": dict(self.usage),
                 "trace_events": len(self.trace),
@@ -85,8 +89,7 @@ class Subagent:
     def _emit(self, kind: str, payload: dict) -> None:
         with self._lock:
             self._output_seq += 1
-            ev = {"seq": self._output_seq, "time": time.time(),
-                  "kind": kind, **payload}
+            ev = {"seq": self._output_seq, "time": time.time(), "kind": kind, **payload}
             self.output.append(ev)
             if len(self.output) > 2000:  # 输出上限：防止无界增长
                 self.output = self.output[-2000:]
@@ -124,12 +127,10 @@ class Subagent:
         self._emit("status", {"status": "running"})
         try:
             slog = SessionEventLog(f"subagent/{self.id}")
-            slog.append("system/start", {"label": self.label, "parent_id": self.parent_id,
-                                         "prompt": self.prompt[:500]})
+            slog.append("system/start", {"label": self.label, "parent_id": self.parent_id, "prompt": self.prompt[:500]})
             client = get_default_client()
             messages = _build_messages(self.prompt, self.parent_history)
-            reply, trace, usage, first_llm_ms, first_token_ms = await _chat_with_codex_loop(
-                client, messages, self.model)
+            reply, trace, usage, first_llm_ms, first_token_ms = await _chat_with_codex_loop(client, messages, self.model)
             for ev in trace:
                 if ev.get("type") in ("think", "tool", "correction", "answer"):
                     self.trace.append(ev)
@@ -142,8 +143,7 @@ class Subagent:
                 # 自身会话供续聊：保留构建出的 messages（含 system 与工具回填）
                 self.messages = list(messages)
             self._emit("done", {"result": reply[:2000]})
-            slog.append("assistant/message", {"reply": reply[:2000],
-                                              "usage": dict(usage)})
+            slog.append("assistant/message", {"reply": reply[:2000], "usage": dict(usage)})
         except asyncio.CancelledError:
             with self._lock:
                 self.status = "killed"
@@ -176,8 +176,7 @@ class Subagent:
         self._emit("status", {"status": "running"})
         try:
             client = get_default_client()
-            reply, trace, usage, _, _ = await _chat_with_codex_loop(
-                client, list(self.messages), self.model)
+            reply, trace, usage, _, _ = await _chat_with_codex_loop(client, list(self.messages), self.model)
             for ev in trace:
                 if ev.get("type") in ("think", "tool", "correction", "answer"):
                     self.trace.append(ev)
@@ -220,9 +219,15 @@ class SubagentRegistry:
         self._agents: dict[str, Subagent] = {}
         self._lock = threading.RLock()
 
-    def start(self, prompt: str, history: list[dict] | None = None,
-              model: str = "", background: bool = True,
-              label: str = "", parent_id: str | None = None) -> dict:
+    def start(
+        self,
+        prompt: str,
+        history: list[dict] | None = None,
+        model: str = "",
+        background: bool = True,
+        label: str = "",
+        parent_id: str | None = None,
+    ) -> dict:
         """发起子代理。background=False 时同步等待结果（API 层用）。"""
         agent = Subagent(prompt, history, model=model, label=label, parent_id=parent_id)
         with self._lock:
@@ -237,8 +242,7 @@ class SubagentRegistry:
 
     def list(self) -> list[dict]:
         with self._lock:
-            return [a.snapshot() for a in sorted(
-                self._agents.values(), key=lambda a: -a.created_at)]
+            return [a.snapshot() for a in sorted(self._agents.values(), key=lambda a: -a.created_at)]
 
     def read_output(self, agent_id: str, since_seq: int = 0) -> tuple[list[dict], int] | None:
         agent = self.get(agent_id)

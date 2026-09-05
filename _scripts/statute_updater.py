@@ -17,8 +17,8 @@ statute_updater.py — ECO AGENT 法规自动更新管道
 
 import json
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("statute_updater")
@@ -109,7 +109,7 @@ class StatuteUpdater:
 
     def _check_source(self, source_id: str, source: dict) -> dict:
         """检查单个数据源（模拟）"""
-        last_check = source.get("last_check", "")
+        source.get("last_check", "")
         now = datetime.now().isoformat()
         result = {
             "source_id": source_id,
@@ -149,16 +149,24 @@ class StatuteUpdater:
                 # 同步到 Memory Tree
                 if self._mt:
                     try:
-                        self._mt.create_node(type="alert", title=f"法规更新: {detail['source_name']}",
-                                              content=json.dumps(record, ensure_ascii=False),
-                                              tags=["statute_update", "alert"], score=75.0, source="system")
+                        self._mt.create_node(
+                            type="alert",
+                            title=f"法规更新: {detail['source_name']}",
+                            content=json.dumps(record, ensure_ascii=False),
+                            tags=["statute_update", "alert"],
+                            score=75.0,
+                            source="system",
+                        )
                     except Exception:
                         pass
 
         return processed
 
     def get_stats(self) -> dict:
-        return {"total_sources": len(self._sources), "enabled_sources": sum(1 for s in self._sources.values() if s.get("enabled"))}
+        return {
+            "total_sources": len(self._sources),
+            "enabled_sources": sum(1 for s in self._sources.values() if s.get("enabled")),
+        }
 
     def _load_state(self):
         if self._register_file.exists():

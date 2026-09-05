@@ -7,6 +7,7 @@
     分页 {template}.html → {template}_2.html → ...
 - 详情页：t{YYYYMMDD}_{id}.html；附件：files/{md5}.pdf|xlsx|doc
 """
+
 from __future__ import annotations
 
 import datetime as _dt
@@ -51,6 +52,7 @@ def _ts_to_date(ts: int) -> str:
 
 # ---------- API 模式（list_tyxx 模板） ----------
 
+
 def _list_api(api_ids: list[int], page: int) -> list[dict]:
     items: list[dict] = []
     for cid in api_ids:
@@ -80,6 +82,7 @@ def _list_api(api_ids: list[int], page: int) -> list[dict]:
 
 
 # ---------- HTML 模式（index / list_sy3 / list_xzgsx 模板） ----------
+
 
 def _list_html(channel_path: str, template: str, page: int, detail_pattern: str | None = None) -> list[dict]:
     tpl = template or "index"
@@ -112,6 +115,7 @@ def _list_html(channel_path: str, template: str, page: int, detail_pattern: str 
 
 # ---------- 统一入口 ----------
 
+
 def list_articles(channel_key: str, page: int = 1) -> list[dict]:
     """按栏目配置抓取列表页，返回 [{title, url, date}]。"""
     channel = config.CHANNELS[channel_key]
@@ -127,6 +131,7 @@ def list_articles(channel_key: str, page: int = 1) -> list[dict]:
 
 # ---------- 详情页 ----------
 
+
 def get_detail(detail_url: str) -> dict:
     """解析详情页：标题 / 发布机构 / 日期 / 正文 / 附件列表。"""
     html = fetch_html(detail_url)
@@ -134,9 +139,7 @@ def get_detail(detail_url: str) -> dict:
     title_node = soup.find("h1") or soup.select_one(".article-title, .tit, h2")
     title = title_node.get_text(" ", strip=True) if title_node else ""
 
-    body_node = (
-        soup.select_one(".article-content, .content, .TRS_Editor, .article") or soup.find("body")
-    )
+    body_node = soup.select_one(".article-content, .content, .TRS_Editor, .article") or soup.find("body")
     body = body_node.get_text("\n", strip=True) if body_node else ""
 
     page_text = soup.get_text(" ", strip=True)
@@ -150,9 +153,7 @@ def get_detail(detail_url: str) -> dict:
     for a in soup.find_all("a", href=True):
         href = urljoin(config.BASE_URL + "/", a["href"])
         if _ATTACH_RE.search(href):
-            attachments.append(
-                {"name": a.get_text(" ", strip=True) or href.rsplit("/", 1)[-1], "url": href}
-            )
+            attachments.append({"name": a.get_text(" ", strip=True) or href.rsplit("/", 1)[-1], "url": href})
     return {
         "title": title,
         "source": source,

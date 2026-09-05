@@ -7,6 +7,7 @@
 - 标准浏览器 UA + Accept-Language，不做指纹伪造
 - 不绕过验证码 / 登录 / robots.txt
 """
+
 from __future__ import annotations
 
 import logging
@@ -20,10 +21,7 @@ from .utils import load_config
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_UA = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-)
+_DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
 
 class Fetcher:

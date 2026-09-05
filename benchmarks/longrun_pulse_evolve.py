@@ -60,10 +60,20 @@ EVOLVE_REPORT_DIR = ROOT / "memory-tree" / "obsidian_sync" / "quality"
 CLAIM_VS_OBSERVED = [
     ("L3 心跳节律 5~20 分钟自适应", "已实现", "_adapt_interval() 按上次心跳耗时在 300~1200s 伸缩，默认 600s", "✅"),
     ("L3 电池模式自动降频", "未实现", "代码中无电源/电池感知，_load_aware 仅按心跳耗时调整", "❌"),
-    ("L3 五个内置步骤全部静默执行", "部分实现", "5 个 step_* 均为占位实现（固定返回值）；生产接线 EcoLoops.start() 只注册 sync/diff 两个", "⚠️"),
+    (
+        "L3 五个内置步骤全部静默执行",
+        "部分实现",
+        "5 个 step_* 均为占位实现（固定返回值）；生产接线 EcoLoops.start() 只注册 sync/diff 两个",
+        "⚠️",
+    ),
     ("L4 每次任务后 / 每日自动触发", "未实现", "无调度器/钩子接线，仅 eco evolution CLI 手动触发", "❌"),
     ("L4 五阶段进化闭环", "已实现", "run_full_cycle() 五阶段 + 阶段3.5 反思门禁可运行", "✅"),
-    ("L4 输出 evolution_report.md", "有出入", "实际文件为 evolution_report_v{N}.md（带版本号），位于 memory-tree/obsidian_sync/quality/", "⚠️"),
+    (
+        "L4 输出 evolution_report.md",
+        "有出入",
+        "实际文件为 evolution_report_v{N}.md（带版本号），位于 memory-tree/obsidian_sync/quality/",
+        "⚠️",
+    ),
     ("L4 技能生成/优化", "占位实现", "阶段3 只产出计数（generated/optimized），不落盘技能文件", "⚠️"),
     ("L4 记忆固化", "占位实现", "阶段4 返回固定 dict，无文件产物", "⚠️"),
     ("L4 版本快照", "已实现", "快照 skills/ 与 SOUL.md 至 memory-tree/data/versions/v{N}，仅保留最近 3 版", "✅"),
@@ -83,9 +93,15 @@ class LongRunObserver:
 
     PULSE_STEPS = ["sync", "diff", "rule_engine", "mem_cron", "suggestions"]
 
-    def __init__(self, duration_s: float, smoke: bool = False,
-                 reports_dir: Path = REPORTS_DIR, pulse_interval_s: float | None = None,
-                 evolve_every_s: float | None = None, enable_evolve: bool = True):
+    def __init__(
+        self,
+        duration_s: float,
+        smoke: bool = False,
+        reports_dir: Path = REPORTS_DIR,
+        pulse_interval_s: float | None = None,
+        evolve_every_s: float | None = None,
+        enable_evolve: bool = True,
+    ):
         self.duration_s = duration_s
         self.smoke = smoke
         self.reports_dir = Path(reports_dir)
@@ -118,9 +134,11 @@ class LongRunObserver:
 
     def install_sigint_handler(self):
         """CLI 入口调用：SIGINT 时优雅退出（仍会生成汇总报告）"""
+
         def _handler(signum, frame):
             self._sigint = True
             self._stop.set()
+
         signal.signal(signal.SIGINT, _handler)
 
     # ── L3 Pulse 观察 ──
@@ -140,10 +158,14 @@ class LongRunObserver:
     def _register_steps(self, pulse):
         """注册全部 5 个内置步骤（生产接线只注册 sync/diff，这里为观察全部接上）"""
         from agent_core.heartbeat import PulseLoop
-        for name, fn in [("sync", PulseLoop.step_sync), ("diff", PulseLoop.step_diff),
-                         ("rule_engine", PulseLoop.step_rule_engine),
-                         ("mem_cron", PulseLoop.step_mem_cron),
-                         ("suggestions", PulseLoop.step_suggestions)]:
+
+        for name, fn in [
+            ("sync", PulseLoop.step_sync),
+            ("diff", PulseLoop.step_diff),
+            ("rule_engine", PulseLoop.step_rule_engine),
+            ("mem_cron", PulseLoop.step_mem_cron),
+            ("suggestions", PulseLoop.step_suggestions),
+        ]:
             pulse.register_listener(name, fn)
 
     def _collect_pulses(self, pulse):
@@ -154,26 +176,41 @@ class LongRunObserver:
                 continue
             self._seen_pulses.add(pid)
             interval = pulse._interval
-            adapted_from = self._last_interval if (self._last_interval is not None and interval != self._last_interval) else None
+            adapted_from = (
+                self._last_interval if (self._last_interval is not None and interval != self._last_interval) else None
+            )
             self._last_interval = interval
             steps = {}
             for name in self.PULSE_STEPS:
                 steps[name] = entry["results"].get(name) or {"status": "not_registered"}
                 if steps[name].get("status") == "error":
-                    self._emit({"type": "anomaly", "source": f"pulse.{name}",
-                                "error": steps[name].get("error", "unknown"), "pulse_id": pid})
-            self._emit({
-                "type": "heartbeat", "pulse_id": pid, "count": entry["count"],
-                "timestamp": entry["timestamp"], "elapsed_s": entry["elapsed_s"],
-                "interval_s": interval, "interval_adapted_from": adapted_from,
-                "steps": steps,
-                "note": "step_* 为占位实现，返回值为常量",
-            })
+                    self._emit(
+                        {
+                            "type": "anomaly",
+                            "source": f"pulse.{name}",
+                            "error": steps[name].get("error", "unknown"),
+                            "pulse_id": pid,
+                        }
+                    )
+            self._emit(
+                {
+                    "type": "heartbeat",
+                    "pulse_id": pid,
+                    "count": entry["count"],
+                    "timestamp": entry["timestamp"],
+                    "elapsed_s": entry["elapsed_s"],
+                    "interval_s": interval,
+                    "interval_adapted_from": adapted_from,
+                    "steps": steps,
+                    "note": "step_* 为占位实现，返回值为常量",
+                }
+            )
 
     # ── L4 Evolve 观察 ──
 
     def _evolve_loop(self):
         from agent_core.meta_evolution import MetaEvolution
+
         try:
             evo = MetaEvolution()
         except Exception as e:
@@ -197,24 +234,29 @@ class LongRunObserver:
                 "skill_files_generated": "无（阶段3 仅计数，不落盘技能文件）",
                 "memory_consolidation_files": "无（阶段4 返回固定 dict）",
             }
-            self._emit({
-                "type": "evolve_cycle",
-                "trigger": "script_manual（未观察到自动触发器：无任务后钩子、无每日02:00调度）",
-                "elapsed_ms": result.get("elapsed_ms"),
-                "version": phases.get("self_versioning", {}).get("version"),
-                "phases": {
-                    "experience_replay": phases.get("experience_replay"),
-                    "gap_analysis": phases.get("gap_analysis"),
-                    "skill_gen": phases.get("skill_gen"),
-                    "reflector": {"accept": reflector.get("accept_count"), "reject": reflector.get("reject_count"),
-                                  "llm_critique": reflector.get("llm_critique")},
-                    "curator_gate": phases.get("reflection", {}).get("curator", {}).get("gate"),
-                    "memory_consolidation": phases.get("memory_consolidation"),
-                    "self_versioning": phases.get("self_versioning"),
-                },
-                "llm_disabled": os.environ.get("ECO_LLM_DISABLE", "").strip() in ("1", "true", "yes"),
-                "artifacts": artifacts,
-            })
+            self._emit(
+                {
+                    "type": "evolve_cycle",
+                    "trigger": "script_manual（未观察到自动触发器：无任务后钩子、无每日02:00调度）",
+                    "elapsed_ms": result.get("elapsed_ms"),
+                    "version": phases.get("self_versioning", {}).get("version"),
+                    "phases": {
+                        "experience_replay": phases.get("experience_replay"),
+                        "gap_analysis": phases.get("gap_analysis"),
+                        "skill_gen": phases.get("skill_gen"),
+                        "reflector": {
+                            "accept": reflector.get("accept_count"),
+                            "reject": reflector.get("reject_count"),
+                            "llm_critique": reflector.get("llm_critique"),
+                        },
+                        "curator_gate": phases.get("reflection", {}).get("curator", {}).get("gate"),
+                        "memory_consolidation": phases.get("memory_consolidation"),
+                        "self_versioning": phases.get("self_versioning"),
+                    },
+                    "llm_disabled": os.environ.get("ECO_LLM_DISABLE", "").strip() in ("1", "true", "yes"),
+                    "artifacts": artifacts,
+                }
+            )
         except Exception as e:
             self._emit({"type": "anomaly", "source": "evolve_cycle", "error": str(e)})
 
@@ -224,14 +266,14 @@ class LongRunObserver:
             return known
         current = set(EVOLVE_REPORT_DIR.glob("evolution_report_v*.md"))
         for p in sorted(current - known):
-            self._emit({"type": "evolve_report_detected", "path": str(p),
-                        "size_bytes": p.stat().st_size})
+            self._emit({"type": "evolve_report_detected", "path": str(p), "size_bytes": p.stat().st_size})
         return current
 
     # ── 主流程 ──
 
     def run(self) -> dict:
         from agent_core.heartbeat import PulseLoop
+
         pulse = PulseLoop()
         self._configure_pulse(pulse)
         self._register_steps(pulse)
@@ -241,14 +283,21 @@ class LongRunObserver:
         self._jsonl_fh = open(self.jsonl_path, "w", encoding="utf-8")  # noqa: SIM115 长生命周期句柄，随 run 结束关闭
         reason = "deadline"
         try:
-            self._emit({
-                "type": "run_start", "mode": "smoke" if self.smoke else "longrun",
-                "duration_s": self.duration_s, "pulse_interval_s": pulse._interval,
-                "pulse_adaptive_bounds": [pulse._min_interval, pulse._max_interval],
-                "evolve_enabled": self.enable_evolve, "evolve_every_s": self.evolve_every_s if self.enable_evolve else None,
-                "llm_disabled": os.environ.get("ECO_LLM_DISABLE", "").strip() in ("1", "true", "yes"),
-                "claim_vs_observed": [{"claim": c, "verdict": v, "evidence": e, "mark": m} for c, v, e, m in CLAIM_VS_OBSERVED],
-            })
+            self._emit(
+                {
+                    "type": "run_start",
+                    "mode": "smoke" if self.smoke else "longrun",
+                    "duration_s": self.duration_s,
+                    "pulse_interval_s": pulse._interval,
+                    "pulse_adaptive_bounds": [pulse._min_interval, pulse._max_interval],
+                    "evolve_enabled": self.enable_evolve,
+                    "evolve_every_s": self.evolve_every_s if self.enable_evolve else None,
+                    "llm_disabled": os.environ.get("ECO_LLM_DISABLE", "").strip() in ("1", "true", "yes"),
+                    "claim_vs_observed": [
+                        {"claim": c, "verdict": v, "evidence": e, "mark": m} for c, v, e, m in CLAIM_VS_OBSERVED
+                    ],
+                }
+            )
             pulse.start()
             if self.enable_evolve:
                 threading.Thread(target=self._evolve_loop, daemon=True, name="evolve-trigger").start()
@@ -265,9 +314,14 @@ class LongRunObserver:
         finally:
             pulse.stop()
             self._stop.set()
-            self._emit({"type": "run_end", "reason": reason,
-                        "duration_s": round(time.time() - started, 1),
-                        "pulse_stats": pulse.get_stats()})
+            self._emit(
+                {
+                    "type": "run_end",
+                    "reason": reason,
+                    "duration_s": round(time.time() - started, 1),
+                    "pulse_stats": pulse.get_stats(),
+                }
+            )
             self._jsonl_fh.close()
             self._jsonl_fh = None
             self.generate_report(reason)
@@ -287,7 +341,9 @@ class LongRunObserver:
         L.append("# L3 Pulse 心跳 + L4 Evolve 进化 长时运行实证报告")
         L.append("")
         L.append(f"> 运行日期：{datetime.now().strftime('%Y-%m-%d %H:%M')}")
-        L.append(f"> 运行模式：{'smoke（压缩时序自检）' if self.smoke else 'longrun（长时观察）'}，计划时长 {self.duration_s:.0f}s")
+        L.append(
+            f"> 运行模式：{'smoke（压缩时序自检）' if self.smoke else 'longrun（长时观察）'}，计划时长 {self.duration_s:.0f}s"
+        )
         L.append(f"> 结束原因：{reason}")
         L.append(f"> LLM：{'ECO_LLM_DISABLE=1（规则降级，LLM 章节跳过）' if run_start.get('llm_disabled') else '启用'}")
         L.append("")
@@ -310,7 +366,9 @@ class LongRunObserver:
                 L.append(f"| 实际间隔 min/avg/max | {min(gaps):.1f}s / {statistics.mean(gaps):.1f}s / {max(gaps):.1f}s |")
                 if len(gaps) >= 2:
                     L.append(f"| 间隔中位数 | {statistics.median(gaps):.1f}s |")
-            L.append(f"| 配置间隔 / 自适应边界 | {run_start.get('pulse_interval_s')}s / {run_start.get('pulse_adaptive_bounds')} |")
+            L.append(
+                f"| 配置间隔 / 自适应边界 | {run_start.get('pulse_interval_s')}s / {run_start.get('pulse_adaptive_bounds')} |"
+            )
         else:
             L.append("| ⚠️ 未观察到任何心跳 | 运行时长可能不足一个心跳周期 |")
         L.append("")
@@ -322,7 +380,9 @@ class LongRunObserver:
             L.append("| 心跳 | 间隔调整 | 调整后 |")
             L.append("|:-----|:---------|:-------|")
             for h in adapted:
-                L.append(f"| {h['pulse_id']} | {h['interval_adapted_from']:g}s → {h['interval_s']:g}s | 本次心跳耗时 {h['elapsed_s']}s |")
+                L.append(
+                    f"| {h['pulse_id']} | {h['interval_adapted_from']:g}s → {h['interval_s']:g}s | 本次心跳耗时 {h['elapsed_s']}s |"  # noqa: E501
+                )
         else:
             L.append("未观察到间隔自适应调整（各次心跳耗时均低于触发阈值，或观察时长不足）。")
         L.append("")
@@ -332,10 +392,14 @@ class LongRunObserver:
         L.append("| 步骤 | 声称职责 | 观察到的返回值 | 性质 |")
         L.append("|:-----|:---------|:---------------|:-----|")
         for name in self.PULSE_STEPS:
-            vals = sorted({str(h["steps"].get(name, {}).get("result", h["steps"].get(name, {}).get("status", "N/A"))) for h in heartbeats}) or ["未执行"]
+            vals = sorted(
+                {str(h["steps"].get(name, {}).get("result", h["steps"].get(name, {}).get("status", "N/A"))) for h in heartbeats}
+            ) or ["未执行"]
             L.append(f"| {name} | {STEP_DUTIES[name]} | {', '.join(vals)} | 占位实现（常量返回） |")
         L.append("")
-        L.append("> 注：生产接线 `EcoLoops.start()` 仅注册 sync/diff 两个 listener，rule_engine/mem_cron/suggestions 在真实运行中不会执行；本剧本为观察目的注册了全部 5 个。")
+        L.append(
+            "> 注：生产接线 `EcoLoops.start()` 仅注册 sync/diff 两个 listener，rule_engine/mem_cron/suggestions 在真实运行中不会执行；本剧本为观察目的注册了全部 5 个。"  # noqa: E501
+        )
         L.append("")
 
         # 二、L4 Evolve
@@ -344,7 +408,9 @@ class LongRunObserver:
         L.append("### 2.1 进化触发")
         L.append("")
         L.append(f"- 剧本内进化循环次数：**{len(evolves)}**")
-        L.append("- 触发方式：`script_manual`——**未观察到自动触发器**（无任务完成钩子、无每日 02:00 调度接线），与 README「每次任务后 / 每日」的声称不符")
+        L.append(
+            "- 触发方式：`script_manual`——**未观察到自动触发器**（无任务完成钩子、无每日 02:00 调度接线），与 README「每次任务后 / 每日」的声称不符"  # noqa: E501
+        )
         L.append("")
         if evolves:
             L.append("### 2.2 五阶段产物清单")
@@ -357,12 +423,14 @@ class LongRunObserver:
                 gap = p.get("gap_analysis") or {}
                 sg = p.get("skill_gen") or {}
                 art = e["artifacts"]
-                L.append(f"| #{i} | v{e.get('version')} | {e.get('elapsed_ms')}ms "
-                         f"| 回放{replay.get('total_replayed')}/差距{gap.get('gap_count')} "
-                         f"| 增{sg.get('generated')}/优{sg.get('optimized')}（无落盘文件） "
-                         f"| {p.get('curator_gate')} "
-                         f"| {'✅' if art['version_snapshot_exists'] else '❌'} "
-                         f"| {'✅' if art['report_exists'] else '❌'} |")
+                L.append(
+                    f"| #{i} | v{e.get('version')} | {e.get('elapsed_ms')}ms "
+                    f"| 回放{replay.get('total_replayed')}/差距{gap.get('gap_count')} "
+                    f"| 增{sg.get('generated')}/优{sg.get('optimized')}（无落盘文件） "
+                    f"| {p.get('curator_gate')} "
+                    f"| {'✅' if art['version_snapshot_exists'] else '❌'} "
+                    f"| {'✅' if art['report_exists'] else '❌'} |"
+                )
             L.append("")
             L.append(f"- 阶段3 技能生成：{evolves[-1]['artifacts']['skill_files_generated']}")
             L.append(f"- 阶段4 记忆固化：{evolves[-1]['artifacts']['memory_consolidation_files']}")
@@ -432,12 +500,19 @@ def main():
     args = ap.parse_args()
 
     duration = args.seconds if args.seconds is not None else (120.0 if args.smoke else args.hours * 3600)
-    obs = LongRunObserver(duration_s=duration, smoke=args.smoke, reports_dir=args.reports_dir,
-                          pulse_interval_s=args.pulse_interval, evolve_every_s=args.evolve_every,
-                          enable_evolve=not args.no_evolve)
+    obs = LongRunObserver(
+        duration_s=duration,
+        smoke=args.smoke,
+        reports_dir=args.reports_dir,
+        pulse_interval_s=args.pulse_interval,
+        evolve_every_s=args.evolve_every,
+        enable_evolve=not args.no_evolve,
+    )
     obs.install_sigint_handler()
-    print(f"[LongRun] 模式={'smoke' if args.smoke else 'longrun'} 时长={duration:.0f}s "
-          f"进化={'每' + str(obs.evolve_every_s) + 's手动触发' if obs.enable_evolve else '关闭'}")
+    print(
+        f"[LongRun] 模式={'smoke' if args.smoke else 'longrun'} 时长={duration:.0f}s "
+        f"进化={'每' + str(obs.evolve_every_s) + 's手动触发' if obs.enable_evolve else '关闭'}"
+    )
     print(f"[LongRun] JSONL → {obs.jsonl_path}")
     out = obs.run()
     print(f"[LongRun] 结束（{out['reason']}）→ 报告 {out['report']}")

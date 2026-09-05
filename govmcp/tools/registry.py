@@ -16,9 +16,9 @@ from __future__ import annotations
 import functools
 import inspect
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Optional, get_type_hints
-from collections.abc import Callable
 
 # ---------------------------------------------------------------------------
 # JSON Schema 类型推断
@@ -197,10 +197,7 @@ class ToolRegistry:
             )
             return
         if not isinstance(name, str) or handler is None:
-            raise ValueError(
-                "register() requires either a decorated function or "
-                "(name, description, input_schema, handler)"
-            )
+            raise ValueError("register() requires either a decorated function or (name, description, input_schema, handler)")
         self._register_tool(
             name=name,
             description=description,

@@ -8,13 +8,14 @@
 内置安全：parse 出的 text 必须经 agent_core.prompt_engine.validate_injection
 检查，拦截时回复固定话术 BLOCK_TEXT 且不进入 chat 管道。
 """
+
 from __future__ import annotations
 
 import json
 import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from agent_core.prompt_engine import validate_injection
 
@@ -26,7 +27,7 @@ VERIFY_FAIL_TEXT = "[验签失败] 请求签名校验未通过"
 
 @dataclass
 class InboundMessage:
-    channel: str          # "wecom" 等
+    channel: str  # "wecom" 等
     user_id: str
     text: str
     msg_id: str = ""
@@ -74,8 +75,7 @@ class Channel(ABC):
         return msg, None
 
 
-def http_post_json(url: str, payload: dict, headers: dict | None = None,
-                   timeout: int = 10) -> dict:
+def http_post_json(url: str, payload: dict, headers: dict | None = None, timeout: int = 10) -> dict:
     """POST JSON（urllib 实现；测试中 mock 此函数，禁止真实外呼）。"""
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(url, data=data, method="POST")

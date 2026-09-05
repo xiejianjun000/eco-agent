@@ -4,19 +4,18 @@
 - 协议：JSON {"user_id": ..., "text": ...} 进，{"reply": ...} 出
 - 可选 response_url：reply 时回推结果
 """
+
 from __future__ import annotations
 
 import hashlib
 import hmac
 import os
-from typing import Optional
 
-from .base import Channel, InboundMessage, body_bytes, body_json, http_post_json
+from .base import Channel, InboundMessage, body_bytes, body_json
 
 
 def sign_body(secret: str, body: bytes) -> str:
-    return "sha256=" + hmac.new(secret.encode("utf-8"), body,
-                                hashlib.sha256).hexdigest()
+    return "sha256=" + hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
 
 
 class WebhookChannel(Channel):
@@ -41,9 +40,13 @@ class WebhookChannel(Channel):
         text = (data.get("text") or "").strip()
         if not user_id or not text:
             return None
-        return InboundMessage(channel=self.name, user_id=str(user_id), text=text,
-                              msg_id=str(data.get("msg_id", "")),
-                              extras={"response_url": data.get("response_url", "")})
+        return InboundMessage(
+            channel=self.name,
+            user_id=str(user_id),
+            text=text,
+            msg_id=str(data.get("msg_id", "")),
+            extras={"response_url": data.get("response_url", "")},
+        )
 
     def reply(self, user_id: str, text: str, **kw) -> bool:
         response_url = kw.get("response_url") or self.config.get("response_url", "")
@@ -52,10 +55,11 @@ class WebhookChannel(Channel):
             return True
         secret = self._secret()
         import json as _json
-        body = _json.dumps({"user_id": user_id, "reply": text},
-                           ensure_ascii=False).encode("utf-8")
+
+        body = _json.dumps({"user_id": user_id, "reply": text}, ensure_ascii=False).encode("utf-8")
         headers = {"X-Signature": sign_body(secret, body)} if secret else {}
         import urllib.request
+
         req = urllib.request.Request(response_url, data=body, method="POST")
         req.add_header("Content-Type", "application/json; charset=utf-8")
         for k, v in headers.items():

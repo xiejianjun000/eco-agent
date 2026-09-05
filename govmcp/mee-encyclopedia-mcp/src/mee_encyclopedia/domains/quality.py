@@ -5,6 +5,7 @@
 - 报告导览 list_quality_reports
 - 报告读取 read_quality_report（含 PDF 公报提示）
 """
+
 from __future__ import annotations
 
 import logging
@@ -35,10 +36,7 @@ def list_quality_reports() -> dict:
     """列出全部可读环境质量报告类型。"""
     return {
         "count": len(REPORT_TYPES),
-        "reports": [
-            {"type": t, "category": c, "pdf_dominant": t in PDF_DOMINANT}
-            for t, c in REPORT_TYPES.items()
-        ],
+        "reports": [{"type": t, "category": c, "pdf_dominant": t in PDF_DOMINANT} for t, c in REPORT_TYPES.items()],
         "note": "使用 read_quality_report(report_type=...) 读取对应报告最新列表",
     }
 

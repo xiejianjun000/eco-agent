@@ -9,13 +9,7 @@ The main class for converting files to Markdown.
 ```python
 from markitdown import MarkItDown
 
-md = MarkItDown(
-    llm_client=None,
-    llm_model=None,
-    llm_prompt=None,
-    docintel_endpoint=None,
-    enable_plugins=False
-)
+md = MarkItDown(llm_client=None, llm_model=None, llm_prompt=None, docintel_endpoint=None, enable_plugins=False)
 ```
 
 #### Parameters
@@ -35,10 +29,7 @@ md = MarkItDown(
 Convert a file to Markdown.
 
 ```python
-result = md.convert(
-    source,
-    file_extension=None
-)
+result = md.convert(source, file_extension=None)
 ```
 
 **Parameters**:
@@ -58,10 +49,7 @@ print(result.text_content)
 Convert from a file-like binary stream.
 
 ```python
-result = md.convert_stream(
-    stream,
-    file_extension
-)
+result = md.convert_stream(stream, file_extension)
 ```
 
 **Parameters**:
@@ -113,15 +101,16 @@ You can create custom document converters by implementing the `DocumentConverter
 ```python
 from markitdown import DocumentConverter
 
+
 class CustomConverter(DocumentConverter):
     def convert(self, stream, file_extension):
         """
         Convert a document from a binary stream.
-        
+
         Parameters:
             stream (BinaryIO): Binary file-like object
             file_extension (str): File extension (e.g., ".custom")
-            
+
         Returns:
             DocumentConverterResult: Conversion result
         """
@@ -134,14 +123,13 @@ class CustomConverter(DocumentConverter):
 ```python
 from markitdown import MarkItDown, DocumentConverter, DocumentConverterResult
 
+
 class MyCustomConverter(DocumentConverter):
     def convert(self, stream, file_extension):
-        content = stream.read().decode('utf-8')
+        content = stream.read().decode("utf-8")
         markdown_text = f"# Custom Format\n\n{content}"
-        return DocumentConverterResult(
-            text_content=markdown_text,
-            title="Custom Document"
-        )
+        return DocumentConverterResult(text_content=markdown_text, title="Custom Document")
+
 
 # Create MarkItDown instance
 md = MarkItDown()
@@ -203,16 +191,14 @@ setup(
 ```python
 from markitdown import DocumentConverter, DocumentConverterResult
 
+
 class MyConverter(DocumentConverter):
     def convert(self, stream, file_extension):
         # Your conversion logic
         content = stream.read()
         markdown = self.process(content)
-        return DocumentConverterResult(
-            text_content=markdown,
-            title="My Document"
-        )
-    
+        return DocumentConverterResult(text_content=markdown, title="My Document")
+
     def process(self, content):
         # Process content
         return "# Converted Content\n\n..."
@@ -227,16 +213,13 @@ from markitdown import MarkItDown
 from openai import OpenAI
 
 # Initialize OpenRouter client (OpenAI-compatible API)
-client = OpenAI(
-    api_key="your-openrouter-api-key",
-    base_url="https://openrouter.ai/api/v1"
-)
+client = OpenAI(api_key="your-openrouter-api-key", base_url="https://openrouter.ai/api/v1")
 
 # Create MarkItDown with AI support
 md = MarkItDown(
     llm_client=client,
     llm_model="anthropic/claude-opus-4.5",  # recommended for scientific vision
-    llm_prompt="Describe this image in detail for scientific documentation"
+    llm_prompt="Describe this image in detail for scientific documentation",
 )
 
 # Convert files with images
@@ -264,11 +247,7 @@ Analyze this scientific diagram or chart. Describe:
 Be precise and technical.
 """
 
-md = MarkItDown(
-    llm_client=client,
-    llm_model="anthropic/claude-opus-4.5",
-    llm_prompt=scientific_prompt
-)
+md = MarkItDown(llm_client=client, llm_model="anthropic/claude-opus-4.5", llm_prompt=scientific_prompt)
 ```
 
 ## Azure Document Intelligence
@@ -284,9 +263,7 @@ md = MarkItDown(
 ```python
 from markitdown import MarkItDown
 
-md = MarkItDown(
-    docintel_endpoint="https://YOUR-RESOURCE.cognitiveservices.azure.com/"
-)
+md = MarkItDown(docintel_endpoint="https://YOUR-RESOURCE.cognitiveservices.azure.com/")
 
 result = md.convert("complex_document.pdf")
 ```
@@ -346,8 +323,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 md = MarkItDown()
 
+
 def convert_file(filepath):
     return md.convert(filepath)
+
 
 with ThreadPoolExecutor(max_workers=4) as executor:
     results = executor.map(convert_file, file_list)

@@ -10,7 +10,6 @@ from pathlib import Path
 
 from citation_policy import classify_url, source_label
 
-
 URL_RE = re.compile(r"https?://[^\s<>()\[\]\"'，。；、）】]+")
 DATE_RE = re.compile(r"(?:19|20)\d{2}年\d{1,2}月\d{1,2}日|(?:19|20)\d{2}-\d{1,2}-\d{1,2}")
 ISSUER_RE = re.compile(

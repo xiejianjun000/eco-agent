@@ -46,6 +46,7 @@ def get_trace_id() -> str:
     """读取当前请求的 trace_id（无则空串）。"""
     return _trace_id_var.get()
 
+
 LEVELS = ("L1", "L2", "L3", "L4")
 LEVEL_LABELS = {"L1": "READ", "L2": "WRITE_LOCAL", "L3": "EXEC", "L4": "EXTERNAL"}
 
@@ -54,16 +55,49 @@ _PREFIX_RISK: list[tuple[tuple[str, ...], str]] = [
     # L3 — 命令/代码执行
     (("execute_code", "execute_", "shell", "exec_"), "L3"),
     # L4 — 外部服务写操作（政务办理/审批/交易/设备控制/网络写）
-    (("apply_", "book_", "submit_", "register_", "trade_", "set_",
-      "configure_", "control_", "dispatch_", "handle_", "initiate_",
-      "manage_", "input_", "generate_approval_document",
-      "apply_approval_digital_signature"), "L4"),
+    (
+        (
+            "apply_",
+            "book_",
+            "submit_",
+            "register_",
+            "trade_",
+            "set_",
+            "configure_",
+            "control_",
+            "dispatch_",
+            "handle_",
+            "initiate_",
+            "manage_",
+            "input_",
+            "generate_approval_document",
+            "apply_approval_digital_signature",
+        ),
+        "L4",
+    ),
     # L2 — 本地安全区写入
     (("workspace_", "memory_", "generate_", "write_", "save_"), "L2"),
     # L1 — 只读查询/检索/分析（宽前缀兜底）
-    (("query_", "get_", "search_", "kb_", "calculate_", "predict_",
-      "analyze_", "detect_", "vision_", "ocr_", "monitor_",
-      "supervise_", "track_", "read_", "list_"), "L1"),
+    (
+        (
+            "query_",
+            "get_",
+            "search_",
+            "kb_",
+            "calculate_",
+            "predict_",
+            "analyze_",
+            "detect_",
+            "vision_",
+            "ocr_",
+            "monitor_",
+            "supervise_",
+            "track_",
+            "read_",
+            "list_",
+        ),
+        "L1",
+    ),
 ]
 
 DEFAULT_UNKNOWN_LEVEL = "L3"  # 未知工具保守按 EXEC 处理
@@ -99,8 +133,7 @@ def _load_permission_md() -> str:
     return ""
 
 
-_OVERRIDE_RE = re.compile(
-    r"tool_risk_overrides:\s*\n((?:\s*-\s*tool:.*\n(?:\s+level:.*\n)?)+)")
+_OVERRIDE_RE = re.compile(r"tool_risk_overrides:\s*\n((?:\s*-\s*tool:.*\n(?:\s+level:.*\n)?)+)")
 
 
 def load_overrides() -> dict[str, str]:
@@ -174,15 +207,33 @@ def glob_rule_level(tool_name: str, rules: list[tuple[str, str]] | None = None) 
 
 # 危险命令 glob（参数级 deny，first-match-wins 命中即拒绝，不可被白名单覆盖）
 _DENY_COMMAND_GLOBS = (
-    "rm -rf*", "rm -fr*", "rm -r *", "mkfs*", "dd if=*", "shutdown*",
-    "reboot*", "halt*", "poweroff*", "> /dev/sd*", "chmod -R 777*",
-    "eval*", ":(){ :|:& };:*",
+    "rm -rf*",
+    "rm -fr*",
+    "rm -r *",
+    "mkfs*",
+    "dd if=*",
+    "shutdown*",
+    "reboot*",
+    "halt*",
+    "poweroff*",
+    "> /dev/sd*",
+    "chmod -R 777*",
+    "eval*",
+    ":(){ :|:& };:*",
 )
 
 # 文件操作危险路径 glob（参数级 deny，命中即拒绝写/读）
 _PATH_DENY_GLOBS = (
-    "/etc/passwd*", "/etc/shadow*", "/etc/sudoers*", "~/.ssh/*", "/dev/*",
-    "/proc/*", "/sys/*", "/root/*", "*/id_rsa", "*/id_ed25519",
+    "/etc/passwd*",
+    "/etc/shadow*",
+    "/etc/sudoers*",
+    "~/.ssh/*",
+    "/dev/*",
+    "/proc/*",
+    "/sys/*",
+    "/root/*",
+    "*/id_rsa",
+    "*/id_ed25519",
 )
 
 
@@ -229,6 +280,7 @@ def tool_risk_level(tool_name: str, overrides: dict[str, str] | None = None) -> 
 def risk_table() -> dict[str, str]:
     """全部已注册工具的风险分级表（eco doctor / config 展示用）"""
     from agent_core.tools_registry import get_tool_names
+
     overrides = load_overrides()
     return {name: tool_risk_level(name, overrides) for name in get_tool_names()}
 
@@ -237,14 +289,14 @@ def _audit_decision(tool_name: str, level: str, decision: str, reason: str):
     """全部闸门决策写 SM3 审计链（source=permission）"""
     try:
         from agent_core.prompt_engine import get_prompt_engine
+
         tid = get_trace_id()
         content = f"{tool_name} [{level}/{LEVEL_LABELS[level]}] -> {decision}: {reason}"
         if tid:
             content = f"[{tid}] {content}"
         get_prompt_engine().audit.append(
-            source="permission",
-            content=content,
-            phase="permission", accepted=(decision == "allow"), reason=reason)
+            source="permission", content=content, phase="permission", accepted=(decision == "allow"), reason=reason
+        )
     except Exception as e:  # noqa: BLE001 — 审计失败不阻断业务
         logger.warning(f"[permissions] 审计写入失败: {e}")
     # recordDeniedToMemory 联动：拒绝/待审批事件自动写入记忆树（[SECURITY] 前缀 + security/denied/tool 标签）
@@ -261,11 +313,13 @@ def _record_denied_to_memory(tool_name: str, level: str, decision: str, reason: 
         try:
             # cordis 可选服务优先读取（对齐 DSH 插件 ctx.get() 语义）
             from agent_core.cordis.boot import get_app_context
+
             tree = get_app_context().get("memory_tree")
         except Exception:  # noqa: BLE001
             tree = None
         if tree is None:
             from _scripts.memory_tree import MemoryTree
+
             tree = MemoryTree()
         tree.create_node(
             "alert",
@@ -298,8 +352,7 @@ def _confirm(prompt: str) -> bool:
         return False
 
 
-def gate_tool_call(tool_name: str, args: dict | None = None,
-                   overrides: dict[str, str] | None = None) -> tuple[bool, str, str]:
+def gate_tool_call(tool_name: str, args: dict | None = None, overrides: dict[str, str] | None = None) -> tuple[bool, str, str]:
     """执行闸门。返回 (是否放行, 风险级, 原因)。全部决策写审计链。
 
     overrides: 调用方注入的风险覆盖（如插件 manifest 声明），优先级同 load_overrides。
@@ -338,8 +391,9 @@ def gate_tool_call(tool_name: str, args: dict | None = None,
             _audit_decision(tool_name, level, "allow", f"白名单放行: {cmd[:60]}")
             return True, level, "白名单放行"
         if _is_interactive():
-            ok = _confirm(f"⚠️  [权限闸门 L3/EXEC] 工具 {tool_name} 请求执行命令/代码"
-                          f"{('：' + cmd[:80]) if cmd else ''}，是否允许？[y/N] ")
+            ok = _confirm(
+                f"⚠️  [权限闸门 L3/EXEC] 工具 {tool_name} 请求执行命令/代码{('：' + cmd[:80]) if cmd else ''}，是否允许？[y/N] "
+            )
             decision = "allow" if ok else "deny"
             reason = "人工确认放行" if ok else "人工拒绝"
             _audit_decision(tool_name, level, decision, reason)
@@ -350,10 +404,10 @@ def gate_tool_call(tool_name: str, args: dict | None = None,
     # L4 — 必须人工确认；先查有效授权令牌（非交互 L4 授权通道）
     try:
         from agent_core.grants import audit_grant_use, find_valid_grant
+
         g, _reason = find_valid_grant("L4", tool_name)
         if g is not None:
-            _audit_decision(tool_name, level, "allow",
-                            f"授权令牌放行 grant:{g.get('id')} (scope={g.get('scope')})")
+            _audit_decision(tool_name, level, "allow", f"授权令牌放行 grant:{g.get('id')} (scope={g.get('scope')})")
             audit_grant_use(g, tool_name, level)
             return True, level, f"授权令牌放行 grant:{g.get('id')}"
     except Exception as e:  # noqa: BLE001 — 授权查询失败不越权，回落人工确认
@@ -361,8 +415,9 @@ def gate_tool_call(tool_name: str, args: dict | None = None,
 
     if _is_interactive():
         kv = "; ".join(f"{k}={str(v)[:40]}" for k, v in list((args or {}).items())[:4])
-        ok = _confirm(f"🛑 [权限闸门 L4/EXTERNAL] 工具 {tool_name}({kv}) 将调用外部服务/执行写操作，"
-                      f"必须人工审批。是否允许？[y/N] ")
+        ok = _confirm(
+            f"🛑 [权限闸门 L4/EXTERNAL] 工具 {tool_name}({kv}) 将调用外部服务/执行写操作，必须人工审批。是否允许？[y/N] "
+        )
         decision = "allow" if ok else "deny"
         reason = "人工审批放行" if ok else "人工审批拒绝"
         _audit_decision(tool_name, level, decision, reason)
@@ -370,6 +425,7 @@ def gate_tool_call(tool_name: str, args: dict | None = None,
     # 非交互 L4 无 grant：交给审批栈（ask 登记 pending / never 维持原 deny 语义）
     try:
         from agent_core.approval import get_approval_service
+
         svc = get_approval_service()
         if svc.policy == "never":
             _audit_decision(tool_name, level, "deny", "非交互模式拒绝（L4 必须人工确认）")

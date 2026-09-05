@@ -4,6 +4,7 @@
 mock embedding 服务超时 → search_hybrid 优雅降级为 BM25，
 返回 vector_enabled=false，且日志有 WARN 记录。
 """
+
 from __future__ import annotations
 
 import logging
@@ -24,8 +25,11 @@ def tree(tmp_path: Path) -> MemoryTree:
 
 
 def test_vector_degrade_warns_and_marks(tree, caplog):
-    with caplog.at_level(logging.WARNING, logger="memory_tree"), mock.patch("agent_core.hybrid_retrieval.EmbeddingClient") as MockEC, \
-             mock.patch("agent_core.hybrid_retrieval.VectorStore") as MockVS:
+    with (
+        caplog.at_level(logging.WARNING, logger="memory_tree"),
+        mock.patch("agent_core.hybrid_retrieval.EmbeddingClient") as MockEC,
+        mock.patch("agent_core.hybrid_retrieval.VectorStore") as MockVS,
+    ):
         inst = MockEC.return_value
         inst.available.return_value = True
         inst.embed.side_effect = TimeoutError("embedding endpoint timeout")
@@ -39,14 +43,15 @@ def test_vector_degrade_warns_and_marks(tree, caplog):
     assert all(n.get("vector_enabled") is False for n in out)
     assert all(n.get("channel") == "bm25" for n in out)
     # ② 有 WARN 日志
-    assert any("向量检索降级" in r.getMessage() for r in caplog.records), \
-        "降级应打 WARN 日志（可观测性门禁）"
+    assert any("向量检索降级" in r.getMessage() for r in caplog.records), "降级应打 WARN 日志（可观测性门禁）"
 
 
 def test_no_embedding_config_no_warn(tree, caplog):
     """未配置 embedding（available=False）→ 静默降级、不误报 WARN。"""
-    with caplog.at_level(logging.WARNING, logger="memory_tree"), \
-            mock.patch("agent_core.hybrid_retrieval.EmbeddingClient") as MockEC:
+    with (
+        caplog.at_level(logging.WARNING, logger="memory_tree"),
+        mock.patch("agent_core.hybrid_retrieval.EmbeddingClient") as MockEC,
+    ):
         MockEC.return_value.available.return_value = False
         out = tree.search_hybrid("锑渣", max_results=5)
     assert out and all(n.get("vector_enabled") is False for n in out)

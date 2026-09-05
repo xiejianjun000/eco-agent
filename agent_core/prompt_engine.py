@@ -67,17 +67,15 @@ LEGACY_SYSTEM_PROMPT = (
 )
 
 # 硬编码人格兜底（SOUL.md 缺失时使用）
-_FALLBACK_PERSONA = (
-    "【身份】\n" + LEGACY_SYSTEM_PROMPT
-)
+_FALLBACK_PERSONA = "【身份】\n" + LEGACY_SYSTEM_PROMPT
 
 # 阶段状态机：全要素通用（默认）/ 执法三阶段（巡查·文书·评查，显式切换才激活）
 PHASE_PRESETS: dict[str, list[str]] = {
     "general": [
-        "当前视角：生态环境系统全要素（大气/水/土壤/固废/噪声/辐射/生态/碳 + 法规/监测/环评/排污许可/执法/督察/应急）。执法只是要素之一；未明确要求进入执法阶段时按全要素通用回答，不要自称'现场巡查/文书/评查阶段'。",
+        "当前视角：生态环境系统全要素（大气/水/土壤/固废/噪声/辐射/生态/碳 + 法规/监测/环评/排污许可/执法/督察/应急）。执法只是要素之一；未明确要求进入执法阶段时按全要素通用回答，不要自称'现场巡查/文书/评查阶段'。",  # noqa: E501
     ],
     "inspection": [
-        "当前阶段：现场巡查。重点：线索发现、现场取证规范（照片/笔录/监测数据）、违法线索初步判断。引用法条时优先引用《生态环境法典》（2026-08-15 施行，10 部单行法同日废止），旧法引用须双标注法典对应条款。",
+        "当前阶段：现场巡查。重点：线索发现、现场取证规范（照片/笔录/监测数据）、违法线索初步判断。引用法条时优先引用《生态环境法典》（2026-08-15 施行，10 部单行法同日废止），旧法引用须双标注法典对应条款。",  # noqa: E501
     ],
     "documentation": [
         "当前阶段：执法文书制作。重点：文书要素完整（当事人/事实/证据/法律依据/裁量说明），用语规范，引用法律精确到条款款项。",
@@ -270,39 +268,107 @@ _FORBIDDEN_PATTERNS = [
 
 
 # leetspeak 映射：对抗 ign0re / 1gnore / pr3v1ous / @ll 等形近替换绕过
-_LEET_MAP = str.maketrans({
-    "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t",
-    "@": "a", "$": "s",
-})
+_LEET_MAP = str.maketrans(
+    {
+        "0": "o",
+        "1": "i",
+        "3": "e",
+        "4": "a",
+        "5": "s",
+        "7": "t",
+        "@": "a",
+        "$": "s",
+    }
+)
 # 中英混合 leet（忽0略/忘1记）：数字符号视为"填充噪声"直接剥离后归并
 _LEET_FILLER_RE = re.compile(r"[013457@$]")
 
 # 繁体→简体高危字映射（注入校验专用；覆盖攻击高频字，非全量 OpenCC）
-_TRAD2SIMP = str.maketrans({
-    "視": "视", "廢": "废", "舊": "旧", "規": "规", "設": "设", "記": "记",
-    "棄": "弃", "則": "则", "無": "无", "聽": "听", "務": "务", "義": "义",
-    "對": "对", "開": "开", "關": "关", "閉": "闭", "發": "发", "現": "现",
-    "實": "实", "審": "审", "査": "查", "檢": "检", "監": "监", "測": "测",
-    "數": "数", "據": "据", "證": "证", "錄": "录", "語": "语", "請": "请",
-    "讓": "让", "頭": "头", "後": "后", "統": "统", "約": "约", "東": "东",
-    "員": "员", "處": "处", "罰": "罚", "許": "许", "靈": "灵",  # "證": "证" 与第 278 行重复（键值完全相同），去重
-    "係": "系", "嗰": "那", "啲": "些", "咗": "了", "喺": "在", "諗": "想",
-    "佢": "他", "哋": "们", "嚟": "来", "睇": "看", "揾": "找", "攞": "拿",
-})
+_TRAD2SIMP = str.maketrans(
+    {
+        "視": "视",
+        "廢": "废",
+        "舊": "旧",
+        "規": "规",
+        "設": "设",
+        "記": "记",
+        "棄": "弃",
+        "則": "则",
+        "無": "无",
+        "聽": "听",
+        "務": "务",
+        "義": "义",
+        "對": "对",
+        "開": "开",
+        "關": "关",
+        "閉": "闭",
+        "發": "发",
+        "現": "现",
+        "實": "实",
+        "審": "审",
+        "査": "查",
+        "檢": "检",
+        "監": "监",
+        "測": "测",
+        "數": "数",
+        "據": "据",
+        "證": "证",
+        "錄": "录",
+        "語": "语",
+        "請": "请",
+        "讓": "让",
+        "頭": "头",
+        "後": "后",
+        "統": "统",
+        "約": "约",
+        "東": "东",
+        "員": "员",
+        "處": "处",
+        "罰": "罚",
+        "許": "许",
+        "靈": "灵",  # "證": "证" 与第 278 行重复（键值完全相同），去重
+        "係": "系",
+        "嗰": "那",
+        "啲": "些",
+        "咗": "了",
+        "喺": "在",
+        "諗": "想",
+        "佢": "他",
+        "哋": "们",
+        "嚟": "来",
+        "睇": "看",
+        "揾": "找",
+        "攞": "拿",
+    }
+)
 
 
 # 西里尔/希腊等同形字映射（对抗 іgnore 用 U+0456 冒充 i 等手法）
-_CONFUSABLE_MAP = str.maketrans({
-    "і": "i", "о": "o", "а": "a", "е": "e", "с": "c", "р": "p",
-    "х": "x", "ѕ": "s", "ј": "j", "у": "y", "ν": "v", "ρ": "p",
-    "ο": "o", "α": "a",  # 原行尾西里尔 "е": "e" 与首行重复（同为 U+0435→e），去重
-})
+_CONFUSABLE_MAP = str.maketrans(
+    {
+        "і": "i",
+        "о": "o",
+        "а": "a",
+        "е": "e",
+        "с": "c",
+        "р": "p",
+        "х": "x",
+        "ѕ": "s",
+        "ј": "j",
+        "у": "y",
+        "ν": "v",
+        "ρ": "p",
+        "ο": "o",
+        "α": "a",  # 原行尾西里尔 "е": "e" 与首行重复（同为 U+0435→e），去重
+    }
+)
+
 
 # emoji/符号/装饰字符（So/Sk/Cf 等类别）在注入校验中视为噪声剥离——对抗 无🙂视🙂之🙂前 插入绕过
 def _strip_symbols(text: str) -> str:
     import unicodedata
-    return "".join(ch for ch in text
-                   if not unicodedata.category(ch).startswith(("S", "C")) or ch in "@$")
+
+    return "".join(ch for ch in text if not unicodedata.category(ch).startswith(("S", "C")) or ch in "@$")
 
 
 def _normalize_for_injection_check(text: str) -> str:
@@ -311,6 +377,7 @@ def _normalize_for_injection_check(text: str) -> str:
     leetspeak 形近字符映射（0→o 1→i 3→e 4→a 5→s 7→t @→a $→s）。
     对抗"忽 略 之 前 的 指 令"插空格/全半角混淆/大小写混淆/leet/emoji/同形字等绕过手法。"""
     import unicodedata
+
     t = unicodedata.normalize("NFKC", text)
     # 声调/变音符号剥离（hū lüè→hu lue；instrucción→instruccion）：NFKD 分解后去组合符
     t = unicodedata.normalize("NFKD", t)
@@ -325,8 +392,14 @@ def _normalize_for_injection_check(text: str) -> str:
     # 近义动词归并（忽视→忽略，让已有 忽略 族 pattern 生效）
     t = t.replace("忽视", "忽略").replace("疏视", "忽略")
     # 高危谐音拆字归并（对抗 乎略/呼略→忽略 等；仅限注入高危词根，控制误杀面）
-    for homo, canon in (("乎略", "忽略"), ("呼略", "忽略"), ("忽洛", "忽略"),
-                        ("望记", "忘记"), ("旺记", "忘记"), ("妄记", "忘记")):
+    for homo, canon in (
+        ("乎略", "忽略"),
+        ("呼略", "忽略"),
+        ("忽洛", "忽略"),
+        ("望记", "忘记"),
+        ("旺记", "忘记"),
+        ("妄记", "忘记"),
+    ):
         t = t.replace(homo, canon)
     return t
 
@@ -357,24 +430,56 @@ _NORMALIZED_EXTRA_RE = [re.compile(p) for p in _NORMALIZED_EXTRA_PATTERNS]
 # 执法业务语境豁免：伪造/篡改/编造 类 pattern 命中时，若文本含查处/防范/教学语境则放行
 # （"依法查处篡改监测数据案件""如何防范企业伪造数据"是执法主业高频合法表述）
 _EXEMPT_CONTEXTS = (
-    "查处", "防范", "防止", "打击", "严惩", "处罚", "依法", "案例", "警示",
-    "宣讲", "讲解", "教学", "识别", "调查", "举报", "控告", "审判", "起诉",
-    "犯罪", "违法", "罪名", "刑事责任", "量刑", "如何认定", "构成",
-    "指控", "检察", "被告人", "公诉", "涉嫌", "法院", "判决", "庭审", "立案",
+    "查处",
+    "防范",
+    "防止",
+    "打击",
+    "严惩",
+    "处罚",
+    "依法",
+    "案例",
+    "警示",
+    "宣讲",
+    "讲解",
+    "教学",
+    "识别",
+    "调查",
+    "举报",
+    "控告",
+    "审判",
+    "起诉",
+    "犯罪",
+    "违法",
+    "罪名",
+    "刑事责任",
+    "量刑",
+    "如何认定",
+    "构成",
+    "指控",
+    "检察",
+    "被告人",
+    "公诉",
+    "涉嫌",
+    "法院",
+    "判决",
+    "庭审",
+    "立案",
 )
 
 
 def _exempted(pattern_src: str, text: str) -> bool:
     """特定 pattern 在执法业务语境下豁免（仅限伪造/篡改/编造数据类）。"""
-    if ("伪造" in pattern_src or "篡改" in pattern_src or "编造" in pattern_src) \
-            and "数据" in pattern_src:
+    if ("伪造" in pattern_src or "篡改" in pattern_src or "编造" in pattern_src) and "数据" in pattern_src:
         return any(ctx in text for ctx in _EXEMPT_CONTEXTS)
     return False
 
 
 # 禁止词（明显违法导向）
 _FORBIDDEN_WORDS = [
-    "教唆逃避监管", "帮助伪造监测数据", "毁灭证据", "暴力抗法",
+    "教唆逃避监管",
+    "帮助伪造监测数据",
+    "毁灭证据",
+    "暴力抗法",
 ]
 
 MAX_INJECTION_LEN = 800
@@ -402,8 +507,7 @@ def validate_injection(content: str) -> tuple[bool, str]:
             if rex.search(normalized):
                 return False, f"命中归一化禁止 pattern#{i}: 英文/leet 改写绕过尝试"
         for w in _FORBIDDEN_WORDS:
-            if _normalize_for_injection_check(w) in normalized and not any(
-                    ctx in normalized for ctx in _EXEMPT_CONTEXTS):
+            if _normalize_for_injection_check(w) in normalized and not any(ctx in normalized for ctx in _EXEMPT_CONTEXTS):
                 return False, f"命中禁止词（归一化后）: {w}"
     # base64/hex/URL 编码载荷二次校验：对疑似编码 token 解码后递归校验
     for decoded in _decode_suspect_tokens(content):
@@ -423,6 +527,7 @@ def validate_injection(content: str) -> tuple[bool, str]:
             return False, f"命中禁止 pattern#{i}（反向书写）: 反写绕过尝试"
     # ROT13 变体（vtaber cerivbhf vafgehpgvbaf）：ROT13 解码后校验英文 pattern
     import codecs as _codecs
+
     rot13_norm = _normalize_for_injection_check(_codecs.decode(content, "rot_13"))
     if rot13_norm != _normalize_for_injection_check(content):
         for i, rex in enumerate(_NORMALIZED_EXTRA_RE):
@@ -434,6 +539,7 @@ def validate_injection(content: str) -> tuple[bool, str]:
     # 语言白名单：对原文与 NFKC 归一化（仅兼容分解、不拆谚文音节）双重校验。
     # 注意不能用 _normalize_for_injection_check（含 NFKD，会把谚文音节拆成 jamo 造成误杀）。
     import unicodedata as _ud
+
     nfkc_nospace = _ud.normalize("NFKC", content)
     nfkc_nospace = re.sub(r"[\s​‌‍⁠﻿­]+", "", nfkc_nospace)
     if _EXOTIC_SCRIPT_RE.search(content) or _EXOTIC_SCRIPT_RE.search(nfkc_nospace):
@@ -448,108 +554,873 @@ def validate_injection(content: str) -> tuple[bool, str]:
     # env ECO_SEMANTIC_GUARD=1 时启用语义层（agent_core.semantic_guard）；
     # 未开启时行为与原有确定性层完全一致。
     import os as _os
+
     if _os.environ.get("ECO_SEMANTIC_GUARD") == "1":
         from agent_core.semantic_guard import get_semantic_guard
+
         return get_semantic_guard().semantic_check(content)
     return True, ""
 
 
 # 英文常用词小词表（含攻击高频词+技术/产品名词，防英文技术场景与品牌名被误判外语）
-_EN_COMMON = frozenset([
-    "the", "a", "an", "is", "are", "was", "were", "be", "been", "being", "to", "of", "in", "on",
-    "at", "for", "with", "by", "from", "as", "into", "and", "or", "but", "not", "no", "yes", "you",
-    "your", "yours", "we", "our", "i", "me", "my", "he", "she", "it", "they", "them", "this",
-    "that", "these", "those", "what", "which", "who", "whom", "whose", "when", "where", "why",
-    "how", "can", "could", "should", "would", "will", "shall", "may", "might", "must", "do",
-    "does", "did", "done", "have", "has", "had", "having", "please", "thanks", "sorry", "hello",
-    "hi", "ok", "ignore", "previous", "instruction", "instructions", "rule", "rules", "forget",
-    "disregard", "safety", "system", "prompt", "check", "report", "data", "enterprise",
-    "pollution", "emission", "fine", "penalty", "law", "regulation", "article", "all", "any",
-    "every", "some", "none", "more", "most", "other", "such", "only", "own", "same", "so", "than",
-    "too", "very", "just",
-    # 技术/产品/运维常用词（英文技术命令串、产品名不误伤）
-    "kubernetes", "pod", "restart", "failed", "node", "docker", "compose", "build", "nginx",
-    "proxy", "timeout", "error", "keeps", "happening", "git", "rebase", "develop", "merge",
-    "branch", "commit", "push", "pull", "deploy", "server", "client", "desktop", "windows",
-    "linux", "java", "python", "api", "json", "xml", "sql", "html", "debug", "log", "cache",
-    "memory", "disk", "network", "database", "table", "index", "query", "update", "delete",
-    "insert", "select", "version", "install", "package", "config", "module", "class", "function",
-    "method", "array", "string", "object", "list", "file", "path", "directory", "folder", "screen",
-    "display", "keyboard", "mouse", "printer", "camera", "video", "audio", "image", "photo",
-    "phone", "iphone", "ipad", "mac", "macbook", "pro", "air", "mini", "plus", "youtube", "google",
-    "amazon", "microsoft", "apple", "samsung", "huawei", "xiaomi", "taobao", "wechat", "alipay",
-    "app", "wifi", "bluetooth", "cpu", "gpu", "ram", "ssd", "usb", "javascript", "typescript",
-    "golang", "rust", "ruby", "php", "swift", "kotlin", "scala", "terraform", "ansible", "jenkins",
-    "gradle", "maven", "npm", "pip", "yarn", "vscode", "eclipse", "idea", "redis", "kafka",
-    "mongo", "postgres", "mysql", "oracle", "flask", "django", "spring", "react", "vue", "angular",
-    "webpack", "oauth", "jwt", "token", "session", "cookie", "header", "request", "response",
-    "status", "http", "https", "tcp", "udp", "ssh", "ftp", "dockerfile", "container", "image",
-    "registry", "cluster", "namespace", "service", "ingress", "helm", "chart",
-    # 日常高频英文词（防正常英文句子被外语门误判）
-    "stop", "car", "front", "back", "behind", "ahead", "near", "far", "drive", "driving", "road",
-    "street", "vehicle", "truck", "turn", "left", "right", "home", "work", "school", "day",
-    "night", "time", "year", "people", "way", "thing", "man", "woman", "child", "world", "life",
-    "hand", "part", "place", "case", "week", "company", "number", "group", "problem", "fact",
-    "water", "air", "land", "city", "county", "province", "factory", "plant", "station", "waste",
-    "gas", "river", "lake", "soil", "noise", "dust", "smoke", "sample", "standard", "limit",
-    "value", "level", "result", "record", "form", "document", "evidence", "site", "area",
-    "project", "plan", "meeting", "office", "department", "government", "bureau", "agency", "unit",
-    "team", "member", "leader", "manager", "officer", "citizen", "public", "local", "national",
-    "major", "minor", "large", "small", "high", "low", "new", "old", "good", "bad", "big",
-    "little", "long", "short", "first", "last", "next", "different", "important", "necessary",
-    "possible", "current", "recent", "special", "general", "specific", "normal", "illegal",
-    "legal", "criminal", "civil", "administrative", "environmental", "industrial", "commercial",
-    "municipal", "rural", "urban", "domestic", "international", "regional", "annual", "monthly",
-    "weekly", "daily", "total", "average", "maximum", "minimum", "about", "above", "below", "over",
-    "under", "between", "within", "without", "during", "before", "after", "since", "until",
-    "while", "because", "therefore", "however", "moreover", "instead", "rather", "either",
-    "neither", "both", "each", "another", "someone", "anyone", "everyone", "nobody", "somebody",
-    "everything", "something", "anything", "nothing", "here", "there", "now", "then", "today",
-    "tomorrow", "yesterday", "soon", "later", "already", "still", "yet", "again", "also", "even",
-    "almost", "nearly", "quite", "really", "actually", "probably", "perhaps", "maybe", "certainly",
-    "definitely", "exactly", "mainly", "mostly", "partly", "entirely", "completely", "totally",
-    "directly", "quickly", "slowly", "easily", "usually", "often", "sometimes", "always", "never",
-    "immediately", "finally", "eventually", "recently", "currently", "previously", "generally",
-    "normally", "commonly", "especially", "particularly", "specifically", "significantly",
-    "substantially", "relatively", "similarly", "accordingly", "consequently", "hence", "thus",
-    "meanwhile", "forward", "backward", "aside", "besides", "except", "despite", "regarding",
-    "concerning", "including", "excluding", "following", "according", "depending", "using", "used",
-    "based", "known", "said", "given", "taken", "made", "come", "get", "make", "take", "go", "see",
-    "look", "find", "give", "tell", "say", "ask", "answer", "talk", "speak", "write", "read",
-    "listen", "hear", "show", "try", "use", "need", "want", "like", "love", "help", "start",
-    "begin", "continue", "keep", "hold", "leave", "stay", "remain", "move", "change", "increase",
-    "decrease", "reduce", "raise", "lower", "improve", "develop", "create", "produce", "provide",
-    "offer", "include", "exclude", "add", "remove", "replace", "follow", "lead", "guide",
-    "support", "protect", "prevent", "avoid", "allow", "permit", "forbid", "ban", "control",
-    "manage", "handle", "treat", "deal", "solve", "resolve", "address", "consider", "regard",
-    "view", "assess", "evaluate", "review", "examine", "inspect", "investigate", "analyze",
-    "study", "research", "monitor", "measure", "test", "detect", "identify", "recognize",
-    "confirm", "verify", "approve", "reject", "accept", "refuse", "deny", "admit", "claim",
-    "declare", "announce", "state", "explain", "describe", "note", "notice", "mention", "refer",
-    "cite", "quote", "list", "name", "call", "term", "define", "mean", "indicate", "suggest",
-    "imply", "prove", "demonstrate", "reveal", "display", "present", "represent", "perform",
-    "conduct", "carry", "execute", "implement", "apply", "adopt", "establish", "set", "construct",
-    "organize", "arrange", "prepare", "design", "draft", "sign", "seal", "issue", "publish",
-    "release", "submit", "file", "register", "store", "save", "copy", "send", "receive", "deliver",
-    "transfer", "transport", "import", "buy", "sell", "pay", "cost", "spend", "charge", "penalize",
-    "punish", "sue", "prosecute", "arrest", "detain", "seize", "confiscate", "destroy", "damage",
-    "pollute", "contaminate", "emit", "discharge", "dump", "process", "dispose", "recycle",
-    "reuse", "recover", "remediate", "restore",
-    # 日常词汇补充（防英文常用句误判）+ 常见带调外来词
-    "quick", "brown", "fox", "jumps", "jump", "lazy", "dog", "cat", "bird", "fish", "horse", "cow",
-    "pig", "sheep", "goat", "chicken", "duck", "rabbit", "mouse", "rat", "bear", "wolf", "lion",
-    "tiger", "elephant", "monkey", "snake", "frog", "spider", "ant", "bee", "butterfly", "tree",
-    "flower", "grass", "leaf", "root", "fruit", "vegetable", "apple", "banana", "orange", "grape",
-    "bread", "rice", "meat", "milk", "cheese", "egg", "butter", "sugar", "salt", "oil", "tea",
-    "coffee", "juice", "wine", "beer", "red", "blue", "green", "yellow", "black", "white", "gray",
-    "purple", "pink", "run", "runs", "walk", "walks", "sit", "sits", "sleep", "sleeps", "eat",
-    "eats", "drink", "drinks", "play", "plays", "sing", "sings", "dance", "dances", "swim",
-    "swims", "fly", "flies", "climb", "climbs", "jump", "jumped", "run", "ran", "walk", "walked",
-    "sleep", "slept", "eat", "ate", "drink", "drank", "swim", "swam", "fly", "flew", "résumé",
-    "cafe", "café", "naïve", "naive", "fiancé", "cliché", "décor", "exposé", "señor", "piñata",
-    "jalapeño", "zürich", "münchen", "köln", "blasé", "protégé", "attaché", "soufflé", "château",
-    "pâté", "crème", "brûlée", "entrée", "éclair", "façade", "ångström", "smörgåsbord",
-])
+_EN_COMMON = frozenset(
+    [
+        "the",
+        "a",
+        "an",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "to",
+        "of",
+        "in",
+        "on",
+        "at",
+        "for",
+        "with",
+        "by",
+        "from",
+        "as",
+        "into",
+        "and",
+        "or",
+        "but",
+        "not",
+        "no",
+        "yes",
+        "you",
+        "your",
+        "yours",
+        "we",
+        "our",
+        "i",
+        "me",
+        "my",
+        "he",
+        "she",
+        "it",
+        "they",
+        "them",
+        "this",
+        "that",
+        "these",
+        "those",
+        "what",
+        "which",
+        "who",
+        "whom",
+        "whose",
+        "when",
+        "where",
+        "why",
+        "how",
+        "can",
+        "could",
+        "should",
+        "would",
+        "will",
+        "shall",
+        "may",
+        "might",
+        "must",
+        "do",
+        "does",
+        "did",
+        "done",
+        "have",
+        "has",
+        "had",
+        "having",
+        "please",
+        "thanks",
+        "sorry",
+        "hello",
+        "hi",
+        "ok",
+        "ignore",
+        "previous",
+        "instruction",
+        "instructions",
+        "rule",
+        "rules",
+        "forget",
+        "disregard",
+        "safety",
+        "system",
+        "prompt",
+        "check",
+        "report",
+        "data",
+        "enterprise",
+        "pollution",
+        "emission",
+        "fine",
+        "penalty",
+        "law",
+        "regulation",
+        "article",
+        "all",
+        "any",
+        "every",
+        "some",
+        "none",
+        "more",
+        "most",
+        "other",
+        "such",
+        "only",
+        "own",
+        "same",
+        "so",
+        "than",
+        "too",
+        "very",
+        "just",
+        # 技术/产品/运维常用词（英文技术命令串、产品名不误伤）
+        "kubernetes",
+        "pod",
+        "restart",
+        "failed",
+        "node",
+        "docker",
+        "compose",
+        "build",
+        "nginx",
+        "proxy",
+        "timeout",
+        "error",
+        "keeps",
+        "happening",
+        "git",
+        "rebase",
+        "develop",
+        "merge",
+        "branch",
+        "commit",
+        "push",
+        "pull",
+        "deploy",
+        "server",
+        "client",
+        "desktop",
+        "windows",
+        "linux",
+        "java",
+        "python",
+        "api",
+        "json",
+        "xml",
+        "sql",
+        "html",
+        "debug",
+        "log",
+        "cache",
+        "memory",
+        "disk",
+        "network",
+        "database",
+        "table",
+        "index",
+        "query",
+        "update",
+        "delete",
+        "insert",
+        "select",
+        "version",
+        "install",
+        "package",
+        "config",
+        "module",
+        "class",
+        "function",
+        "method",
+        "array",
+        "string",
+        "object",
+        "list",
+        "file",
+        "path",
+        "directory",
+        "folder",
+        "screen",
+        "display",
+        "keyboard",
+        "mouse",
+        "printer",
+        "camera",
+        "video",
+        "audio",
+        "image",
+        "photo",
+        "phone",
+        "iphone",
+        "ipad",
+        "mac",
+        "macbook",
+        "pro",
+        "air",
+        "mini",
+        "plus",
+        "youtube",
+        "google",
+        "amazon",
+        "microsoft",
+        "apple",
+        "samsung",
+        "huawei",
+        "xiaomi",
+        "taobao",
+        "wechat",
+        "alipay",
+        "app",
+        "wifi",
+        "bluetooth",
+        "cpu",
+        "gpu",
+        "ram",
+        "ssd",
+        "usb",
+        "javascript",
+        "typescript",
+        "golang",
+        "rust",
+        "ruby",
+        "php",
+        "swift",
+        "kotlin",
+        "scala",
+        "terraform",
+        "ansible",
+        "jenkins",
+        "gradle",
+        "maven",
+        "npm",
+        "pip",
+        "yarn",
+        "vscode",
+        "eclipse",
+        "idea",
+        "redis",
+        "kafka",
+        "mongo",
+        "postgres",
+        "mysql",
+        "oracle",
+        "flask",
+        "django",
+        "spring",
+        "react",
+        "vue",
+        "angular",
+        "webpack",
+        "oauth",
+        "jwt",
+        "token",
+        "session",
+        "cookie",
+        "header",
+        "request",
+        "response",
+        "status",
+        "http",
+        "https",
+        "tcp",
+        "udp",
+        "ssh",
+        "ftp",
+        "dockerfile",
+        "container",
+        "image",
+        "registry",
+        "cluster",
+        "namespace",
+        "service",
+        "ingress",
+        "helm",
+        "chart",
+        # 日常高频英文词（防正常英文句子被外语门误判）
+        "stop",
+        "car",
+        "front",
+        "back",
+        "behind",
+        "ahead",
+        "near",
+        "far",
+        "drive",
+        "driving",
+        "road",
+        "street",
+        "vehicle",
+        "truck",
+        "turn",
+        "left",
+        "right",
+        "home",
+        "work",
+        "school",
+        "day",
+        "night",
+        "time",
+        "year",
+        "people",
+        "way",
+        "thing",
+        "man",
+        "woman",
+        "child",
+        "world",
+        "life",
+        "hand",
+        "part",
+        "place",
+        "case",
+        "week",
+        "company",
+        "number",
+        "group",
+        "problem",
+        "fact",
+        "water",
+        "air",
+        "land",
+        "city",
+        "county",
+        "province",
+        "factory",
+        "plant",
+        "station",
+        "waste",
+        "gas",
+        "river",
+        "lake",
+        "soil",
+        "noise",
+        "dust",
+        "smoke",
+        "sample",
+        "standard",
+        "limit",
+        "value",
+        "level",
+        "result",
+        "record",
+        "form",
+        "document",
+        "evidence",
+        "site",
+        "area",
+        "project",
+        "plan",
+        "meeting",
+        "office",
+        "department",
+        "government",
+        "bureau",
+        "agency",
+        "unit",
+        "team",
+        "member",
+        "leader",
+        "manager",
+        "officer",
+        "citizen",
+        "public",
+        "local",
+        "national",
+        "major",
+        "minor",
+        "large",
+        "small",
+        "high",
+        "low",
+        "new",
+        "old",
+        "good",
+        "bad",
+        "big",
+        "little",
+        "long",
+        "short",
+        "first",
+        "last",
+        "next",
+        "different",
+        "important",
+        "necessary",
+        "possible",
+        "current",
+        "recent",
+        "special",
+        "general",
+        "specific",
+        "normal",
+        "illegal",
+        "legal",
+        "criminal",
+        "civil",
+        "administrative",
+        "environmental",
+        "industrial",
+        "commercial",
+        "municipal",
+        "rural",
+        "urban",
+        "domestic",
+        "international",
+        "regional",
+        "annual",
+        "monthly",
+        "weekly",
+        "daily",
+        "total",
+        "average",
+        "maximum",
+        "minimum",
+        "about",
+        "above",
+        "below",
+        "over",
+        "under",
+        "between",
+        "within",
+        "without",
+        "during",
+        "before",
+        "after",
+        "since",
+        "until",
+        "while",
+        "because",
+        "therefore",
+        "however",
+        "moreover",
+        "instead",
+        "rather",
+        "either",
+        "neither",
+        "both",
+        "each",
+        "another",
+        "someone",
+        "anyone",
+        "everyone",
+        "nobody",
+        "somebody",
+        "everything",
+        "something",
+        "anything",
+        "nothing",
+        "here",
+        "there",
+        "now",
+        "then",
+        "today",
+        "tomorrow",
+        "yesterday",
+        "soon",
+        "later",
+        "already",
+        "still",
+        "yet",
+        "again",
+        "also",
+        "even",
+        "almost",
+        "nearly",
+        "quite",
+        "really",
+        "actually",
+        "probably",
+        "perhaps",
+        "maybe",
+        "certainly",
+        "definitely",
+        "exactly",
+        "mainly",
+        "mostly",
+        "partly",
+        "entirely",
+        "completely",
+        "totally",
+        "directly",
+        "quickly",
+        "slowly",
+        "easily",
+        "usually",
+        "often",
+        "sometimes",
+        "always",
+        "never",
+        "immediately",
+        "finally",
+        "eventually",
+        "recently",
+        "currently",
+        "previously",
+        "generally",
+        "normally",
+        "commonly",
+        "especially",
+        "particularly",
+        "specifically",
+        "significantly",
+        "substantially",
+        "relatively",
+        "similarly",
+        "accordingly",
+        "consequently",
+        "hence",
+        "thus",
+        "meanwhile",
+        "forward",
+        "backward",
+        "aside",
+        "besides",
+        "except",
+        "despite",
+        "regarding",
+        "concerning",
+        "including",
+        "excluding",
+        "following",
+        "according",
+        "depending",
+        "using",
+        "used",
+        "based",
+        "known",
+        "said",
+        "given",
+        "taken",
+        "made",
+        "come",
+        "get",
+        "make",
+        "take",
+        "go",
+        "see",
+        "look",
+        "find",
+        "give",
+        "tell",
+        "say",
+        "ask",
+        "answer",
+        "talk",
+        "speak",
+        "write",
+        "read",
+        "listen",
+        "hear",
+        "show",
+        "try",
+        "use",
+        "need",
+        "want",
+        "like",
+        "love",
+        "help",
+        "start",
+        "begin",
+        "continue",
+        "keep",
+        "hold",
+        "leave",
+        "stay",
+        "remain",
+        "move",
+        "change",
+        "increase",
+        "decrease",
+        "reduce",
+        "raise",
+        "lower",
+        "improve",
+        "develop",
+        "create",
+        "produce",
+        "provide",
+        "offer",
+        "include",
+        "exclude",
+        "add",
+        "remove",
+        "replace",
+        "follow",
+        "lead",
+        "guide",
+        "support",
+        "protect",
+        "prevent",
+        "avoid",
+        "allow",
+        "permit",
+        "forbid",
+        "ban",
+        "control",
+        "manage",
+        "handle",
+        "treat",
+        "deal",
+        "solve",
+        "resolve",
+        "address",
+        "consider",
+        "regard",
+        "view",
+        "assess",
+        "evaluate",
+        "review",
+        "examine",
+        "inspect",
+        "investigate",
+        "analyze",
+        "study",
+        "research",
+        "monitor",
+        "measure",
+        "test",
+        "detect",
+        "identify",
+        "recognize",
+        "confirm",
+        "verify",
+        "approve",
+        "reject",
+        "accept",
+        "refuse",
+        "deny",
+        "admit",
+        "claim",
+        "declare",
+        "announce",
+        "state",
+        "explain",
+        "describe",
+        "note",
+        "notice",
+        "mention",
+        "refer",
+        "cite",
+        "quote",
+        "list",
+        "name",
+        "call",
+        "term",
+        "define",
+        "mean",
+        "indicate",
+        "suggest",
+        "imply",
+        "prove",
+        "demonstrate",
+        "reveal",
+        "display",
+        "present",
+        "represent",
+        "perform",
+        "conduct",
+        "carry",
+        "execute",
+        "implement",
+        "apply",
+        "adopt",
+        "establish",
+        "set",
+        "construct",
+        "organize",
+        "arrange",
+        "prepare",
+        "design",
+        "draft",
+        "sign",
+        "seal",
+        "issue",
+        "publish",
+        "release",
+        "submit",
+        "file",
+        "register",
+        "store",
+        "save",
+        "copy",
+        "send",
+        "receive",
+        "deliver",
+        "transfer",
+        "transport",
+        "import",
+        "buy",
+        "sell",
+        "pay",
+        "cost",
+        "spend",
+        "charge",
+        "penalize",
+        "punish",
+        "sue",
+        "prosecute",
+        "arrest",
+        "detain",
+        "seize",
+        "confiscate",
+        "destroy",
+        "damage",
+        "pollute",
+        "contaminate",
+        "emit",
+        "discharge",
+        "dump",
+        "process",
+        "dispose",
+        "recycle",
+        "reuse",
+        "recover",
+        "remediate",
+        "restore",
+        # 日常词汇补充（防英文常用句误判）+ 常见带调外来词
+        "quick",
+        "brown",
+        "fox",
+        "jumps",
+        "jump",
+        "lazy",
+        "dog",
+        "cat",
+        "bird",
+        "fish",
+        "horse",
+        "cow",
+        "pig",
+        "sheep",
+        "goat",
+        "chicken",
+        "duck",
+        "rabbit",
+        "mouse",
+        "rat",
+        "bear",
+        "wolf",
+        "lion",
+        "tiger",
+        "elephant",
+        "monkey",
+        "snake",
+        "frog",
+        "spider",
+        "ant",
+        "bee",
+        "butterfly",
+        "tree",
+        "flower",
+        "grass",
+        "leaf",
+        "root",
+        "fruit",
+        "vegetable",
+        "apple",
+        "banana",
+        "orange",
+        "grape",
+        "bread",
+        "rice",
+        "meat",
+        "milk",
+        "cheese",
+        "egg",
+        "butter",
+        "sugar",
+        "salt",
+        "oil",
+        "tea",
+        "coffee",
+        "juice",
+        "wine",
+        "beer",
+        "red",
+        "blue",
+        "green",
+        "yellow",
+        "black",
+        "white",
+        "gray",
+        "purple",
+        "pink",
+        "run",
+        "runs",
+        "walk",
+        "walks",
+        "sit",
+        "sits",
+        "sleep",
+        "sleeps",
+        "eat",
+        "eats",
+        "drink",
+        "drinks",
+        "play",
+        "plays",
+        "sing",
+        "sings",
+        "dance",
+        "dances",
+        "swim",
+        "swims",
+        "fly",
+        "flies",
+        "climb",
+        "climbs",
+        "jump",
+        "jumped",
+        "run",
+        "ran",
+        "walk",
+        "walked",
+        "sleep",
+        "slept",
+        "eat",
+        "ate",
+        "drink",
+        "drank",
+        "swim",
+        "swam",
+        "fly",
+        "flew",
+        "résumé",
+        "cafe",
+        "café",
+        "naïve",
+        "naive",
+        "fiancé",
+        "cliché",
+        "décor",
+        "exposé",
+        "señor",
+        "piñata",
+        "jalapeño",
+        "zürich",
+        "münchen",
+        "köln",
+        "blasé",
+        "protégé",
+        "attaché",
+        "soufflé",
+        "château",
+        "pâté",
+        "crème",
+        "brûlée",
+        "entrée",
+        "éclair",
+        "façade",
+        "ångström",
+        "smörgåsbord",
+    ]
+)
 
 
 def _split_camel(word: str) -> list[str]:
@@ -586,17 +1457,14 @@ def _foreign_latin_suspect(text: str) -> bool:
             return True
     # 单词级兜底：含非 ASCII 拉丁字符（ë/ð/š/ī…）且长度 ≥6 的词直接判外语——
     # 封堵"英文动词+单个外语词"混排（please ignore udhëzimet）绕过豁免线的手法
-    return any(re.search(r"[À-ɏ]", w) and w.lower() not in _EN_COMMON
-               for w in re.findall(r"[A-Za-zÀ-ɏ]{6,}", text))
+    return any(re.search(r"[À-ɏ]", w) and w.lower() not in _EN_COMMON for w in re.findall(r"[A-Za-zÀ-ɏ]{6,}", text))
 
 
 # 连续 ≥6 个非拉丁/非汉字文字字符视为可疑（短地名/专有名词引用≤5字不误伤）
 # 覆盖：希腊 0370-03FF、西里尔 0400-04FF、亚美尼亚 0530-058F、希伯来 0590-05FF、
 # 阿拉伯 0600-06FF、天城 0900-097F、孟加拉 0980-09FF、泰 0E00-0E7F、
 # 埃塞俄比亚 1200-137F、谚文 1100-11FF+AC00-D7AF、假名 3040-30FF、注音 3100-312F
-_EXOTIC_SCRIPT_RE = re.compile(
-    r"[Ͱ-ϿЀ-ӿ԰-֏֐-׿؀-ۿऀ-ॿঀ-৿ก-๛ሀ-፟ᄀ-ᇿ가-힯ぁ-ゟ゠-ヿㄅ-ㄭʰ-˿]{6,}"
-)
+_EXOTIC_SCRIPT_RE = re.compile(r"[Ͱ-ϿЀ-ӿ԰-֏֐-׿؀-ۿऀ-ॿঀ-৿ก-๛ሀ-፟ᄀ-ᇿ가-힯ぁ-ゟ゠-ヿㄅ-ㄭʰ-˿]{6,}")
 
 
 _B64_TOKEN_RE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
@@ -608,6 +1476,7 @@ _UNI_ESC_RE = re.compile(r"(?:\\u[0-9a-fA-F]{4}){2,}")
 def _decode_suspect_tokens(text: str) -> list[str]:
     """提取疑似编码载荷（base64 / hex / URL 编码），解码成功且为可读文本时返回归一化结果。"""
     import base64 as _b64
+
     out = []
 
     def _try_append(raw: bytes, tok: str = None):
@@ -640,6 +1509,7 @@ def _decode_suspect_tokens(text: str) -> list[str]:
     for tok in _URL_ENC_RE.findall(text):
         try:
             from urllib.parse import unquote_to_bytes
+
             _try_append(unquote_to_bytes(tok), tok)
         except Exception:
             continue
@@ -663,6 +1533,7 @@ def _sm3_hex(data: str) -> str:
 # SM3 链式审计
 # ═══════════════════════════════════
 
+
 class PromptAuditChain:
     """轻量 SM3 链式审计 JSONL（参考 govmcp AuditChain 思路，本仓自实现）"""
 
@@ -670,6 +1541,7 @@ class PromptAuditChain:
         self.path = Path(path) if path else AUDIT_FILE
         self.path.parent.mkdir(parents=True, exist_ok=True)
         import threading
+
         self._lock = threading.Lock()
 
     def _last_hash(self) -> str:
@@ -691,14 +1563,16 @@ class PromptAuditChain:
         except json.JSONDecodeError:
             return "GENESIS"
 
-    def append(self, source: str, content: str, task_id: str = "",
-               phase: str = "", accepted: bool = True, reason: str = "") -> dict:
+    def append(
+        self, source: str, content: str, task_id: str = "", phase: str = "", accepted: bool = True, reason: str = ""
+    ) -> dict:
         """追加一条审计记录（线程安全：swarm 并行角色会并发写入）"""
         with self._lock:
             return self._append_locked(source, content, task_id, phase, accepted, reason)
 
-    def _append_locked(self, source: str, content: str, task_id: str = "",
-                       phase: str = "", accepted: bool = True, reason: str = "") -> dict:
+    def _append_locked(
+        self, source: str, content: str, task_id: str = "", phase: str = "", accepted: bool = True, reason: str = ""
+    ) -> dict:
         prev = self._last_hash()
         entry = {
             "ts": datetime.now().isoformat(timespec="seconds"),
@@ -744,7 +1618,7 @@ class PromptAuditChain:
     def tail(self, n: int = 10) -> list[dict]:
         if not self.path.exists():
             return []
-        lines = [l for l in self.path.read_text(encoding="utf-8").splitlines() if l.strip()]
+        lines = [line for line in self.path.read_text(encoding="utf-8").splitlines() if line.strip()]
         out = []
         for line in lines[-n:]:
             try:
@@ -757,6 +1631,7 @@ class PromptAuditChain:
 # ═══════════════════════════════════
 # 双层提示词引擎 + 三阶段状态机
 # ═══════════════════════════════════
+
 
 class PromptEngine:
     """模块化系统提示词引擎（DSH 式组装）：
@@ -772,6 +1647,7 @@ class PromptEngine:
         self.audit = audit_chain or PromptAuditChain()
         if soul is None:
             from agent_core.soul import load_soul
+
             soul = load_soul()
         self.soul = soul
         self._injections: list[dict] = []  # {"source","content","task_id","ts"}
@@ -779,14 +1655,16 @@ class PromptEngine:
 
         # ── 基础提示词片段（默认四段，可被插件 register_section 覆盖/新增）──
         self.sections = PromptSectionRegistry()
-        self.sections.register("safety", "安全准则", self.safety_layer,
-                               priority=PRIORITY["safety"], source="builtin")
-        self.sections.register("persona", "人设", self.persona_layer,
-                               priority=PRIORITY["persona"], source="profile")
-        self.sections.register("phase", "执法阶段", self._phase_text,
-                               priority=PRIORITY["phase"], source="builtin")
-        self.sections.register("tool_capability", "工具能力", self.tool_capability_layer,
-                               priority=PRIORITY["tool_guidance"], source="tools_registry")
+        self.sections.register("safety", "安全准则", self.safety_layer, priority=PRIORITY["safety"], source="builtin")
+        self.sections.register("persona", "人设", self.persona_layer, priority=PRIORITY["persona"], source="profile")
+        self.sections.register("phase", "执法阶段", self._phase_text, priority=PRIORITY["phase"], source="builtin")
+        self.sections.register(
+            "tool_capability",
+            "工具能力",
+            self.tool_capability_layer,
+            priority=PRIORITY["tool_guidance"],
+            source="tools_registry",
+        )
 
     def _phase_text(self) -> str:
         """当前阶段预设文本（callable 片段，随状态机实时求值）。"""
@@ -795,6 +1673,7 @@ class PromptEngine:
     def reload_soul(self):
         """重新加载 SOUL.md（SOUL 文件变更后调用）"""
         from agent_core.soul import load_soul
+
         self.soul = load_soul(force_reload=True)
         return self.soul.loaded
 
@@ -804,8 +1683,7 @@ class PromptEngine:
         boundaries = getattr(self.soul, "hard_boundaries", "") or ""
         if not boundaries.strip():
             return SAFETY_LAYER
-        return (SAFETY_LAYER + "\n\n"
-                "【SOUL 硬边界——与安全准则同等优先级】\n" + boundaries.strip())
+        return SAFETY_LAYER + "\n\n【SOUL 硬边界——与安全准则同等优先级】\n" + boundaries.strip()
 
     def persona_layer(self) -> str:
         """SOUL 人格/沟通风格 -> 基础系统提示词；缺失回退硬编码人格"""
@@ -823,9 +1701,13 @@ class PromptEngine:
             return False
         old = self._phase
         self._phase = phase
-        self.audit.append(source="phase_switch",
-                          content=f"{old}({PHASE_NAMES[old]}) -> {phase}({PHASE_NAMES[phase]})",
-                          task_id=task_id, phase=phase, accepted=True)
+        self.audit.append(
+            source="phase_switch",
+            content=f"{old}({PHASE_NAMES[old]}) -> {phase}({PHASE_NAMES[phase]})",
+            task_id=task_id,
+            phase=phase,
+            accepted=True,
+        )
         logger.info(f"[PromptEngine] 阶段切换: {old} -> {phase}")
         return True
 
@@ -833,17 +1715,20 @@ class PromptEngine:
     def inject(self, content: str, source: str = "unknown", task_id: str = "") -> bool:
         """注入动态提示词（先校验，违规拒绝并审计）"""
         ok, reason = validate_injection(content)
-        self.audit.append(source=source, content=content, task_id=task_id,
-                          phase=self._phase, accepted=ok, reason=reason)
+        self.audit.append(source=source, content=content, task_id=task_id, phase=self._phase, accepted=ok, reason=reason)
         if not ok:
             logger.warning(f"[PromptEngine] 注入被拒绝（{source}）: {reason} | {content[:60]}")
             return False
         if len(self._injections) >= MAX_INJECTIONS:
             self._injections.pop(0)
-        self._injections.append({
-            "source": source, "content": content.strip(),
-            "task_id": task_id, "ts": datetime.now().isoformat(timespec="seconds"),
-        })
+        self._injections.append(
+            {
+                "source": source,
+                "content": content.strip(),
+                "task_id": task_id,
+                "ts": datetime.now().isoformat(timespec="seconds"),
+            }
+        )
         logger.info(f"[PromptEngine] 注入已接受（{source}）: {content[:60]}")
         return True
 
@@ -851,8 +1736,7 @@ class PromptEngine:
         """清空（或按来源前缀清理）动态注入，返回清理条数"""
         before = len(self._injections)
         if source_prefix:
-            self._injections = [i for i in self._injections
-                                if not i["source"].startswith(source_prefix)]
+            self._injections = [i for i in self._injections if not i["source"].startswith(source_prefix)]
         else:
             self._injections = []
         return before - len(self._injections)
@@ -879,17 +1763,14 @@ class PromptEngine:
             "git 操作": [n for n in names if n == "git_status"],
             "其他工具": [n for n in names if n in ("query_air_quality", "vision_analyze", "ocr_extract")],
         }
-        lines = ["【你的工具能力——本轮会话真实可用】",
-                 "你拥有真实执行能力，可以实际调用以下工具完成任务："]
+        lines = ["【你的工具能力——本轮会话真实可用】", "你拥有真实执行能力，可以实际调用以下工具完成任务："]
         for label, group in groups.items():
             if group:
                 lines.append(f"- {label}: {', '.join(group)}")
-        lines.append("被要求执行任务时，直接调用对应工具；禁止声称'没有执行环境'"
-                     "或'无法运行代码'——除非工具调用本身失败。")
+        lines.append("被要求执行任务时，直接调用对应工具；禁止声称'没有执行环境'或'无法运行代码'——除非工具调用本身失败。")
         return "\n".join(lines)
 
-    def build_system_prompt(self, task_id: str = "", extra: str = "",
-                            dynamic_sections: list[dict] | None = None) -> str:
+    def build_system_prompt(self, task_id: str = "", extra: str = "", dynamic_sections: list[dict] | None = None) -> str:
         """组装系统提示词（DSH 式插拔组装）：
 
         基础片段（安全层首位不可动摇 + 人设 + 阶段 + 工具能力）
@@ -921,14 +1802,15 @@ class PromptEngine:
         return "\n\n".join(p for p in parts if p)
 
     # ── 模块化片段注册（DSH "一切皆插件"：任何插件/业务模块可贡献提示词片段）──
-    def register_section(self, section_id: str, title: str, content,
-                         priority: int = None, source: str = "plugin",
-                         enabled: bool = True):
+    def register_section(
+        self, section_id: str, title: str, content, priority: int = None, source: str = "plugin", enabled: bool = True
+    ):
         """注册/覆盖一个提示词片段（content 可为 callable，组装时求值）。"""
         from agent_core.prompt_sections import PRIORITY
-        return self.sections.register(section_id, title, content,
-                                      priority if priority is not None else PRIORITY["custom"],
-                                      source=source, enabled=enabled)
+
+        return self.sections.register(
+            section_id, title, content, priority if priority is not None else PRIORITY["custom"], source=source, enabled=enabled
+        )
 
     def unregister_section(self, section_id: str) -> bool:
         return self.sections.unregister(section_id)
@@ -936,9 +1818,14 @@ class PromptEngine:
     def list_sections(self, include_disabled: bool = False) -> list[dict]:
         """结构化片段清单（API/审计展示用）。"""
         return [
-            {"section_id": s.section_id, "title": s.title,
-             "priority": s.priority, "source": s.source, "enabled": s.enabled,
-             "content_preview": s.render()[:160]}
+            {
+                "section_id": s.section_id,
+                "title": s.title,
+                "priority": s.priority,
+                "source": s.source,
+                "enabled": s.enabled,
+                "content_preview": s.render()[:160],
+            }
             for s in self.sections.list(include_disabled=include_disabled)
         ]
 

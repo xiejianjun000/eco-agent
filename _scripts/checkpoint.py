@@ -16,8 +16,8 @@ checkpoint.py — ECO AGENT Durable Checkpoint 断点续跑机制
 
 import json
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("checkpoint")
@@ -40,16 +40,20 @@ class Checkpoint:
         self._updated = self._created
 
     @property
-    def id(self): return self._id
+    def id(self):
+        return self._id
 
     @property
-    def workflow(self): return self._workflow
+    def workflow(self):
+        return self._workflow
 
     @property
-    def status(self): return self._status
+    def status(self):
+        return self._status
 
     @property
-    def steps(self): return list(self._steps)
+    def steps(self):
+        return list(self._steps)
 
     def step(self, name: str, result: Any = None) -> "Checkpoint":
         self._steps.append({"name": name, "result": str(result)[:200] if result else None, "time": datetime.now().isoformat()})
@@ -66,8 +70,16 @@ class Checkpoint:
         self._updated = datetime.now().isoformat()
 
     def to_dict(self) -> dict:
-        return {"id": self._id, "workflow": self._workflow, "data": self._data, "steps": self._steps, "status": self._status,
-                "current_step": len(self._steps), "created": self._created, "updated": self._updated}
+        return {
+            "id": self._id,
+            "workflow": self._workflow,
+            "data": self._data,
+            "steps": self._steps,
+            "status": self._status,
+            "current_step": len(self._steps),
+            "created": self._created,
+            "updated": self._updated,
+        }
 
     def save(self, directory: Path):
         (directory / f"{self._id}.json").write_text(json.dumps(self.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
@@ -113,10 +125,12 @@ class CheckpointManager:
                 updated = datetime.fromisoformat(cp.to_dict()["updated"])
                 if (now - updated).days > days:
                     path = CHECKPOINT_DIR / f"{cp_id}.json"
-                    if path.exists(): path.unlink()
+                    if path.exists():
+                        path.unlink()
                     del self._checkpoints[cp_id]
                     removed += 1
-            except Exception: pass
+            except Exception:
+                pass
         if removed:
             logger.info(f"[CP] 清理 {removed} 个过期检查点")
 
@@ -130,7 +144,8 @@ class CheckpointManager:
                 cp._created = data.get("created", "")
                 cp._updated = data.get("updated", "")
                 self._checkpoints[cp.id] = cp
-            except Exception: pass
+            except Exception:
+                pass
 
     def get_stats(self) -> dict:
         statuses = {}
@@ -142,8 +157,10 @@ class CheckpointManager:
 
 # ===== 执法案例状态机 =====
 
+
 class EnforcementFSM:
     """执法程序状态机"""
+
     STEPS = ["案源登记", "立案审批", "调查取证", "告知听证", "法制审核", "处罚决定", "送达执行", "结案归档"]
 
     @classmethod
@@ -158,7 +175,8 @@ class EnforcementFSM:
 
     def advance(self, cp_id: str) -> dict | None:
         cp = self._cm.resume(cp_id)
-        if not cp: return None
+        if not cp:
+            return None
 
         current_step = len(cp.steps)
         if current_step >= len(self.STEPS):
@@ -171,11 +189,18 @@ class EnforcementFSM:
         cp.save(CHECKPOINT_DIR)
 
         next_steps = self._transitions().get(step_name, [])
-        return {"status": "in_progress", "current": step_name, "completed": current_step + 1, "total": len(self.STEPS),
-                "next": next_steps[0] if next_steps else None, "checkpoint_id": cp_id}
+        return {
+            "status": "in_progress",
+            "current": step_name,
+            "completed": current_step + 1,
+            "total": len(self.STEPS),
+            "next": next_steps[0] if next_steps else None,
+            "checkpoint_id": cp_id,
+        }
 
 
 # ===== 测试 =====
+
 
 def test():
     cm = CheckpointManager()
