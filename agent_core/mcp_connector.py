@@ -104,6 +104,32 @@ def load_configs_from_env(env_var: str = "ECO_MCP_SERVERS") -> list[MCPServerCon
         return []
 
 
+def load_configs_from_registry(store=None) -> list[MCPServerConfig]:
+    """从 MCP 注册表加载 server 配置（registry 源，覆盖 env 同名项）。
+
+    store: 注册表 json 路径；默认读 ECO_MCP_REGISTRY 环境变量，
+    未设置则回退 ~/.eco/mcp_servers.json。注册表缺失/损坏时返回空列表。
+    """
+    from agent_core.mcp_registry import MCPRegistry
+
+    try:
+        reg = MCPRegistry(store=store if store is not None else os.environ.get("ECO_MCP_REGISTRY"))
+        return [MCPServerConfig.from_dict(d) for d in reg.env_configs()]
+    except Exception as e:  # noqa: BLE001 — 注册表异常降级为空源
+        logger.warning(f"[MCP] registry 加载失败: {e}")
+        return []
+
+
+def load_merged_configs() -> list[MCPServerConfig]:
+    """env 与 registry 双源合并配置：同名 registry 覆盖 env，注册表缺失自动降级。"""
+    merged: dict[str, MCPServerConfig] = {}
+    for cfg in load_configs_from_env():
+        merged[cfg.name] = cfg
+    for cfg in load_configs_from_registry():
+        merged[cfg.name] = cfg
+    return list(merged.values())
+
+
 # ═══════════════════════════════════
 # 单个 server 连接（持有 session，跑在后台事件循环）
 # ═══════════════════════════════════
@@ -285,7 +311,7 @@ class MCPConnectorManager:
     """
 
     def __init__(self, configs: list[MCPServerConfig] | None = None):
-        self.configs = configs if configs is not None else load_configs_from_env()
+        self.configs = configs if configs is not None else load_merged_configs()
         self._loop = asyncio.new_event_loop()
         self._thread = threading.Thread(target=self._loop.run_forever, name="mcp-connector-loop", daemon=True)
         self._thread.start()
