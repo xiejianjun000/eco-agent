@@ -1,0 +1,57 @@
+{
+  "summary": {
+    "n_questions": 1,
+    "mode": "rag",
+    "citation_accuracy": 1.0,
+    "citation_accuracy_raw": 1.0,
+    "keypoint_f1": 1.0,
+    "keypoint_f1_raw": 1.0,
+    "elapsed_s": 55.2,
+    "provider_final": "doubao_plan",
+    "provider_switches": [],
+    "switch_count": 0,
+    "timeouts": 0,
+    "timeout_rate": 0.0,
+    "retries": 0,
+    "errors": 0,
+    "answered": 1,
+    "aborted": false,
+    "abort_reason": null,
+    "per_question_timeout_s": 480.0,
+    "llm_call_timeout_s": 480.0,
+    "rag_max_context_chars": 1500,
+    "by_category": {
+      "处罚裁量": {
+        "n": 1,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "EB22",
+      "category": "处罚裁量",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "### 一、适用法律法规及条款\n1. 《中华人民共和国环境保护法》第五十九条\n2. 《中华人民共和国环境保护法》第六十条\n\n### 二、明确结论\n同一企业一年内第二次因超标排放被查处属于再犯，裁量时应依法从重，符合法定条件的可适用按日连续处罚、限制生产或停产整治等措施，对符合法定情形的责任人员可移送拘留。\n\n### 三、具体裁量考量因素\n1. **违法频次与罚款幅度**：该企业一年内两次实施超标排放违法行为，属于再犯，主观过错程度较重，应作为从重裁量的核心情节；罚款数额需结合《中华人民共和国环境保护法》第五十九条第二款规定的防治污染设施运行成本、违法行为造成的直接损失或者违法所得等因素，在法定罚款幅度内从重确定。\n2. **按日连续处罚的适用**：若前次超标排放已被处以罚款处罚并责令改正，企业本次仍拒不改正的，依据《中华人民共和国环境保护法》第五十九条第一款规定，可自前次责令改正之日的次日起，按照原处罚数额按日连续处罚。\n3. **惩戒措施的匹配性**：结合本次超标排放的污染物种类、超标倍数、是否造成环境损害后果等情节，依据《中华人民共和国环境保护法》第六十条规定，考量是否采取限制生产、停产整治措施；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。\n4. **人身罚衔接**：对符合法定情形的相关责任人员可依法移送拘留。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md"
+      ],
+      "retrieved_articles": [
+        59,
+        59
+      ],
+      "golden_answer": "应依法从重处罚。考量因素：①属再犯，主观恶性较大，不符合从轻/不予处罚情形；②危害后果与超标倍数、持续时间；③整改态度与配合程度；④依据《大气污染防治法》第九十九条在十万元至一百万元幅度内从重裁量；⑤符合《环境保护法》第六十三条情形的，可移送行政拘留；⑥可依法实施按日连续处罚（《环境保护法》第五十九条）。",
+      "answered": true
+    }
+  ]
+}

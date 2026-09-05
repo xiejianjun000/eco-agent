@@ -1,0 +1,19 @@
+{
+  "name": "huashu-slides",
+  "version": "1.0.0",
+  "author": "huashu-skills",
+  "description": "从内容到成品 PPTX 的端到端演示文稿制作：内容大纲→设计选型→构建可编辑 pptx，支持 18 种设计风格与 AI 插画生成；用户提到做PPT/幻灯片/演示文稿时使用",
+  "category": "文书生成",
+  "tags": [
+    "PPTX",
+    "演示文稿",
+    "幻灯片",
+    "python-pptx",
+    "设计"
+  ],
+  "trust_tier": "community",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}

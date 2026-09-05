@@ -1,0 +1,78 @@
+{
+  "summary": {
+    "n_questions": 2,
+    "mode": "rag",
+    "citation_accuracy": 1.0,
+    "citation_accuracy_raw": 1.0,
+    "keypoint_f1": 1.0,
+    "keypoint_f1_raw": 1.0,
+    "elapsed_s": 127.1,
+    "provider_final": "doubao_plan",
+    "provider_switches": [],
+    "switch_count": 0,
+    "timeouts": 0,
+    "timeout_rate": 0.0,
+    "retries": 0,
+    "errors": 0,
+    "answered": 2,
+    "aborted": false,
+    "abort_reason": null,
+    "per_question_timeout_s": 480.0,
+    "llm_call_timeout_s": 480.0,
+    "rag_max_context_chars": 1500,
+    "by_category": {
+      "违法认定": {
+        "n": 2,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "EB15",
+      "category": "违法认定",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "《中华人民共和国噪声污染防治法》自2022年6月5日起施行，原《中华人民共和国环境噪声污染防治法》同时废止，办理涉夜间施工噪声案件的新旧法衔接适用从旧兼从轻原则。\n依据《噪声污染防治法》第四十三条，在噪声敏感建筑物集中区域，夜间施工原则上禁止，仅抢修、抢险施工作业，或因生产工艺要求等特殊需要必须连续施工作业的情形可例外；该类例外施工需取得地方人民政府住房和城乡建设、生态环境主管部门或者地方人民政府指定的部门的许可，并在施工现场显著位置公示或者以其他方式公告附近居民。\n持有夜间施工许可不当然免责，是否违法需分情形认定：\n1. 若施工属于法定例外情形、许可合法有效，且已按规定公告附近居民、落实噪声污染防治措施的，不构成违法；\n2. 若虽持有许可，但存在超出许可范围或时段施工、未按规定公告附近居民、未采取有效降噪措施干扰周边居民生活等情形的，仍属违法，生态环境主管部门可依法责令改正并予以处罚。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/06-中华人民共和国噪声污染防治法.md"
+      ],
+      "retrieved_articles": [
+        43
+      ],
+      "golden_answer": "持有许可不当然免责。《噪声污染防治法》规定在噪声敏感建筑物集中区域夜间施工原则上禁止（第四十三条），取得许可的抢修、抢险或工艺要求连续作业可以施工，但应当公告附近居民并采取措施减少噪声。若许可合法且采取措施，则不构成违法；若未公告或未采取降噪措施造成扰民，仍可责令改正、处罚。",
+      "answered": true
+    },
+    {
+      "id": "EB20",
+      "category": "违法认定",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "### 认定结论\n企业被责令停产整治期间擅自恢复生产的，属于拒不执行生态环境主管部门依法作出的停产整治决定的环境违法行为，生态环境主管部门可依法从重处罚。\n### 法律依据及处理\n依据《中华人民共和国环境保护法》第六十三条，该行为尚不构成犯罪的，除依照有关法律法规规定予以处罚外，由县级以上人民政府生态环境主管部门或者其他有关部门移送公安，对其直接负责的主管人员和其他直接责任人员处行政拘留；情节较重的处十日以上十五日以下拘留，情节较轻的处五日以上十日以下拘留。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md"
+      ],
+      "retrieved_articles": [
+        63,
+        63
+      ],
+      "golden_answer": "属于拒不执行行政命令的违法行为。依据《环境保护主管部门实施限制生产、停产整治办法》及《环境保护法》第六十三条，被责令停产整治后擅自恢复生产的，生态环境主管部门可依法从重处罚，并将案件移送公安机关，对直接负责的主管人员和其他直接责任人员处十日以上十五日以下拘留（情节较轻的处五日以上十日以下拘留）。",
+      "answered": true
+    }
+  ]
+}

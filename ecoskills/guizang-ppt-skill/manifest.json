@@ -1,0 +1,19 @@
+{
+  "name": "guizang-ppt-skill",
+  "version": "1.0.0",
+  "author": "歸藏 (op7418)",
+  "description": "生成横向翻页网页 PPT（单 HTML），电子杂志×电子墨水 / 瑞士国际主义两种风格，WebGL 背景、演讲者视图、章节幕封、数据大字报等模板",
+  "category": "文书生成",
+  "tags": [
+    "PPT",
+    "HTML",
+    "演示",
+    "瑞士国际主义",
+    "杂志风"
+  ],
+  "trust_tier": "community",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}

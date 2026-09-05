@@ -1,0 +1,6 @@
+# eco-agent 开发/测试/CI 依赖（P2-1 治理；`pip install -r requirements-dev.txt`）
+-r requirements.txt
+pytest>=8.0,<9.0
+pytest-xdist>=3.6,<4        # CI 并行 pytest -n auto
+ruff==0.16.1                # CI Lint check 固定版本
+playwright>=1.40,<2.0       # eco browser shot 真渲染（可选，缺省降级 urllib）

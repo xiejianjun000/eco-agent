@@ -1,0 +1,17 @@
+{
+  "name": "huashu-design",
+  "version": "1.0.0",
+  "author": "huashu-skills",
+  "description": "huashu-slides 的设计风格与视觉规范配套技能（设计运动/原则/提示词模板）",
+  "category": "文书生成",
+  "tags": [
+    "设计",
+    "PPTX",
+    "视觉规范"
+  ],
+  "trust_tier": "community",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}

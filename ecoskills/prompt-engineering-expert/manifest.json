@@ -1,0 +1,18 @@
+{
+  "name": "prompt-engineering-expert",
+  "version": "1.0.0",
+  "author": "tomstools11 / newmindsgroup",
+  "description": "提示词工程专家：将模糊想法拆解为结构完整的提示词，提供最佳实践、结构化格式、思维链等专业指导",
+  "category": "其他",
+  "tags": [
+    "提示词",
+    "Prompt",
+    "优化",
+    "结构化"
+  ],
+  "trust_tier": "community",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}

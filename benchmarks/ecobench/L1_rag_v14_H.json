@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "n_questions": 1,
+    "mode": "rag",
+    "citation_accuracy": 1.0,
+    "citation_accuracy_raw": 1.0,
+    "keypoint_f1": 1.0,
+    "keypoint_f1_raw": 1.0,
+    "elapsed_s": 88.7,
+    "provider_final": "doubao_plan",
+    "provider_switches": [],
+    "switch_count": 0,
+    "timeouts": 0,
+    "timeout_rate": 0.0,
+    "retries": 0,
+    "errors": 0,
+    "answered": 1,
+    "aborted": false,
+    "abort_reason": null,
+    "per_question_timeout_s": 480.0,
+    "llm_call_timeout_s": 480.0,
+    "rag_max_context_chars": 1500,
+    "by_category": {
+      "法典-框架结构": {
+        "n": 1,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "EB65",
+      "category": "法典-框架结构",
+      "citation_hit": 1.0,
+      "citation_hits": 2,
+      "citation_total": 2,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "依据《中华人民共和国生态环境法典》（2026年3月12日第十四届全国人民代表大会第四次会议通过，自2026年8月15日起施行）的编章设置规定：\n1. 第三编主题为生态保护，共设七章，涵盖一般规定、生态系统保护、自然资源保护与可持续利用、物种保护等内容。\n2. 第四编主题为绿色低碳发展，共设四章，包括一般规定、发展循环经济、能源节约与绿色低碳转型、应对气候变化相关制度。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/总目录.md",
+        "flowwiki/wiki/concepts/第三编-生态保护.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "第三编为生态保护，设七章（一般规定、生态系统保护、自然资源保护与可持续利用、物种保护、重要地理单元保护、生态退化的预防和治理、生态修复）；第四编为绿色低碳发展，设四章（一般规定、发展循环经济、能源节约与绿色低碳转型、应对气候变化）。",
+      "answered": true
+    }
+  ]
+}

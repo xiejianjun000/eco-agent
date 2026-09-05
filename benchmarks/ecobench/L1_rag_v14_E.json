@@ -1,0 +1,57 @@
+{
+  "summary": {
+    "n_questions": 1,
+    "mode": "rag",
+    "citation_accuracy": 1.0,
+    "citation_accuracy_raw": 1.0,
+    "keypoint_f1": 1.0,
+    "keypoint_f1_raw": 1.0,
+    "elapsed_s": 40.2,
+    "provider_final": "doubao_plan",
+    "provider_switches": [],
+    "switch_count": 0,
+    "timeouts": 0,
+    "timeout_rate": 0.0,
+    "retries": 0,
+    "errors": 0,
+    "answered": 1,
+    "aborted": false,
+    "abort_reason": null,
+    "per_question_timeout_s": 480.0,
+    "llm_call_timeout_s": 480.0,
+    "rag_max_context_chars": 1500,
+    "by_category": {
+      "违法认定": {
+        "n": 1,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "EB17",
+      "category": "违法认定",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "### 认定\n第三方环保服务机构中的环境监测机构属于《中华人民共和国环境保护法》第六十五条规定的规制主体，监测机构对监测数据的真实性、准确性负有法定责任，其在环境服务活动中出具虚假报告的，可认定为环境服务弄虚作假违法行为。\n### 处理\n1. 行政处罚：依照相关生态环境法律法规处罚，依法没收违法所得，情节严重的撤销资质；\n2. 连带责任：依据《中华人民共和国环境保护法》第六十五条，若该机构对造成的环境污染和生态破坏负有责任，应当与造成环境污染和生态破坏的其他责任者承担连带责任。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/01-中华人民共和国环境保护法.md",
+        "flowwiki/wiki/concepts/07-中华人民共和国海洋环境保护法.md",
+        "flowwiki/wiki/concepts/132-环境保护法规制定程序办法.md"
+      ],
+      "retrieved_articles": [
+        65,
+        65
+      ],
+      "golden_answer": "构成违法。依据《环境保护法》第六十五条及《大气污染防治法》相关条款，环境监测机构对其监测数据的真实性、准确性负责；出具虚假报告的，由生态环境主管部门没收违法所得并处罚款（如大气法对篡改伪造监测数据的机构处十万元以上五十万元以下罚款），对直接负责人员依法处理；情节严重的撤销资质，构成犯罪的追究刑事责任。委托方明知虚假仍使用的，一并追责。",
+      "answered": true
+    }
+  ]
+}

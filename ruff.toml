@@ -1,0 +1,26 @@
+# eco-agent ruff 质量门配置（P2-1 开源治理·三期）
+# 说明：仓库原先无 ruff 配置，ruff 0.16 默认全规则集对本仓库存量代码报 1312 条，
+# 其中大量规则（EXE001 部署文件系统强制 600、DTZ 时区策略、BLE 宽捕获降级等）
+# 属历史存量且不适配云环境。治理一期将质量门收敛为可持续的核心规则集 E/F/I；
+# 二期按目录清理剩余存量；三期引入 ruff format 统一格式化后移除 E501/E701/E702 纯风格豁免。
+# 新增代码必须保持零告警，且一律先 ruff format 再 ruff check。
+
+target-version = "py311"
+line-length = 128
+
+[lint]
+select = ["E", "F", "I"]          # pycodestyle 错误 / pyflakes / isort
+exclude = [
+    "worktrees",        # agent 实例数据，非源码
+    "_deprecated",      # 废弃目录（历史保留）
+    "web/dist",         # 前端构建产物（clone 即用）
+    "tests/reports",    # 测试报告产物
+    ".pytest_cache",
+    "__pycache__",
+    "benchmarks/data",
+]
+
+# server/app.py 内嵌 web UI HTML/JS 模板为三引号长字符串，JS 行不受 Python 行约束，
+# 无法用行内 noqa（注释会混入渲染文本）；模板字符串无 AST 风险，整文件豁免 E501。
+[lint.per-file-ignores]
+"server/app.py" = ["E501"]

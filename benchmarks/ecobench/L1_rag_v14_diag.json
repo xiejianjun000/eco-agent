@@ -1,0 +1,80 @@
+{
+  "summary": {
+    "n_questions": 2,
+    "mode": "rag",
+    "citation_accuracy": 1.0,
+    "citation_accuracy_raw": 1.0,
+    "keypoint_f1": 1.0,
+    "keypoint_f1_raw": 1.0,
+    "elapsed_s": 302.7,
+    "provider_final": "doubao_plan",
+    "provider_switches": [],
+    "switch_count": 0,
+    "timeouts": 0,
+    "timeout_rate": 0.0,
+    "retries": 0,
+    "errors": 0,
+    "answered": 2,
+    "aborted": false,
+    "abort_reason": null,
+    "per_question_timeout_s": 480.0,
+    "llm_call_timeout_s": 480.0,
+    "rag_max_context_chars": 1500,
+    "by_category": {
+      "法条引用": {
+        "n": 1,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      },
+      "违法认定": {
+        "n": 1,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "EB05",
+      "category": "法条引用",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "现行执法查处工业企业超标排放工业噪声扰民行为，应引用《中华人民共和国噪声污染防治法》第七十五条。\n《中华人民共和国噪声污染防治法》于2022年6月5日起施行，原《中华人民共和国环境噪声污染防治法》同时废止，涉及新旧法衔接适用从旧兼从轻原则。\n根据《中华人民共和国噪声污染防治法》第七十五条规定，违反本法规定，超过噪声排放标准排放工业噪声的，由生态环境主管部门责令改正或者限制生产、停产整治，并处五万元以上二十万元以下的罚款；情节严重的，报经有批准权的人民政府批准，责令停业、关闭。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/06-中华人民共和国噪声污染防治法.md"
+      ],
+      "retrieved_articles": [
+        75
+      ],
+      "golden_answer": "2022年6月5日起应依据《中华人民共和国噪声污染防治法》第七十五条（工业噪声超标排放由生态环境主管部门责令改正，处五万元以上二十万元以下的罚款；情节严重的，报经有批准权的人民政府批准，责令停业、关闭）。原《环境噪声污染防治法》已被新法取代，不得再引用。",
+      "answered": true
+    },
+    {
+      "id": "EB13",
+      "category": "违法认定",
+      "citation_hit": 1.0,
+      "citation_hits": 1,
+      "citation_total": 1,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "畜禽养殖场未建设污染防治设施直接排放粪污的行为构成环境违法，具体认定及处罚如下：\n一、认定依据与构成\n依据《畜禽规模养殖污染防治条例》第三十九条规定，该违法行为需满足以下要件：\n1. 主体为纳入《畜禽规模养殖污染防治条例》调整范围的畜禽养殖场；\n2. 客观上未建设污染防治设施，且未委托他人对畜禽养殖废弃物进行综合利用和无害化处理；\n3. 养殖场已投入生产、使用并直接排放粪污。\n二、处罚规定\n由县级以上人民政府环境保护主管部门责令停止生产或者使用，可以处十万元以下的罚款。\n三、竞合情形\n若排放行为导致畜禽养殖废弃物渗出、泄漏或造成水、土壤环境污染的，还可依据《畜禽规模养殖污染防治条例》第四十条，依照《中华人民共和国水污染防治法》《中华人民共和国固体废物污染环境防治法》相关规定处罚。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/46-畜禽规模养殖污染防治条例.md"
+      ],
+      "retrieved_articles": [
+        39
+      ],
+      "golden_answer": "违反《畜禽规模养殖污染防治条例》第十三条，未建设污染防治配套设施或者配套设施不合格的，依该条例第三十九条由县级以上环境保护主管部门责令停止生产或者使用，可以处十万元以下的罚款。若向水体排放造成污染，还同时违反《水污染防治法》，可按第八十三条、第八十五条处罚。",
+      "answered": true
+    }
+  ]
+}

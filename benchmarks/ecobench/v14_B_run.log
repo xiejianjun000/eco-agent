@@ -1,0 +1,6 @@
+[EcoBench] RAG 模式：已连接 EHS 知识库 http://111.230.89.107:8000/sse/
+[EcoBench-mini] n=5 mode=rag
+  [01/5] EB01 法条引用 cite=1.00 f1=1.00
+  [02/5] EB02 法条引用 cite=1.00 f1=1.00
+  [03/5] EB15 违法认定 cite=0.00 f1=1.00
+  [04/5] EB17 违法认定 cite=1.00 f1=1.00

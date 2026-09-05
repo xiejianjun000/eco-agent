@@ -1,0 +1,21 @@
+{
+  "name": "markitdown",
+  "version": "1.0.0",
+  "author": "microsoft / agent-skills-hub",
+  "description": "将 PDF/Word/Excel/PPT/HTML/图片等杂乱格式统一转换为干净的 Markdown，便于后续处理与入库",
+  "category": "集成连接",
+  "tags": [
+    "Markdown",
+    "转换",
+    "文档",
+    "PDF",
+    "Office"
+  ],
+  "trust_tier": "community",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [
+    "markitdown"
+  ],
+  "min_eco_version": "1.0.0"
+}

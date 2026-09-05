@@ -1,0 +1,18 @@
+{
+  "name": "humanizer",
+  "version": "1.0.0",
+  "author": "blader / humanizer-main",
+  "description": "去除 AI 写作痕迹：消解夸大措辞、堆砌句式、冗余表情与空泛表达，保持事实与逻辑不变，改写为自然人类文风",
+  "category": "文书生成",
+  "tags": [
+    "去AI味",
+    "润色",
+    "改写",
+    "自然语言"
+  ],
+  "trust_tier": "community",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}

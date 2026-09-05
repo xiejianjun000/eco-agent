@@ -1,0 +1,78 @@
+{
+  "summary": {
+    "n_questions": 2,
+    "mode": "rag",
+    "citation_accuracy": 1.0,
+    "citation_accuracy_raw": 1.0,
+    "keypoint_f1": 1.0,
+    "keypoint_f1_raw": 1.0,
+    "elapsed_s": 277.0,
+    "provider_final": "doubao_plan",
+    "provider_switches": [],
+    "switch_count": 0,
+    "timeouts": 0,
+    "timeout_rate": 0.0,
+    "retries": 0,
+    "errors": 0,
+    "answered": 2,
+    "aborted": false,
+    "abort_reason": null,
+    "per_question_timeout_s": 480.0,
+    "llm_call_timeout_s": 480.0,
+    "rag_max_context_chars": 1500,
+    "by_category": {
+      "法典-框架结构": {
+        "n": 1,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      },
+      "法典-继承映射": {
+        "n": 1,
+        "citation_accuracy": 1.0,
+        "keypoint_f1": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "EB55",
+      "category": "法典-继承映射",
+      "citation_hit": 1.0,
+      "citation_hits": 3,
+      "citation_total": 3,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 4,
+      "keypoint_total": 4,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "**结论：原《中华人民共和国环境影响评价法》中的建设项目环境影响评价制度，在《中华人民共和国生态环境法典》中的继承位置为第一编总则第五章生态环境影响评价第三节。**\n\n相关编纂衔接规则如下：\n1. **新旧法律名称及施行日期**：旧法为《中华人民共和国环境影响评价法》，在《中华人民共和国生态环境法典》施行前继续有效；新法《中华人民共和国生态环境法典》于2026年3月12日第十四届全国人民代表大会第四次会议通过，自2026年8月15日起施行（依据参考资料所载《中华人民共和国生态环境法典》总目录内容）。\n2. **旧法废止情况**：《中华人民共和国环境影响评价法》属于被法典整合的单行法范畴，将于2026年8月15日《中华人民共和国生态环境法典》施行之日起同时废止（依据参考资料所载《中华人民共和国生态环境法典》总目录中“10部法律均于2026年8月15日《中华人民共和国生态环境法典》施行之日起同时废止”的规定）。\n3. **跨法违法行为适用规则**：跨法违法行为实行从旧兼从轻、法不溯及既往原则，《中华人民共和国生态环境法典》有过渡条款的，过渡条款优先适用；违法行为有持续状态且持续至新法施行后的，自新法施行之日起适用新法规定（依据《中华人民共和国行政处罚法》第三十七条、《中华人民共和国立法法》第一百零四条）。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/10-中华人民共和国环境影响评价法.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "纳入《生态环境法典》第一编（总则）第五章（生态环境影响评价）第三节（建设项目的生态环境影响评价）。依据知识库《环境影响评价法》概念文件“核心制度与法典继承”对照表：建设项目环评→第一编第五章第三节。",
+      "answered": true
+    },
+    {
+      "id": "EB64",
+      "category": "法典-框架结构",
+      "citation_hit": 1.0,
+      "citation_hits": 2,
+      "citation_total": 2,
+      "citation_hit_raw": 1.0,
+      "keypoint_tp": 5,
+      "keypoint_total": 5,
+      "keypoint_f1": 1.0,
+      "keypoint_f1_raw": 1.0,
+      "answer": "生态环境影响评价制度位于《中华人民共和国生态环境法典》第一编总则第五章生态环境影响评价。该章共分三节，第一节为一般规定，第二节为规划的生态环境影响评价，第三节为建设项目生态环境影响评价。\n依据参考资料中原《中华人民共和国环境影响评价法》核心制度与《中华人民共和国生态环境法典》的继承对应规则，规划的环境影响评价、建设项目环境影响评价分别对应该章第二节、第三节，第一节为生态环境影响评价的通用一般规定。",
+      "retrieved_files": [
+        "flowwiki/wiki/concepts/10-中华人民共和国环境影响评价法.md",
+        "flowwiki/wiki/concepts/总目录.md"
+      ],
+      "retrieved_articles": [],
+      "golden_answer": "位于《生态环境法典》第一编（总则）第五章（生态环境影响评价），该章分三节：第一节一般规定、第二节规划的生态环境影响评价、第三节建设项目的生态环境影响评价。",
+      "answered": true
+    }
+  ]
+}

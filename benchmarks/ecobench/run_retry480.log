@@ -1,0 +1,3 @@
+[EcoBench] RAG 模式：已连接 EHS 知识库 http://111.230.89.107:8000/sse/
+[EcoBench-mini] n=2 mode=rag
+    [retry] EB44 调用失败（None None），重试

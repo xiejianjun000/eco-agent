@@ -1,0 +1,18 @@
+{
+  "name": "skill-vetter",
+  "version": "1.0.0",
+  "author": "openclaw / useai-pro",
+  "description": "安装新技能/新代码前的安全检查员：扫描 SKILL.md 与脚本中危险权限、网络外联、破坏性命令等风险点，全程本地分析",
+  "category": "其他",
+  "tags": [
+    "安全",
+    "审查",
+    "技能审计",
+    "风险评估"
+  ],
+  "trust_tier": "community",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}
