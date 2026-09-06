@@ -14,8 +14,8 @@ skill_md.py — DSH 标准 SKILL.md 生成与校验
 
 from __future__ import annotations
 
-import re
 import hashlib
+import re
 from pathlib import Path
 from typing import Optional
 

@@ -85,9 +85,8 @@ def vision_model_answer(image_path: Path, question: str, timeout: int = 60) -> d
     返回 {"ok": true, "answer": ...} 或 {"ok": false, "error": ...}；key 无效/模型不可用即降级 OCR。"""
     import base64
     import json as _json
-    import os as _os
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     key = _load_env_key("ARK_API_KEY")
     model = _load_env_key("ARK_VISION_MODEL") or "doubao-seed-2.0-code"
@@ -150,7 +149,6 @@ def analyze_image(path: str, question: str = "") -> dict:
 # ===== 自测 =====
 
 def test():
-    import tempfile
     # 用现有截图测
     for img in ("/tmp/eco_page.png",):
         if Path(img).is_file():

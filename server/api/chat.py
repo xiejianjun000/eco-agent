@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os as _os_default_model
 import re
 import uuid
 
@@ -21,7 +22,6 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger("eco.server.chat")
 
 # 默认对话模型：deepseek-v4-pro（强推理档，含 Think 流；可用 ECO_DEFAULT_MODEL 覆盖）
-import os as _os_default_model
 DEFAULT_CHAT_MODEL = _os_default_model.environ.get("ECO_DEFAULT_MODEL", "deepseek-v4-pro")
 
 # 多模型路由：模型串前缀 → (provider, 实际模型名)。前端下拉可选
@@ -254,7 +254,8 @@ def _codex_rules_section() -> str:
         "法规/标准用 mcp__eco-mee-encyclopedia__，湖南数据用 mcp__eco-hunan-env__，"
         "空气质量省内 eco-hnkqzl-mcp/全国 eco-cnemc-mcp，监测点位 eco-wryzxjc，环评 eco-epxz-mcp，"
         "地图 eco-gis-amap。工具返回「平台拦截/未登录/网络不可达」是环境问题不是数据为空，换端或换出口，禁止据此断言业务结论。"
-        "13. 【引用文件先精确匹配】用户 @引用的产物文件名，先 ls artifacts/ 拿真实文件名（一字不差），禁止凭印象猜路径或换字（错字=文件不存在）。找不到时如实说「未找到该产物」，不编造路径。"
+        "13. 【引用文件先精确匹配】用户 @引用的产物文件名，先 ls artifacts/ 拿真实文件名（一字不差），"
+        "禁止凭印象猜路径或换字（错字=文件不存在）。找不到时如实说「未找到该产物」，不编造路径。"
         "能自己做的后续步骤（登录/下钻/展开/验证/落盘）全部做完再报告，"
         "禁止只做第一步就反问'要我继续吗/要我登录哪个吗/需要我展开吗/需要我针对哪一条深挖吗'——"
         "这些是半途而废，直接把后续步骤做完。只有真正无法自决的分叉（如'查 A 还是 B'二选一）"
@@ -387,8 +388,8 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default", wor
         related = _svc("lessons", get_lesson_store).search(message)
         if related:
             lines = ["【历史经验——此前处理类似问题的真实记录】"]
-            for i, l in enumerate(related, 1):
-                lines.append(f"{i}. {l.get('lesson', '')}")
+            for i, item in enumerate(related, 1):
+                lines.append(f"{i}. {item.get('lesson', '')}")
             add("lessons.selfheal", "历史经验·自愈闭环", "\n".join(lines), "lessons")
     except Exception:  # noqa: BLE001 — 经验注入失败不影响主流程
         pass
@@ -545,8 +546,7 @@ def _ensure_platform_tools() -> None:
         return
     try:
         from agent_core.tools_registry import register_external_tool
-        from govmcp_tools import (env_open_data, hunan_env, permit_management,
-                                  sthjzf, wryzxjc)
+        from govmcp_tools import env_open_data, hunan_env, permit_management, sthjzf, wryzxjc
 
         for mod in (wryzxjc, sthjzf, permit_management, env_open_data,
                     hunan_env):
@@ -771,8 +771,16 @@ def _codex_tools() -> list[dict]:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "filename": {"type": "string", "description": "文件名（可含中文，如 现场检查清单.md 或 处罚决定书.docx；不允许路径分隔符）"},
-                        "content": {"type": "string", "description": "完整文本内容（UTF-8；.docx 时按 Markdown 语法解析段落/标题/列表/表格）"},
+                        "filename": {
+                            "type": "string",
+                            "description": (
+                                "文件名（可含中文，如 现场检查清单.md 或 处罚决定书.docx；不允许路径分隔符）"
+                            ),
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": "完整文本内容（UTF-8；.docx 时按 Markdown 语法解析段落/标题/列表/表格）",
+                        },
                         "workspace": {"type": "string", "description": "可选，目标工作区名；缺省用当前工作区"},
                     },
                     "required": ["filename", "content"],
@@ -871,17 +879,27 @@ def _codex_tools() -> list[dict]:
                     "type": "object",
                     "properties": {
                         "type": {"type": "string", "enum": ["line", "bar", "stacked_bar", "pie", "scatter", "map"],
-                                 "description": "图表类型：line 折线（多期趋势）/ bar 柱状（分组对比）/ stacked_bar 堆叠柱（构成趋势）/ pie 饼图（占比）/ scatter、map 点位散点图（经纬度点成图，排污口/污染源空间分布）"},
+                                 "description": (
+                                     "图表类型：line 折线（多期趋势）/ bar 柱状（分组对比）/ stacked_bar 堆叠柱"
+                                     "（构成趋势）/ pie 饼图（占比）/ scatter、map 点位散点图"
+                                     "（经纬度点成图，排污口/污染源空间分布）"
+                                 )},
                         "title": {"type": "string", "description": "图表标题（会显示在卡片上）"},
                         "x_labels": {"type": "array", "items": {"type": "string"},
                                      "description": "X 轴标签列表（line/bar/stacked_bar 必填，如月份/断面名）"},
                         "series": {"type": "array", "items": {"type": "object"},
-                                   "description": "数据系列列表：[{\"name\":\"系列名\",\"data\":[数值,...]}, ...]，data 长度与 x_labels 对齐"},
+                                   "description": (
+                                       "数据系列列表：[{\"name\":\"系列名\",\"data\":[数值,...]}, ...]，"
+                                       "data 长度与 x_labels 对齐"
+                                   )},
                         "unit": {"type": "string", "description": "数值单位（如 %、mg/L、家、次）"},
                         "pie_data": {"type": "array", "items": {"type": "object"},
                                      "description": "饼图数据：[{\"name\":\"项名\",\"value\":数值}, ...]（仅 pie 类型用）"},
                         "points": {"type": "array", "items": {"type": "object"},
-                                   "description": "点位数据：[{\"lng\":经度,\"lat\":纬度,\"name\":\"点位名\",\"value\":数值}, ...]（仅 scatter/map 类型用，排污口/污染源经纬度点成图）"},
+                                   "description": (
+                                       "点位数据：[{\"lng\":经度,\"lat\":纬度,\"name\":\"点位名\",\"value\":数值}, ...]"
+                                       "（仅 scatter/map 类型用，排污口/污染源经纬度点成图）"
+                                   )},
                     },
                     "required": ["type", "title"],
                 },
@@ -923,9 +941,12 @@ def _codex_tools() -> list[dict]:
             "type": "function",
             "function": {
                 "name": "switch_persona",
-                "description": "切换执法要素工作阶段（DSH 式提示词状态机）：inspection 现场巡查 / documentation 文书制作 / review 案卷评查。执法只是全要素之一，其余要素（监测/环评/排污许可/应急等）无需切换即可直接使用。"
-                               "切换后系统提示词的阶段片段立即替换，回答风格与检查重点随阶段变化。"
-                               "用户说'切换到文书阶段/评查模式/巡查模式'时主动调用。",
+                "description": (
+                    "切换执法要素工作阶段（DSH 式提示词状态机）：inspection 现场巡查 / documentation 文书制作"
+                    " / review 案卷评查。执法只是全要素之一，其余要素（监测/环评/排污许可/应急等）无需切换即可直接使用。"
+                    "切换后系统提示词的阶段片段立即替换，回答风格与检查重点随阶段变化。"
+                    "用户说'切换到文书阶段/评查模式/巡查模式'时主动调用。"
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -1083,14 +1104,24 @@ def _codex_tools() -> list[dict]:
             "type": "function",
             "function": {
                 "name": "eco_memory_add",
-                "description": "向记忆树写入一条结构化记忆节点（score/tags/parent_id 树形结构）。用于记住用户偏好/事实锚点/案例要点。",
+                "description": (
+                    "向记忆树写入一条结构化记忆节点（score/tags/parent_id 树形结构）。"
+                    "用于记住用户偏好/事实锚点/案例要点。"
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "description": "节点类型：statute/case/benchmark/procedure/session/skill/quality/alert"},
+                        "type": {
+                            "type": "string",
+                            "description": "节点类型：statute/case/benchmark/procedure/session/skill/quality/alert",
+                        },
                         "title": {"type": "string", "description": "记忆标题"},
                         "content": {"type": "string", "description": "记忆正文"},
-                        "tags": {"type": "array", "items": {"type": "string"}, "description": "标签列表，如 ['env/air','enforcement']"},
+                        "tags": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "标签列表，如 ['env/air','enforcement']",
+                        },
                         "score": {"type": "number", "description": "重要性 0-100（默认 50）"},
                         "parent_id": {"type": "string", "description": "父节点 id（树形挂载，可选）"},
                     },
@@ -1157,7 +1188,10 @@ def _codex_tools() -> list[dict]:
             "type": "function",
             "function": {
                 "name": "eco_memory_prune",
-                "description": "记忆树遗忘维护：按低分（min_score）或长期未访问（max_age_days）清理，security/denied 标签受保护，dry_run 预览。",
+                "description": (
+                    "记忆树遗忘维护：按低分（min_score）或长期未访问（max_age_days）清理，"
+                    "security/denied 标签受保护，dry_run 预览。"
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -1243,7 +1277,9 @@ _CHAT_MCP_TOOLS = (
     "mcp__eco-hunan-env__management_public_list", "mcp__eco-hunan-env__org_structure_list",
     "mcp__eco-hunan-env__media_center_list", "mcp__eco-hunan-env__site_search",
     # 生态环境百科全书 MCP 补充（常用只读）
-    "mcp__eco-mee-encyclopedia__search_site", "mcp__eco-mee-encyclopedia__search_policy", "mcp__eco-mee-encyclopedia__read_policy",
+    "mcp__eco-mee-encyclopedia__search_site",
+    "mcp__eco-mee-encyclopedia__search_policy",
+    "mcp__eco-mee-encyclopedia__read_policy",
     "mcp__eco-mee-encyclopedia__search_standard", "mcp__eco-mee-encyclopedia__read_standard",
     "mcp__eco-mee-encyclopedia__query_eia_credit", "mcp__eco-mee-encyclopedia__search_permit",
     "mcp__eco-mee-encyclopedia__search_waste_category", "mcp__eco-mee-encyclopedia__list_laws",
@@ -2091,8 +2127,8 @@ async def chat(req: ChatRequest) -> ChatResponse:
     # 会话级 token 计量 + 首个 LLM 响应耗时（非流式下为近似首响应，非逐 token 采样）
     suggestions: list[str] = []
     try:
-        from agent_core.suggest import build_suggestions_hybrid
         from agent_core.prompt_engine import get_prompt_engine
+        from agent_core.suggest import build_suggestions_hybrid
 
         suggestions = build_suggestions_hybrid(req.message, reply, trace,
                                                get_prompt_engine().phase)
@@ -2431,7 +2467,12 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
         for tc in tool_calls:
             fn = tc.get("function", {})
             try:
-                t_args = json.loads(fn.get("arguments", "{}")) if isinstance(fn.get("arguments"), str) else (fn.get("arguments") or {})
+                raw_args = fn.get("arguments")
+                t_args = (
+                    json.loads(raw_args if isinstance(raw_args, str) else "{}")
+                    if isinstance(raw_args, str)
+                    else (raw_args or {})
+                )
             except json.JSONDecodeError:
                 t_args = {}
             tool_span_ids.append(tree.start(fn.get("name", ""), "tool_call", args=t_args))
@@ -3434,7 +3475,15 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
                 yield f"data: {json.dumps({'delta': _full_reply[i:i + 8]}, ensure_ascii=False)}\n\n"
                 await asyncio.sleep(0.01)
             _persist_turn(req.session_id, req.message, _full_reply, ok=True)
-            yield f"data: {json.dumps({'done': True, 'usage': {}, 'trace': [], 'ttft_ms': 0, 'duration_ms': 0, 'suggestions': []}, ensure_ascii=False)}\n\n"
+            done_payload = {
+                "done": True,
+                "usage": {},
+                "trace": [],
+                "ttft_ms": 0,
+                "duration_ms": 0,
+                "suggestions": [],
+            }
+            yield f"data: {json.dumps(done_payload, ensure_ascii=False)}\n\n"
             yield "data: [DONE]\n\n"
             return
         # 三角色协作（内置三智能体）：复杂任务走 RoleSwarm，阶段事件边跑边推

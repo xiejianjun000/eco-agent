@@ -4,6 +4,7 @@
 不指定 sheet 时只概览全部 sheet 的维度（用 openpyxl read_only，速度快、内存省）。
 """
 import sys
+
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 

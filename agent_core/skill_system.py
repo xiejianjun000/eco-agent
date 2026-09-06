@@ -13,7 +13,6 @@ Phase 2 核心交付：
 
 import json
 import logging
-import re
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
@@ -22,9 +21,9 @@ from typing import Any
 
 from agent_core.skill_md import (
     build_skill_draft,
+    eco_skill_name,
     format_frontmatter,
     is_skill_name,
-    eco_skill_name,
     render_skill_md,
     validate_skill_content,
 )

@@ -3,6 +3,7 @@
 用法: python ppt_probe.py <文件.pptx>
 """
 import sys
+
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 
@@ -13,8 +14,8 @@ def main():
     path = sys.argv[1]
 
     from pptx import Presentation
-    from pptx.util import Emu
     from pptx.enum.shapes import MSO_SHAPE_TYPE
+    from pptx.util import Emu
 
     prs = Presentation(path)
     print(f"文件: {path}")

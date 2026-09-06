@@ -147,7 +147,7 @@ def test_record_llm_stat_null_tokens_become_zero(seeded):
     """stats 修复：拿不到 usage 显式记 0 而非 null（附 tokens_unknown 标记）"""
     from agent_core.llm_client import STATS_FILE
 
-    lines = [json.loads(l) for l in STATS_FILE.read_text(encoding="utf-8").splitlines() if l.strip()]
+    lines = [json.loads(ln) for ln in STATS_FILE.read_text(encoding="utf-8").splitlines() if ln.strip()]
     rec = lines[-1]  # seeded 里第二次调用：无 usage + ok=False
     assert rec["prompt_tokens"] == 0 and rec["completion_tokens"] == 0
     assert rec["tokens_unknown"] is True

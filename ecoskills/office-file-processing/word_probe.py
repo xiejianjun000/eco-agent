@@ -3,6 +3,7 @@
 用法: python word_probe.py <文件.docx> [正文样本段数，默认5]
 """
 import sys
+
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 

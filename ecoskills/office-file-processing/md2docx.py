@@ -6,14 +6,14 @@ md2docx.py — Markdown → Word(.docx) 转换器（无外部依赖，仅 python
       代码块(```)、引用(>)、分隔线(---)
 依赖: python-docx（skill 环境已装）
 """
-import sys
 import re
+import sys
 from pathlib import Path
-
-sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 from docx import Document
 from docx.shared import Pt, RGBColor
+
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 INLINE_RE = re.compile(r'(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))')
 

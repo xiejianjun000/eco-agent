@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-scheduler.py — eco Agent 内置 Cron 定时任务调度器
+scheduler.py — Eco Agent 内置 Cron 定时任务调度器
 
 对标 OpenClaw/Hermes 的内置定时任务能力，支持自然语言描述定时任务。
 L4 Evolve 每日自动触发、主动建议推送等后台任务统一由此调度。
@@ -14,12 +14,12 @@ L4 Evolve 每日自动触发、主动建议推送等后台任务统一由此调�
 """
 
 import json
-import re
-import time
 import logging
 import threading
-from pathlib import Path
+import time
 from datetime import datetime
+from pathlib import Path
+
 from croniter import croniter
 
 logger = logging.getLogger("scheduler")
@@ -70,38 +70,13 @@ def nl_to_cron(description: str) -> str | None:
     for pattern, cron in NL_TO_CRON.items():
         if pattern in desc_lower:
             return cron
-    # 正则兜底：更宽泛的中文时间表达（对齐「自动任务」前端自然语言输入）
-    _weekday = {"一": "1", "二": "2", "三": "3", "四": "4", "五": "5", "六": "6",
-                "日": "0", "天": "0", "七": "0"}
-    # 每天 HH[:MM] / 每天HH点[MM分] / 每天HH时
-    m = re.search(r"每天\s*(\d{1,2})\s*[:：点时]\s*(\d{0,2})?", desc_lower)
-    if m:
-        hh, mm = int(m.group(1)), int(m.group(2) or 0)
-        if 0 <= hh <= 23 and 0 <= mm <= 59:
-            return f"{mm} {hh} * * *"
-    # 每 N 分钟 / 每 N 小时
-    m = re.search(r"每\s*(\d+)\s*分钟", desc_lower)
-    if m:
-        return f"*/{max(1, min(59, int(m.group(1))))} * * * *"
-    m = re.search(r"每\s*(\d+)\s*小时", desc_lower)
-    if m:
-        return f"0 */{max(1, min(23, int(m.group(1))))} * * *"
-    # 每周X / 每星期X
-    m = re.search(r"每\s*(?:周|星期|礼拜)\s*([一二三四五六日天七])", desc_lower)
-    if m:
-        return f"0 9 * * {_weekday.get(m.group(1), '1')}"
-    # 每月 N 日/号
-    m = re.search(r"每月\s*(\d{1,2})\s*[日号]", desc_lower)
-    if m:
-        return f"0 9 {max(1, min(31, int(m.group(1))))} * *"
     return None
 
 
 class ScheduledJob:
     """单个定时任务"""
 
-    def __init__(self, job_id: str, cron_expr: str, task_desc: str,
-                 handler_name: str = "", enabled: bool = True):
+    def __init__(self, job_id: str, cron_expr: str, task_desc: str, handler_name: str = "", enabled: bool = True):
         self.job_id = job_id
         self.cron_expr = cron_expr
         self.task_desc = task_desc
@@ -126,17 +101,20 @@ class ScheduledJob:
 
     def to_dict(self) -> dict:
         return {
-            "job_id": self.job_id, "cron_expr": self.cron_expr,
-            "task_desc": self.task_desc, "handler_name": self.handler_name,
-            "enabled": self.enabled, "last_run": self.last_run,
-            "next_run": self.next_run, "run_count": self.run_count,
+            "job_id": self.job_id,
+            "cron_expr": self.cron_expr,
+            "task_desc": self.task_desc,
+            "handler_name": self.handler_name,
+            "enabled": self.enabled,
+            "last_run": self.last_run,
+            "next_run": self.next_run,
+            "run_count": self.run_count,
             "fail_count": self.fail_count,
         }
 
     @classmethod
     def from_dict(cls, d: dict) -> "ScheduledJob":
-        job = cls(d["job_id"], d["cron_expr"], d["task_desc"],
-                  d.get("handler_name", ""), d.get("enabled", True))
+        job = cls(d["job_id"], d["cron_expr"], d["task_desc"], d.get("handler_name", ""), d.get("enabled", True))
         job.last_run = d.get("last_run")
         job.next_run = d.get("next_run")
         job.run_count = d.get("run_count", 0)
@@ -161,10 +139,10 @@ class CronScheduler:
         """注册任务处理器"""
         self._handlers[name] = handler
 
-    def add_job(self, cron_expr: str, task_desc: str,
-                handler_name: str = "") -> str:
+    def add_job(self, cron_expr: str, task_desc: str, handler_name: str = "") -> str:
         """添加定时任务，返回 job_id"""
         import uuid
+
         job_id = f"job_{uuid.uuid4().hex[:8]}"
         job = ScheduledJob(job_id, cron_expr, task_desc, handler_name)
         self._jobs[job_id] = job
@@ -252,10 +230,14 @@ class CronScheduler:
 
     def _save_jobs(self):
         self._jobs_file.parent.mkdir(parents=True, exist_ok=True)
-        self._jobs_file.write_text(json.dumps(
-            {"jobs": [j.to_dict() for j in self._jobs.values()],
-             "updated_at": datetime.now().isoformat()},
-            ensure_ascii=False, indent=2), encoding="utf-8")
+        self._jobs_file.write_text(
+            json.dumps(
+                {"jobs": [j.to_dict() for j in self._jobs.values()], "updated_at": datetime.now().isoformat()},
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
     def get_stats(self) -> dict:
         return {

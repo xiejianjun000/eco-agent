@@ -1757,7 +1757,11 @@ class PromptEngine:
             return ""
         groups = {
             "法典条文检索": [n for n in names if n.startswith("statute_") or n == "search_regulation"],
-            "执法知识库检索": [n for n in names if n.startswith("mcp__ehs-kb-ops__kb_") and "search" in n or n.startswith("kb_")],
+            "执法知识库检索": [
+                n for n in names
+                if (n.startswith("mcp__ehs-kb-ops__kb_") and "search" in n)
+                or n.startswith("kb_")
+            ],
             "沙箱代码执行": [n for n in names if n in ("execute_code", "shell_run")],
             "文件读写": [n for n in names if n in ("analyze_document", "save_document", "file_read", "file_write")],
             "git 操作": [n for n in names if n == "git_status"],

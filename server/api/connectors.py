@@ -21,9 +21,8 @@ router = APIRouter()
 
 def _rows() -> list[dict]:
     """配置清单 × 运行时连接状态（_MCP_MGR 未连接时仅回配置元信息）。"""
-    from agent_core.mcp_connector import load_configs_from_env
-
     import agent_core.tools_registry as tr
+    from agent_core.mcp_connector import load_configs_from_env
 
     configs = load_configs_from_env()
     mgr = tr._MCP_MGR  # noqa: SLF001
