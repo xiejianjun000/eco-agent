@@ -201,9 +201,10 @@ function ArtifactCard({ name, title, size, path, docxName, docxPath }: {
   };
 
   return (
-    <div className="artifact-card" draggable onDragStart={onDragStart} title="可拖拽到输入框引用">
+    <div className={`artifact-card${open ? ' open' : ''}`} draggable onDragStart={onDragStart}
+         title="点击展开预览 · 可拖拽到输入框引用">
       <div className="artifact-card-head" onClick={toggle}>
-        <span className="artifact-card-icon"><Icon name={fileIcon(name)} size={15} /></span>
+        <span className="artifact-card-icon"><Icon name={fileIcon(name)} size={14} /></span>
         <span className="artifact-card-title" title={name}>{title || name}</span>
         {size !== undefined && <span className="artifact-card-meta">{(size / 1024).toFixed(1)} KB</span>}
         {docxName && (
@@ -213,7 +214,7 @@ function ArtifactCard({ name, title, size, path, docxName, docxPath }: {
             href={`/api/v1/documents/artifact/${encodeURIComponent(docxName)}/download`}
             download={docxName}
             onClick={(e) => e.stopPropagation()}
-          ><Icon name="file-text" size={14} />DOCX</a>
+          ><Icon name="file-text" size={13} />DOCX</a>
         )}
         <a
           className="artifact-card-act"
@@ -221,13 +222,11 @@ function ArtifactCard({ name, title, size, path, docxName, docxPath }: {
           href={`/api/v1/documents/artifact/${encodeURIComponent(name)}/download`}
           download={name}
           onClick={(e) => e.stopPropagation()}
-        ><Icon name="download" size={14} /></a>
+        ><Icon name="download" size={13} /></a>
         <button className="artifact-card-act" title="复制本地路径"
-                onClick={copyPath}>{copied === 'path' ? <Icon name="check" size={13} /> : <Icon name="archive" size={14} />}</button>
+                onClick={copyPath}>{copied === 'path' ? <Icon name="check" size={12} /> : <Icon name="archive" size={13} />}</button>
         <button className="artifact-card-act" title="复制分享链接"
-                onClick={copyLink}>{copied === 'link' ? <Icon name="check" size={13} /> : <Icon name="link" size={14} />}</button>
-        <button className="dsh-expand" title={open ? '收起' : '展开'}
-                onClick={(e) => { e.stopPropagation(); toggle(); }}>{open ? '^' : 'v'}</button>
+                onClick={copyLink}>{copied === 'link' ? <Icon name="check" size={12} /> : <Icon name="link" size={13} />}</button>
       </div>
       {open && (
         <div className="artifact-card-body">
@@ -441,6 +440,51 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
           {row.body}
         </ProcessRow>
       ))}
+    </div>
+  );
+}
+
+/** 过程块容器：流式中实时展开，回答输出完成后自动收起为一行摘要。
+ *  用户可点摘要行随时回看完整过程（DSH 整洁版面对标：过程不长期占版）。 */
+function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): React.ReactElement | null {
+  const [open, setOpen] = React.useState(live);
+  const wasLive = React.useRef(live);
+  const touched = React.useRef(false);  // 用户手动开合过就不再自动接管
+
+  React.useEffect(() => {
+    if (touched.current) return;
+    if (wasLive.current && !live) setOpen(false);   // 流式收尾 → 自动隐藏
+    else if (!wasLive.current && live) setOpen(true);  // 新一轮开始 → 自动展开
+    wasLive.current = live;
+  }, [live]);
+
+  const inner = renderProcessBlock(trace);
+  if (!inner) return null;
+
+  const nThink = trace.filter((t) => t.type === 'think').length;
+  const nTool = trace.filter((t) => t.type === 'tool').length;
+  const totalMs = trace.reduce((s, t) => s + (t.cost_ms ?? 0), 0);
+  const parts = [
+    nThink ? `思考 ${nThink}` : '',
+    nTool ? `工具 ${nTool}` : '',
+    totalMs ? fmtMs(totalMs) : '',
+  ].filter(Boolean);
+
+  return (
+    <div className={`proc-wrap${open ? ' open' : ''}${live ? ' live' : ''}`}>
+      <button
+        className="proc-toggle"
+        title={open ? '收起过程' : '展开过程（思考 / 执行 / 工具调用）'}
+        onClick={() => { touched.current = true; setOpen((v) => !v); }}
+      >
+        <span className="proc-caret" aria-hidden="true">{open ? '▾' : '▸'}</span>
+        <Icon name="gear" size={13} />
+        <span className="proc-summary">
+          {live ? '执行中' : '过程'}
+          {parts.length > 0 && <span className="proc-stat"> · {parts.join(' · ')}</span>}
+        </span>
+      </button>
+      {open && inner}
     </div>
   );
 }
@@ -1213,7 +1257,9 @@ export default function ChatView({
                   <span className="msg-stat">{fmtStatRow(m)}</span>
                 )}
               </div>
-              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderProcessBlock(m.trace!)}
+              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && (
+                <ProcessBlock trace={m.trace!} live={busy && i === messages.length - 1} />
+              )}
               {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderCards(m.trace!)}
               {m.role === 'assistant' && (m.trace ?? []).some((t) => t.type === 'answer' && t.truncated) && !busy && (
                 <button
@@ -1241,7 +1287,7 @@ export default function ChatView({
                 ));
                 return arts.length > 1 ? (
                   <div className="artifact-group">
-                    <div className="artifact-group-head"><Icon name="package" size={14} /> 本次任务产物（{arts.length}）</div>
+                    <div className="artifact-group-head"><Icon name="package" size={12} /> {arts.length} 个产物</div>
                     {cards}
                   </div>
                 ) : cards;

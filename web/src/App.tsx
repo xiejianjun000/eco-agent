@@ -247,7 +247,7 @@ export default function App(): React.ReactElement {
   return (
     <div className="app">
       <aside className={`nav${collapsed ? ' collapsed' : ''}`}>
-        {/* 品牌 */}
+        {/* 品牌：字标 + 定位语（收缩按钮独立贴侧栏右缘，见下） */}
         <div className="brand" title="回到会话" onClick={() => setPage('chat')}>
           <div className="brand-row">
             {collapsed ? (
@@ -255,21 +255,23 @@ export default function App(): React.ReactElement {
             ) : (
               <img className="brand-logo" src="/eco-logo.svg" alt="eco Agent" />
             )}
-            <button
-              className="collapse-btn"
-              title={collapsed ? '展开侧边栏' : '收起侧边栏'}
-              aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
-              onClick={(e) => { e.stopPropagation(); setCollapsed((v) => !v); }}
-            >
-              {panelIcon}
-            </button>
           </div>
           {!collapsed && (
             <span className="sub">
-              生态环境垂直领域<span className="sub-accent">AI Agent</span>
+              最懂生态环境领域<span className="sub-accent">AI Agent</span>
             </span>
           )}
         </div>
+
+        {/* 收缩按钮：绝对定位贴侧栏右缘（与中间栏相邻），不再跟在 logo 后面 */}
+        <button
+          className="collapse-btn"
+          title={collapsed ? '展开侧边栏' : '收起侧边栏'}
+          aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
+          onClick={(e) => { e.stopPropagation(); setCollapsed((v) => !v); }}
+        >
+          {panelIcon}
+        </button>
 
         {/* 主导航：新建任务 + 会话/插件/自动任务/连接器 */}
         <div className="nav-main">
