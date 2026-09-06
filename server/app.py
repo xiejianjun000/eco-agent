@@ -56,6 +56,33 @@ def create_app() -> FastAPI:
         version=get_version(),
     )
 
+    # ── Rate Limiter ──
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.util import get_remote_address
+    from slowapi.errors import RateLimitExceeded
+
+    limiter = Limiter(key_func=get_remote_address)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    # ── API Key Auth ──
+    import os
+
+    API_KEY = os.getenv("ECO_API_KEY", "")
+
+    @app.middleware("http")
+    async def api_key_auth(request: Request, call_next):
+        if API_KEY and not request.url.path.startswith(("/healthz", "/api/v1/system")):
+            key = request.headers.get("X-API-Key", "")
+            if key != API_KEY:
+                from fastapi.responses import JSONResponse
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Invalid or missing API Key"}
+                )
+        response = await call_next(request)
+        return response
+
     # cordis 组合内核装配（服务注册 + 组合插件装载，对标 DSH boot）
     try:
         from agent_core.cordis.boot import get_app_context
