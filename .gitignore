@@ -50,8 +50,10 @@ stats.jsonl
 prompt_audit.jsonl
 workspaces/
 
+# Node 依赖（web/ 与 govmcp/*/ 的 MCP server 各自 npm install 生成）
+node_modules/
+
 # Web GUI
-web/node_modules/
 # web/dist 已提交（clone 后无需构建即可用 eco server 打开界面）；重新构建后由 CI/开发者提交
 
 # Playwright CLI 快照（测试产物）
