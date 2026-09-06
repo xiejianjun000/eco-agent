@@ -28,7 +28,7 @@ logger = logging.getLogger("eco.server.files")
 
 router = APIRouter()
 
-MAX_BYTES = 300 * 1024 * 1024  # 附件上限 300MB
+MAX_BYTES = int(os.getenv("ECO_MAX_FILE_SIZE_MB", "300")) * 1024 * 1024  # 附件上限，默认 300MB，可通过环境变量调整
 AUDIO_MAX_BYTES = 25 * 1024 * 1024  # 语音上限 25MB
 MIN_AUDIO_BYTES = 2 * 1024  # 低于 2KB 视为无效录音
 VOICE_TIMEOUT = 240  # 转写总超时（秒），妙记生成异步，需耐心

@@ -21,6 +21,7 @@ dependencies = [
     "mcp>=1.0",
     "PyYAML>=6.0",
     "croniter>=1.4",
+    "slowapi>=0.1.9",
 ]
 
 [project.urls]
