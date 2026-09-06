@@ -30,4 +30,8 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
+    # 跨平台解析宿主机：让 prometheus.yml 里的 host.docker.internal:8321
+    # 能抓到宿主机上的 eco server（macOS/Windows/Linux 通用）
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
