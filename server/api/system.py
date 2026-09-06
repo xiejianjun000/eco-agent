@@ -211,7 +211,10 @@ async def reload_system() -> dict:
         tr._MCP_MGR = None
         names = tr.attach_mcp_tools()
         result["mcp"] = names[:10]
-        result["mcp_count"] = len(names)
+        # mcp_count 统计「当前实际挂载」的 mcp__ 工具数，而非 attach 的「新注册数」：
+        # reload 场景下工具已在 _HANDLERS 里，attach 返回 0（全部 continue 跳过），
+        # 与 connectors 端点对齐，避免误报「0 个 MCP 挂载」。
+        result["mcp_count"] = len([n for n in tr._HANDLERS if n.startswith("mcp__")])
     except Exception as e:  # noqa: BLE001
         result["mcp_error"] = str(e)
     logger.info("[system/reload] env=%s mcp=%s", result["env_reloaded"], result.get("mcp_count"))
