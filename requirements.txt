@@ -8,6 +8,7 @@ python-dotenv>=1.0
 numpy>=1.26
 rich>=13.0
 slowapi>=0.1.9
+prometheus-client>=0.20
 mcp>=1.0
 PyYAML>=6.0
 croniter>=1.4

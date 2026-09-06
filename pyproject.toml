@@ -22,6 +22,7 @@ dependencies = [
     "PyYAML>=6.0",
     "croniter>=1.4",
     "slowapi>=0.1.9",
+    "prometheus-client>=0.20",
 ]
 
 [project.urls]

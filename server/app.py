@@ -88,6 +88,22 @@ def create_app() -> FastAPI:
         response = await call_next(request)
         return response
 
+    # ── Prometheus HTTP 指标（最外层：记录所有请求，含被 auth 拒绝的）──
+    import time as _time
+
+    from agent_core import prometheus_metrics as _pmetrics
+
+    @app.middleware("http")
+    async def prometheus_http_metrics(request: Request, call_next):
+        start = _time.monotonic()
+        status = 500
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            return response
+        finally:
+            _pmetrics.record_http(request.method, request.url.path, status, _time.monotonic() - start)
+
     # cordis 组合内核装配（服务注册 + 组合插件装载，对标 DSH boot）
     try:
         from agent_core.cordis.boot import get_app_context
@@ -149,6 +165,38 @@ def create_app() -> FastAPI:
     @app.get("/healthz", tags=["system"])
     async def healthz() -> dict:
         return {"status": "ok", "version": get_version()}
+
+    @app.get("/metrics", tags=["system"])
+    async def metrics_prometheus():
+        """Prometheus 指标端点（# HELP/# TYPE 文本格式）。
+
+        HTTP 指标由中间件实时累计；LLM/业务指标从 stats.jsonl 与运行态汇总，
+        每次拉取前刷新为最新累计值。未安装 prometheus-client 时降级返回 503 提示。
+        """
+        from fastapi.responses import Response
+
+        _pmetrics.refresh_llm_metrics()
+
+        scheduler_jobs = 0
+        memory_nodes: dict = {}
+        try:
+            from agent_core.scheduler import CronScheduler
+
+            scheduler_jobs = len(CronScheduler()._jobs)  # noqa: SLF001
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            from _scripts.memory_tree import MemoryTree
+
+            by_type = MemoryTree().get_stats().get("by_type", {})
+            memory_nodes = {t: v.get("count", 0) for t, v in by_type.items() if isinstance(v, dict)}
+        except Exception:  # noqa: BLE001
+            pass
+        _pmetrics.refresh_business_metrics(scheduler_jobs, memory_nodes)
+        _pmetrics.set_app_info(get_version())
+
+        content_type, body = _pmetrics.render_metrics()
+        return Response(content=body, media_type=content_type, status_code=200 if _pmetrics.PROM_AVAILABLE else 503)
 
     _mount_web_gui(app)
     return app
