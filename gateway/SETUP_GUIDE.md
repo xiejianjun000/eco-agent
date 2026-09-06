@@ -1,4 +1,4 @@
-# ECO AGENT 多平台接入配置指南
+# eco Agent 多平台接入配置指南
 
 > **飞书 · 企业微信 · 钉钉 · 微信 接入配置说明**
 > 版本：v0.1.0
@@ -38,7 +38,7 @@ ngrok http 7070
 
 1. **打开飞书开发者后台** https://open.feishu.cn/app
 2. **创建企业自建应用**
-   - 应用名称：`ECO AGENT 执法助手`
+   - 应用名称：`eco Agent 执法助手`
    - 应用描述：生态环境执法 AI 辅助系统
 
 3. **配置权限**
@@ -90,7 +90,7 @@ ch.send_card("open_id", "审批标题", "详情内容", approve_callback="cb-1",
 
 1. **打开企业微信管理后台** https://work.weixin.qq.com/wework_admin/frame#apps
 2. **创建应用**
-   - 应用名称：`ECO AGENT`
+   - 应用名称：`eco Agent`
    - 应用描述：生态环境执法 AI 辅助系统
    - 可见范围：选择可用人员
 
@@ -138,10 +138,10 @@ ch.create_approval("creator_id", ["approver_id"], "template_id", {"contents": []
 1. **打开钉钉开放平台** https://open.dingtalk.com
 2. **创建应用**
    - 应用类型：企业应用
-   - 应用名称：`ECO AGENT`
+   - 应用名称：`eco Agent`
 
 3. **配置机器人**
-   - 机器人名称：`ECO AGENT 执法助手`
+   - 机器人名称：`eco Agent 执法助手`
    - 机器人简介：生态环境执法 AI 辅助系统
    - 消息接收模式：HTTP
    - 消息接收地址：`https://your-domain/webhook/dingtalk`

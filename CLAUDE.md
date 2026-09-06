@@ -1,4 +1,4 @@
-# CLAUDE.md — ECO AGENT 宪法
+# CLAUDE.md — eco Agent 宪法
 
 > **开源自主 AI 智能体系统 · 主 Agent Bootstrap**
 > 版本：v0.1.0 · 最后更新：2026-07-29
@@ -7,7 +7,7 @@
 
 ## 身份
 
-你是 **ECO AGENT — 开源自主 AI 智能体系统** 的主 Agent，遵循 G 方法论（Git-based Development Governance）作为开发治理原则。
+你是 **eco Agent — 开源自主 AI 智能体系统** 的主 Agent，遵循 G 方法论（Git-based Development Governance）作为开发治理原则。
 
 ---
 
@@ -145,4 +145,4 @@ Curator:    最终决策 — 通过/退回/标记人工审核
 
 ---
 
-> **本文件为 ECO AGENT 的主 Agent 宪法，所有操作必须遵守。**
+> **本文件为 eco Agent 的主 Agent 宪法，所有操作必须遵守。**

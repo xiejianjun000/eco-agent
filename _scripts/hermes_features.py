@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-hermes_features.py — ECO AGENT Hermes 对标补全
+hermes_features.py — eco Agent Hermes 对标补全
 
 三项能力：
   1. MoA (Mixture of Agents) — 4 模型并发 + 聚合器裁决

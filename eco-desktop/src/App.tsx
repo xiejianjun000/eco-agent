@@ -1,4 +1,4 @@
-// App.tsx — ECO AGENT Desktop 主框架（IDE 式工作台）
+// App.tsx — eco Agent Desktop 主框架（IDE 式工作台）
 // 布局：
 //   左侧导航（可收缩）
 //   中间 = [对话面板 | 画布面板]（可拖拽分栏）
@@ -120,7 +120,7 @@ function SideNav({ collapsed, setNavCollapsed, mode, setMode, activeModule, navi
     }}>
       <div style={{ padding: '10px 12px', borderBottom: '1px solid #1a2f1a', display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ fontSize: 15 }}>🌿</span>
-        <span style={{ fontWeight: 700, color: '#5ae0a0', whiteSpace: 'nowrap', fontSize: 12 }}>ECO AGENT</span>
+        <span style={{ fontWeight: 700, color: '#5ae0a0', whiteSpace: 'nowrap', fontSize: 12 }}>eco Agent</span>
         <button onClick={() => setNavCollapsed(true)} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#5a7a6a', cursor: 'pointer', fontSize: 10 }}>◀</button>
       </div>
       <div style={{ padding: '6px 8px', borderBottom: '1px solid #1a2f1a' }}>

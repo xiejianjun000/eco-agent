@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-cross_region_sync.py — ECO AGENT 跨省执法协同模块
+cross_region_sync.py — eco Agent 跨省执法协同模块
 
 功能：
   1. 节点注册/发现（Node Registry）

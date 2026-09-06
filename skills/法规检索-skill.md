@@ -2,7 +2,7 @@
 name: 法规检索-skill
 version: 0.1.0
 description: 自动结晶：法规检索操作技能
-author: ECO AGENT (Evolution Engine)
+author: eco Agent (Evolution Engine)
 type: skill
 ---
 

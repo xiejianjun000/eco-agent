@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-bloodline_compressor.py — ECO AGENT 血统压缩机制
+bloodline_compressor.py — eco Agent 血统压缩机制
 
 功能：
   1. 会话摘要生成（自动压缩长会话为摘要）

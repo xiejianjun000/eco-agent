@@ -1,5 +1,5 @@
 """
-ECO AGENT sandbox — 安全代码执行环境（对标 HERMES Docker Sandbox）
+eco Agent sandbox — 安全代码执行环境（对标 HERMES Docker Sandbox）
 支持: Python/Shell/Node 代码在隔离容器中执行
 """
 

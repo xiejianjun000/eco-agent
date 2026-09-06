@@ -89,7 +89,7 @@ class TestSkillRegistry:
         import agent_core.skill_system as ss
 
         monkeypatch.setattr(ss, "DATA_DIR", tmp_path)
-        monkeypatch.setattr(ss, "SKILL_DIR", tmp_path / "skills")  # 防止向仓库 skills/ 写运行时产物
+        monkeypatch.setattr(ss, "ECOSKILLS_DIR", tmp_path / "ecoskills")  # 防止向仓库 ecoskills/ 写运行时产物
         reg = SkillRegistry()
         s = Skill(name="法规精准检索", description="按条文号精确检索法规", category="gov")
         sid = reg.register(s)

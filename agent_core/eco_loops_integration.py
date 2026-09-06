@@ -222,7 +222,7 @@ def test():
 
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-    print("=== Eco Agent 五层循环自检 ===")
+    print("=== eco Agent 五层循环自检 ===")
     test_results = loops.self_test()
     for layer, result in test_results.items():
         status = "OK" if result.get("ok") else "FAIL"

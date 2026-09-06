@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-eco-gateway-server.py — ECO AGENT 统一网关服务
+eco-gateway-server.py — eco Agent 统一网关服务
 
 支持平台：飞书 · 企业微信 · 钉钉 · 微信
 协议：FastAPI + HTTP Webhook
@@ -82,11 +82,11 @@ CONFIG = {
     },
 }
 
-# ===== ECO AGENT 消息处理核心 =====
+# ===== eco Agent 消息处理核心 =====
 
 
 class ECOAgentHandler:
-    """ECO AGENT 消息处理核心"""
+    """eco Agent 消息处理核心"""
 
     def __init__(self):
         self.message_count = 0
@@ -116,7 +116,7 @@ class ECOAgentHandler:
         elif cmd == "status":
             return self._reply_text(self._get_status_text())
         else:
-            # 普通消息转发给 ECO AGENT 处理
+            # 普通消息转发给 eco Agent 处理
             return await self._route_to_eco_agent(platform, unified)
 
     def _normalize_message(self, platform: str, data: dict) -> dict:
@@ -207,7 +207,7 @@ class ECOAgentHandler:
 
     def _get_help_text(self, platform: str) -> str:
         return (
-            "ECO AGENT 执法助手使用说明\n\n"
+            "eco Agent 执法助手使用说明\n\n"
             "【法规检索】\n发送法规名称，如：大气污染防治法\n\n"
             "【执法问答】\n描述违法事实，如：某企业超标排放二氧化硫\n\n"
             "【案例查询】\n发送：案例 + 关键词\n\n"
@@ -216,7 +216,7 @@ class ECOAgentHandler:
 
     def _get_welcome_text(self, platform: str) -> str:
         return (
-            "欢迎使用 ECO AGENT 执法助手！\n\n"
+            "欢迎使用 eco Agent 执法助手！\n\n"
             "我是您的 AI 同事，精通全部生态环境法律法规。\n\n"
             "发送法规名称查询法律条文\n"
             "发送违法事实获取裁量建议\n"
@@ -226,7 +226,7 @@ class ECOAgentHandler:
     def _get_status_text(self) -> str:
         uptime = datetime.now() - self.start_time
         return (
-            f"ECO AGENT 运行状态\n"
+            f"eco Agent 运行状态\n"
             f"在线时长：{uptime.days}天{uptime.seconds // 3600}小时\n"
             f"已处理消息：{self.message_count} 条\n"
             f"当前时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}"
@@ -237,7 +237,7 @@ class ECOAgentHandler:
         return {"type": "text", "content": text}
 
     async def _route_to_eco_agent(self, platform: str, unified: dict) -> dict:
-        """将消息路由到 ECO AGENT 核心处理
+        """将消息路由到 eco Agent 核心处理
 
         当前版本：本地规则匹配
         后续版本：对接 Hermes Agent AIAgent
@@ -332,14 +332,14 @@ class ECOAgentHandler:
 
 # ===== FastAPI 应用 =====
 
-app = FastAPI(title="ECO AGENT Gateway", version="0.1.0")
+app = FastAPI(title="eco Agent Gateway", version="0.1.0")
 eco_handler = ECOAgentHandler()
 
 
 @app.get("/")
 async def root():
     return {
-        "service": "ECO AGENT Gateway",
+        "service": "eco Agent Gateway",
         "version": "0.1.0",
         "platforms": list(CONFIG.keys()),
         "uptime": str(datetime.now() - eco_handler.start_time),
@@ -566,7 +566,7 @@ def _build_wechat_reply(result: dict, data: dict) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ECO AGENT 网关服务")
+    parser = argparse.ArgumentParser(description="eco Agent 网关服务")
     parser.add_argument("--platforms", default="all", help="启动的平台（逗号分隔，默认 all）")
     parser.add_argument("--host", default="0.0.0.0", help="监听地址")
     parser.add_argument("--port", type=int, default=7070, help="监听端口")
@@ -574,7 +574,7 @@ def main():
     args = parser.parse_args()
 
     logger.info("=" * 50)
-    logger.info("  ECO AGENT Gateway 启动")
+    logger.info("  eco Agent Gateway 启动")
     logger.info(f"  时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     logger.info(f"  平台: {args.platforms}")
     logger.info("=" * 50)

@@ -1,4 +1,4 @@
-# Eco Agent 测试日志
+# eco Agent 测试日志
 
 > 累计记录所有测试运行历史。每次 `python tests/run_all.py` 自动写入。
 

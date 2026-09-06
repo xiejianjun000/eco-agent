@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-eco_agent_sdk — ECO AGENT 官方 Python SDK
+eco_agent_sdk — eco Agent 官方 Python SDK
 
 面向应用的客户端：对接 eco-server 管理 API（chat/sessions/memory/skills/tools/system）。
 异步（httpx.AsyncClient）与同步（SyncEcoClient 包装）双形态。

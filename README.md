@@ -8,7 +8,7 @@
 [![Tests](https://img.shields.io/badge/tests-1000%2B%20passed-brightgreen)](TEST_LOG.md)
 [![CI](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/xiejianjun000/eco-agent/actions/workflows/ci.yml)
 
-Eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环，从毫秒级到天级，让 AI 在无人唤醒时也能思考，在无人纠正时也能进化。
+eco Agent 是一个开源自主 AI 智能体系统。它内置五层嵌套循环，从毫秒级到天级，让 AI 在无人唤醒时也能思考，在无人纠正时也能进化。
 
 ---
 
@@ -33,6 +33,7 @@ eco server                # 打开 http://127.0.0.1:8788/
 | 工具目录 | `/api/v1/tools`（100+ govmcp 政务工具，按分类检索） |
 | 插件 | `GET/POST /api/v1/plugins`（热加载/卸载/重载） |
 | 系统 | `/api/v1/system` · `/api/v1/metrics` · `/api/v1/version` |
+| 轨迹观测 | `/api/v1/traces` · `/api/v1/decisions` · `/api/v1/stats/summary` · `/api/v1/checkpoints/{s}`（Web「轨迹」视图：span 瀑布 + 决策时间线，刷新不丢） |
 
 OpenAPI 文档：`GET /docs`。无 LLM 配置时所有端面优雅降级，不 500。
 
@@ -67,7 +68,7 @@ plugins/<name>/handler.py     # def load(ctx) / def unload(ctx)
 
 ### 五层嵌套循环（The Eco Loops）
 
-大多数 AI 智能体是"一问一答"的模式——你唤醒它才工作。Eco Agent 拥有五层时间尺度不同的循环，层层嵌套：
+大多数 AI 智能体是"一问一答"的模式——你唤醒它才工作。eco Agent 拥有五层时间尺度不同的循环，层层嵌套：
 
 | 层级 | 节律 | 做什么 |
 |:-----|:------|:--------|

@@ -1,4 +1,4 @@
-# ECO AGENT Hermes Profile Config
+# eco Agent Hermes Profile Config
 # 生态环境执法 AI Agent 配置文件
 # 版本：v0.1.0
 
@@ -157,7 +157,7 @@ curator:
 # ===== 飞书集成 =====
 feishu:
   enabled: true                  # ✅ 已启用（凭证已配置）
-  bot_name: "ECO AGENT 执法助手"
+  bot_name: "eco Agent 执法助手"
   app_id_env: "FEISHU_APP_ID"
   app_secret_env: "FEISHU_APP_SECRET"
 
@@ -169,7 +169,7 @@ feishu:
 # ===== 企业微信集成 =====
 wecom:
   enabled: false                 # 设为 true 启用（需要 WECOM_CORP_ID/AGENT_ID/SECRET）
-  bot_name: "ECO AGENT"
+  bot_name: "eco Agent"
   app_id_env: "WECOM_CORP_ID"
   agent_id_env: "WECOM_AGENT_ID"
   secret_env: "WECOM_SECRET"
@@ -177,7 +177,7 @@ wecom:
 # ===== 钉钉集成 =====
 dingtalk:
   enabled: false                 # 设为 true 启用（需要 DINGTALK_APP_KEY/APP_SECRET）
-  bot_name: "ECO AGENT"
+  bot_name: "eco Agent"
   app_key_env: "DINGTALK_APP_KEY"
   app_secret_env: "DINGTALK_APP_SECRET"
   robot_code_env: "DINGTALK_ROBOT_CODE"

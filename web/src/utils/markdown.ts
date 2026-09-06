@@ -53,12 +53,32 @@ function renderTable(lines: string[]): { html: string; consumed: number } | null
   return { html, consumed: i };
 }
 
-/** 行内语法：**粗体** `代码` *斜体* + 机器标识自动包 code（DSH 规范） */
+/** 行内语法：**粗体** `代码` *斜体* + 机器标识自动包 code（DSH 规范）+ 图片/链接 */
 function renderInline(text: string): string {
   let out = text;
+  // 文件提及：`相对/路径.扩展名` → 可点 chip（点击复制路径，DSH MarkdownFileMentions 对标）。
+  // 必须在行内代码替换之前识别，否则会被包进 <code>。
+  out = out.replace(/`((?:\.{1,2}\/)?[\w\u4e00-\u9fff./-]+\.(?:md|py|json|csv|txt|log|docx?|pdf|xlsx?|png|jpe?g|gif|svg|zip|yml|yaml|sh|sql|html))`/g,
+    (_m, p) => `<a class="md-filechip" href="#" data-path="${p}" title="复制文件路径 ${p}">📄 ${p}</a>`);
   out = out.replace(/`([^`]+)`/g, '<code class="md-inline">$1</code>');
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   out = out.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  // 图片 ![alt](http(s)://...)——仅 http(s)，防 javascript: 注入。
+  // 先抠成占位符，避免 src 里的 URL 被下方链接化二次处理。
+  const imgs: [string, string][] = [];
+  out = out.replace(/!\[([^\]]*)\]\(((?:https?:\/\/)[^)\s]+)\)/g, (_m, alt, url) => {
+    const ph = `\u0000IMG${imgs.length}\u0000`;
+    imgs.push([alt, url]);
+    return ph;
+  });
+  // 裸 URL 自动链接（http/https）；(?<!>) 跳过已在 <code>/<a> 内的内容
+  out = out.replace(/(?<!>)(https?:\/\/[^\s<]+)/g,
+    (m) => `<a class="md-link" href="${m}" target="_blank" rel="noopener noreferrer">${m}</a>`);
+  // 还原图片
+  imgs.forEach(([alt, url], i) => {
+    out = out.replace(`\u0000IMG${i}\u0000`,
+      `<img class="md-img" src="${url}" alt="${alt}" loading="lazy" />`);
+  });
   // 自动包裹机器标识为行内代码（审批ID/状态值/接口标识/风险级）
   // (?<!>) 跳过已由反引号生成的 <code> 内容，避免二次包裹
   out = out.replace(/(?<!>)(appr-[a-z0-9-]{6,})/g, '<code class="md-inline">$1</code>');

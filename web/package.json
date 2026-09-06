@@ -1,7 +1,7 @@
 {
   "name": "eco-web",
   "version": "1.0.0",
-  "description": "ECO AGENT Web GUI — 会话/记忆树/技能/系统管理界面",
+  "description": "eco Agent Web GUI — 会话/记忆树/技能/系统管理界面",
   "private": true,
   "type": "module",
   "scripts": {

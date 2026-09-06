@@ -2,7 +2,7 @@
 name: enforcement-qa-skill
 version: 0.1.0
 description: 生态环境执法问答与裁量建议技能
-author: ECO AGENT
+author: eco Agent
 type: skill
 ---
 

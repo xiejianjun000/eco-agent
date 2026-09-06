@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-openworker_features.py — ECO AGENT OPENWORKER 对标补全
+openworker_features.py — eco Agent OPENWORKER 对标补全
 
 三项能力：
   1. OperatingModes — 5 种模式 (discuss/plan/interactive/auto/custom)

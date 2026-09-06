@@ -192,7 +192,7 @@ def run(args) -> int:
     if action == "init":
         if not ENV_FILE.exists():
             ENV_FILE.parent.mkdir(parents=True, exist_ok=True)
-            ENV_FILE.write_text("# ECO AGENT 配置（勿提交真实 key 到仓库）\n", encoding="utf-8")
+            ENV_FILE.write_text("# eco Agent 配置（勿提交真实 key 到仓库）\n", encoding="utf-8")
             print(f"已创建 {ENV_FILE}")
         else:
             print(f"已存在 {ENV_FILE}")

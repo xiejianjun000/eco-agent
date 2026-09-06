@@ -1,4 +1,4 @@
-# ECO AGENT × DSH Web UI 对齐清单
+# eco Agent × DSH Web UI 对齐清单
 
 > 目标：eco-agent Web UI 输出与 DSH（deepseek-harness Web GUI，http://127.0.0.1:3080）全部靠齐。
 > 方法：以 DSH `packages/client/ui-*` 为规格源，逐项映射到 `eco-agent/web`，每项标注状态。

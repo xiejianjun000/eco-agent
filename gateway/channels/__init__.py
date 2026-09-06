@@ -1,1 +1,1 @@
-# Eco Agent Gateway Channels
+# eco Agent Gateway Channels

@@ -7,29 +7,64 @@ import AgentsView from './views/AgentsView';
 import GoalsView from './views/GoalsView';
 import PluginsView from './views/PluginsView';
 import WorkflowView from './views/WorkflowView';
+import AutomationView from './views/AutomationView';
+import ConnectorsView from './views/ConnectorsView';
+import SettingsView from './views/SettingsView';
+import TracesView from './views/TracesView';
 import { api, type SessionOut } from './api';
+import Icon from './components/Icon';
 
-type PageId = 'chat' | 'memory' | 'skills' | 'agents' | 'goals' | 'workflow' | 'plugins' | 'system';
+/** 主导航（生态环境专业 Agent 面向用户的 5 项） */
+type PageId = 'chat' | 'plugins' | 'automation' | 'connectors' | 'settings';
+/** 设置/管理区保留的功能页（本会话已建成的 DSH 对标能力） */
+type AdminId = 'memory' | 'skills' | 'agents' | 'goals' | 'workflow' | 'system' | 'traces';
 
-const NAV: { id: PageId; label: string; desc: string }[] = [
+type AnyPage = PageId | AdminId;
+
+/** 生态监测工作空间——决定可用工具集、记忆上下文、权限等级（文件夹驱动，来自 /workspaces API） */
+export interface Workspace {
+  id: string;
+  name: string;
+}
+
+export const ADMIN_NAV: { id: AdminId; label: string; desc: string }[] = [
   { id: 'memory', label: '记忆树', desc: '长期记忆浏览与检索' },
   { id: 'skills', label: '技能', desc: '技能库与孵化' },
   { id: 'agents', label: '子代理', desc: '后台子代理目录与任务输出（DSH subagent/jobs）' },
   { id: 'goals', label: '目标', desc: '跨轮目标与自动推进（DSH goal）' },
   { id: 'workflow', label: '编排', desc: 'Workflow 编排与执法计划（DSH workflow/plan）' },
-  { id: 'plugins', label: '插件', desc: '插件清单 / 动态插件 / 插槽（DSH plugins/slots）' },
+  { id: 'traces', label: '轨迹', desc: '会话 span 瀑布与决策时间线（落盘持久化）' },
   { id: 'system', label: '系统', desc: '组件状态与指标' },
 ];
 
-const TITLES: Record<PageId, string> = {
+const TITLES: Record<AnyPage, string> = {
   chat: '会话',
+  plugins: '插件',
+  automation: '自动任务',
+  connectors: '连接器',
+  settings: '设置',
   memory: '记忆树',
   skills: '技能库',
   agents: '子代理',
   goals: '目标',
   workflow: '编排',
-  plugins: '插件',
   system: '系统状态',
+  traces: '轨迹',
+};
+
+const DESCS: Record<AnyPage, string> = {
+  chat: '与 eco Agent 对话',
+  plugins: 'MCP 插件安装 / 配置',
+  automation: '定时巡查 / 报告生成（cron）',
+  connectors: 'MCP 服务连接器配置',
+  settings: '外观、功能模块与系统信息',
+  memory: '长期记忆浏览与检索',
+  skills: '技能库与孵化',
+  agents: '后台子代理目录与任务输出',
+  goals: '跨轮目标与自动推进',
+  workflow: 'Workflow 编排与执法计划',
+  system: '组件状态与指标',
+  traces: '会话 span 瀑布与决策时间线（刷新不丢）',
 };
 
 /** 会话展示名：去掉 web_ 平台前缀 */
@@ -51,17 +86,29 @@ function relTime(iso: string): string {
   return `${Math.floor(h / 24)} 天前`;
 }
 
+const NavIcon = ({ d }: { d: string }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d={d} />
+  </svg>
+);
+
 export default function App(): React.ReactElement {
-  const [page, setPage] = useState<PageId>('chat');
+  const [page, setPage] = useState<AnyPage>('chat');
   const [version, setVersion] = useState<string>('');
   const [rev, setRev] = useState<string>('');
   const [collapsed, setCollapsed] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionOut[]>([]);
   const [query, setQuery] = useState('');
   const [activeSessionId, setActiveSessionId] = useState('default');
-  /** 删除当前会话等场景强制 ChatView 重挂载（key 相同 React 不会自动换新） */
+  /** 删除当前会话等场景强制 ChatView 重挂载 */
   const [chatNonce, setChatNonce] = useState(0);
+  /** 工作空间列表（文件夹驱动真源，/workspaces API） */
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  /** 侧边栏工作空间组收缩态 */
+  const [wsOpen, setWsOpen] = useState(true);
+  /** 当前生态工作空间（与 ChatView 输入栏联动） */
+  const [activeWorkspace, setActiveWorkspace] = useState<string>('');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = window.localStorage.getItem('eco-theme');
     if (saved === 'light' || saved === 'dark') return saved;
@@ -73,7 +120,6 @@ export default function App(): React.ReactElement {
     window.localStorage.setItem('eco-theme', theme);
   }, [theme]);
 
-  // 设置页三态切换（light/dark/system）同步回侧栏按钮
   React.useEffect(() => {
     const onThemeChanged = (e: Event) => {
       const detail = (e as CustomEvent<string>).detail;
@@ -88,13 +134,20 @@ export default function App(): React.ReactElement {
   React.useEffect(() => {
     import('./api').then(({ api }) => {
       api.version().then((v) => { setVersion(v.version); setRev(v.rev ?? ''); }).catch(() => setVersion(''));
-      // 刷新后显示最新的那条会话（列表已按最近活跃排序）
       api.sessions().then((list) => {
         setSessions(list);
         if (list.length > 0) setActiveSessionId(list[0].session_id);
       }).catch(() => {});
+      refreshWorkspaces();
     });
   }, []);
+
+  const refreshWorkspaces = () => {
+    api.workspaces().then((r) => {
+      setWorkspaces(r.workspaces);
+      setActiveWorkspace((cur) => (cur === '' && r.workspaces.length > 0 ? r.workspaces[0].id : cur));
+    }).catch(() => {});
+  };
 
   const refreshSessions = () => {
     api.sessions().then(setSessions).catch(() => {});
@@ -116,7 +169,7 @@ export default function App(): React.ReactElement {
     setPage('chat');
   };
 
-  // ── 会话行操作：重命名（内联编辑）/ 删除 / 分享导出 ──
+  // ── 会话行操作：重命名 / 删除 / 分享导出 ──
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const renameRef = React.useRef<string | null>(null);
@@ -128,7 +181,7 @@ export default function App(): React.ReactElement {
   };
 
   const saveRename = async (id: string) => {
-    if (renameRef.current !== id) return; // 防 Enter+blur 双触发
+    if (renameRef.current !== id) return;
     renameRef.current = null;
     setEditingId(null);
     const name = editName.trim();
@@ -149,17 +202,11 @@ export default function App(): React.ReactElement {
       setSessions(rest);
       if (activeSessionId === s.session_id) {
         if (rest.length === 0) {
-          // 全部删光：清掉 default 通道残留日志 → 回到品牌欢迎页
-          try {
-            await api.deleteSession('default');
-          } catch {
-            // default 无残留，忽略
-          }
+          try { await api.deleteSession('default'); } catch { /* ignore */ }
           setActiveSessionId('default');
         } else {
           setActiveSessionId(rest[0].session_id);
         }
-        // 强制 ChatView 重挂载：即使新 id 与旧 id 相同（删的就是当前会话），也要回到初始态
         setChatNonce((n) => n + 1);
         setPage('chat');
       }
@@ -189,7 +236,6 @@ export default function App(): React.ReactElement {
       s.session_id.includes(query.trim()),
   );
 
-  // DSH 式折叠图标（侧栏面板收起/展开）
   const panelIcon = (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor"
          strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -201,6 +247,7 @@ export default function App(): React.ReactElement {
   return (
     <div className="app">
       <aside className={`nav${collapsed ? ' collapsed' : ''}`}>
+        {/* 品牌 */}
         <div className="brand" title="回到会话" onClick={() => setPage('chat')}>
           <div className="brand-row">
             {collapsed ? (
@@ -212,10 +259,7 @@ export default function App(): React.ReactElement {
               className="collapse-btn"
               title={collapsed ? '展开侧边栏' : '收起侧边栏'}
               aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
-              onClick={(e) => {
-                e.stopPropagation();
-                setCollapsed((v) => !v);
-              }}
+              onClick={(e) => { e.stopPropagation(); setCollapsed((v) => !v); }}
             >
               {panelIcon}
             </button>
@@ -227,35 +271,76 @@ export default function App(): React.ReactElement {
           )}
         </div>
 
-        <button
-          className={`new-session-btn${collapsed ? ' icon-only' : ''}`}
-          title="新建会话"
-          onClick={() => void newSession()}
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-               strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
-            <path d="M8 3v10M3 8h10" />
-          </svg>
-          {!collapsed && <span>新建会话</span>}
-        </button>
+        {/* 主导航：新建任务 + 会话/插件/自动任务/连接器 */}
+        <div className="nav-main">
+          <button className="nav-item nav-new" title="新建任务" onClick={() => void newSession()}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            {!collapsed && <span>新建任务</span>}
+          </button>
 
+          <button className={`nav-item${page === 'chat' ? ' active' : ''}`} onClick={() => setPage('chat')}>
+            <NavIcon d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            {!collapsed && <span>会话</span>}
+          </button>
+
+          <button className={`nav-item${page === 'plugins' ? ' active' : ''}`} onClick={() => setPage('plugins')}>
+            <NavIcon d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            {!collapsed && <span>插件</span>}
+          </button>
+
+          <button className={`nav-item${page === 'automation' ? ' active' : ''}`} onClick={() => setPage('automation')}>
+            <NavIcon d="M12 2a10 10 0 1 0 10 10M12 6v6l4 2" />
+            {!collapsed && <span>自动任务</span>}
+          </button>
+
+          <button className={`nav-item${page === 'connectors' ? ' active' : ''}`} onClick={() => setPage('connectors')}>
+            <NavIcon d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            {!collapsed && <span>连接器</span>}
+          </button>
+        </div>
+
+        {/* 工作空间分组（文件夹驱动真源，与输入栏联动） */}
         {!collapsed && (
-          /* 工作区（真实会话列表）——弹性中区，占满顶部入口与底部设置之间的空间 */
+          <div className="nav-group">
+            <div className="nav-group-title" style={{ cursor: 'pointer' }} onClick={() => setWsOpen((v) => !v)}>
+              <span className="nav-group-caret">{wsOpen ? '▼' : '▶'}</span> 工作空间 ({workspaces.length})
+            </div>
+            {wsOpen && (
+              <div className="nav-group-body">
+                {workspaces.length === 0 ? (
+                  <div className="nav-empty" style={{ padding: '4px 10px' }}>
+                    暂无工作空间——在输入栏 📁 选择器里新建
+                  </div>
+                ) : (
+                  workspaces.map((ws) => (
+                    <button
+                      key={ws.id}
+                      className={`nav-item nav-workspace-item${activeWorkspace === ws.id ? ' active' : ''}`}
+                      title={`${ws.name}——决定可用工具集、记忆上下文、权限等级`}
+                      onClick={() => { setActiveWorkspace(ws.id); setPage('chat'); }}
+                    >
+                      {ws.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 会话记录（保留既有会话管理：切换/重命名/删除/分享） */}
+        {!collapsed && (
           <div className="nav-workspace">
             <div className="nav-section-title">
-              工作区{sessions.length > 0 ? ` · ${sessions.length}` : ''}
+              会话记录{sessions.length > 0 ? ` · ${sessions.length}` : ''}
             </div>
             <div className="nav-search">
-              <input
-                placeholder="搜索会话…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+              <input placeholder="搜索会话…" value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
             <div className="session-list">
               {filtered.length === 0 ? (
                 <div className="nav-empty">
-                  {sessions.length === 0 ? '暂无会话——点「新建会话」开始' : '无匹配会话'}
+                  {sessions.length === 0 ? '暂无会话——点「新建任务」开始' : '无匹配会话'}
                 </div>
               ) : (
                 filtered.map((s) => (
@@ -274,10 +359,7 @@ export default function App(): React.ReactElement {
                         onChange={(e) => setEditName(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') void saveRename(s.session_id);
-                          if (e.key === 'Escape') {
-                            renameRef.current = null;
-                            setEditingId(null);
-                          }
+                          if (e.key === 'Escape') { renameRef.current = null; setEditingId(null); }
                         }}
                         onBlur={() => void saveRename(s.session_id)}
                         onClick={(e) => e.stopPropagation()}
@@ -300,55 +382,53 @@ export default function App(): React.ReactElement {
           </div>
         )}
 
-        {/* 设置区（最底端，DSH Settings 触发式）：默认收起，点击展开功能模块 */}
-        <div className="nav-settings">
-          <button
-            className={`settings-trigger${settingsOpen ? ' open' : ''}`}
-            title="设置：记忆树/技能/子代理/目标/编排/插件/系统"
-            onClick={() => {
-              if (collapsed) {
-                setCollapsed(false);
-                setSettingsOpen(true);
-              } else {
-                setSettingsOpen((v) => !v);
-              }
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                 strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="8" cy="8" r="2.4" />
-              <path d="M8 1.8v1.8M8 12.4v1.8M1.8 8h1.8M12.4 8h1.8M3.6 3.6l1.3 1.3M11.1 11.1l1.3 1.3M12.4 3.6l-1.3 1.3M4.9 11.1l-1.3 1.3" />
-            </svg>
-            {!collapsed && <span className="settings-label">设置</span>}
-            {!collapsed && <span className="settings-chevron">{settingsOpen ? '▾' : '▸'}</span>}
-          </button>
-          {!collapsed && settingsOpen && (
-            <div className="settings-menu">
-              {NAV.map((n) => (
-                <div
-                  key={n.id}
-                  className={`item set-item${page === n.id ? ' active' : ''}`}
-                  onClick={() => setPage(n.id)}
-                >
-                  {n.label}
-                </div>
-              ))}
-            </div>
-          )}
+        {/* 底部：设置（独立设置页）+ 用户区 */}
+        <div className="nav-footer">
+          <div className="nav-settings">
+            <button
+              className={`settings-trigger${page === 'settings' ? ' open' : ''}`}
+              title="设置：外观、功能模块与系统信息"
+              onClick={() => {
+                if (collapsed) setCollapsed(false);
+                setPage('settings');
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                   strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="8" cy="8" r="2.4" />
+                <path d="M8 1.8v1.8M8 12.4v1.8M1.8 8h1.8M12.4 8h1.8M3.6 3.6l1.3 1.3M11.1 11.1l1.3 1.3M12.4 3.6l-1.3 1.3M4.9 11.1l-1.3 1.3" />
+              </svg>
+              {!collapsed && <span className="settings-label">设置</span>}
+            </button>
+          </div>
+
+          <div className="user-bar">
+            <img className="user-avatar" src="/favicon.svg" alt="user" />
+            {!collapsed && <span className="user-name">生态管理员</span>}
+            <button className="user-btn" title="通知">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <span className="badge">1</span>
+            </button>
+            <span className="foot-btn" title="切换主题" onClick={toggleTheme}>
+              {theme === 'dark' ? <Icon name="sun" size={15} /> : <Icon name="moon" size={15} />}
+            </span>
+          </div>
           {!collapsed && (
             <div className="foot">
-              <span className="foot-btn" title="切换主题" onClick={toggleTheme}>
-                {theme === 'dark' ? '☀ 亮色' : '🌙 暗色'}
-              </span>
+              <span>eco Agent</span>
               <span title={`git ${rev}`}>v{version || '…'}{rev ? ` (${rev})` : ''}</span>
             </div>
           )}
         </div>
       </aside>
+
       <div className="main">
         <div className="topbar">
           <h1>{TITLES[page]}</h1>
-          <span className="meta">{NAV.find((n) => n.id === page)?.desc ?? '与 eco Agent 对话'}</span>
+          <span className="meta">{DESCS[page]}</span>
         </div>
         <div className="content">
           {page === 'chat' && (
@@ -356,15 +436,31 @@ export default function App(): React.ReactElement {
               key={`${activeSessionId}:${chatNonce}`}
               sessionId={activeSessionId}
               onActivity={refreshSessions}
+              workspaces={workspaces}
+              activeWorkspace={activeWorkspace}
+              onWorkspaceChange={setActiveWorkspace}
+              onWorkspacesChange={refreshWorkspaces}
             />
           )}
+          {page === 'plugins' && <PluginsView />}
+          {page === 'automation' && <AutomationView />}
+          {page === 'connectors' && <ConnectorsView />}
           {page === 'memory' && <MemoryView />}
           {page === 'skills' && <SkillsView />}
           {page === 'agents' && <AgentsView />}
           {page === 'goals' && <GoalsView />}
           {page === 'workflow' && <WorkflowView />}
-          {page === 'plugins' && <PluginsView />}
           {page === 'system' && <SystemView />}
+          {page === 'traces' && <TracesView />}
+          {page === 'settings' && (
+            <SettingsView
+              theme={theme}
+              onThemeChange={setTheme}
+              onNavigate={(p) => setPage(p as AnyPage)}
+              version={version}
+              rev={rev}
+            />
+          )}
         </div>
       </div>
     </div>

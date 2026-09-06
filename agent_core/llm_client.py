@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""llm_client.py - Unified LLM client for ECO AGENT
+"""llm_client.py - Unified LLM client for eco Agent
 
 Architecture:
   eco chat/serve -> EcoLoops -> ReAct++ -> LLMClient -> Direct LLM API (OpenAI compat)
@@ -86,10 +86,14 @@ def record_llm_stat(
         "model": model,
         "path": path,
         "latency_ms": latency_ms,
-        "prompt_tokens": prompt_tokens,
-        "completion_tokens": completion_tokens,
+        # 拿不到 usage 时显式记 0 而非 null：聚合口径（sum/成本估算）不失真，
+        # 由 prompt_tokens_known 标记区分"真实 0"与"未知"
+        "prompt_tokens": prompt_tokens if isinstance(prompt_tokens, int) else 0,
+        "completion_tokens": completion_tokens if isinstance(completion_tokens, int) else 0,
         "ok": ok,
     }
+    if prompt_tokens is None and completion_tokens is None:
+        rec["tokens_unknown"] = True
     try:
         STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
         with STATS_FILE.open("a", encoding="utf-8") as f:
@@ -652,6 +656,9 @@ class LLMClient:
             "messages": messages,
             "temperature": self._resolve_temperature(model, 0.7),
             "stream": True,
+            # 要求上游在流末尾回传 usage chunk（OpenAI/DeepSeek 兼容），
+            # 否则流式路径 tokens 只能记 0（约三成记录 tokens 失真的根因）
+            "stream_options": {"include_usage": True},
             "max_tokens": _max_tokens(16384),
         }
         # v4 推理档位（对齐 DSH 深度思考）：ECO_REASONING_EFFORT=high/max 提升推理深度。

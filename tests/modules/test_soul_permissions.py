@@ -63,7 +63,7 @@ class TestSoulLoading:
         prompt = eng.build_system_prompt()
         assert SAFETY_LAYER in prompt
         assert "SOUL 硬边界" not in prompt
-        assert "你是 ECO AGENT" in prompt  # 硬编码人格兜底
+        assert "你是 eco Agent" in prompt  # 硬编码人格兜底
 
     def test_soul_edit_takes_effect_after_reload(self, tmp_path, monkeypatch):
         """修改 SOUL.md 边界 -> reload 后系统提示词生效（验证项 c 的单测形态）"""

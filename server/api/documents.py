@@ -82,7 +82,12 @@ async def download_artifact(name: str) -> FileResponse:
     target = art_dir / Path(name).name
     if not target.is_file():
         raise HTTPException(status_code=404, detail="artifact not found")
-    return FileResponse(str(target), filename=target.name, media_type="text/markdown")
+    media_type = (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        if target.suffix.lower() == ".docx"
+        else "text/markdown"
+    )
+    return FileResponse(str(target), filename=target.name, media_type=media_type)
 
 
 @router.get("/documents/tools")

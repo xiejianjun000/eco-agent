@@ -1,4 +1,4 @@
-# ECO AGENT 插件系统
+# eco Agent 插件系统
 
 > 目录规范：`plugins/<name>/plugin.yaml` + `plugins/<name>/handler.py`
 > 加载器：`agent_core/plugins.py`（PluginManager，热加载/卸载/重载）

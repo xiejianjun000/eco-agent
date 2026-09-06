@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-data_sync.py — Eco Agent D-02 自动数据同步 + D-03 Token 压缩引擎
+data_sync.py — eco Agent D-02 自动数据同步 + D-03 Token 压缩引擎
 
 D-02: 每20分钟自动同步，25分钟内新数据可检索
 D-03: 10万字压缩<50% Token, RAG准确率>=90%

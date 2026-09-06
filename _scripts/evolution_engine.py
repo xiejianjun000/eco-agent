@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-evolution_engine.py — ECO AGENT 自进化闭环引擎
+evolution_engine.py — eco Agent 自进化闭环引擎
 
 6 阶段闭环：Execute → Track → Evaluate → Reflect → Crystallize → Store
 
@@ -307,7 +307,7 @@ class EvolutionEngine:
 name: {skill_name}
 version: 0.1.0
 description: 自动结晶：{skill_type}操作技能
-author: ECO AGENT (Evolution Engine)
+author: eco Agent (Evolution Engine)
 type: skill
 ---
 

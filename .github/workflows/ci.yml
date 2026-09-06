@@ -54,5 +54,5 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" \
             --repo="${{ github.repository }}" \
-            --title="Eco Agent ${{ github.ref_name }}" \
+            --title="eco Agent ${{ github.ref_name }}" \
             --generate-notes

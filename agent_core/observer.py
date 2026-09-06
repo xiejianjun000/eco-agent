@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-observer.py — Eco Agent 观察 Agent
+observer.py — eco Agent 观察 Agent
 
 职责：执行验证、反馈回环、质量评估。
 

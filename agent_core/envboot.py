@@ -61,12 +61,30 @@ def _fill_empty_keys(parsed: list[dict[str, str]]) -> int:
     return filled
 
 
+def _strip_sandbox_proxy() -> None:
+    """剥离指向本地环回地址的代理环境变量。
+
+    DSH 沙箱会向进程注入 `http_proxy=http://127.0.0.1:<随机高位端口>`，该代理随
+    沙箱会话关闭而失效，导致 eco 调 LLM / 外部接口时 `Connection refused`。
+    此处统一剥离本地环回代理（服务器直连公网即可）；用户自配本地代理
+    （Clash 等）设 `ECO_KEEP_LOCAL_PROXY=1` 保留。"""
+    if os.environ.get("ECO_KEEP_LOCAL_PROXY", "").strip().lower() in ("1", "true", "yes"):
+        return
+    for _k in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY",
+               "all_proxy", "ALL_PROXY", "no_proxy"):
+        _v = os.environ.get(_k, "")
+        if _v.startswith(("http://127.0.0.1", "http://localhost",
+                          "https://127.0.0.1", "https://localhost")):
+            os.environ.pop(_k, None)
+
+
 def load_env_into_process() -> None:
     """合入两级 .env（真实非空环境变量优先，空值视为缺失并补填）。幂等。
     测试进程（PYTEST_CURRENT_TEST 存在）跳过——单测依赖 conftest 的
     环境隔离（剥离 *_API_KEY、临时 HOME），进程级引导会污染后续用例。"""
     if os.environ.get("PYTEST_CURRENT_TEST"):
         return
+    _strip_sandbox_proxy()
     try:
         from dotenv import load_dotenv
     except ImportError:  # pragma: no cover

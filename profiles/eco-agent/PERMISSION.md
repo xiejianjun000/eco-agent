@@ -1,4 +1,4 @@
-# PERMISSION.md — ECO AGENT 工具权限配置
+# PERMISSION.md — eco Agent 工具权限配置
 
 > **基于 OpenWorker Risk Model 的 4 级风险权限体系**
 > 版本：v0.1.0
@@ -385,13 +385,13 @@ tool_risk_overrides:
     level: L4
   - tool: sthjzf_water_supervise_statistics
     level: L4
-  # 政务平台-排污许可管理（govmcp 只读，L1 自动放行；内网 PERMIT_BASE）
+  # 政务平台-排污许可管理（公开端只读查询 L1 自动放行；jgzf_* 实施监管端需内网登录，保持 L4）
   - tool: permit_menu
     level: L1
   - tool: permit_license_list
-    level: L4
+    level: L1
   - tool: permit_enterprise_list
-    level: L4
+    level: L1
   - tool: permit_jgzf_menu
     level: L4
   - tool: permit_jgzf_license_execution

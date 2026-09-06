@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-self_healing.py — Eco Agent L5 韧性自愈循环
+self_healing.py — eco Agent L5 韧性自愈循环
 
-Eco Agent 独创——竞品均未系统化实现。
+eco Agent 独创——竞品均未系统化实现。
 在异常情况下像生物体一样自愈。
 
 异常分类：瞬时故障 / 持久故障 / 逻辑死锁

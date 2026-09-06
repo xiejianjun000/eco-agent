@@ -76,7 +76,7 @@ def generate_reply(msg: str) -> str:
     msg_lower = msg.lower()
     if msg_lower in ("你好", "hi", "hello", "您好", "在吗"):
         return (
-            "你好！我是 ECO AGENT 执法助手，精通全部现行生态环境法律法规。\n\n"
+            "你好！我是 eco Agent 执法助手，精通全部现行生态环境法律法规。\n\n"
             "发送法规名称查询法律条文\n"
             "发送违法事实获取裁量建议\n"
             "发送「帮助」查看使用说明\n\n"
@@ -84,7 +84,7 @@ def generate_reply(msg: str) -> str:
         )
     if msg_lower in ("帮助", "help", "?", "h") or msg.startswith("帮助"):
         return (
-            "ECO AGENT 执法助手使用说明\n\n"
+            "eco Agent 执法助手使用说明\n\n"
             "【法规检索】\n"
             "发送法规名称，如：大气污染防治法\n\n"
             "【执法问答】\n"
@@ -95,7 +95,7 @@ def generate_reply(msg: str) -> str:
             "发送：状态"
         )
     if msg_lower in ("状态", "status"):
-        return "ECO AGENT 运行中 | 事件监听: 在线 | 知识库: FlowWiki 同步中"
+        return "eco Agent 运行中 | 事件监听: 在线 | 知识库: FlowWiki 同步中"
     return search_and_reply(msg)
 
 

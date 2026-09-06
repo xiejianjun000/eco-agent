@@ -1,5 +1,5 @@
 """
-tools_registry.py - ECO AGENT Complete Tool Registry
+tools_registry.py - eco Agent Complete Tool Registry
 113 tools (GOVMCP 100 + Built-in 13)
 
 名称合规：OpenAI function calling 要求工具名匹配 ^[a-zA-Z0-9_-]{1,64}$，
@@ -1886,14 +1886,25 @@ def _read_docx(p, cap: int) -> dict:
     }
 
 
+def _strip_tool_call_xml(text: str) -> str:
+    """清洗模型输出：剥离 <tool_calls>...</tool_calls> 块与 <invoke>/<parameter> 标记，
+    防止"模型把工具调用语法原文当正文"时落盘脏文件。"""
+    import re as _re
+    t = _re.sub(r"<tool_calls>.*?</tool_calls>", "", text or "", flags=_re.S)
+    t = _re.sub(r"</?invoke[^>]*>|</?parameter[^>]*>|<parameter[^>]*>", "", t)
+    return t.strip()
+
+
 @tool("save_document")
 def _h_save_document(filename: str, content: str, workspace: str = ""):
     """真实落盘：写入 <workspace>/deliverables/<filename>，返回真实路径。
-    权限级别 L2（save_ 前缀，本地安全区写入）。文件名做路径穿越防护。"""
+    权限级别 L2（save_ 前缀，本地安全区写入）。文件名做路径穿越防护。
+    content 先剥离工具调用 XML 标记，避免落盘脏文件。"""
     from pathlib import Path as _P
 
     from agent_core.workspace import get_workspace_manager, slugify
 
+    content = _strip_tool_call_xml(content)
     fname = _P(str(filename or "")).name  # 剥离任何目录成分，防路径穿越
     if not fname or fname in (".", ".."):
         return {"error": "invalid filename", "saved": False}
@@ -2058,6 +2069,16 @@ _CATEGORY_BY_PREFIX = [
 
 
 # 核心工具参数说明（按参数名通用映射 + 工具级覆盖）
+@tool("vision_analyze_image")
+def _h_vision_analyze_image(path: str, question: str = ""):
+    """分析本地图片：macOS 原生 OCR 提取文字 + 尺寸/格式元数据。
+    让纯文本模型"看"监测截图/案卷扫描/地图/文书照片。
+    返回 {ocr_text, width, height, format}；question 可附加提问意图（基于 OCR 文本回答）。"""
+    from agent_core.vision_tool import analyze_image
+    r = analyze_image(str(path), question=str(question or ""))
+    return r
+
+
 @tool("detect_data_anomaly")
 def _h_detect_data_anomaly(series, method: str = "auto", threshold: float = 3.0):
     """监测数据突变/真伪辅助鉴定（统计异常检测，纯本地计算）：
@@ -2218,7 +2239,6 @@ def get_duplicate_tools() -> list[str]:
     _sanitized_defs()
     return list(_DUPLICATE_TOOLS)
 
-
 def get_tools() -> list:
     return _sanitized_defs()
 
@@ -2229,7 +2249,6 @@ def get_tool_names() -> list[str]:
 
 def get_tools_summary() -> str:
     return f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools"
-
 
 # ── 外部工具注册（插件系统接入）──────────────────────────────
 # 插件（plugins/）通过 register_external_tool 把工具注册进 LLM 可见定义表，
@@ -2362,7 +2381,7 @@ async def execute_tool(name: str, args: dict) -> str:
 
 
 if __name__ == "__main__":
-    print(f"ECO AGENT: {len(ALL_TOOL_DEFS)} tools")
+    print(f"eco Agent: {len(ALL_TOOL_DEFS)} tools")
 
 
 # ── MCP 远程工具并入（ECO_MCP_SERVERS 配置驱动，优雅降级）─────────────

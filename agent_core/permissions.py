@@ -77,6 +77,7 @@ _PREFIX_RISK: list[tuple[tuple[str, ...], str]] = [
     ),
     # L2 — 本地安全区写入
     (("workspace_", "memory_", "generate_", "write_", "save_"), "L2"),
+    ("vision_analyze_", "L1"),  # 本地图片分析（只读 OCR）
     # L1 — 只读查询/检索/分析（宽前缀兜底）
     (
         (
@@ -259,8 +260,36 @@ def _path_denied(path: str) -> str | None:
     return None
 
 
+# 自建/官方只读数据源 MCP：非写工具 L1 自动放行（服务端受信）。
+# 与"MCP 一律 L3"保守策略并存：只对已确认只读的数据源豁免，写工具仍走 L3/L4。
+_READONLY_MCP_SERVERS = (
+    "eco-hunan-env", "eco-mee-encyclopedia", "eco-cnemc-mcp", "eco-hnkqzl-mcp",
+    "eco-meteo-mcp", "ehs-kb-ops", "eia", "eco-gis-amap", "eco-gis-amap-remote",
+    "eco-pollution-permit", "eco-pollution-permit-remote",
+    "epxz-mcp", "eco-epxz-mcp", "eco-cepc", "eco-cepc-remote",
+)
+_WRITE_TOKENS = ("write", "delete", "upload", "assign", "finish", "save", "submit",
+                 "create", "update", "remove", "insert", "edit", "send", "reply",
+                 "import", "export", "approve", "reject", "batch_", "call", "exec",
+                 "run_", "push", "sign", "ocr", "make", "generate", "post")
+
+
+def _readonly_mcp_level(tool_name: str) -> str | None:
+    """mcp__{server}__{tool}：可信只读数据源的非写工具 → L1；否则 None（走默认 L3）。"""
+    if not tool_name.startswith("mcp__"):
+        return None
+    parts = tool_name.split("__")
+    if len(parts) < 3:
+        return None
+    server = parts[1]
+    inner = "__".join(parts[2:]).lower()
+    if server in _READONLY_MCP_SERVERS and not any(w in inner for w in _WRITE_TOKENS):
+        return "L1"
+    return None
+
+
 def tool_risk_level(tool_name: str, overrides: dict[str, str] | None = None) -> str:
-    """判定工具风险等级：精确覆盖 > glob 规则(first-match) > 前缀映射 > 未知默认 L3。
+    """判定工具风险等级：精确覆盖 > glob 规则(first-match) > 只读库 L1 > 前缀映射 > 未知默认 L3。
     注意：mcp__{server}__{tool} 远程工具不按内层名猜测风险——服务端不受信，
     写操作可以伪装成 query_ 前缀命名；MCP 工具一律走默认 L3，
     确需放行的只读工具在 PERMISSION.md tool_risk_overrides 逐名豁免（决策写 SM3 审计链）。"""
@@ -268,6 +297,9 @@ def tool_risk_level(tool_name: str, overrides: dict[str, str] | None = None) -> 
         overrides = load_overrides()
     if tool_name in overrides:
         return overrides[tool_name]
+    readonly_l1 = _readonly_mcp_level(tool_name)
+    if readonly_l1 is not None:
+        return readonly_l1
     glob_level = glob_rule_level(tool_name)
     if glob_level is not None:
         return glob_level

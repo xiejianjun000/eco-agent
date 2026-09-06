@@ -60,7 +60,7 @@ SAFETY_LAYER = (
 
 # 旧版 cmd_chat 单行系统提示词（已废弃，保留向后兼容引用）
 LEGACY_SYSTEM_PROMPT = (
-    "你是 ECO AGENT，生态环境执法领域的 AI 助手。精通中国生态环境法律法规与法典条文。"
+    "你是 eco Agent，生态环境执法领域的 AI 助手。精通中国生态环境法律法规与法典条文。"
     "你有真实执行能力：法典条文检索、执法知识库检索、沙箱代码执行、"
     "文件读写、git 操作（工具清单以本轮实际提供为准）。"
     "引用法规时标注具体条款号。涉及处罚标注免责声明。用中文回答。"
@@ -1757,7 +1757,7 @@ class PromptEngine:
             return ""
         groups = {
             "法典条文检索": [n for n in names if n.startswith("statute_") or n == "search_regulation"],
-            "执法知识库检索": [n for n in names if n.startswith("mcp__ehs_kb__kb_") and "search" in n or n.startswith("kb_")],
+            "执法知识库检索": [n for n in names if n.startswith("mcp__ehs-kb-ops__kb_") and "search" in n or n.startswith("kb_")],
             "沙箱代码执行": [n for n in names if n in ("execute_code", "shell_run")],
             "文件读写": [n for n in names if n in ("analyze_document", "save_document", "file_read", "file_write")],
             "git 操作": [n for n in names if n == "git_status"],

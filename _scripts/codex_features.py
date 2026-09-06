@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-codex_features.py — ECO AGENT CODEX 对标补全
+codex_features.py — eco Agent CODEX 对标补全
 
 两项能力：
   1. FixPipeline — 批量修复流水线 (lint→audit→fix→verify)

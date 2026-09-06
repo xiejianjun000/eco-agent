@@ -1,4 +1,4 @@
-# ECO AGENT 1.0 开发路线图
+# eco Agent 1.0 开发路线图
 
 > 目标：从 v5.0.0a8（alpha）收口为 **v1.0.0** 发布级版本。
 > 验收口径：`docs/验收标准.md` P0 项全绿 + 补齐 Web API/Web GUI/SDK/插件系统（对标 DSH 工程形态）。

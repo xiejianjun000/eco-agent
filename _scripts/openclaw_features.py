@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-openclaw_features.py — ECO AGENT OpenClaw 对标补全
+openclaw_features.py — eco Agent OpenClaw 对标补全
 
 三项能力：
   1. Plan-as-Tool     — 执法流程注册为 LLM 可调用工具

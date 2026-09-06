@@ -2,7 +2,7 @@
 """
 agent_core/domains.py — 生态环境全要素知识域体系
 
-Eco Agent 的定位不是单一案卷评查工具，而是全生态环境垂直系统智能体：
+eco Agent 的定位不是单一案卷评查工具，而是全生态环境垂直系统智能体：
 既懂法律法规、又懂技术标准、又懂数据分析、也懂各个环境要素。
 
 本模块是知识域标签的单一权威源（技能分类 / 记忆树 domain 标签 / SOUL 引用）。
@@ -33,7 +33,7 @@ REGULATORY_DOMAINS = {
     "mobile": {"label": "移动源", "keywords": ["移动源", "机动车", "非道路机械", "船舶"]},
 }
 
-# 能力域（Eco Agent 的四大支柱）
+# 能力域（eco Agent 的四大支柱）
 CAPABILITY_DOMAINS = {
     "law": {"label": "法律法规", "keywords": ["法条", "法规", "处罚幅度", "裁量", "法典", "行政复议", "诉讼"]},
     "standards": {"label": "技术标准", "keywords": ["标准", "HJ", "GB", "排放限值", "监测规范", "采样", "化验"]},

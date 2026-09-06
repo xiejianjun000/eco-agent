@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-daemon.py — Eco Agent 后台守护服务（补强版）
+daemon.py — eco Agent 后台守护服务（补强版）
 
 新增：
 - CronScheduler 集成：注册 L4 每日进化、L3 Pulse 静默任务
@@ -186,7 +186,7 @@ class DaemonService:
         self._health["started_at"] = datetime.now().isoformat()
 
         logger.info("=" * 50)
-        logger.info("  Eco Agent Daemon 启动（补强版）")
+        logger.info("  eco Agent Daemon 启动（补强版）")
         logger.info(f"  时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info(f"  注册服务: {len(self._services)} 个")
         logger.info("=" * 50)

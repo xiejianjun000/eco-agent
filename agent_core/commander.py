@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-commander.py — Eco Agent 指挥官 Agent + Agent 池
+commander.py — eco Agent 指挥官 Agent + Agent 池
 
 Phase 1 核心交付：任务分解、智能体池动态管理、并行执行。
 

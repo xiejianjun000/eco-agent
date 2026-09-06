@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-tool_registry.py — ECO AGENT 自注册工具系统
+tool_registry.py — eco Agent 自注册工具系统
 
 对标 Hermes Agent 的 registry.register() 自注册工具机制。
 
@@ -220,7 +220,7 @@ def test():
     schemas = registry.get_openai_schemas()
     print(f"\n[TEST] OpenAI Schemas: {len(schemas)} 个")
 
-    result = registry.call("echo", text="ECO AGENT")
+    result = registry.call("echo", text="eco Agent")
     print(f"[TEST] echo 调用: {result}")
 
     print("\n[OK] 自注册工具系统测试通过")

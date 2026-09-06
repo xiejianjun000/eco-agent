@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-wechat_personal.py — Eco Agent 微信个人号通道
+wechat_personal.py — eco Agent 微信个人号通道
 
 基于 itchat-uos 协议实现，无需企业认证即可接入微信个人号。
 对标 Hermes 的 WeChat 插件，补齐国内 IM 闭环的最后一块拼图。
@@ -199,7 +199,7 @@ class WeChatPersonal:
     def _get_status(self) -> str:
         """获取通道状态"""
         return (
-            f"[Eco Agent 微信通道]\n"
+            f"[eco Agent 微信通道]\n"
             f"状态: {self._login_status}\n"
             f"消息数: {len(self._message_history)}\n"
             f"白名单: {', '.join(self._allowed_users) if self._allowed_users else '无限制'}\n"

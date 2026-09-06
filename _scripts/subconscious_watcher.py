@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-subconscious_watcher.py — ECO AGENT 法规时效监控模块（Subconscious）
+subconscious_watcher.py — eco Agent 法规时效监控模块（Subconscious）
 
 后台循环：定时检查法规时效状态 → 自动更新知识图谱 → 推送通知 → 影响评估
 
@@ -409,7 +409,7 @@ def test():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ECO AGENT 法规时效监控")
+    parser = argparse.ArgumentParser(description="eco Agent 法规时效监控")
     parser.add_argument("--check", action="store_true", help="执行一次性检查")
     parser.add_argument("--daemon", action="store_true", help="启动后台守护")
     parser.add_argument("--interval", type=int, default=3600, help="检查间隔（秒）")

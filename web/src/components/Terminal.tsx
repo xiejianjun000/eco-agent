@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { AttachAddon } from '@xterm/addon-attach';
+import Icon from './Icon';
 import '@xterm/xterm/css/xterm.css';
 
 /** 内置终端面板（xterm.js + 后端 PTY WebSocket，对齐 DSH Web UI 内置终端） */
@@ -62,7 +63,7 @@ export default function TerminalPanel({ onClose }: { onClose?: () => void }) {
   return (
     <div className="terminal-panel">
       <div className="terminal-head">
-        <span className="terminal-title">🖥️ 内置终端</span>
+        <span className="terminal-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="terminal" size={14} /> 内置终端</span>
         <span className="terminal-hint">shell 直连本机 · 仅 127.0.0.1</span>
         {onClose && (
           <button className="tb-btn" title="关闭终端" onClick={onClose}>✕</button>

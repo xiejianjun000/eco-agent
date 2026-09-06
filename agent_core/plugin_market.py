@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-plugin_market.py — Eco Agent Phase 5 插件市场 + Web UI 后端
+plugin_market.py — eco Agent Phase 5 插件市场 + Web UI 后端
 
 对标 ClawHub：技能市场、社区贡献、评级、一键安装。
 C-03 验证：支持 CLI 和 Web UI 两种访问方式。

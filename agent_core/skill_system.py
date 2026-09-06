@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-skill_system.py — Eco Agent 技能系统 MVP
+skill_system.py — eco Agent 技能系统 MVP
 
 Phase 2 核心交付：
   1. Skill Registry — 技能注册/发现/版本管理
@@ -20,10 +20,20 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from agent_core.skill_md import (
+    build_skill_draft,
+    format_frontmatter,
+    is_skill_name,
+    eco_skill_name,
+    render_skill_md,
+    validate_skill_content,
+)
+
 logger = logging.getLogger("skill_system")
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL_DIR = ROOT / "skills"
+# 技能产物落 DSH 标准目录 ecoskills/<name>/SKILL.md（供 skill_dir.py 扫描注入）
+ECOSKILLS_DIR = ROOT / "ecoskills"
 DATA_DIR = ROOT / "memory-tree" / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -45,6 +55,7 @@ class Skill:
     author: str = "system"
     triggers: list[str] = field(default_factory=list)
     steps: list[str] = field(default_factory=list)
+    tools: list[str] = field(default_factory=list)
     examples: list[str] = field(default_factory=list)
     requirements: list[str] = field(default_factory=list)
     usage_count: int = 0
@@ -138,37 +149,19 @@ class SkillRegistry:
             logger.info(f"[Skill] 归档 {archived} 个低效技能")
 
     def _sync_to_file(self, skill: Skill):
-        """同步到技能文件"""
-        SKILL_DIR.mkdir(parents=True, exist_ok=True)
-        fname = re.sub(r"[^\w一-鿿]", "_", skill.name)[:40]
-        content = f"""---
-name: {skill.name}
-version: {skill.version}
-description: {skill.description}
-category: {skill.category}
-author: {skill.author}
-status: {skill.status}
-source: {skill.source}
----
+        """同步为 DSH 标准 SKILL.md（<ecoskills>/<name>/SKILL.md）。
 
-# {skill.name}
-
-## Meta
-- ID: {skill.id}
-- 版本: {skill.version}
-- 使用次数: {skill.usage_count}
-- 平均评分: {skill.avg_score:.2f}
-
-## Triggers
-{chr(10).join(f"- {t}" for t in skill.triggers)}
-
-## Steps
-{chr(10).join(f"- {s}" for s in skill.steps)}
-
-## Examples
-{chr(10).join(f"- {e}" for e in skill.examples)}
-"""
-        (SKILL_DIR / f"{fname}.md").write_text(content, encoding="utf-8")
+        frontmatter 仅 name + description（kebab-case 名）；body 走
+        Workflow / Inputs and outputs / Boundaries / Example 四小节。
+        """
+        ECOSKILLS_DIR.mkdir(parents=True, exist_ok=True)
+        name = skill.name if is_skill_name(skill.name) else eco_skill_name(skill.name)
+        skill_dir = ECOSKILLS_DIR / name
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        formats = [f"输出示例：{e}" for e in skill.examples if e]
+        content = format_frontmatter(name, skill.description) + render_skill_md(
+            name, skill.description, skill.steps, tools=skill.tools, formats=formats)
+        (skill_dir / "SKILL.md").write_text(content, encoding="utf-8")
 
     def get_stats(self) -> dict:
         by_category = {}
@@ -194,12 +187,19 @@ class AutoLearnEngine:
         self._registry = registry
 
     def learn_from_task(
-        self, task_desc: str, task_steps: list[str], task_output: str, score: float, min_steps: int = 3
+        self,
+        task_desc: str,
+        task_steps: list[str],
+        task_output: str,
+        score: float,
+        min_steps: int = 3,
+        tool_names: list[str] | None = None,
     ) -> str | None:
-        """从单次任务执行中学习。
+        """从单次任务执行中学习，产出 DSH 标准 SKILL.md（capture→draft→validate→落盘）。
 
         min_steps：新技能孵化所需最少步骤数（默认 3；调用方可按 Hatcher 配置传入，
         与 skill_hatcher 的 min_tools 保持一致，避免"配置允许 2 但这里硬卡 3"的不一致）。
+        tool_names：本次任务实际用到的工具（写入 SKILL.md 的 **Tools** 行）。
         """
         # 质量门槛：任务描述过短/无意义 → 不孵化（防"去"这类单字垃圾技能）
         desc = (task_desc or "").strip()
@@ -215,6 +215,8 @@ class AutoLearnEngine:
             skill.avg_score = (skill.avg_score * (skill.usage_count - 1) + score) / skill.usage_count
             if task_steps and len(task_steps) > len(skill.steps):
                 skill.steps = task_steps
+                self._registry._sync_to_file(skill)
+            self._registry._save()
             return skill.id
 
         # 新技能条件：达到最少步骤数且有明确输出
@@ -224,13 +226,25 @@ class AutoLearnEngine:
         # 自动分类
         category = self._classify(task_desc)
 
+        # capture→draft：生成 DSH SKILL.md 草稿（kebab-case 名 + 触发描述 + 四小节 body）
+        used = {s.name for s in self._registry._skills.values()}
+        draft = build_skill_draft(desc, task_steps, tools=tool_names, output=task_output, used=used)
+
+        # validate：6 项检查，不通过则丢弃孵化（不落盘、不注册）
+        validation = validate_skill_content(draft["content"])
+        if not validation["valid"]:
+            logger.warning("[Skill] SKILL.md 校验失败，丢弃孵化 %s: %s",
+                           draft["name"], validation["errors"])
+            return None
+
         skill = Skill(
-            name=f"auto_{task_desc[:20]}",
-            description=f"自动学习: {task_desc[:60]}",
+            name=draft["name"],
+            description=draft["description"],
             category=category,
             author="auto_learn",
-            triggers=[task_desc[:50]],
+            triggers=[desc[:50]],
             steps=task_steps,
+            tools=list(tool_names or []),
             examples=[task_output[:100]] if task_output else [],
             usage_count=1,
             avg_score=score,
@@ -342,9 +356,16 @@ class CrossSessionMemory:
 def test():
     import io
     import sys as _sys
+    import tempfile
 
     _sys.stdout = io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
     print("[TEST] Skill System MVP", flush=True)
+
+    # 隔离：临时目录，避免污染真实 ecoskills/ + memory-tree/data/
+    _tmp = Path(tempfile.mkdtemp(prefix="eco-skill-test-"))
+    globals()["ECOSKILLS_DIR"] = _tmp / "ecoskills"
+    globals()["DATA_DIR"] = _tmp / "data"
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     # 1. Skill Registry
     registry = SkillRegistry()

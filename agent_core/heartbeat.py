@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-heartbeat.py — Eco Agent L3 后台心跳循环 (Autonomous Pulse)
+heartbeat.py — eco Agent L3 后台心跳循环 (Autonomous Pulse)
 
 对标 OpenHuman 的"潜意识循环" + Codex 的"定时心跳自动化任务。
 在用户未交互时自主运转：数据同步→差异检测→规则触发→内存整理→主动建议。

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-commander_v2.py — Eco Agent 指挥官 v2（Phase 3 多智能体协作深化）
+commander_v2.py — eco Agent 指挥官 v2（Phase 3 多智能体协作深化）
 
 对标验收标准：B-01/B-02/B-04/B-05/G-01/G-03
 

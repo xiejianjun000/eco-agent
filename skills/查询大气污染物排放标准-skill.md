@@ -2,7 +2,7 @@
 name: 查询大气污染物排放标准-skill
 version: 0.1.0
 description: 自动升级自: 查询大气污染物排放标准
-author: ECO AGENT (SkillUpgrader)
+author: eco Agent (SkillUpgrader)
 type: skill
 ---
 

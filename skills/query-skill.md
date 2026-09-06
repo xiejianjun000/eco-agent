@@ -2,7 +2,7 @@
 name: query-skill
 version: 0.1.0
 description: 生态环境法规知识查询技能
-author: ECO AGENT
+author: eco Agent
 type: skill
 ---
 

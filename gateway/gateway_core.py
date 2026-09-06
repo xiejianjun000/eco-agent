@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gateway_core.py — Eco Agent 统一网关核心
+gateway_core.py — eco Agent 统一网关核心
 
 Phase 1 交付物 1/7：统一会话管理 + 多通道抽象层
 

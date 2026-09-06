@@ -1,4 +1,4 @@
-# ECO AGENT 终极架构方案：6 大 AI 框架深度梳理分析与融合设计
+# eco Agent 终极架构方案：6 大 AI 框架深度梳理分析与融合设计
 
 ---
 
@@ -243,7 +243,7 @@ Local Agent Server (Python/FastAPI + aisuite)
 
 ---
 
-## 第三部分：ECO AGENT 记忆系统融合设计（OPENHUMAN Memory Tree × 其他5框架）
+## 第三部分：eco Agent 记忆系统融合设计（OPENHUMAN Memory Tree × 其他5框架）
 
 ### 融合设计原则
 
@@ -299,13 +299,13 @@ eco-memory-tree/
 
 ## 第四部分：Obsidian 深度融合方案
 
-### Obsidian 作为 ECO AGENT 的 First-Class Citizen
+### Obsidian 作为 eco Agent 的 First-Class Citizen
 
-ECO AGENT 将 Obsidian 作为**知识层的基础设施**，而非可选附件：
+eco Agent 将 Obsidian 作为**知识层的基础设施**，而非可选附件：
 
 ```
 ┌──────────────────────────────────────┐
-│          ECO AGENT Runtime           │
+│          eco Agent Runtime           │
 │  (Hermes Profile / taiji-agent)     │
 └────────────┬─────────────────────────┘
              │ MCP (JSON-RPC 2.0)
@@ -340,9 +340,9 @@ ECO AGENT 将 Obsidian 作为**知识层的基础设施**，而非可选附件�
 | **obsidian-mcp** | ★ round-trip安全，尊重Obsidian约定 | 22 | wikilink/frontmatter/tag保留，7个Claude Skills |
 | **AILSS** | ★ Python生态，Ontology导向 | 自定义 | LangGraph工作流，本体引导检索 |
 
-### Obsidian 在 ECO AGENT 中的具体角色
+### Obsidian 在 eco Agent 中的具体角色
 
-| 功能 | Obsidian实现 | ECO AGENT 使用方式 |
+| 功能 | Obsidian实现 | eco Agent 使用方式 |
 |------|-------------|-------------------|
 | **法规知识库** | FlowWiki wiki/ + raw/ | eco-knowledge MCP通过Obsidian MCP桥读取 |
 | **执法案例库** | enforcement/cases/ 目录 | Memory Tree节点↔Markdown文件双向同步 |

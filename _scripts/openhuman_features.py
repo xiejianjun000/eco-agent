@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-openhuman_features.py — ECO AGENT OPENHUMAN 对标补全
+openhuman_features.py — eco Agent OPENHUMAN 对标补全
 
 三项能力：
   1. HybridRetriever — Memory Tree 混合检索增强 (BM25+向量+BGE重排序+RRF)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-agent_orchestrator.py — ECO AGENT 多 Agent 编排引擎
+agent_orchestrator.py — eco Agent 多 Agent 编排引擎
 
 让 8 个专业 Agent 真正协作跑通执法场景。
 

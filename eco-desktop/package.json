@@ -1,7 +1,7 @@
 {
   "name": "eco-desktop",
   "version": "0.1.0",
-  "description": "ECO AGENT Desktop App",
+  "description": "eco Agent Desktop App",
   "private": true,
   "type": "module",
   "scripts": {

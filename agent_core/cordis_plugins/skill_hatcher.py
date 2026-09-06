@@ -8,7 +8,7 @@ skill_system.py 的 SkillRegistry + AutoLearnEngine（skill 注册/持久化/自
 此前已实现但无调用方。本插件通电：
   - 监听同类「工具组合」使用频率（持久化计数）
   - 同一工具组合使用 ≥3 次 → AutoLearnEngine.learn_from_task 孵化成 Skill
-    （落 skills/<name>.md + skill_registry.json）
+    （落 ecoskills/<name>/SKILL.md + skill_registry.json）
   - provide skill_hatcher 服务，供 chat 通道 turn 结束时 observe
 
 配置（eco.cordis.yml）：
@@ -83,6 +83,7 @@ class Hatcher:
             task_output=(reply or "")[:200],
             score=3.0,
             min_steps=self._min_tools,  # 孵化门槛与 Hatcher.min_tools 一致
+            tool_names=tools[:6],       # 写入 SKILL.md 的 **Tools** 行
         )
         if skill_id:
             logger.info("[skill_hatcher] 孵化技能 %s（工具组合: %s，第 %d 次触发）", skill_id, sig, self._threshold)

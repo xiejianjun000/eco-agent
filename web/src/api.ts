@@ -77,6 +77,9 @@ export interface TraceEvent {
   /** artifact 事件：完整稿落盘为 MD 产物（点击拉取原文查看） */
   path?: string;
   size?: number;
+  /** artifact 事件：对话提到 DOCX/Word 时额外生成的 .docx（WorkBuddy 文档路由对标） */
+  docx_path?: string;
+  docx_name?: string;
   /** approval 事件：L4 工具触发审批栈，前端渲染「批准/拒绝」授权卡片 */
   request_id?: string;
   status?: string;
@@ -148,10 +151,107 @@ export interface SessionOut {
   name?: string;
 }
 
+/** 轨迹 span 树摘要（GET /traces） */
+export interface TraceSummary {
+  session_id: string;
+  trace_id: string;
+  meta: Record<string, unknown>;
+  span_count: number;
+  llm_calls: number;
+  tool_calls: number;
+  start: number;
+  start_iso: string;
+  duration_ms?: number | null;
+  prompt_tokens: number;
+  completion_tokens: number;
+}
+
+/** 轨迹 span（GET /traces/{id}，attrs 字符串已被服务端截断到 2000 字符） */
+export interface TraceSpan {
+  span_id: string;
+  parent_id: string | null;
+  name: string;
+  kind: string; // session | llm_call | tool_call | dag_step ...
+  start: number;
+  start_iso: string;
+  end?: number | null;
+  duration_ms?: number | null;
+  attrs: Record<string, unknown>;
+}
+
+export interface TraceTree {
+  session_id: string;
+  trace_id: string;
+  meta: Record<string, unknown>;
+  spans: TraceSpan[];
+}
+
+/** LLM 决策时间线条目（decisions.jsonl） */
+export interface DecisionItem {
+  ts: string;
+  hash: string;
+  candidate_tools: number;
+  selected_tools: string[];
+  finish_reason: string;
+  prompt_phase: string;
+  model: string;
+  provider: string;
+  round: number;
+  trace_id: string;
+}
+
+/** 会话检查点摘要 */
+export interface CheckpointItem {
+  id: number;
+  session: string;
+  ts: string;
+  history_len: number;
+  decisions_count: number;
+  workspace_slug: string;
+  workspace_files: string[];
+}
+
+/** LLM 统计聚合（/stats/summary） */
+export interface StatsSummary {
+  total: { calls: number; errors: number; prompt_tokens: number; completion_tokens: number; total_tokens: number; avg_latency_ms: number; cost_yuan: number };
+  by_provider: Record<string, unknown>;
+  by_model: { model: string; provider: string; price_per_m: { input: number; output: number; rule: string }; calls: number; errors: number; total_tokens: number; avg_latency_ms: number; cost_yuan: number }[];
+  by_date: { date: string; calls: number; errors: number; total_tokens: number; cost_yuan: number }[];
+  pricing: { unit: string; default: { input: number; output: number }; models: Record<string, { input: number; output: number }> };
+}
+
+/** 定时任务（cron 调度） */
+export interface AutomationJob {
+  job_id: string;
+  cron_expr: string;
+  task_desc: string;
+  handler_name: string;
+  enabled: boolean;
+  last_run: string | null;
+  next_run: string | null;
+  run_count: number;
+  fail_count: number;
+}
+
+/** MCP 连接器 */
+export interface ConnectorInfo {
+  name: string;
+  transport: string;
+  url: string;
+  has_headers: boolean;
+  timeout: number;
+  connected: boolean;
+  last_error: string;
+  tool_count: number;
+  tools: string[];
+}
+
 export const api = {
   health: () => fetch('/healthz').then((r) => r.json()),
   version: () => get<{ version: string; rev?: string }>('/version'),
   sessions: () => get<SessionOut[]>('/sessions'),
+  workspaces: () => get<{ workspaces: { id: string; name: string }[] }>('/workspaces'),
+  createWorkspace: (name: string) => post<{ ok: boolean; id: string; name: string }>('/workspaces', { name }),
   createSession: (userName?: string) => post<SessionOut>('/sessions', { user_name: userName ?? '' }),
   renameSession: (sessionId: string, name: string) => patch<SessionOut>(`/sessions/${sessionId}`, { name }),
   deleteSession: (sessionId: string) => del<{ ok: boolean; session_id: string }>(`/sessions/${sessionId}`),
@@ -185,7 +285,27 @@ export const api = {
     get<{ agent: SubagentInfo; output: { seq: number; kind: string; status?: string; result?: string; event?: TraceEvent }[]; seq: number }>(`/subagents/${id}?since_seq=${sinceSeq}`),
   subagentMessage: (id: string, message: string) => post<{ id: string; status: string }>(`/subagents/${id}/message`, { message }),
   subagentInterrupt: (id: string) => post<{ id: string; interrupted: boolean }>(`/subagents/${id}/interrupt`, {}),
-  sessionMessages: (sessionId = 'default') => get<{ session_id: string; messages: { role: string; content: string }[]; count: number }>(`/sessions/${sessionId}/messages`),
+  /** 会话消息重放（刷新恢复）：assistant 消息附带轮次级 trace/usage/耗时（server/api/sessions.py） */
+  sessionMessages: (sessionId = 'default') =>
+    get<{
+      session_id: string;
+      messages: {
+        role: string; content: string;
+        trace?: TraceEvent[]; usage?: ChatUsage; duration_ms?: number; ttft_ms?: number;
+      }[];
+      count: number;
+    }>(`/sessions/${sessionId}/messages`),
+  /** 观测数据：轨迹 / 决策 / 统计 / 检查点（server/api/traces.py） */
+  traces: () => get<{ count: number; items: TraceSummary[] }>('/traces'),
+  trace: (sessionId: string) => get<TraceTree>(`/traces/${encodeURIComponent(sessionId)}`),
+  decisions: (limit = 50, offset = 0, traceId = '') =>
+    get<{ total: number; offset: number; limit: number; items: DecisionItem[] }>(
+      `/decisions?limit=${limit}&offset=${offset}${traceId ? `&trace_id=${encodeURIComponent(traceId)}` : ''}`),
+  statsSummary: () => get<StatsSummary>('/stats/summary'),
+  checkpoints: (session: string) => get<{ session: string; count: number; items: CheckpointItem[] }>(`/checkpoints/${encodeURIComponent(session)}`),
+  rewindCheckpoint: (session: string, n: number) =>
+    post<{ ok: boolean; checkpoint: CheckpointItem; restored_files: string[]; history: { role: string; content: string }[]; note: string }>(
+      `/checkpoints/${encodeURIComponent(session)}/rewind`, { n }),
   slots: () => get<{ slots: { slot: string; id: string; title: string; description: string }[]; stats: Record<string, number> }>('/slots'),
   slotData: (id: string) => get<Record<string, unknown>>(`/slots/${id}/data`),
   goals: () => get<{ goals: GoalInfo[]; stats: Record<string, number> }>('/goals'),
@@ -196,6 +316,17 @@ export const api = {
   plugins: () => get<{ count: number; plugins: { name: string; status?: string; description?: string; tools?: string[] }[] }>('/plugins'),
   pluginAction: (name: string, action: 'load' | 'unload' | 'reload') =>
     post<Record<string, unknown>>(`/plugins/${name}/${action}`, {}),
+  /** 自动任务（cron 定时调度） */
+  automationJobs: () => get<{ running: boolean; count: number; jobs: AutomationJob[]; stats: Record<string, unknown> }>('/automation/jobs'),
+  /** 任务日志（WorkBuddy memory 面板对标）：近 N 天任务段记忆 */
+  taskLog: (days = 7) => get<{ stats: { days: number; files: string[] }; days: number; content: string }>(`/task-log?days=${days}`),
+  automationAdd: (body: { description?: string; cron_expr?: string; task_desc?: string }) =>
+    post<{ ok: boolean; job_id?: string; error?: string }>('/automation/jobs', body),
+  automationRemove: (id: string) => del<{ ok: boolean }>(`/automation/jobs/${encodeURIComponent(id)}`),
+  automationRun: (id: string) => post<Record<string, unknown>>(`/automation/jobs/${encodeURIComponent(id)}/run`, {}),
+  /** 连接器（MCP） */
+  connectors: () => get<{ count: number; connected: number; tool_total: number; connectors: ConnectorInfo[] }>('/connectors'),
+  connectorsRefresh: () => post<{ ok: boolean; mcp_count: number; connected: number; connectors: ConnectorInfo[] }>('/connectors/refresh', {}),
   dynplugins: () => get<{ plugins: { plugin_id: string; running: boolean; size_bytes: number; defined_at: number }[]; stats: Record<string, number> }>('/dynplugins'),
   dynpluginDefine: (body: { code: string; name?: string; plugin_id?: string | null }) =>
     post<{ ok: boolean; plugin_id?: string; name?: string; precheck?: { error?: string } }>('/dynplugins/define', body),
@@ -237,6 +368,7 @@ export async function streamChat(
   history: { role: string; content: string }[],
   sessionId: string,
   model: string,
+  workspace = '',
   onDelta: (text: string, meta?: { ttft_ms?: number; reset?: boolean }) => void,
   onEvent?: (ev: TraceEvent) => void,
   onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[]; usage?: ChatUsage; ttft_ms?: number; suggestions?: string[] }) => void,
@@ -244,7 +376,7 @@ export async function streamChat(
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-ECO-CLIENT': 'web' },
-    body: JSON.stringify({ message, history, session_id: sessionId, model }),
+    body: JSON.stringify({ message, history, session_id: sessionId, model, workspace }),
   });
   // HTTP 错误（服务端 500 等）给出明确信息，而非被误读成"连接失败"
   if (!res.ok) {

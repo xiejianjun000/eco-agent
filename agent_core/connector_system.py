@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-connector_system.py — Eco Agent D-01 50+ 第三方服务连接器系统
+connector_system.py — eco Agent D-01 50+ 第三方服务连接器系统
 
 OAuth 2.0 / API Key 认证、令牌加密存储、统一接口。
 

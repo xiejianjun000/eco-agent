@@ -1,4 +1,4 @@
-# ECO AGENT Gateway 统一网关架构
+# eco Agent Gateway 统一网关架构
 
 > **多平台消息中间件 — 飞书 · 企业微信 · 钉钉 · 微信**
 > 版本：v0.1.0 · 最后更新：2026-07-28
@@ -9,7 +9,7 @@
 
 ```
                     ┌──────────────────────────────┐
-                    │       ECO AGENT Core          │
+                    │       eco Agent Core          │
                     │  (Hermes AIAgent Loop)        │
                     └──────────┬───────────────────┘
                                │ Gateway API

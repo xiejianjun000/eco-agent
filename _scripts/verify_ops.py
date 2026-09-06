@@ -2,7 +2,7 @@
 """
 _scripts/verify_ops.py — 7×24 运维体检（路径③验证脚本）
 
-日常跑一遍（cron 或心跳触发），检查 Eco Agent 的持续进化与记忆健康：
+日常跑一遍（cron 或心跳触发），检查 eco Agent 的持续进化与记忆健康：
   1. 会话日志完整性（SessionEventLog.verify，全会话链校验）
   2. 进化报告存在性与篇幅（≥500 字，验收 I-01）
   3. 记忆树漂移（节点数/热节点/评分分布）
@@ -119,7 +119,7 @@ def run_checks() -> dict:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Eco Agent 7×24 运维体检")
+    parser = argparse.ArgumentParser(description="eco Agent 7×24 运维体检")
     parser.add_argument("--json", action="store_true", help="JSON 输出")
     args = parser.parse_args()
 
@@ -129,7 +129,7 @@ def main() -> int:
         return 0
 
     print("═" * 60)
-    print("ECO AGENT 7×24 运维体检")
+    print("eco Agent 7×24 运维体检")
     print(f"  时间: {report['checked_at']}")
     sl = report["session_logs"]
     print(

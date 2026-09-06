@@ -1,4 +1,4 @@
-# Eco Agent
+# eco Agent
 
 > **五层循环驱动，持续自我进化的 AI 智能体。**
 

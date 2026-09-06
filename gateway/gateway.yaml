@@ -1,4 +1,4 @@
-# ECO AGENT Gateway 统一配置
+# eco Agent Gateway 统一配置
 # Hermes Gateway 多平台消息中间件
 
 gateway:
@@ -43,7 +43,7 @@ gateway:
       # 统一走 agent_core.channels.feishu（r15 适配器，含 send_card 审批卡片）
 
       bot:
-        name: "ECO AGENT 执法助手"
+        name: "eco Agent 执法助手"
         description: "生态环境执法 AI 辅助系统"
 
       credentials:
@@ -89,7 +89,7 @@ gateway:
       # 统一走 agent_core.channels.wecom（r15 适配器，含 send_text_card/send_news/create_approval）
 
       bot:
-        name: "ECO AGENT"
+        name: "eco Agent"
         description: "生态环境执法 AI 辅助系统"
 
       credentials:
@@ -135,7 +135,7 @@ gateway:
       # 统一走 agent_core.channels.dingtalk（r15 适配器，含 send_group_message/send_card/query_approval）
 
       bot:
-        name: "ECO AGENT"
+        name: "eco Agent"
         description: "生态环境执法 AI 辅助系统"
 
       credentials:
@@ -168,14 +168,14 @@ gateway:
   # ===== 消息模板 =====
   message_templates:
     welcome:
-      feishu: "欢迎使用 ECO AGENT 执法助手！\n发送法规名称查询法律条文\n发送违法事实获取裁量建议"
-      wecom: "欢迎使用 ECO AGENT 执法助手！\n发送法规名称查询法律条文\n发送违法事实获取裁量建议"
-      dingtalk: "欢迎使用 ECO AGENT 执法助手！\n发送法规名称查询法律条文\n发送违法事实获取裁量建议"
+      feishu: "欢迎使用 eco Agent 执法助手！\n发送法规名称查询法律条文\n发送违法事实获取裁量建议"
+      wecom: "欢迎使用 eco Agent 执法助手！\n发送法规名称查询法律条文\n发送违法事实获取裁量建议"
+      dingtalk: "欢迎使用 eco Agent 执法助手！\n发送法规名称查询法律条文\n发送违法事实获取裁量建议"
 
     help:
-      feishu: "**ECO AGENT 执法助手使用说明**\n\n📖 法规检索：发送法规名称\n⚖️ 执法问答：描述违法事实\n📁 案例查询：发送「案例」+关键词\n🆘 帮助：发送「帮助」"
-      wecom: "ECO AGENT 执法助手使用说明\n\n[法规检索] 发送法规名称\n[执法问答] 描述违法事实\n[案例查询] 发送「案例」+关键词\n[帮助] 发送「帮助」"
-      dingtalk: "ECO AGENT 执法助手使用说明\n\n📖 法规检索：发送法规名称\n⚖️ 执法问答：描述违法事实\n📁 案例查询：发送「案例」+关键词\n🆘 帮助：发送「帮助」"
+      feishu: "**eco Agent 执法助手使用说明**\n\n📖 法规检索：发送法规名称\n⚖️ 执法问答：描述违法事实\n📁 案例查询：发送「案例」+关键词\n🆘 帮助：发送「帮助」"
+      wecom: "eco Agent 执法助手使用说明\n\n[法规检索] 发送法规名称\n[执法问答] 描述违法事实\n[案例查询] 发送「案例」+关键词\n[帮助] 发送「帮助」"
+      dingtalk: "eco Agent 执法助手使用说明\n\n📖 法规检索：发送法规名称\n⚖️ 执法问答：描述违法事实\n📁 案例查询：发送「案例」+关键词\n🆘 帮助：发送「帮助」"
 
     error:
       feishu: "⚠️ 处理请求时出现异常，请稍后重试。\n如果问题持续，请联系管理员。"
@@ -189,7 +189,7 @@ gateway:
 
     approval_notification:
       feishu:
-        title: "🔴 ECO AGENT 执法风险操作审批"
+        title: "🔴 eco Agent 执法风险操作审批"
         content: |
           操作类型：{operation}
           风险等级：{risk_level}
@@ -199,7 +199,7 @@ gateway:
         reject_text: "❌ 拒绝"
 
       wecom:
-        title: "[审批] ECO AGENT 执法风险操作"
+        title: "[审批] eco Agent 执法风险操作"
         content: |
           操作类型：{operation}
           风险等级：{risk_level}
@@ -208,7 +208,7 @@ gateway:
         reject_text: "拒绝"
 
       dingtalk:
-        title: "🔴 ECO AGENT 执法风险操作审批"
+        title: "🔴 eco Agent 执法风险操作审批"
         content: |
           操作类型：{operation}
           风险等级：{risk_level}

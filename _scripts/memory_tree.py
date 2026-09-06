@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-memory_tree.py — ECO AGENT Memory Tree 核心引擎
+memory_tree.py — eco Agent Memory Tree 核心引擎
 
 评分制记忆树，实现 SQLite 持久化 + Obsidian 双向同步 + 混合检索。
 
@@ -189,21 +189,17 @@ class MemoryTree:
 
             conn.execute(f"UPDATE nodes SET {set_clause} WHERE id = ?", values)
 
-            # 更新 FTS
+            # 更新 FTS（FTS5 虚表不支持 UPSERT，改用 DELETE+INSERT；content 为 NULL 时切片会 TypeError，加 or "" 守卫）
             if "title" in updates or "content" in updates:
                 row = conn.execute("SELECT rowid, title, content, tags FROM nodes WHERE id = ?", (node_id,)).fetchone()
                 if row:
+                    conn.execute("DELETE FROM nodes_fts WHERE rowid = ?", (row["rowid"],))
                     conn.execute(
-                        """
-                        INSERT INTO nodes_fts (rowid, title, content, tags)
-                        VALUES (?, ?, ?, ?)
-                        ON CONFLICT(rowid) DO UPDATE SET
-                            title=excluded.title, content=excluded.content, tags=excluded.tags
-                    """,
+                        "INSERT INTO nodes_fts (rowid, title, content, tags) VALUES (?, ?, ?, ?)",
                         (
                             row["rowid"],
                             updates.get("title", row["title"]),
-                            updates.get("content", row["content"][:5000]),
+                            updates.get("content", (row["content"] or "")[:5000]),
                             updates.get("tags", row["tags"]),
                         ),
                     )

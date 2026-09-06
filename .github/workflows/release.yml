@@ -28,6 +28,6 @@ jobs:
         run: |
           gh release create "${{ steps.version.outputs.tag }}" \
             --repo="${{ github.repository }}" \
-            --title="Eco Agent ${{ steps.version.outputs.tag }}" \
+            --title="eco Agent ${{ steps.version.outputs.tag }}" \
             --generate-notes \
             --draft=false

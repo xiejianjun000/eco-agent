@@ -1,6 +1,6 @@
 name: devtools
 version: 0.1.0
-description: 通用开发执行工具集——让 ECO AGENT 具备 Bash/文件/git 操作能力（对标 DSH 的执行工具）
+description: 通用开发执行工具集——让 eco Agent 具备 Bash/文件/git 操作能力（对标 DSH 的执行工具）
 entry: handler
 tools:
   - name: shell_run

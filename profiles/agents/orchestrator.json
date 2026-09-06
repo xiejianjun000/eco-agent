@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "description": "ECO AGENT 多 Agent 团队编排配置",
+  "description": "eco Agent 多 Agent 团队编排配置",
   "orchestrator": "主 Agent (Orchestrator)",
   "agents": {
     "indexer": {

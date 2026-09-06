@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-memory_viz.py — Eco Agent D-04 本地记忆树可视化后端
+memory_viz.py — eco Agent D-04 本地记忆树可视化后端
 
 Obsidian 风格知识图谱：节点浏览/编辑/删除/合并，系统不覆盖用户修改。
 """

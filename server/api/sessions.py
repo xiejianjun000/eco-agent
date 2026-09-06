@@ -271,7 +271,11 @@ async def export_session(session_id: str) -> dict:
 
 @router.get("/sessions/{session_id}/messages")
 async def get_session_messages(session_id: str) -> dict:
-    """从 session_log（SHA-256 链）重放对话消息，供前端重启后恢复。"""
+    """从 session_log（SHA-256 链）重放对话消息，供前端重启后恢复。
+
+    assistant 消息附带轮次级持久化数据（chat._persist_turn 写入）：
+    trace（过程块事件，瘦身版）/ usage（token 计量）/ duration_ms / ttft_ms，
+    前端据此恢复过程块与统计行，刷新不丢。"""
     _check_sid(session_id)
     from agent_core.session_log import SessionEventLog
 
@@ -281,5 +285,19 @@ async def get_session_messages(session_id: str) -> dict:
         if e.get("type") == "user/message":
             messages.append({"role": "user", "content": e["data"].get("content", "")})
         elif e.get("type") == "assistant/message":
-            messages.append({"role": "assistant", "content": e["data"].get("content", "")})
-    return {"session_id": session_id, "messages": messages, "count": len(messages)}
+            data = e["data"]
+            msg = {"role": "assistant", "content": data.get("content", "")}
+            if data.get("trace"):
+                msg["trace"] = data["trace"]
+            if data.get("usage"):
+                msg["usage"] = data["usage"]
+            if data.get("duration_ms"):
+                msg["duration_ms"] = data["duration_ms"]
+            if data.get("ttft_ms"):
+                msg["ttft_ms"] = data["ttft_ms"]
+            messages.append(msg)
+    return {
+        "session_id": session_id,
+        "messages": messages,
+        "count": len(messages),
+    }

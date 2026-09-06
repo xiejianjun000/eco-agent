@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-server/app.py — ECO AGENT 管理 API 应用工厂
+server/app.py — eco Agent 管理 API 应用工厂
 
 端面一览：
   POST   /api/v1/chat              对话（非流式，含 system prompt 构建）
@@ -16,6 +16,11 @@ server/app.py — ECO AGENT 管理 API 应用工厂
   GET    /api/v1/system            系统健康与统计
   GET    /api/v1/metrics           token/成本指标
   GET    /api/v1/version           版本信息
+  GET    /api/v1/traces            轨迹 span 树摘要列表（~/.eco/traces）
+  GET    /api/v1/traces/{id}       完整 span 树（attrs 截断 2000 字符）
+  GET    /api/v1/decisions         LLM 决策时间线（decisions.jsonl，倒序分页）
+  GET    /api/v1/stats/summary     LLM 调用聚合（provider/model/日期 + 成本估算）
+  GET    /api/v1/checkpoints/{s}   会话检查点列表 · POST .../rewind 回滚
   GET    /healthz                  健康检查
 
 所有业务能力均复用 agent_core / gateway / govmcp 现有接口，本层不做 AI 逻辑。
@@ -51,8 +56,8 @@ def create_app() -> FastAPI:
     load_env_into_process()
 
     app = FastAPI(
-        title="ECO AGENT API",
-        description="ECO AGENT 管理 API — 面向应用与 Web GUI 的 REST/SSE 接口",
+        title="eco Agent API",
+        description="eco Agent 管理 API — 面向应用与 Web GUI 的 REST/SSE 接口",
         version=get_version(),
     )
 
@@ -66,7 +71,9 @@ def create_app() -> FastAPI:
 
     from server.api import (
         approvals,
+        automation,
         chat,
+        connectors,
         documents,
         dynamic_plugins,
         files,
@@ -80,9 +87,12 @@ def create_app() -> FastAPI:
         slots,
         subagents,
         system,
+        tasklog,
         terminal,
         tools,
+        traces,
         workflow,
+        workspaces,
     )
 
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
@@ -103,6 +113,11 @@ def create_app() -> FastAPI:
     app.include_router(approvals.router, prefix="/api/v1", tags=["approvals"])
     app.include_router(system.router, prefix="/api/v1", tags=["system"])
     app.include_router(terminal.router, prefix="/api/v1", tags=["terminal"])
+    app.include_router(tasklog.router, prefix="/api/v1", tags=["task-log"])
+    app.include_router(automation.router, prefix="/api/v1", tags=["automation"])
+    app.include_router(connectors.router, prefix="/api/v1", tags=["connectors"])
+    app.include_router(workspaces.router, prefix="/api/v1", tags=["workspaces"])
+    app.include_router(traces.router, prefix="/api/v1", tags=["traces"])
 
     @app.get("/healthz", tags=["system"])
     async def healthz() -> dict:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-evolution_v2.py — Eco Agent 自进化引擎 v2
+evolution_v2.py — eco Agent 自进化引擎 v2
 
 对标愿景中"超越 Hermes"的自我进化深度：
   1. Active Learning — 基于使用模式预测并预生成技能

@@ -1,4 +1,4 @@
-// events.ts — ECO AGENT 事件总线（G8 可追溯）
+// events.ts — eco Agent 事件总线（G8 可追溯）
 // 所有跨模块通信走统一事件中心
 
 export interface EcoEvent {

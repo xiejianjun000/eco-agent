@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-message_templates.py — ECO AGENT 统一消息模板
+message_templates.py — eco Agent 统一消息模板
 
 各平台公用消息模板，按平台能力自动适配。
 """
@@ -15,26 +15,29 @@ class MessageTemplates:
     @staticmethod
     def welcome(platform: str = "feishu") -> str:
         templates = {
-            "feishu": "欢迎使用 ECO AGENT 执法助手！\n\n"
-            "我是您的 AI 同事，精通全部现行生态环境法律法规。\n\n"
-            "📖 发送法规名称查询法律条文\n"
-            "⚖️ 发送违法事实获取裁量建议\n"
-            "💡 发送「帮助」查看使用说明",
-            "wecom": "欢迎使用 ECO AGENT 执法助手！\n\n"
-            "我是您的 AI 同事，精通全部现行生态环境法律法规。\n\n"
-            "[法规检索] 发送法规名称查询法律条文\n"
-            "[执法问答] 发送违法事实获取裁量建议\n"
-            "[帮助] 发送「帮助」查看使用说明",
-            "dingtalk": "欢迎使用 ECO AGENT 执法助手！\n\n"
-            "我是您的 AI 同事，精通全部现行生态环境法律法规。\n\n"
-            "📖 发送法规名称查询法律条文\n"
-            "⚖️ 发送违法事实获取裁量建议\n"
-            "💡 发送「帮助」查看使用说明",
-            "wechat": "欢迎关注 ECO AGENT 执法助手！\n\n"
-            "我是您的 AI 同事，精通全部现行生态环境法律法规。\n\n"
-            "📖 发送法规名称查询法律条文\n"
-            "⚖️ 发送违法事实获取裁量建议\n"
-            "💡 发送「帮助」查看使用说明",
+            "feishu": "欢迎使用 eco Agent 执法助手！\n\n"
+                      "我是您的 AI 同事，精通全部现行生态环境法律法规。\n\n"
+                      "📖 发送法规名称查询法律条文\n"
+                      "⚖️ 发送违法事实获取裁量建议\n"
+                      "💡 发送「帮助」查看使用说明",
+
+            "wecom": "欢迎使用 eco Agent 执法助手！\n\n"
+                     "我是您的 AI 同事，精通全部现行生态环境法律法规。\n\n"
+                     "[法规检索] 发送法规名称查询法律条文\n"
+                     "[执法问答] 发送违法事实获取裁量建议\n"
+                     "[帮助] 发送「帮助」查看使用说明",
+
+            "dingtalk": "欢迎使用 eco Agent 执法助手！\n\n"
+                        "我是您的 AI 同事，精通全部现行生态环境法律法规。\n\n"
+                        "📖 发送法规名称查询法律条文\n"
+                        "⚖️ 发送违法事实获取裁量建议\n"
+                        "💡 发送「帮助」查看使用说明",
+
+            "wechat": "欢迎关注 eco Agent 执法助手！\n\n"
+                      "我是您的 AI 同事，精通全部现行生态环境法律法规。\n\n"
+                      "📖 发送法规名称查询法律条文\n"
+                      "⚖️ 发送违法事实获取裁量建议\n"
+                      "💡 发送「帮助」查看使用说明",
         }
         return templates.get(platform, templates["feishu"])
 
@@ -42,45 +45,48 @@ class MessageTemplates:
     @staticmethod
     def help(platform: str = "feishu") -> str:
         templates = {
-            "feishu": "**ECO AGENT 执法助手使用说明**\n\n"
-            "📖 **法规检索**\n"
-            "发送法规名称，如：大气污染防治法\n\n"
-            "⚖️ **执法问答**\n"
-            "描述违法事实，如：某企业超标排放二氧化硫\n\n"
-            "📁 **案例查询**\n"
-            "发送：案例 + 关键词\n\n"
-            "📊 **系统状态**\n"
-            "发送：状态\n\n"
-            "🆘 **帮助**\n"
-            "发送：帮助",
-            "wecom": "ECO AGENT 执法助手使用说明\n\n"
-            "[法规检索]\n"
-            "发送法规名称，如：大气污染防治法\n\n"
-            "[执法问答]\n"
-            "描述违法事实，如：某企业超标排放二氧化硫\n\n"
-            "[案例查询]\n"
-            "发送：案例 + 关键词\n\n"
-            "[系统状态]\n"
-            "发送：状态\n\n"
-            "[帮助]\n"
-            "发送：帮助",
-            "dingtalk": "ECO AGENT 执法助手使用说明\n\n"
-            "📖 法规检索\n"
-            "发送法规名称，如：大气污染防治法\n\n"
-            "⚖️ 执法问答\n"
-            "描述违法事实，如：某企业超标排放二氧化硫\n\n"
-            "📁 案例查询\n"
-            "发送：案例 + 关键词\n\n"
-            "📊 系统状态\n"
-            "发送：状态\n\n"
-            "💡 帮助\n"
-            "发送：帮助",
-            "wechat": "ECO AGENT 执法助手使用说明\n\n"
-            "📖 法规检索：发送法规名称\n"
-            "⚖️ 执法问答：描述违法事实\n"
-            "📁 案例查询：发送「案例」+关键词\n"
-            "📊 系统状态：发送「状态」\n"
-            "💡 帮助：发送「帮助」",
+            "feishu": "**eco Agent 执法助手使用说明**\n\n"
+                      "📖 **法规检索**\n"
+                      "发送法规名称，如：大气污染防治法\n\n"
+                      "⚖️ **执法问答**\n"
+                      "描述违法事实，如：某企业超标排放二氧化硫\n\n"
+                      "📁 **案例查询**\n"
+                      "发送：案例 + 关键词\n\n"
+                      "📊 **系统状态**\n"
+                      "发送：状态\n\n"
+                      "🆘 **帮助**\n"
+                      "发送：帮助",
+
+            "wecom": "eco Agent 执法助手使用说明\n\n"
+                     "[法规检索]\n"
+                     "发送法规名称，如：大气污染防治法\n\n"
+                     "[执法问答]\n"
+                     "描述违法事实，如：某企业超标排放二氧化硫\n\n"
+                     "[案例查询]\n"
+                     "发送：案例 + 关键词\n\n"
+                     "[系统状态]\n"
+                     "发送：状态\n\n"
+                     "[帮助]\n"
+                     "发送：帮助",
+
+            "dingtalk": "eco Agent 执法助手使用说明\n\n"
+                        "📖 法规检索\n"
+                        "发送法规名称，如：大气污染防治法\n\n"
+                        "⚖️ 执法问答\n"
+                        "描述违法事实，如：某企业超标排放二氧化硫\n\n"
+                        "📁 案例查询\n"
+                        "发送：案例 + 关键词\n\n"
+                        "📊 系统状态\n"
+                        "发送：状态\n\n"
+                        "💡 帮助\n"
+                        "发送：帮助",
+
+            "wechat": "eco Agent 执法助手使用说明\n\n"
+                      "📖 法规检索：发送法规名称\n"
+                      "⚖️ 执法问答：描述违法事实\n"
+                      "📁 案例查询：发送「案例」+关键词\n"
+                      "📊 系统状态：发送「状态」\n"
+                      "💡 帮助：发送「帮助」",
         }
         return templates.get(platform, templates["feishu"])
 
@@ -149,7 +155,7 @@ class MessageTemplates:
         """审批通知模板"""
         if platform == "feishu":
             return (
-                f"**🔴 ECO AGENT 执法风险操作审批**\n\n"
+                f"**🔴 eco Agent 执法风险操作审批**\n\n"
                 f"操作类型：{operation}\n"
                 f"风险等级：{risk_level}\n"
                 f"操作详情：{details}\n\n"
@@ -157,14 +163,19 @@ class MessageTemplates:
             )
         elif platform == "wecom":
             return (
-                f"[审批] ECO AGENT 执法风险操作\n\n"
+                f"[审批] eco Agent 执法风险操作\n\n"
                 f"操作类型：{operation}\n"
                 f"风险等级：{risk_level}\n"
                 f"操作详情：{details}\n\n"
                 f"请前往企业微信审批中心处理。"
             )
         elif platform == "dingtalk":
-            return f"🔴 ECO AGENT 执法风险操作审批\n\n操作类型：{operation}\n风险等级：{risk_level}\n操作详情：{details}"
+            return (
+                f"🔴 eco Agent 执法风险操作审批\n\n"
+                f"操作类型：{operation}\n"
+                f"风险等级：{risk_level}\n"
+                f"操作详情：{details}"
+            )
         return f"[审批] {operation} - {risk_level}"
 
     # ===== 卡片消息构建 =====

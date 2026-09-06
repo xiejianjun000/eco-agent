@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-workflow_discovery.py — Eco Agent B-03 自动流程发现 + G-02 长任务快照
+workflow_discovery.py — eco Agent B-03 自动流程发现 + G-02 长任务快照
 
 B-03: 从历史执行日志中提炼高频协作序列 → 标准工作流模板
 G-02: >1小时任务每10分钟自动快照，崩溃恢复<1分钟
