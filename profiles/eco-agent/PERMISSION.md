@@ -389,9 +389,9 @@ tool_risk_overrides:
   - tool: permit_menu
     level: L1
   - tool: permit_license_list
-    level: L1
+    level: L4
   - tool: permit_enterprise_list
-    level: L1
+    level: L4
   - tool: permit_jgzf_menu
     level: L4
   - tool: permit_jgzf_license_execution
