@@ -369,7 +369,18 @@ export function selectSummary(
 
 /** 决策 → 中文摘要句（对标 summary/templates.ts 的成句职责） */
 export function renderSummary(decision: SummaryDecision, status: AtomStatus): string {
-  const suffix = status === 'running' ? '中…' : status === 'cancelled' ? '（已取消）' : '';
+  /* running 后缀分两种形态：
+     动词结尾直接接「中…」通顺（检查中…）；但带对象名时会粘成
+     「检查、读取 README*中…」这种断词 —— 实测线上就是这样。
+     对象名结尾改用「 · 进行中」，读起来是「检查、读取 README* · 进行中」。 */
+  const hasObject =
+    (decision.kind === 'single' && !!decision.object) ||
+    (decision.kind === 'group' && !!decision.topic) ||
+    (decision.kind === 'multiStage' && !!decision.topic);
+  const suffix =
+    status === 'running' ? (hasObject ? ' · 进行中' : '中…')
+    : status === 'cancelled' ? '（已取消）'
+    : '';
   switch (decision.kind) {
     case 'waiting':
       return decision.object ? `等待确认：${decision.object}` : '等待用户确认';

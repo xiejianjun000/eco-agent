@@ -53,5 +53,30 @@ eq('工具行文案', beats[1].text, '读取 README.md');
 eq('工具行摘要', beats[1].detail, 'README.md · 1 行');
 eq('第二工具摘要', beats[3].detail, '3 条');
 
+console.log('\n--- 实时态 running 行 ---');
+const r1=buildBeats([
+  {type:'narration',text:'先查审计链。'},
+  {type:'tool_start',name:'audit_tail',args:{}},
+], ()=>false);
+eq('tool_start 产生 running 行', r1.map(b=>[b.kind,!!b.running]), [['say',false],['act',true]]);
+eq('running 行无耗时', r1[1].ms, undefined);
+
+// tool 到达后必须原地替换，不能出现两行
+const r2=buildBeats([
+  {type:'tool_start',name:'audit_tail',args:{}},
+  {type:'tool',name:'audit_tail',args:{},result_preview:'{"ok":true,"count":3}',cost_ms:7},
+], ()=>false);
+eq('完成后仅一行', r2.length, 1);
+eq('已替换为完成态', [r2[0].running, r2[0].detail, r2[0].ms], [undefined,'3 条',7]);
+
+// 并行两个工具：各自独立替换
+const r3=buildBeats([
+  {type:'tool_start',name:'glob',args:{pattern:'a'}},
+  {type:'tool_start',name:'audit_tail',args:{}},
+  {type:'tool',name:'audit_tail',args:{},result_preview:'{"ok":true,"count":3}',cost_ms:2},
+], ()=>false);
+eq('并行时只替换匹配那行', r3.map(b=>!!b.running), [true,false]);
+eq('未完成的仍在原位', r3[0].text, '查找文件 a');
+
 console.log(`\n通过 ${p} · 失败 ${f}`);
 process.exit(f?1:0);

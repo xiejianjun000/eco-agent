@@ -548,14 +548,18 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
 
   return (
     <div className={`proc-wrap${open ? ' open' : ''}${live ? ' live' : ''}`}>
-      {!open && beats.length > 0 && (
+      {/* 折叠态或运行中都显示节奏行：运行中若隐藏，用户在几十秒的工具
+          执行期里只能看到摘要数字跳动，看不到「正在做什么」。 */}
+      {(!open || live) && beats.length > 0 && (
         <div className="turn-anchors">
           {beats.map((b, i) => (
-            <div className={`turn-anchor beat-${b.kind}`} key={i}>
-              <span className={`turn-anchor-dot${b.kind === 'act' ? (b.ok ? ' ok' : ' err') : ''}`}
+            <div className={`turn-anchor beat-${b.kind}${b.running ? ' beat-running' : ''}`} key={i}>
+              <span className={`turn-anchor-dot${
+                b.kind === 'act' ? (b.running ? ' running' : b.ok ? ' ok' : ' err') : ''}`}
                     aria-hidden="true" />
               <span className="turn-anchor-text">
                 {b.text}
+                {b.running && <span className="beat-detail"> — 进行中…</span>}
                 {b.detail && <span className="beat-detail"> — {b.detail}</span>}
                 {b.ms !== undefined && b.ms > 0 && <span className="beat-ms"> {fmtMs(b.ms)}</span>}
               </span>

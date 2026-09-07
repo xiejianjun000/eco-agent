@@ -50,7 +50,9 @@ eq('isRunning=false 时不报 running', selectSummary([A('Read',{path:'a'},'runn
 console.log('\n=== 5. 成句 ===');
 const say=(atoms,run=false)=>{const r=selectSummary(atoms,run);return renderSummary(r.decision,r.status);};
 eq('单文件读取', say([A('Read',{file_path:'/x/执法报告.md'})]), '读取 执法报告.md');
-eq('运行中带后缀', say([A('Read',{file_path:'/a.md'},'running')],true), '读取 a.md中…');
+// 原断言期望 '读取 a.md中…' —— 对象名与「中…」粘连成断词，线上实测
+// 出现「检查、读取 README*中…」。改为带对象名时用 ' · 进行中'。
+eq('运行中带对象名不粘连', say([A('Read',{file_path:'/a.md'},'running')],true), '读取 a.md · 进行中');
 eq('同组摘要', say([A('Read',{path:'/a'}),A('LS',{path:'/b'})]), '读取若干项');
 eq('路径只留 basename', say([A('Write',{path:'/very/long/dir/out.docx'})]), '写入 out.docx');
 

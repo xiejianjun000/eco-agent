@@ -172,6 +172,7 @@ export interface BeatItem {
   detail?: string;
   ok?: boolean;
   ms?: number;
+  running?: boolean;   // 工具已发出、结果未回（实时态）
 }
 
 /** 工具名 → 中文动作词（与后端 _NARR_ACTION 同源，前端独立一份避免多一次往返） */
@@ -231,7 +232,30 @@ export function buildBeats(
                  && out[out.length - 1].text === c)) {
         out.push({ kind: 'say', text: c });
       }
+    } else if (t.type === 'tool_start') {
+      /* 实时态：工具已发出但未返回。先占一行「进行中」，
+         等 tool 事件到达时由下面的分支原地替换为完成行。
+         没有这一行的话，用户在工具执行的几十秒里看不到任何进展。 */
+      const obj = objectOf(t.args);
+      out.push({
+        kind: 'act',
+        text: `${actionOf(t.name)}${obj ? ` ${obj}` : ''}`,
+        running: true,
+      });
     } else if (t.type === 'tool') {
+      // 有对应的 running 行就原地替换，避免同一次调用出现两行
+      const key = `${actionOf(t.name)}${objectOf(t.args) ? ` ${objectOf(t.args)}` : ''}`;
+      const idx = out.findIndex((b) => b.kind === 'act' && b.running && b.text === key);
+      if (idx >= 0) {
+        out[idx] = {
+          kind: 'act',
+          text: key,
+          detail: summarizeResult(t.result_preview),
+          ok: !isError(t.result_preview),
+          ms: t.cost_ms,
+        };
+        continue;
+      }
       const obj = objectOf(t.args);
       out.push({
         kind: 'act',
