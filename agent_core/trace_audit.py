@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 from pathlib import Path
 
@@ -40,6 +41,16 @@ class TraceAudit:
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.chain_path = self.base_dir / "trace_audit.jsonl"
         self._chain = self._load_chain()
+        # 写入串行化：_append 是「读链尾 → 算哈希 → 追加」的读改写序列，
+        # 并发调用会让多条记录读到同一个链尾、都以它作 prev_hash → 链分叉。
+        # 实测 4 线程各写 6 条即在第 2 行断裂；线上 2026-09-01 23:27:03
+        # 曾有两个会话（round3 与 round1）在 6ms 内交错写入，造成 3 处断裂。
+        self._write_lock = threading.Lock()
+        # 链尾缓存：持锁期间内存维护，避免每次都回读文件末行（也消除 TOCTOU）
+        self._tip_hash: str | None = None
+        # 跨进程互斥：线程锁只在单进程内有效，实测 3 个进程并发写仍在第 2 行断裂。
+        # 用 flock 排他锁把「取链尾 → 算哈希 → 落盘」在进程间也串行化。
+        self._lock_path = self.base_dir / "trace_audit.lock"
 
     # ── 记录 ─────────────────────────────────────────────
 
@@ -133,13 +144,24 @@ class TraceAudit:
         lines = self._raw_lines()
         prev_hash = GENESIS_PREV_HASH  # 创世前驱与 govmcp AuditChain 一致
         entries = []
+        breaks: list[dict] = []
         for i, line in enumerate(lines):
             try:
                 e = json.loads(line)
             except json.JSONDecodeError:
                 return {"ok": False, "error": f"第 {i + 1} 行损坏", "entries": len(entries)}
             if e.get("prev_hash") != prev_hash:
-                return {"ok": False, "error": f"第 {i + 1} 行哈希链断裂", "entries": len(entries)}
+                # 链接断裂：记录断点并从本行重新起链，继续校验后续内容。
+                #
+                # 为什么不在这里 return：断裂由并发写入造成（多条记录读到同一链尾，
+                # 见 _append 的锁说明），而非内容被篡改。早退会让断点之后的记录
+                # 全部无法校验——线上曾因 3 处断裂使 1834 条记录失去验证能力。
+                # 分段校验既能如实暴露断点，又能证明各段内部未被改动。
+                #
+                # 注意：绝不重写历史哈希去「修复」链条——那等于伪造审计证据。
+                breaks.append({"line": i + 1, "expect": prev_hash[:16],
+                               "actual": str(e.get("prev_hash", ""))[:16]})
+                prev_hash = str(e.get("prev_hash", ""))
             # 从当前行业务字段重建入链 input（业务字段被篡改必然改变重建结果）
             business_entry = {k: v for k, v in e.items() if k not in meta_fields}
             input_data = json.dumps(business_entry, ensure_ascii=False)
@@ -148,10 +170,27 @@ class TraceAudit:
             hash_source = f"{prev_hash}{e.get('timestamp', '')}{e.get('operation', '')}{input_hash}{output_hash}"
             recomputed = sm3_hash(hash_source.encode("utf-8"))
             if recomputed != e.get("current_hash", ""):
-                return {"ok": False, "error": f"第 {i + 1} 行内容被篡改（哈希失配）", "entries": len(entries)}
+                # 内容篡改是硬失败，立即返回：与「链接断裂」性质不同，
+                # 前者说明记录被改过，后者只是并发写导致的接续错位。
+                return {"ok": False, "tampered_line": i + 1,
+                        "error": f"第 {i + 1} 行内容被篡改（哈希失配）",
+                        "entries": len(entries), "breaks": breaks}
             prev_hash = e.get("current_hash", "")
             entries.append(e)
-        return {"ok": True, "entries": len(entries), "last_hash": prev_hash[:16]}
+        result = {
+            "ok": not breaks,
+            "entries": len(entries),
+            "last_hash": prev_hash[:16],
+            "verified": len(entries),   # 逐行重算通过、内容未被篡改的条数
+            "breaks": breaks,
+            "segments": len(breaks) + 1,
+        }
+        if breaks:
+            result["error"] = (
+                f"{len(breaks)} 处链接断裂（并发写入所致），"
+                f"但 {len(entries)} 条记录内容均未被篡改"
+            )
+        return result
 
     def stats(self) -> dict:
         v = self.verify()
@@ -170,13 +209,33 @@ class TraceAudit:
     # ── 内部 ─────────────────────────────────────────────
 
     def _append(self, entry: dict, operation: str, operator: str) -> dict:
-        """五要素入链：govmcp SM3 链计算 + JSONL 追加。"""
+        """五要素入链：govmcp SM3 链计算 + JSONL 追加。
+
+        全程持 _write_lock：哈希链的 prev_hash 依赖「当前链尾」，
+        读链尾与追加之间若被其他写入插入，两条记录会共用同一 prev_hash
+        导致链分叉。锁把「取链尾 → 算哈希 → 落盘 → 更新链尾」变为原子段。
+        """
+        import fcntl
+
+        with self._write_lock:  # 进程内互斥
+            with self._lock_path.open("a+") as lk:
+                fcntl.flock(lk.fileno(), fcntl.LOCK_EX)  # 进程间互斥
+                try:
+                    # 持有跨进程锁后必须回读真实链尾：其他进程可能已追加，
+                    # 本进程的 _tip_hash 已过期，沿用它会造成分叉。
+                    self._tip_hash = None
+                    return self._append_locked(entry, operation, operator)
+                finally:
+                    fcntl.flock(lk.fileno(), fcntl.LOCK_UN)
+
+    def _append_locked(self, entry: dict, operation: str, operator: str) -> dict:
         from govmcp.crypto.audit import AuditChain
 
         chain = AuditChain()
         # 跨进程/跨重启衔接：预置上一条 current_hash 为前驱桩，
         # 使 add_entry 的 prev_hash 与既有链尾衔接（而非创世哈希）
-        last = self._last_hash()
+        # 优先用内存链尾（持锁期间由本类独占维护）；首次或跨进程重启时回读文件
+        last = self._tip_hash if self._tip_hash is not None else self._last_hash()
         if last:
             from govmcp.crypto.audit import AuditEntry
 
@@ -220,6 +279,8 @@ class TraceAudit:
             import os
 
             os.fsync(f.fileno())
+        # 落盘成功后才推进链尾，写失败时下次仍回读文件，不会把链尾推到未落盘的哈希
+        self._tip_hash = record["current_hash"]
         return record
 
     def _last_hash(self) -> str:

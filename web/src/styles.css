@@ -1611,3 +1611,8 @@ mark.chat-search-hit-active { background: #FE9D2E; color: #fff; }
 .turn-anchor-text { flex: 1; min-width: 0; }
 /* 轨迹页 NARRATION 徽章 */
 .dsh-badge.narration, [data-badge="NARRATION"] { color: var(--terra); }
+
+/* 审计链断点（并发写入所致，非篡改） */
+.audit-breaks { margin: 6px 0; padding: 8px 10px; border-left: 2px solid #FE9D2E; background: var(--fill); border-radius: 0 5px 5px 0; }
+.audit-breaks .muted { margin-bottom: 6px; font-size: 12px; line-height: 1.6; }
+.badge.amber { background: rgba(254, 157, 46, .16); color: #C97614; }

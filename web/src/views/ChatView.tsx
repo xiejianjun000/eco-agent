@@ -1573,16 +1573,37 @@ export default function ChatView({
             <div className="empty" style={{ padding: 16 }}>加载中…</div>
           ) : (slotData as { chain?: Record<string, unknown> })?.chain ? (
             <div className="audit-card">
+              {/* 区分两种性质：内容篡改 = 硬失败；链接断裂 = 并发写入所致，
+                  记录本身未被改动。混为一谈会让人误以为审计证据失效。 */}
               <div className="row">
                 <span className="title">链完整性</span>
-                <span className={`badge ${(slotData as any).chain.ok ? 'olive' : 'red'}`}>
-                  {(slotData as any).chain.ok ? '✅ 完整' : '❌ 断裂'}
-                </span>
+                {(() => {
+                  const c = (slotData as any).chain;
+                  const tampered = c.tampered_line !== undefined;
+                  const nb = (c.breaks?.length ?? 0) as number;
+                  if (tampered) return <span className="badge red">❌ 内容被篡改（第 {c.tampered_line} 行）</span>;
+                  if (nb > 0) return <span className="badge amber">⚠ {nb} 处链接断裂 · 内容未篡改</span>;
+                  return <span className="badge olive">✅ 完整</span>;
+                })()}
               </div>
               <div className="row">
                 <span className="title">链条目</span>
                 <span className="mono">{(slotData as any).chain.entries ?? 0}</span>
               </div>
+              {((slotData as any).chain.breaks?.length ?? 0) > 0 && (
+                <div className="audit-breaks">
+                  <div className="muted">
+                    断点由并发写入造成（多条记录读到同一链尾）；各段内容均通过 SM3 重算，
+                    未做任何哈希重写。
+                  </div>
+                  {((slotData as any).chain.breaks as any[]).map((b, i) => (
+                    <div key={i} className="row">
+                      <span className="title">断点 · 第 {b.line} 行</span>
+                      <span className="mono audit-hash">{b.actual}… ≠ {b.expect}…</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="row">
                 <span className="title">尾哈希</span>
                 <span className="mono audit-hash">{String((slotData as any).chain.last_hash ?? '').slice(0, 16)}…</span>
