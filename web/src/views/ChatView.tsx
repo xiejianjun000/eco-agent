@@ -1124,8 +1124,19 @@ export default function ChatView({
     }
   };
 
+  // 输入法（IME）合成态：中文/日文输入时按 Enter 是「选词上屏」，绝不能当发送。
+  // 对标 DSH InputBar 的三重判定——单靠 isComposing 在部分引擎
+  // （旧版 Safari/Firefox、部分国产输入法）为 false，必须叠加 keyCode 229 兜底。
+  const composingRef = React.useRef(false);
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Shift+Enter 无条件换行——放在 IME 判定之前，
+    // 这样「合成结束的那一次 Shift+Enter」仍能正常断行。
+    if (e.key === 'Enter' && e.shiftKey) return;
+    const ne = e.nativeEvent as unknown as { isComposing?: boolean; keyCode?: number };
+    const composing =
+      composingRef.current || ne.isComposing === true || ne.keyCode === 229;
+    if (e.key === 'Enter' && !composing) {
       e.preventDefault();
       void send();
     }
@@ -1425,6 +1436,8 @@ export default function ChatView({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
+            onCompositionStart={() => { composingRef.current = true; }}
+            onCompositionEnd={() => { composingRef.current = false; }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();

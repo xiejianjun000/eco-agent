@@ -27,6 +27,10 @@ $RECYCLE.BIN/
 # Environment
 .env
 .env.local
+# 凭证备份：切换 provider 的脚本会生成 .env.bak.<时间戳>，内含真实密钥
+.env.bak
+.env.bak.*
+.env.*.bak
 
 # Memory Tree data (runtime generated)
 memory-tree/data/
