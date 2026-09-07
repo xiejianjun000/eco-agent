@@ -1512,3 +1512,90 @@ html[data-theme='dark'] .doc-viewer-host .docx-wrapper > section.docx { filter: 
   transition: background .12s ease, color .12s ease;
 }
 .artifact-action-btn:hover { background: var(--fill); color: var(--t-main); }
+
+/* ── 右上角功能区（WorkBuddy workbuddy-topbar 对标）────────────────── */
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 2px; padding-right: 4px; }
+.topbar-item { position: relative; display: inline-flex; }
+.topbar-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0; border: none; border-radius: 5px;
+  background: transparent; color: var(--t-aux); cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.topbar-btn:hover:not(:disabled) { background: var(--fill); color: var(--t-main); }
+.topbar-btn.active { background: var(--terra-soft); color: var(--terra); }
+.topbar-btn:disabled { opacity: .35; cursor: default; }
+.topbar-btn:focus-visible { outline: 2px solid var(--terra); outline-offset: 1px; }
+
+/* 对话内搜索浮层 */
+.chat-search-pop {
+  position: absolute; top: 32px; right: 0; z-index: 40;
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+}
+.chat-search-input {
+  width: 190px; height: 26px; padding: 0 8px;
+  border: 1px solid var(--line); border-radius: 5px;
+  background: var(--bg); color: var(--t-main); font-size: 13px; outline: none;
+}
+.chat-search-input:focus { border-color: var(--terra); }
+.chat-search-count { min-width: 46px; text-align: center; font-size: 12px; color: var(--t-aux); white-space: nowrap; }
+.chat-search-nav {
+  width: 24px; height: 24px; border: none; border-radius: 4px;
+  background: transparent; color: var(--t-aux); cursor: pointer; font-size: 13px; line-height: 1;
+}
+.chat-search-nav:hover:not(:disabled) { background: var(--fill); color: var(--t-main); }
+.chat-search-nav:disabled { opacity: .3; cursor: default; }
+
+/* 命中高亮（对标 CHAT_SEARCH_HIT_CLASS） */
+mark.chat-search-hit { background: rgba(254, 157, 46, .38); color: inherit; border-radius: 2px; padding: 0 1px; }
+mark.chat-search-hit-active { background: #FE9D2E; color: #fff; }
+
+/* 提问列表浮层 */
+.prompt-list-pop {
+  position: absolute; top: 32px; right: 0; z-index: 40; width: 340px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .12); overflow: hidden;
+}
+.prompt-list-head { padding: 8px 12px; font-size: 12px; color: var(--t-aux); border-bottom: 1px solid var(--line); }
+.prompt-list-body { max-height: 320px; overflow: auto; padding: 4px; }
+.prompt-list-item {
+  display: flex; align-items: flex-start; gap: 8px; width: 100%;
+  padding: 7px 8px; border: none; border-radius: 5px;
+  background: transparent; color: var(--t-main); cursor: pointer;
+  font-size: 13px; line-height: 1.45; text-align: left;
+}
+.prompt-list-item:hover { background: var(--fill); }
+.prompt-list-no { flex-shrink: 0; width: 18px; color: var(--t-aux); font-size: 11px; padding-top: 1px; }
+.prompt-list-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 跳转到消息时的闪烁提示 */
+.msg-flash { animation: msgFlash 1.2s ease; }
+@keyframes msgFlash {
+  0%, 100% { background: transparent; }
+  20% { background: var(--terra-soft); }
+}
+
+/* ── 记忆压缩分隔线（WorkBuddy compact-divider 对标）──────────────── */
+.compact-divider { margin: 14px 0; }
+.compact-divider-line { display: flex; align-items: center; gap: 10px; }
+.compact-divider-rule { flex: 1; height: 1px; background: var(--line); }
+.compact-divider-label {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border: 1px solid var(--line); border-radius: 11px;
+  background: var(--panel); color: var(--t-aux);
+  font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.compact-divider-label:disabled { cursor: default; }
+.compact-divider-label:hover:not(:disabled) { color: var(--t-main); border-color: var(--t-aux); }
+.compact-divider-caret { color: var(--terra); margin-left: 2px; }
+.compact-divider.emergency .compact-divider-label { color: #FE9D2E; border-color: rgba(254, 157, 46, .5); }
+.compact-divider.emergency .compact-divider-rule { background: rgba(254, 157, 46, .3); }
+.compact-divider-body {
+  margin: 8px 24px 0; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--fill);
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--t-sub); white-space: pre-wrap; word-break: break-word;
+  max-height: 300px; overflow: auto;
+}

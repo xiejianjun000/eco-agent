@@ -6,6 +6,9 @@ import TerminalPanel from '../components/Terminal';
 import Icon, { type IconName } from '../components/Icon';
 import DocDrawer from '../components/DocDrawer';
 import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../components/DocViewer';
+import { ChatSearchButton, UserPromptListButton } from '../components/ChatTopbar';
+import CompactDivider, { isCompactContent, inferCompactType } from '../components/CompactDivider';
+import { buildAtom, selectSummary, renderSummary, type AtomStatus } from '../utils/metaFold';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -126,6 +129,9 @@ function fmtArgs(args?: Record<string, unknown>): string {
  *  sandbox="allow-scripts"（不带 allow-same-origin）：卡片脚本可运行但不具备同源权限，
  *  无法访问父页面/localStorage——模型生成的 HTML 在隔离沙箱内执行。 */
 function renderCards(trace: TraceEvent[]): React.ReactElement | null {
+  /* hoist（WorkBuddy use-fold-hook isHoistedWidgetContent 对标）：
+     show_widget 类内容豁免折叠，并提升到结果正文下方展示。
+     这里 card 事件本就渲染在正文之后，等价于 hoist 后的落位。 */
   const cards = (trace ?? []).filter((t) => t.type === 'card' && t.html);
   if (cards.length === 0) return null;
   return (
@@ -486,6 +492,24 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
   const nThink = trace.filter((t) => t.type === 'think').length;
   const nTool = trace.filter((t) => t.type === 'tool').length;
   const totalMs = trace.reduce((s, t) => s + (t.cost_ms ?? 0), 0);
+
+  /* meta-fold 摘要（WorkBuddy mata-fold/summary 对标）：
+     把机械计数替换成「读取 X / 修改 Y / 多阶段主题」这类人话摘要。
+     决策优先级：等待 > 单一工具 > 单一分组 > 多阶段共同主题 > 多类计数 > 兜底；
+     刻意不含失败分支——失败工具按完成处理，摘要只讲做了什么。 */
+  const foldSummary = React.useMemo(() => {
+    const atoms = trace
+      .filter((t) => t.type === 'tool' || t.type === 'tool_start')
+      .map((t) => buildAtom(
+        t.name,
+        t.args,
+        (t.type === 'tool_start' ? 'running' : 'success') as AtomStatus,
+      ));
+    if (atoms.length === 0) return '';
+    const { decision, status } = selectSummary(atoms, live);
+    return renderSummary(decision, status);
+  }, [trace, live]);
+
   const parts = [
     nThink ? `思考 ${nThink}` : '',
     nTool ? `工具 ${nTool}` : '',
@@ -502,7 +526,7 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
         <span className="proc-caret" aria-hidden="true">{open ? '▾' : '▸'}</span>
         <Icon name="gear" size={13} />
         <span className="proc-summary">
-          {live ? '执行中' : '过程'}
+          {foldSummary || (live ? '执行中' : '过程')}
           {parts.length > 0 && <span className="proc-stat"> · {parts.join(' · ')}</span>}
         </span>
       </button>
@@ -1278,6 +1302,22 @@ export default function ChatView({
               {p.title}
             </button>
           ))}
+          {/* 右上角功能区（WorkBuddy workbuddy-topbar 对标）：对话内搜索 + 提问跳转 */}
+          <div className="topbar-actions">
+            <UserPromptListButton
+              messages={messages}
+              onJump={(i) => {
+                setMainTab('chat');
+                setTimeout(() => {
+                  const el = logRef.current?.querySelectorAll('.msg')[i] as HTMLElement | undefined;
+                  el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                  el?.classList.add('msg-flash');
+                  setTimeout(() => el?.classList.remove('msg-flash'), 1200);
+                }, 60);
+              }}
+            />
+            <ChatSearchButton containerRef={logRef} />
+          </div>
         </div>
         {branchTag && <div className="branch-tag">{branchTag}</div>}
         {mainTab === 'chat' ? (
@@ -1322,6 +1362,10 @@ export default function ChatView({
             </div>
           ) : (
             messages.map((m, i) => (
+            /* 压缩产物不渲染成普通消息，而是一条分隔线（WorkBuddy compact-divider 对标） */
+            isCompactContent(m.content) ? (
+              <CompactDivider key={i} type={inferCompactType(m.content)} summary={m.content} />
+            ) : (
             <div key={i} className={`msg ${m.role}`}>
               <div className="msg-meta">
                 <span className="msg-role">{m.role === 'user' ? '你' : 'eco Agent'}</span>
@@ -1433,7 +1477,7 @@ export default function ChatView({
                 </div>
               )}
             </div>
-            ))
+            )))
           )}
         </div>
         ) : mainTab === 'trace' ? (
