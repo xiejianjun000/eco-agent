@@ -176,7 +176,12 @@ def run_shell(command: str) -> str:
 
 
 def _resolve_within(path_str: str, for_write: bool) -> tuple[Path | None, str]:
-    """解析路径并校验在允许根内。返回 (Path, error)。"""
+    """解析路径并校验在允许根内。返回 (Path, error)。
+
+    跨平台注意：根目录同样要 resolve 后再比对。Windows 上 %TEMP% 等路径常以
+    8.3 短名出现（C:\\Users\\RUNNER~1\\...），而目标路径 resolve() 后是长名，
+    不归一就会把合法路径误判成越界；junction/symlink 同理。
+    """
     p = Path(path_str or "").expanduser()
     if not p.is_absolute():
         return None, "必须使用绝对路径"
@@ -184,12 +189,29 @@ def _resolve_within(path_str: str, for_write: bool) -> tuple[Path | None, str]:
         real = p.resolve()
     except OSError:
         return None, "路径解析失败"
-    roots = _allowed_roots()
-    if for_write and not any(real.is_relative_to(r) for r in roots):
-        return None, f"路径不在可写根内（{', '.join(str(r) for r in roots)}）"
-    if not for_write and not any(real.is_relative_to(r) for r in roots):
-        return None, f"路径不在可读根内（{', '.join(str(r) for r in roots)}）"
+    roots = []
+    for r in _allowed_roots():
+        try:
+            roots.append(r.resolve())
+        except OSError:
+            roots.append(r)
+    if not any(_is_within(real, r) for r in roots):
+        kind = "可写根" if for_write else "可读根"
+        return None, f"路径不在{kind}内（{', '.join(str(r) for r in roots)}）"
     return real, ""
+
+
+def _is_within(target: Path, root: Path) -> bool:
+    """target 是否位于 root 之内（含 root 自身）。
+
+    用 pathlib 的 is_relative_to：它按路径分量比较，且在 Windows 上遵循
+    大小写不敏感语义——比字符串 startswith 安全（后者会把
+    C:\\repo-evil 误判为 C:\\repo 的子路径）。
+    """
+    try:
+        return target == root or target.is_relative_to(root)
+    except (ValueError, OSError):
+        return False
 
 
 def file_read(path: str, max_chars: int = 12000, offset: int = 0, limit: int = 0) -> str:
@@ -313,13 +335,30 @@ _SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", ".mypy_cac
 
 
 def _iter_files(root: Path, pattern: str):
-    """在 root 下按 glob 模式产出文件，跳过噪声目录。"""
-    for p in root.rglob(pattern):
-        if not p.is_file():
-            continue
-        if any(part in _SKIP_DIRS for part in p.parts):
-            continue
-        yield p
+    """在 root 下按 glob 模式产出文件，跳过噪声目录。
+
+    Windows 上 rglob 遇到无权限目录、被占用文件或超长路径（>260 字符且未启用
+    长路径支持）会抛 OSError；单个条目的失败不应终止整次遍历，逐项吞掉即可。
+    """
+    try:
+        it = root.rglob(pattern)
+        while True:
+            try:
+                p = next(it)
+            except StopIteration:
+                return
+            except OSError:
+                continue  # 该条目不可访问，跳过继续
+            try:
+                if not p.is_file():
+                    continue
+            except OSError:
+                continue
+            if any(part in _SKIP_DIRS for part in p.parts):
+                continue
+            yield p
+    except (OSError, ValueError):
+        return
 
 
 def code_grep(pattern: str, path: str = "", include: str = "*", max_matches: int = _GREP_MAX_MATCHES) -> str:
@@ -341,7 +380,8 @@ def code_grep(pattern: str, path: str = "", include: str = "*", max_matches: int
     if root.is_file():
         targets = [root]
     else:
-        targets = _iter_files(root, include or "*")
+        # 同 code_glob：Windows 反斜杠模式归一为 posix 分隔符
+        targets = _iter_files(root, (include or "*").replace("\\", "/"))
 
     cap = max(1, min(int(max_matches or _GREP_MAX_MATCHES), _GREP_MAX_MATCHES))
     matches, scanned, truncated = [], 0, False
@@ -380,13 +420,26 @@ def code_glob(pattern: str, path: str = "") -> str:
             return json.dumps({"ok": False, "error": err}, ensure_ascii=False)
     else:
         root = _allowed_roots()[0]
+    # Windows 用户习惯写反斜杠（src\**\*.py）：统一成 posix 分隔符，
+    # pathlib 的 glob 只认 "/"，否则整个模式会被当成单个文件名而永远 0 命中。
+    pat = (pattern or "").replace("\\", "/")
     # 无分隔符的模式匹配任意深度的 basename
-    pat = pattern if "/" in pattern else f"**/{pattern}"
+    if "/" not in pat:
+        pat = f"**/{pat}"
     try:
         found = list(_iter_files(root, pat))
     except (OSError, ValueError) as e:
         return json.dumps({"ok": False, "error": f"匹配失败: {e}"}, ensure_ascii=False)
-    found.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+
+    def _mtime(p: Path) -> float:
+        # 文件可能在遍历与排序之间消失（Win 上还可能被占用/拒绝访问）：
+        # stat 失败一律记 0，不让一个瞬时错误打断整次搜索。
+        try:
+            return p.stat().st_mtime
+        except OSError:
+            return 0.0
+
+    found.sort(key=_mtime, reverse=True)
     truncated = len(found) > _GLOB_MAX_FILES
     _audit("glob", f"{pattern} @{root}", "allow", f"{len(found)} 命中")
     return json.dumps(
@@ -402,9 +455,41 @@ def code_glob(pattern: str, path: str = "") -> str:
 # 这里只开一条窄通道——本机环回地址 + 只读方法——够 agent 自证"服务实况"，
 # 又不新增外网出口。外网抓取仍走既有 web_fetch（政务域名白名单）。
 
-_PROBE_ALLOWED_HOSTS = {"127.0.0.1", "localhost", "::1", "0.0.0.0"}
+_PROBE_ALLOWED_NAMES = {"localhost"}
 _PROBE_METHODS = {"GET", "HEAD"}
 _PROBE_MAX_CHARS = 8000
+
+
+def _is_loopback_host(host: str) -> bool:
+    """判定主机是否为本机环回地址（跨平台，按 IP 语义而非字符串比对）。
+
+    字符串白名单挡不住等价写法：127.1、2130706433、0x7f.1 在 Windows 与
+    Linux 的解析器上都会连到 127.0.0.1。这里统一交给 ipaddress 判定，
+    既不漏放（等价写法照样识别为环回），也不误拒。
+    """
+    import ipaddress
+
+    h = (host or "").strip().lower()
+    if not h:
+        return False
+    if h in _PROBE_ALLOWED_NAMES:
+        return True
+    # IPv6 字面量在 urlparse 后已去掉方括号
+    try:
+        return ipaddress.ip_address(h).is_loopback
+    except ValueError:
+        pass
+    # 简写点分形式（127.1 等）：交给平台 inet_aton 语义再判一次
+    import socket
+
+    try:
+        packed = socket.inet_aton(h)
+    except OSError:
+        return False
+    try:
+        return ipaddress.ip_address(socket.inet_ntoa(packed)).is_loopback
+    except ValueError:
+        return False
 
 
 def api_probe(url: str, method: str = "GET", max_chars: int = _PROBE_MAX_CHARS) -> str:
@@ -424,7 +509,7 @@ def api_probe(url: str, method: str = "GET", max_chars: int = _PROBE_MAX_CHARS) 
         return json.dumps({"ok": False, "error": "url 必须以 http(s):// 或 / 开头"}, ensure_ascii=False)
 
     host = (urllib.parse.urlparse(u).hostname or "").lower()
-    if host not in _PROBE_ALLOWED_HOSTS:
+    if not _is_loopback_host(host):
         _audit("api_probe", u, "deny", f"非本机地址 {host}")
         return json.dumps(
             {"ok": False, "error": f"api_probe 仅允许本机环回地址（收到 {host}）；外网抓取请用 web_fetch"},

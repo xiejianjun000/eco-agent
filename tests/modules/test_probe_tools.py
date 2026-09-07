@@ -154,3 +154,94 @@ def test_evidence_tools_cover_probe_paths():
 
     for t in ("api_probe", "inspect", "grep", "file_read", "shell_run"):
         assert t in _EVIDENCE_TOOLS
+
+
+# ─── 跨平台（Windows 10）加固回归 ───────────────────────────────
+
+
+@pytest.mark.parametrize("host,expected", [
+    ("127.0.0.1", True),
+    ("localhost", True),
+    ("::1", True),
+    ("127.1", True),            # 点分简写，Win/Linux 解析器均连到 127.0.0.1
+    ("2130706433", True),       # 整数形式
+    ("8.8.8.8", False),
+    ("example.com", False),
+    ("169.254.169.254", False),  # 云元数据地址，必须拒绝
+    ("0.0.0.0", False),          # 非环回
+    ("", False),
+])
+def test_loopback_detection_covers_equivalent_forms(host, expected):
+    """环回判定按 IP 语义而非字符串白名单——等价写法不得绕过或误拒。"""
+    from agent_core.exec_tools import _is_loopback_host
+
+    assert _is_loopback_host(host) is expected
+
+
+def test_glob_accepts_windows_backslash_pattern():
+    """Windows 用户习惯写反斜杠路径模式，需归一为 posix 分隔符。"""
+    from agent_core.exec_tools import code_glob
+
+    r = json.loads(code_glob(r"agent_core\exec_tools.py"))
+    assert r["ok"] is True
+    assert r["count"] >= 1
+
+
+def test_grep_accepts_windows_backslash_include():
+    from agent_core.exec_tools import code_grep
+
+    r = json.loads(code_grep(r"^def code_grep", include=r"*.py"))
+    assert r["ok"] is True
+    assert r["match_count"] >= 1
+
+
+def test_path_containment_rejects_sibling_prefix(tmp_path, monkeypatch):
+    """C:\\repo-evil 不得被当作 C:\\repo 的子路径（字符串 startswith 的经典漏洞）。"""
+    from pathlib import Path
+
+    import agent_core.exec_tools as et
+
+    root = tmp_path / "repo"
+    root.mkdir()
+    evil = tmp_path / "repo-evil"
+    evil.mkdir()
+    target = evil / "x.txt"
+    target.write_text("secret", encoding="utf-8")
+
+    monkeypatch.setattr(et, "_allowed_roots", lambda: [Path(root)])
+    resolved, err = et._resolve_within(str(target), for_write=False)
+    assert resolved is None
+    assert "不在" in err
+
+
+def test_path_containment_allows_root_itself(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    import agent_core.exec_tools as et
+
+    root = tmp_path / "repo"
+    root.mkdir()
+    f = root / "a.txt"
+    f.write_text("x", encoding="utf-8")
+    monkeypatch.setattr(et, "_allowed_roots", lambda: [Path(root)])
+    resolved, err = et._resolve_within(str(f), for_write=False)
+    assert err == ""
+    assert resolved is not None
+
+
+def test_file_read_handles_crlf_line_numbering(tmp_path, monkeypatch):
+    """CRLF 文件（Windows 默认换行）分页行号必须与 LF 一致。"""
+    from pathlib import Path
+
+    import agent_core.exec_tools as et
+
+    monkeypatch.setattr(et, "_allowed_roots", lambda: [Path(tmp_path)])
+    f = tmp_path / "crlf.txt"
+    f.write_bytes(b"l1\r\nl2\r\nl3\r\nl4\r\n")
+    r = json.loads(et.file_read(str(f), offset=2, limit=2))
+    assert r["ok"] is True
+    assert r["start_line"] == 2
+    assert r["returned_lines"] == 2
+    # 行号前缀正确，且内容不带残留 \r
+    assert "2: l2" in r["content"]
+    assert "\r" not in r["content"]
