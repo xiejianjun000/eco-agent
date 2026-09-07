@@ -25,15 +25,21 @@ def _tool_catalog() -> list[dict]:
     try:
         from agent_core import tools_registry as tr
 
-        # ALL_TOOL_DEFS 是 OpenAI tools 格式，name/description 从 function 取
+        # 权威口径：_codex_tools() —— LLM 本轮真正能看到、能调的工具全集。
+        # 不用 _HANDLERS：通道级分发的工具（grep/glob/inspect/api_probe、
+        # web_fetch 等，handler 在 chat.py _run_tool 分支里）不在其中，
+        # 用它会漏报，导致「目录说没有、模型却能调」的口径分裂。
+        from server.api.chat import _codex_tools
+
+        defs = _codex_tools()
         descs = {
             d.get("function", {}).get("name", ""): d.get("function", {}).get("description", "")
-            for d in getattr(tr, "ALL_TOOL_DEFS", [])
+            for d in defs
         }
         sources = getattr(tr, "_EXTERNAL_TOOL_SOURCES", {})
         risks = getattr(tr, "_EXTERNAL_RISK_OVERRIDES", {})
         out = []
-        for name in sorted(getattr(tr, "_HANDLERS", {})):
+        for name in sorted(descs):
             source = sources.get(name) or ("mcp" if name.startswith("mcp__") else "builtin")
             try:
                 category = tr._schema_category(name)
