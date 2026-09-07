@@ -1,0 +1,72 @@
+# .gitattributes — 跨平台（macOS / Windows 10）一致性契约
+#
+# 目标：同一个仓库在 Mac 和 Win10 上来回改，不出现"整文件 diff"、
+# 不破坏二进制资产、不让 Windows 的 CRLF 污染 Linux 上要执行的脚本。
+#
+# 核心策略：仓库内部一律存 LF；工作区形态由各平台自行决定。
+
+# ── 默认：文本文件自动识别，入库统一转 LF ──
+# Windows 上 checkout 时是否转 CRLF 由 core.autocrlf 决定（见 README/文档），
+# 但无论如何，提交进仓库的永远是 LF。
+* text=auto eol=lf
+
+# ── 必须保持 LF 的文件 ──
+# 这些文件会在 Linux/容器/CI 里被直接执行或解析，
+# 一旦带上 CRLF 会报 "bad interpreter: /bin/bash^M" 之类的错。
+*.sh            text eol=lf
+*.bash          text eol=lf
+*.py            text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.toml          text eol=lf
+*.json          text eol=lf
+*.md            text eol=lf
+*.txt           text eol=lf
+*.cfg           text eol=lf
+*.ini           text eol=lf
+*.sql           text eol=lf
+*.js            text eol=lf
+*.ts            text eol=lf
+*.css           text eol=lf
+*.html          text eol=lf
+Dockerfile      text eol=lf
+Makefile        text eol=lf
+.gitattributes  text eol=lf
+.gitignore      text eol=lf
+
+# ── Windows 原生脚本：保持 CRLF ──
+# 这两类由 cmd.exe / PowerShell 执行，LF 在部分场景下会解析异常。
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+*.ps1           text eol=crlf
+
+# ── 二进制：禁止任何换行转换与 diff ──
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.webp          binary
+*.pdf           binary
+*.ttf           binary
+*.otf           binary
+*.woff          binary
+*.woff2         binary
+*.zip           binary
+*.gz            binary
+*.tar           binary
+*.7z            binary
+*.db            binary
+*.sqlite        binary
+*.sqlite3       binary
+*.docx          binary
+*.xlsx          binary
+*.pptx          binary
+*.so            binary
+*.dylib         binary
+*.dll           binary
+*.pyd           binary
+
+# ── 语言统计：排除非源码目录，避免 GitHub 语言比例失真 ──
+docs/**             linguist-documentation
+memory-tree/data/** linguist-generated

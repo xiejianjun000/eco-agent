@@ -18,6 +18,11 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+# Windows 资源管理器/系统产物（Win10 协作时避免误提交）
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.lnk
 
 # Environment
 .env
