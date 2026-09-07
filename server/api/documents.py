@@ -20,6 +20,23 @@ router = APIRouter()
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "output"
 
+# 前端本地渲染器（docx-preview / pdf.js / xlsx）依赖正确的 MIME 判定
+_MEDIA_TYPES = {
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc": "application/msword",
+    ".pdf": "application/pdf",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".xls": "application/vnd.ms-excel",
+    ".csv": "text/csv",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".md": "text/markdown",
+    ".html": "text/html",
+    ".json": "application/json",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".svg": "image/svg+xml",
+}
+
 
 def _artifacts_dir() -> Path:
     """回答产物目录（$ECO_DIR/artifacts/，与 chat._save_answer_artifact 一致）。"""
@@ -88,6 +105,35 @@ async def download_artifact(name: str) -> FileResponse:
         else "text/markdown"
     )
     return FileResponse(str(target), filename=target.name, media_type=media_type)
+
+
+@router.get("/documents/file")
+async def read_file_binary(name: str) -> FileResponse:
+    """按文件名返回 output/ 或 artifacts/ 内的原始二进制（前端 docx/pdf/xlsx 渲染用）。
+
+    仅接受 basename（Path(name).name 剥掉任何目录成分），再在两个白名单目录内
+    查找并用 resolve() 复核父目录，双重防路径穿越；不接受任意路径参数。
+    """
+    safe = Path(name).name
+    if not safe or safe.startswith("."):
+        raise HTTPException(status_code=400, detail="invalid name")
+
+    for base in (OUTPUT_DIR, _artifacts_dir()):
+        target = base / safe
+        if not target.is_file():
+            continue
+        try:
+            resolved = target.resolve()
+            if resolved.parent != base.resolve():
+                continue
+        except OSError:
+            continue
+        return FileResponse(
+            str(resolved),
+            filename=resolved.name,
+            media_type=_MEDIA_TYPES.get(resolved.suffix.lower(), "application/octet-stream"),
+        )
+    raise HTTPException(status_code=404, detail="file not found")
 
 
 @router.get("/documents/tools")

@@ -1410,3 +1410,105 @@ html[data-theme='dark'] .settings-theme-btn.active { color: var(--ds-n-900); }
 .side-tasklog-body .md-p { margin-bottom: 6px; line-height: 1.6; }
 .side-tasklog-body h1, .side-tasklog-body h2 { font-size: 13px; margin: 8px 0 4px; }
 .side-tasklog-body .md-ul { margin: 2px 0 6px; padding-left: 16px; }
+
+/* ── 产物抽屉 + 文档渲染器（WorkBuddy .colleague-chat-artifact-drawer 对标）──
+   宽度由 inline px 控制、CSS 只做 transition，故放大/缩小可插值成动画；
+   .is-wide 仅作状态钩子，不在 CSS 里控制宽度（与 WorkBuddy 源码注释一致）。 */
+.doc-drawer {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  z-index: 30;
+  display: flex; flex-direction: column;
+  background: var(--panel); color: var(--t-main);
+  border-left: 1px solid var(--line);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box; overflow: hidden;
+  transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.doc-drawer.is-dragging { transition: none; }
+@media (prefers-reduced-motion: reduce) { .doc-drawer { transition: none; } }
+
+/* 左边缘拖拽把手 */
+.doc-drawer-sash {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
+  cursor: col-resize; z-index: 2; background: transparent;
+}
+.doc-drawer-sash:hover { background: var(--terra-soft); }
+
+.doc-drawer-head {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px; flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+}
+.doc-drawer-title {
+  flex: 1; min-width: 0; margin: 0;
+  font-size: 14px; font-weight: 500; color: var(--t-main);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.doc-drawer-btn {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; padding: 0; border: none; border-radius: 4px;
+  background: transparent; color: var(--t-aux); cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.doc-drawer-btn:hover { background: var(--fill); color: var(--t-main); }
+.doc-drawer-btn:focus-visible { outline: 2px solid var(--terra); outline-offset: 2px; }
+.doc-drawer-body { flex: 1; min-height: 0; overflow: auto; }
+
+/* ── 渲染器容器 ── */
+.doc-viewer { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.doc-viewer-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; flex-shrink: 0;
+  font-size: 12px; color: var(--t-aux);
+  border-bottom: 1px solid var(--line);
+}
+.doc-viewer-src { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-viewer-open { color: var(--terra); text-decoration: none; font-size: 12px; flex-shrink: 0; }
+.doc-viewer-open:hover { text-decoration: underline; }
+.doc-viewer-note {
+  padding: 8px 12px; font-size: 12px; line-height: 1.5;
+  color: #FE9D2E; background: rgba(254, 157, 46, .12);
+  border-bottom: 1px solid rgba(254, 157, 46, .3);
+}
+.doc-viewer-frame { flex: 1; width: 100%; border: 0; display: block; background: transparent; min-height: 320px; }
+.doc-viewer-host { flex: 1; overflow: auto; padding: 12px; background: var(--fill); }
+.doc-viewer-img { max-width: 100%; height: auto; display: block; margin: 12px auto; }
+.doc-viewer-text {
+  flex: 1; margin: 0; padding: 12px; overflow: auto;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap; word-break: break-word; color: var(--t-main);
+}
+.doc-viewer--unsupported { align-items: center; justify-content: center; }
+
+/* docx-preview 产出的页面容器：贴近 Word 版面 */
+.doc-viewer-host .docx-wrapper { background: transparent; padding: 0; }
+.doc-viewer-host .docx-wrapper > section.docx {
+  background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+  margin: 0 auto 12px; padding: 24px;
+}
+html[data-theme='dark'] .doc-viewer-host .docx-wrapper > section.docx { filter: invert(.9) hue-rotate(180deg); }
+
+/* xlsx 表格 */
+.doc-sheet-name { font-size: 12px; font-weight: 600; color: var(--t-sub); padding: 8px 2px 4px; }
+.doc-sheet-table { overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; }
+.doc-sheet-table table { border-collapse: collapse; font-size: 12px; }
+.doc-sheet-table td, .doc-sheet-table th {
+  border: 1px solid var(--line); padding: 4px 8px; white-space: nowrap; color: var(--t-main);
+}
+
+/* ── 消息内产物卡片的悬停操作（WorkBuddy _floatingActions 对标：常态 0，hover 才现）── */
+.artifact-card { position: relative; }
+.artifact-actions {
+  position: absolute; top: 4px; right: 4px; z-index: 10;
+  display: flex; align-items: center; gap: 4px;
+  opacity: 0; pointer-events: none; transition: opacity .12s ease;
+}
+.artifact-card:hover .artifact-actions,
+.artifact-card:focus-within .artifact-actions { opacity: 1; pointer-events: auto; }
+.artifact-action-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; padding: 0; border: none; border-radius: 4px;
+  background: var(--panel); color: var(--t-aux); cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.artifact-action-btn:hover { background: var(--fill); color: var(--t-main); }

@@ -4,6 +4,8 @@ import { renderMarkdown, escapeHtml } from '../utils/markdown';
 import { renderToolResult } from '../utils/toolResult';
 import TerminalPanel from '../components/Terminal';
 import Icon, { type IconName } from '../components/Icon';
+import DocDrawer from '../components/DocDrawer';
+import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../components/DocViewer';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -160,9 +162,10 @@ function fileIcon(name: string): IconName {
 }
 
 /** 回答产物卡片：完整稿落盘为文件，点击拉取原文渲染 + 下载/复制路径/复制链接（DSH/QClaw 文件产物对标） */
-function ArtifactCard({ name, title, size, path, docxName, docxPath }: {
+function ArtifactCard({ name, title, size, path, docxName, docxPath, onOpen }: {
   name: string; title: string; size?: number; path?: string;
   docxName?: string; docxPath?: string;
+  onOpen?: (src: DocSource, label: string) => void;
 }): React.ReactElement {
   const [open, setOpen] = React.useState(false);
   const [content, setContent] = React.useState<string | null>(null);
@@ -203,6 +206,25 @@ function ArtifactCard({ name, title, size, path, docxName, docxPath }: {
   return (
     <div className={`artifact-card${open ? ' open' : ''}`} draggable onDragStart={onDragStart}
          title="点击展开预览 · 可拖拽到输入框引用">
+      {/* 悬停浮现的「在抽屉中打开」按钮（WorkBuddy _floatingActions 对标：常态 opacity 0） */}
+      {onOpen && rendererFor(docxName || name) !== 'none' && (
+        <div className="artifact-actions">
+          <button
+            className="artifact-action-btn"
+            title="在抽屉中打开"
+            onClick={(e) => {
+              e.stopPropagation();
+              const target = docxName || name;
+              onOpen({ kind: 'local', name: target }, target);
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+              <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+            </svg>
+          </button>
+        </div>
+      )}
       <div className="artifact-card-head" onClick={toggle}>
         <span className="artifact-card-icon"><Icon name={fileIcon(name)} size={14} /></span>
         <span className="artifact-card-title" title={name}>{title || name}</span>
@@ -908,6 +930,12 @@ export default function ChatView({
   const [traceQuery, setTraceQuery] = useState('');
   // 会话页顶部 tab：对话 / 整页轨迹（DSH 3080 布局）
   const [mainTab, setMainTab] = useState<'chat' | 'trace' | 'audit'>('chat');
+  // 产物抽屉（WorkBuddy artifact drawer 对标）：本地文件 / 云文档 / 图表都走它
+  const [docSource, setDocSource] = useState<DocSource | null>(null);
+  const [docTitle, setDocTitle] = useState<string>('');
+  const openDoc = React.useCallback((src: DocSource, label: string) => {
+    setDocSource(src); setDocTitle(label);
+  }, []);
   const logRef = useRef<HTMLDivElement>(null);
 
   // 最新一条带轨迹的 assistant 消息自动选中
@@ -1156,6 +1184,16 @@ export default function ChatView({
 
   /** 消息日志区点击委托：代码块横幅「复制」按钮 + 选项提问按钮（DSH user-questions 行为） */
   const onLogClick = (e: React.MouseEvent) => {
+    // 云文档链接（腾讯文档 / 飞书）：改为在抽屉内打开，而非跳走当前页
+    const link = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
+    if (link) {
+      const href = link.getAttribute('href') ?? '';
+      if (isTencentDocsUrl(href) || isFeishuUrl(href)) {
+        e.preventDefault();
+        openDoc({ kind: 'url', url: href }, link.textContent?.trim() || href);
+        return;
+      }
+    }
     const chip = (e.target as HTMLElement).closest('.md-filechip') as HTMLAnchorElement | null;
     if (chip) {
       e.preventDefault();
@@ -1318,7 +1356,7 @@ export default function ChatView({
                 if (arts.length === 0) return null;
                 const cards = arts.map((t, ai) => (
                   <ArtifactCard key={`${t.name}-${ai}`} name={t.name!} title={t.title ?? t.name!} size={t.size} path={t.path}
-                                docxName={t.docx_name} docxPath={t.docx_path} />
+                                docxName={t.docx_name} docxPath={t.docx_path} onOpen={openDoc} />
                 ));
                 return arts.length > 1 ? (
                   <div className="artifact-group">
@@ -1609,6 +1647,8 @@ export default function ChatView({
         {showTerminal && <TerminalPanel onClose={() => setShowTerminal(false)} />}
       </div>
 
+      {/* 产物抽屉：absolute 贴在 .chat-wrap 内，宽度 px 过渡 + 全屏两态 */}
+      <DocDrawer source={docSource} title={docTitle} onClose={() => setDocSource(null)} />
     </div>
   );
 }
