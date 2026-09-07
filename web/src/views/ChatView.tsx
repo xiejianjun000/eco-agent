@@ -711,7 +711,7 @@ export default function ChatView({
   const [showTerminal, setShowTerminal] = useState(false);
   type SideTab = 'trace' | 'context' | 'artifact' | 'doc' | 'task' | 'slot' | 'preview' | 'tasklog';
   // 右栏 tab 按会话持久化（WorkBuddy session-detail-restore 对标：切回来恢复上次视图）
-  const [sideTab, setSideTab] = useState<SideTab>(() => {
+  const [_sideTab, setSideTab] = useState<SideTab>(() => {
     const saved = window.localStorage.getItem(`eco-side-tab-${sessionId}`);
     return (['trace', 'context', 'artifact', 'doc', 'task', 'slot', 'preview', 'tasklog'] as SideTab[]).includes(saved as SideTab)
       ? (saved as SideTab) : 'trace';
@@ -720,26 +720,24 @@ export default function ChatView({
     setSideTab(t);
     window.localStorage.setItem(`eco-side-tab-${sessionId}`, t);
   };
+  void switchTab; // 右侧栏已移除；保留供后续预览面板复用
   // 以下三组状态的写入入口（上下文 / 日志 tab）已按需求从右侧栏移除，
   // 面板渲染代码保留以便后续按抽屉方式复用，故只保留读取端。
-  const [taskLogContent] = useState('');
-  const [taskLogStats] = useState<{ days: number; files: string[] }>({ days: 0, files: [] });
-  const [sysInfo] = useState<Record<string, unknown> | null>(null);
-  const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
-  const [docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
+  const [_docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
+  const [_docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
   /** 磁盘上已持久化的 MD 产物（重启/刷新后仍可点开，对齐 DSH 文件产物持久化） */
   const [persistedArtifacts, setPersistedArtifacts] = useState<{ name: string; title: string; size: number; path?: string }[]>([]);
   // 右侧预览面板：文档生成/上传后自动内嵌打开 docs.qq.com（不弹系统浏览器）
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewTitle, setPreviewTitle] = useState<string>('');
+  const [_previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [_previewTitle, setPreviewTitle] = useState<string>('');
   const sawDocEventRef = useRef(false);
   const contentRef = useRef('');
   // 子代理任务面板（对标 DSH subagent/jobs）
-  const [taskAgents, setTaskAgents] = useState<SubagentInfo[]>([]);
+  const [_taskAgents, setTaskAgents] = useState<SubagentInfo[]>([]);
   const [taskInput, setTaskInput] = useState('');
   const [taskSpawnBusy, setTaskSpawnBusy] = useState(false);
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
-  const [taskDetail, setTaskDetail] = useState<{ agent: SubagentInfo; output: { seq: number; kind: string; status?: string; result?: string }[] } | null>(null);
+  const [_taskDetail, setTaskDetail] = useState<{ agent: SubagentInfo; output: { seq: number; kind: string; status?: string; result?: string }[] } | null>(null);
   const [taskFollowup, setTaskFollowup] = useState('');
   // Slot 动态面板（插件注册）
   const [slotPanels, setSlotPanels] = useState<{ id: string; title: string; description: string }[]>([]);
@@ -749,7 +747,7 @@ export default function ChatView({
   const [permGate, setPermGate] = useState<boolean | null>(null);
 
   // ── DSH 式右栏：输出产物可收缩 + 左右拖拽调宽 ────────────
-  const [panelOpen, setPanelOpen] = useState<boolean>(() => window.localStorage.getItem('eco-panel-open') !== '0');
+  const [_panelOpen, setPanelOpen] = useState<boolean>(() => window.localStorage.getItem('eco-panel-open') !== '0');
   const [panelW, setPanelW] = useState<number>(() => {
     const saved = Number(window.localStorage.getItem('eco-panel-w'));
     // 默认 420：WorkBuddy 抽屉实测宽度；仍可拖拽，用户自定义值优先
@@ -778,6 +776,7 @@ export default function ChatView({
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
   };
+  void startResize; // 右侧栏已移除；保留供后续预览面板复用
 
   // ── 输入栏附件 / 语音（DSH 式）────────────────────────────
   const [attachments, setAttachments] = useState<{ name: string; path: string; size_kb: number }[]>([]);
@@ -908,7 +907,7 @@ export default function ChatView({
   const [callsOpen, setCallsOpen] = useState(true);
   const [traceQuery, setTraceQuery] = useState('');
   // 会话页顶部 tab：对话 / 整页轨迹（DSH 3080 布局）
-  const [mainTab, setMainTab] = useState<'chat' | 'trace'>('chat');
+  const [mainTab, setMainTab] = useState<'chat' | 'trace' | 'audit'>('chat');
   const logRef = useRef<HTMLDivElement>(null);
 
   // 最新一条带轨迹的 assistant 消息自动选中
@@ -919,7 +918,8 @@ export default function ChatView({
     return null;
   })();
   const activeTraceMsg = selectedTrace !== null ? messages[selectedTrace] : null;
-  const activeTrace = activeTraceMsg?.trace ?? messages[lastTraceIndex ?? -1]?.trace ?? [];
+  const _activeTrace = activeTraceMsg?.trace ?? messages[lastTraceIndex ?? -1]?.trace ?? [];
+  void _activeTrace; // 轨迹页改用 sessionTraceGroups；保留供后续复用
 
   // 整页轨迹 tab：会话级聚合（所有带轨迹的 assistant 消息）
   const sessionTraceGroups = messages
@@ -931,9 +931,10 @@ export default function ChatView({
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
-  const artifacts = messages
+  const _artifacts = messages
     .filter((m) => m.role === 'assistant')
     .flatMap((m) => extractArtifacts(m.content));
+  void _artifacts; // 产物面板已移除；保留供后续复用
 
   /** MD 产物（完整稿落盘）：从轨迹 artifact 事件收集，右侧「产物」栏同步展示 */
   const mdArtifacts = messages
@@ -942,10 +943,11 @@ export default function ChatView({
     .map((t) => ({ name: t.name!, title: t.title ?? t.name!, size: t.size, path: t.path }));
 
   /** 合并：当前会话轨迹产物 + 磁盘持久化产物（按名去重，刷新/重启后仍在） */
-  const allMdArtifacts = [
+  const _allMdArtifacts = [
     ...mdArtifacts,
     ...persistedArtifacts.filter((p) => !mdArtifacts.some((m) => m.name === p.name)),
   ];
+  void _allMdArtifacts; // 产物面板已移除；保留供后续复用
 
   /** 新会话欢迎态：还没有任何用户消息时显示居中的 hero 主页（DSH 对标） */
   const fresh = messages.length === 0;
@@ -988,6 +990,7 @@ export default function ChatView({
       setTaskSpawnBusy(false);
     }
   };
+  void spawnTask; // 任务面板已移除；保留供后续复用
 
   const followupTask = async (id: string) => {
     const text = taskFollowup.trim();
@@ -1001,6 +1004,7 @@ export default function ChatView({
       window.alert(`续聊失败: ${(e as Error).message}`);
     }
   };
+  void followupTask; // 任务面板已移除；保留供后续复用
 
   const refreshTaskList = () => {
     void api.subagentList().then((l) => setTaskAgents(l.agents)).catch(() => {});
@@ -1220,6 +1224,22 @@ export default function ChatView({
         <div className="main-tabs">
           <button className={`main-tab${mainTab === 'chat' ? ' active' : ''}`} onClick={() => setMainTab('chat')}>对话</button>
           <button className={`main-tab${mainTab === 'trace' ? ' active' : ''}`} onClick={() => setMainTab('trace')}>轨迹</button>
+          {/* 审计链：原右侧栏 slot 面板，按需求并入主 tab 栏，排在轨迹之后 */}
+          {slotPanels.map((p) => (
+            <button
+              key={p.id}
+              className={`main-tab${mainTab === 'audit' && activeSlot === p.id ? ' active' : ''}`}
+              title={p.description}
+              onClick={() => {
+                setMainTab('audit');
+                setActiveSlot(p.id);
+                setSlotData(null);
+                void api.slotData(p.id).then((d) => setSlotData(d)).catch(() => setSlotData({ error: '加载失败' }));
+              }}
+            >
+              {p.title}
+            </button>
+          ))}
         </div>
         {branchTag && <div className="branch-tag">{branchTag}</div>}
         {mainTab === 'chat' ? (
@@ -1378,7 +1398,7 @@ export default function ChatView({
             ))
           )}
         </div>
-        ) : (
+        ) : mainTab === 'trace' ? (
         <div className="chat-log traj-page">
           {sessionTraceGroups.length === 0 ? (
             <div className="empty traj-page-empty">暂无轨迹——问一个需要查法条/知识库的问题</div>
@@ -1417,6 +1437,49 @@ export default function ChatView({
                 </section>
               ))}
             </>
+          )}
+        </div>
+        ) : (
+        /* 审计链页（govmcp SM3）：由主 tab 栏「审计链」进入 */
+        <div className="chat-log audit-page">
+          {slotData === null ? (
+            <div className="empty" style={{ padding: 16 }}>加载中…</div>
+          ) : (slotData as { chain?: Record<string, unknown> })?.chain ? (
+            <div className="audit-card">
+              <div className="row">
+                <span className="title">链完整性</span>
+                <span className={`badge ${(slotData as any).chain.ok ? 'olive' : 'red'}`}>
+                  {(slotData as any).chain.ok ? '✅ 完整' : '❌ 断裂'}
+                </span>
+              </div>
+              <div className="row">
+                <span className="title">链条目</span>
+                <span className="mono">{(slotData as any).chain.entries ?? 0}</span>
+              </div>
+              <div className="row">
+                <span className="title">尾哈希</span>
+                <span className="mono audit-hash">{String((slotData as any).chain.last_hash ?? '').slice(0, 16)}…</span>
+              </div>
+              {(slotData as any).stats?.by_operation && (
+                <div className="audit-ops">
+                  {Object.entries((slotData as any).stats.by_operation).map(([op, n]) => (
+                    <div key={op} className="row">
+                      <span className="title">{op}</span>
+                      <span className="mono">{String(n)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(slotData as any).stats?.size_bytes !== undefined && (
+                <div className="muted">
+                  体积 {Math.round((slotData as any).stats.size_bytes / 1024)} KB
+                </div>
+              )}
+            </div>
+          ) : (
+            <pre className="artifact-code" style={{ whiteSpace: 'pre-wrap' }}>
+              {JSON.stringify(slotData, null, 2)}
+            </pre>
           )}
         </div>
         )}
@@ -1546,374 +1609,6 @@ export default function ChatView({
         {showTerminal && <TerminalPanel onClose={() => setShowTerminal(false)} />}
       </div>
 
-      {/* 右侧「输出产物」面板（DSH Details 栏对标）：可收缩 + 拖拽调宽 */}
-      {!panelOpen ? (
-        <div className="side-collapsed" title="展开输出产物栏">
-          <button className="side-collapsed-btn" onClick={() => setPanelOpen(true)}>◀</button>
-          <span className="side-collapsed-label">产物</span>
-        </div>
-      ) : (
-        <>
-          <div className="side-resizer" onPointerDown={startResize} title="按住左右拖拽调整宽度" />
-          <aside
-            className={`side-panel${sideTab === 'preview' ? ' preview-wide' : ''}`}
-            style={sideTab === 'preview' ? undefined : { width: panelW }}
-          >
-            <div className="side-head">
-              <span className="side-head-title">输出产物</span>
-              <span className="side-head-spacer" />
-              <button
-                className="side-collapse"
-                title="收起输出产物栏"
-                onClick={() => setPanelOpen(false)}
-              >✕</button>
-            </div>
-        <div className="side-tabs">
-          <button
-            className={`side-tab${sideTab === 'trace' ? ' active' : ''}`}
-            onClick={() => switchTab('trace')}
-          >
-            轨迹{activeTrace.length > 0 ? ` (${activeTrace.length})` : ''}
-          </button>
-          {/* 审计链：原为 slot 面板，按需求提到轨迹之后作为固定第二个 tab */}
-          {slotPanels.map((p) => (
-            <button
-              key={p.id}
-              className={`side-tab${activeSlot === p.id ? ' active' : ''}`}
-              title={p.description}
-              onClick={() => {
-                switchTab('slot');
-                setActiveSlot(p.id);
-                setSlotData(null);
-                void api.slotData(p.id).then((d) => setSlotData(d)).catch(() => setSlotData({ error: '加载失败' }));
-              }}
-            >
-              {p.title}
-            </button>
-          ))}
-        </div>
-
-        {sideTab === 'context' && (
-          <div className="side-context">
-            <div className="rp-row"><span className="rp-key">会话 ID</span><span className="rp-val">{sessionId}</span></div>
-            <div className="rp-row"><span className="rp-key">模型</span><span className="rp-val">{model || '默认（deepseek-v4-pro）'}</span></div>
-            <div className="rp-row"><span className="rp-key">消息数</span><span className="rp-val">{messages.length}</span></div>
-            {(() => {
-              const last = [...messages].reverse().find((m) => m.role === 'assistant' && m.usage?.total_tokens);
-              return last ? (
-                <div className="rp-row">
-                  <span className="rp-key">最近回答 tokens</span>
-                  <span className="rp-val">
-                    {last.usage!.total_tokens} tok
-                    {last.durationMs ? ` · ${fmtMs(last.durationMs)}` : ''}
-                  </span>
-                </div>
-              ) : null;
-            })()}
-            <div className="rp-section-title">系统状态</div>
-            {(() => {
-              const c = (sysInfo as { components?: Record<string, { available?: boolean; stats?: Record<string, unknown> }> } | null)?.components;
-              const llm = c?.llm?.stats;
-              const gate = (sysInfo as { permission_gate?: { enabled?: boolean } } | null)?.permission_gate;
-              const mem = (sysInfo as { memory?: { total_nodes?: number; total_edges?: number } } | null)?.memory;
-              return (
-                <>
-                  <div className="rp-row"><span className="rp-key">LLM 提供方</span><span className="rp-val">{String(llm?.provider ?? '—')}</span></div>
-                  <div className="rp-row"><span className="rp-key">LLM 模型</span><span className="rp-val">{String(llm?.model ?? '—')}</span></div>
-                  <div className="rp-row"><span className="rp-key">权限闸门</span><span className="rp-val">{gate?.enabled ? '已启用' : '未启用'}</span></div>
-                  <div className="rp-row"><span className="rp-key">记忆节点</span><span className="rp-val">{mem?.total_nodes ?? 0} 节点 · {mem?.total_edges ?? 0} 边</span></div>
-                </>
-              );
-            })()}
-            {!sysInfo && <div className="rp-empty">加载系统状态中…</div>}
-          </div>
-        )}
-
-        {sideTab === 'trace' && (
-          <div className="side-trace">
-            {activeTrace.length === 0 ? (
-              <div className="empty" style={{ padding: 24 }}>
-                暂无轨迹——问一个需要查法条/知识库的问题，
-                或点击消息下方「轨迹」查看对应执行过程。
-              </div>
-            ) : (
-              <>
-                <div className="trace-selector">
-                  选择消息查看轨迹：
-                  {messages.map((m, i) =>
-                    m.role === 'assistant' && (m.trace?.length ?? 0) > 0 ? (
-                      <button
-                        key={i}
-                        className={`trace-chip${selectedTrace === i ? ' active' : ''}`}
-                        onClick={() => setSelectedTrace(i)}
-                      >
-                        第 {i + 1} 条 · {m.trace!.length} 步
-                      </button>
-                    ) : null,
-                  )}
-                </div>
-                {(() => {
-                  const rows = buildTrajRows(activeTrace);
-                  const totalMs = activeTraceMsg?.durationMs ?? activeTrace.reduce((s, t) => s + (t.cost_ms ?? 0), 0);
-                  return (
-                    <>
-                      <TrajToolbar
-                        dur={durOpen} turns={turnsOpen} calls={callsOpen} query={traceQuery}
-                        onDur={() => setDurOpen((v) => !v)}
-                        onTurns={() => setTurnsOpen((v) => !v)}
-                        onCalls={() => setCallsOpen((v) => !v)}
-                        onQuery={setTraceQuery}
-                      />
-                      <TraceTimeline trace={activeTrace} />
-                      {durOpen && (
-                        <div className="traj-duration-row">
-                          总耗时 <b>{fmtMs(totalMs)}</b>
-                          <span> · {groupTraceByRound(activeTrace).length} 轮 · {rows.filter((r) => r.kind === 'tool').length} 次调用</span>
-                        </div>
-                      )}
-                      <div className="traj-rows">
-                        <TrajEventList
-                          rows={rows}
-                          showTurns={turnsOpen} showCalls={callsOpen} query={traceQuery} showCost={durOpen}
-                        />
-                      </div>
-                    </>
-                  );
-                })()}
-              </>
-            )}
-          </div>
-        )}
-
-        {sideTab === 'doc' && (
-          <div className="side-artifacts">
-            <div className="side-doc-section">已生成文件（output/）</div>
-            {docFiles.length === 0 ? (
-              <div className="empty" style={{ padding: 16 }}>暂无文档——对话中让模型生成 Word/PPT 后会出现在这里。</div>
-            ) : (
-              docFiles.map((f) => (
-                <div key={f.path} className="doc-file-row">
-                  <div className="doc-file-name">{f.name}</div>
-                  <div className="doc-file-meta">{f.size_kb} KB</div>
-                  <div className="doc-file-actions">
-                    <button className="tb-btn" onClick={() => void navigator.clipboard.writeText(f.path)}>复制路径</button>
-                    <button className="tb-btn" onClick={() => window.open(`file://${f.path}`, '_blank')}>打开</button>
-                  </div>
-                </div>
-              ))
-            )}
-            <div className="side-doc-section">腾讯 MCP-Doc 工具（{docTools.length}）</div>
-            {docTools.map((t) => (
-              <div key={t.name} className="doc-tool-row">
-                <span className="trace-badge badge-read">{t.name}</span>
-                <span className="doc-tool-desc">{t.desc}</span>
-              </div>
-            ))}
-            <div className="empty" style={{ padding: 10, fontSize: 11 }}>
-              用法：对话中说"创建一份 Word 文档，标题…"，模型会调用 MCP-Doc 工具生成真实 .docx。
-            </div>
-          </div>
-        )}
-
-        {sideTab === 'preview' && (
-          <div className="preview-panel">
-            {previewUrl ? (
-              <>
-                <div className="preview-toolbar">
-                  <span className="preview-title" title={previewUrl}>{previewTitle || '在线文档'}</span>
-                  <span className="preview-spacer" />
-                  <a className="tb-btn" href={previewUrl} target="_blank" rel="noreferrer"
-                     title="若面板内无法显示，在新标签页打开">↗ 新标签页</a>
-                  <button className="tb-btn" title="关闭预览"
-                          onClick={() => setPreviewUrl(null)}>✕ 关闭</button>
-                </div>
-                <iframe
-                  className="preview-frame"
-                  src={previewUrl}
-                  title="在线文档预览"
-                  allow="clipboard-read; clipboard-write"
-                />
-                <div className="preview-hint">
-                  面板内无法正常显示时点「↗ 新标签页」；文档链接已保留在左侧回复中。
-                </div>
-              </>
-            ) : (
-              <div className="empty" style={{ padding: 24 }}>
-                暂无预览——让模型「生成分析报告并上传腾讯文档」，
-                或对已有文档说「打开 XXX」，完成后会自动在此内嵌打开。
-              </div>
-            )}
-          </div>
-        )}
-
-        {sideTab === 'artifact' && (
-          <div className="side-artifacts">
-            {artifacts.length === 0 && allMdArtifacts.length === 0 ? (
-              <div className="empty" style={{ padding: 24 }}>
-                暂无产物——回复中的代码块会自动提取到这里，被要点化的完整稿会以 MD 产物落盘并同步到此处。
-              </div>
-            ) : (
-              <>
-                {allMdArtifacts.map((a, i) => (
-                  <ArtifactCard key={`md-${i}`} name={a.name} title={a.title} size={a.size} path={a.path} />
-                ))}
-                {artifacts.map((a, i) => (
-                  <details key={i} className="artifact-item">
-                    <summary className="artifact-summary">
-                      <span className="artifact-lang">{a.lang}</span>
-                      <span className="artifact-len">{a.code.length} 字符</span>
-                      <button
-                        className="btn ghost artifact-copy"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          void navigator.clipboard.writeText(a.code);
-                        }}
-                      >
-                        复制
-                      </button>
-                    </summary>
-                    <pre className="artifact-code">{escapeHtml(a.code)}</pre>
-                  </details>
-                ))}
-              </>
-            )}
-          </div>
-        )}
-
-        {sideTab === 'slot' && activeSlot && (
-          <div className="side-artifacts slot-panel">
-            <div className="side-doc-section">{slotPanels.find((p) => p.id === activeSlot)?.title ?? activeSlot}</div>
-            {slotData === null ? (
-              <div className="empty" style={{ padding: 16 }}>加载中…</div>
-            ) : (slotData as { chain?: Record<string, unknown> })?.chain ? (
-              /* 审计链面板（govmcp SM3）：结构化渲染（DSH provider 视图语义） */
-              <div className="audit-card">
-                <div className="row">
-                  <span className="title">链完整性</span>
-                  <span className={`badge ${(slotData as any).chain.ok ? 'olive' : 'red'}`}>
-                    {(slotData as any).chain.ok ? '✅ 完整' : '❌ 断裂'}
-                  </span>
-                </div>
-                <div className="row">
-                  <span className="title">链条目</span>
-                  <span className="mono">{(slotData as any).chain.entries ?? 0}</span>
-                </div>
-                <div className="row">
-                  <span className="title">尾哈希</span>
-                  <span className="mono audit-hash">{String((slotData as any).chain.last_hash ?? '').slice(0, 16)}…</span>
-                </div>
-                {(slotData as any).stats?.by_operation && (
-                  <div className="audit-ops">
-                    {Object.entries((slotData as any).stats.by_operation).map(([op, n]) => (
-                      <div key={op} className="row">
-                        <span className="title">{op}</span>
-                        <span className="mono">{String(n)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {(slotData as any).stats?.size_bytes !== undefined && (
-                  <div className="muted">
-                    体积 {Math.round((slotData as any).stats.size_bytes / 1024)} KB
-                  </div>
-                )}
-              </div>
-            ) : (
-              <pre className="artifact-code" style={{ whiteSpace: 'pre-wrap' }}>
-                {JSON.stringify(slotData, null, 2)}
-              </pre>
-            )}
-          </div>
-        )}
-
-        {sideTab === 'task' && (
-          <div className="side-tasks">
-            <div className="task-spawn">
-              <textarea
-                value={taskInput}
-                onChange={(e) => setTaskInput(e.target.value)}
-                placeholder="派发后台子代理任务（如：查六个督察局子站最新动态）"
-                rows={2}
-              />
-              <button className="btn" onClick={() => void spawnTask()} disabled={taskSpawnBusy || !taskInput.trim()}>
-                {taskSpawnBusy ? '派发中' : '派发'}
-              </button>
-            </div>
-            <div className="task-list">
-              {taskAgents.length === 0 ? (
-                <div className="empty" style={{ padding: 16 }}>暂无子代理任务——派发一个后台任务，主对话继续提问，完成后自动归档。</div>
-              ) : (
-                taskAgents.map((a) => (
-                  <div
-                    key={a.id}
-                    className={`task-row${selectedTask === a.id ? ' active' : ''}`}
-                    onClick={() => { setSelectedTask(a.id); setTaskDetail(null); }}
-                  >
-                    <span className={`task-status st-${a.status}`}>{a.status}</span>
-                    <span className="task-label">{a.label}</span>
-                    <span className="task-dur">{a.duration_ms ? `${(a.duration_ms / 1000).toFixed(0)}s` : ''}</span>
-                  </div>
-                ))
-              )}
-            </div>
-            {selectedTask && taskDetail && (
-              <div className="task-detail">
-                <div className="task-detail-head">
-                  <span className={`task-status st-${taskDetail.agent.status}`}>{taskDetail.agent.status}</span>
-                  <span className="task-label">{taskDetail.agent.label}</span>
-                  {(taskDetail.agent.status === 'running' || taskDetail.agent.status === 'pending') && (
-                    <button className="tb-btn" onClick={() => { void api.subagentInterrupt(selectedTask); }}><Icon name="stop" size={12} /> 中断</button>
-                  )}
-                </div>
-                <div className="task-output">
-                  {taskDetail.output.map((o) => (
-                    <div key={o.seq} className="task-output-line">
-                      {o.kind === 'trace' ? (
-                        <span className="task-output-trace">[工具]</span>
-                      ) : o.kind === 'done' ? (
-                        <div className="task-result" dangerouslySetInnerHTML={{ __html: renderMarkdown(o.result ?? '') }} />
-                      ) : (
-                        <span className="task-output-status">状态: {o.status ?? o.kind}</span>
-                      )}
-                    </div>
-                  ))}
-                  {taskDetail.agent.status === 'failed' && taskDetail.agent.error && (
-                    <div className="task-error">失败: {taskDetail.agent.error}</div>
-                  )}
-                </div>
-                {(taskDetail.agent.status === 'done' || taskDetail.agent.status === 'idle') && (
-                  <div className="task-followup">
-                    <input
-                      value={taskFollowup}
-                      onChange={(e) => setTaskFollowup(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') void followupTask(selectedTask); }}
-                      placeholder="追问这个子代理（续聊）…"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-        {sideTab === 'tasklog' && (
-          <div className="side-tasklog">
-            <div className="rp-row">
-              <span className="rp-key">任务段记忆（WorkBuddy 对标）</span>
-              <span className="rp-val">{taskLogStats.days ?? 0} 天 · 任务完成自动沉淀，下次会话注入</span>
-            </div>
-            <div className="side-tasklog-body">
-              {taskLogContent ? (
-                <div className="bubble md-slim" dangerouslySetInnerHTML={{ __html: renderMarkdown(taskLogContent) }} />
-              ) : (
-                <div className="empty">暂无任务日志——完成任务后自动写入当日工作日志。</div>
-              )}
-            </div>
-          </div>
-        )}
-      </aside>
-        </>
-      )}
     </div>
   );
 }

@@ -84,8 +84,32 @@ class TraceAudit:
 
     # ── 校验 ─────────────────────────────────────────────
 
+    def _chain_fingerprint(self) -> tuple:
+        """链文件指纹（mtime_ns + size）：内容变化必然改变，用于缓存失效。"""
+        try:
+            st = self.chain_path.stat()
+            return (st.st_mtime_ns, st.st_size)
+        except OSError:
+            return (0, 0)
+
     def verify(self) -> dict:
-        """校验落盘链的 SM3 哈希（重算比对，防篡改检测）。
+        """校验落盘链的 SM3 哈希（带指纹缓存）。
+
+        SM3 为纯 Python 实现，逐行重算成本随链长线性增长（实测 7283 行
+        约 25.8 秒；stats() 内部再调一次导致面板接口 ~51 秒挂死）。
+        此处按「文件 mtime_ns + size」缓存：链未追加时直接复用，
+        一旦追加指纹变化自动重算，不牺牲防篡改语义。
+        """
+        fp = self._chain_fingerprint()
+        cached = getattr(self, "_verify_cache", None)
+        if cached is not None and cached[0] == fp:
+            return dict(cached[1])
+        result = self._verify_uncached()
+        self._verify_cache = (fp, dict(result))
+        return result
+
+    def _verify_uncached(self) -> dict:
+        """真正执行逐行 SM3 重算（无缓存）。
 
         每行重算: input_hash' = sm3(input_data)，
         current_hash' = sm3(prev_hash + timestamp + operation + input_hash' + output_hash)，

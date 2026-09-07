@@ -451,39 +451,12 @@ html[data-theme='dark'] .brand-icon { filter: brightness(1.3) drop-shadow(0 1px 
 .audit-hash { color: var(--t-sub); }
 .audit-ops { border-top: 1px dashed var(--line); margin-top: 4px; padding-top: 4px; }
 
-/* ── 右侧抽屉（轨迹 / 审计链）──
-   对标 WorkBuddy 实测形态：不是固定第三栏，而是 transform: translateX(100%)
-   的覆盖式抽屉，收起时完全不占据对话区宽度。 */
-.chat-wrap { position: relative; }
-.side-panel {
-  position: absolute; top: 0; right: 0; height: 100%;
-  width: 420px; max-width: 88%;
-  flex-shrink: 0; display: flex; flex-direction: column;
-  border: none; border-left: 1px solid var(--line); border-radius: 0;
-  background: var(--panel);
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
-  overflow: hidden; max-height: none; align-self: auto;
-  transform: translateX(0);
-  transition: transform 200ms cubic-bezier(.32, .72, 0, 1);
-  z-index: 20;
-}
-.side-tabs {
-  display: flex; border-bottom: 1px solid var(--line);
-  overflow-x: auto; scrollbar-width: none;
-}
-.side-tabs::-webkit-scrollbar { display: none; }
-.side-tab {
-  flex: 0 0 auto; border: none; background: transparent; padding: 8px 11px;
-  font: inherit; font-size: 12px; font-weight: 600; color: var(--t-sub);
-  cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
-}
-.side-tab:hover { color: var(--t-main); }
-.side-tab.active { color: var(--terra-dark); border-bottom-color: var(--terra); }
-/* 预览页签：有待预览文档时显示圆点标记 */
-.side-tab.has-dot::after { content: ''; display: inline-block; width: 6px; height: 6px;
-  border-radius: 50%; background: var(--terra); margin-left: 4px; vertical-align: 1px; }
-/* 预览面板：激活时加宽面板容纳内嵌文档 */
-.side-panel.preview-wide { width: min(52vw, 900px); transition: width .18s ease, transform 200ms cubic-bezier(.32,.72,0,1); }
+/* ── 右侧栏已移除 ──
+   审计链并入主 tab 栏（对话 / 轨迹 / 审计链）。
+   WorkBuddy 实测其主窗口只有两个视图：data-view-id="sidebar" 与
+   "detail-panel"，并无常驻右栏；文档预览走 detail-panel 全屏化
+   （.preview-fullscreen-active），后续接预览时按该机制实现。 */
+.audit-page { padding: 16px 24px; }
 .preview-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .preview-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 10px;
   border-bottom: 1px solid var(--line); }
