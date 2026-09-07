@@ -168,56 +168,138 @@ export function dedupeAdjacent(texts: string[]): string[] {
 
 export interface BeatItem {
   kind: 'say' | 'act';
+  /** act = 主体（文件名/命令/查询词）；say = 旁白全文 */
   text: string;
-  detail?: string;
+  /** 动词，仅 act：已读取 / 读取中（对标 WorkBuddy statusText） */
+  status?: string;
+  /** 次要信息，仅 act：3 条 / 15 行（对标 secondaryInfo） */
+  secondary?: string;
+  /** running↔done 配对键，内部用 */
+  key?: string;
   ok?: boolean;
   ms?: number;
-  running?: boolean;   // 工具已发出、结果未回（实时态）
+  running?: boolean;
 }
 
-/** 工具名 → 中文动作词（与后端 _NARR_ACTION 同源，前端独立一份避免多一次往返） */
-const ACTION: Record<string, string> = {
-  file_read: '读取', file_write: '写入', file_edit: '修改',
-  save_document: '生成文档', generate_pptx: '生成课件',
-  tdocs_upload_html: '上传腾讯文档', chart_render: '出图',
-  shell_run: '执行命令', execute_code: '运行代码', glob: '查找文件',
-  grep: '搜索内容', analyze_document: '分析文档',
-  kb_search: '检索知识库', kb_semantic_search: '语义检索',
-  statute_search: '检索法条', statute_lookup: '查法条',
-  statute_related: '查关联法条', web_search: '联网搜索',
-  web_fetch: '抓取网页', open_url: '打开网页',
-  hunan_case_list: '查案卷台账', query_air_quality: '查空气质量',
-  inspect: '自检', audit_tail: '查审计链', session_log_tail: '查日志',
-  api_probe: '探测接口', detect_data_anomaly: '检测异常',
-  calculate_carbon_emission: '核算碳排',
+/**
+ * 工具三态文案（对标 WorkBuddy tool.<id>.{running,done,error}）。
+ *
+ * WorkBuddy 每个工具块严格分三段，职责不重叠：
+ *   [图标] 已读取        README.md      L1-10
+ *          statusText    primaryContent secondaryInfo
+ *          动词·两态      主体·可点       次要信息
+ *
+ * 实测原文：tool.readFile.running=读取中 / done=已读取
+ *          tool.listFiles.searched=已搜索，primary=目录，secondary=查询词
+ * execute_command 的 statusText 刻意为空 —— 命令本身就是主体。
+ *
+ * eco 此前把动词和对象拼成一句再重复一遍
+ * （「读取 README.md — README.md · 5 行」），正是没分清这三段。
+ */
+interface Phrase { running: string; done: string }
+
+const PHRASE: Record<string, Phrase> = {
+  file_read: { running: '读取中', done: '已读取' },
+  file_write: { running: '写入中', done: '已写入' },
+  file_edit: { running: '修改中', done: '已修改' },
+  save_document: { running: '生成文档中', done: '已生成文档' },
+  generate_pptx: { running: '生成课件中', done: '已生成课件' },
+  tdocs_upload_html: { running: '上传中', done: '已上传腾讯文档' },
+  chart_render: { running: '出图中', done: '已出图' },
+  shell_run: { running: '执行中', done: '' },        // 命令即主体，完成态不加动词
+  execute_code: { running: '运行中', done: '已运行' },
+  glob: { running: '查找中', done: '已查找' },
+  grep: { running: '搜索中', done: '已搜索' },
+  analyze_document: { running: '分析中', done: '已分析' },
+  kb_search: { running: '检索中', done: '已检索' },
+  kb_semantic_search: { running: '语义检索中', done: '已语义检索' },
+  statute_search: { running: '检索法条中', done: '已检索法条' },
+  statute_lookup: { running: '查条文中', done: '已查条文' },
+  statute_related: { running: '查关联条文中', done: '已查关联条文' },
+  web_search: { running: '搜索网页中', done: '已搜索网页' },
+  web_fetch: { running: '抓取中', done: '已抓取' },
+  open_url: { running: '打开中', done: '已打开' },
+  hunan_case_list: { running: '查台账中', done: '已查台账' },
+  query_air_quality: { running: '查空气质量中', done: '已查空气质量' },
+  inspect: { running: '自检中', done: '已自检' },
+  audit_tail: { running: '读审计链中', done: '已读审计链' },
+  session_log_tail: { running: '读日志中', done: '已读日志' },
+  api_probe: { running: '探测中', done: '已探测' },
+  detect_data_anomaly: { running: '检测中', done: '已检测' },
+  calculate_carbon_emission: { running: '核算中', done: '已核算' },
 };
 
-export function actionOf(name: string | undefined): string {
-  if (!name) return '执行';
-  if (name.startsWith('mcp__')) return 'MCP 调用';
-  return ACTION[name] ?? name;
+const UNKNOWN: Phrase = { running: '执行中', done: '已完成' };
+
+/** 动词（statusText）：区分运行态与完成态，对标 tool.*.running / done */
+export function statusTextOf(name: string | undefined, running: boolean): string {
+  if (name && name.startsWith('mcp__')) return running ? '调用 MCP 中' : '已调用 MCP';
+  const ph = (name && PHRASE[name]) || UNKNOWN;
+  return running ? ph.running : ph.done;
 }
 
-/** 从工具参数里挑一个可读的对象名 */
-export function objectOf(args: unknown): string {
+/**
+ * 截断到 n 字符，但不切在成对标点或分隔符中间。
+ * 实测出现过「已出图 m³）」—— 图表标题 "…（μg/m³）" 被硬切在括号里，
+ * 只剩一个右括号，读起来是乱码。
+ */
+function clip(t: string, n: number): string {
+  if (t.length <= n) return t;
+  let cut = t.slice(0, n);
+  // 左括号多于右括号 → 切点落在未闭合的括号内，回退到该左括号之前。
+  // 实测「已出图 m³）」就是半截括号造成的（那次还叠加了斜杠误取 basename）。
+  const opens = (cut.match(/[（(【[]/g) || []).length;
+  const closes = (cut.match(/[）)】\]]/g) || []).length;
+  if (opens > closes) {
+    const i = cut.search(/[（(【[][^（(【[]*$/);
+    if (i > 0) cut = cut.slice(0, i);
+  }
+  return `${cut.replace(/[\s，,、·—-]+$/, '')}…`;
+}
+
+/** 主体（primaryContent）：对象名，不与动词重复 */
+export function primaryOf(name: string | undefined, args: unknown): string {
+  // MCP 工具：mcp__<server>__<tool> → 显示 <tool>，
+  // 不要把参数里的整坨 JSON 当主体（实测出现过
+  // 「已调用 MCP{"success": true, "is_error": false, …」）。
+  if (name && name.startsWith('mcp__')) {
+    const parts = name.split('__');
+    return parts[parts.length - 1] || name;
+  }
   if (!args || typeof args !== 'object') return '';
   const a = args as Record<string, unknown>;
-  for (const k of ['path', 'file', 'filename', 'query', 'q', 'command', 'url',
-                   'keyword', 'title', 'kind', 'pattern']) {
+  // shell 命令：整条命令就是主体
+  if (name === 'shell_run' || name === 'execute_code') {
+    const c = typeof a.command === 'string' ? a.command : (typeof a.code === 'string' ? a.code : '');
+    return clip(c, 46);
+  }
+  // 路径类字段才取 basename
+  for (const k of ['path', 'file', 'filename', 'directory', 'root']) {
     const v = a[k];
     if (typeof v === 'string' && v.trim()) {
-      let s = v.trim();
-      if (k !== 'command' && s.includes('/')) s = s.split('/').pop() || s;
-      return s.length > 32 ? `${s.slice(0, 32)}…` : s;
+      const t = v.trim();
+      return clip(t.includes('/') ? (t.split('/').pop() || t) : t, 34);
     }
+  }
+  // 标题/URL 原样保留 —— 实测「已出图 m³）」正是把图表标题
+  // 「…（单位 μg/m³）」按斜杠切了 basename，只剩尾巴。
+  for (const k of ['title', 'url']) {
+    const v = a[k];
+    if (typeof v === 'string' && v.trim()) return clip(v.trim(), 34);
+  }
+  // 检索类：查询词即主体
+  for (const k of ['query', 'q', 'keyword', 'pattern']) {
+    const v = a[k];
+    if (typeof v === 'string' && v.trim()) return clip(v.trim(), 34);
   }
   return '';
 }
 
 /**
- * 把一轮 trace 编织成节奏时间线。
- * narration → say 行；tool → act 行（动作 + 对象 + 结果摘要）。
- * 保持事件原始顺序，因此并行调用的多个工具会各占一行，读起来仍是逐步推进。
+ * 把一轮 trace 编织成节奏时间线（三段式块，对标 WorkBuddy ToolHeader）。
+ *
+ * say  → 旁白行（模型交代下一步）
+ * act  → 工具块：status(动词) + primary(主体) + secondary(次要) + 耗时
  */
 export function buildBeats(
   trace: { type?: string; text?: string; name?: string; args?: unknown;
@@ -225,6 +307,9 @@ export function buildBeats(
   isError: (s: string | undefined) => boolean,
 ): BeatItem[] {
   const out: BeatItem[] = [];
+  const keyOf = (t: { name?: string; args?: unknown }) =>
+    `${t.name ?? ''}|${primaryOf(t.name, t.args)}`;
+
   for (const t of trace) {
     if (t.type === 'narration') {
       const c = cleanNarration(t.text);
@@ -233,49 +318,32 @@ export function buildBeats(
         out.push({ kind: 'say', text: c });
       }
     } else if (t.type === 'tool_start') {
-      /* 实时态：工具已发出但未返回。先占一行「进行中」，
-         等 tool 事件到达时由下面的分支原地替换为完成行。
-         没有这一行的话，用户在工具执行的几十秒里看不到任何进展。 */
-      const obj = objectOf(t.args);
       out.push({
         kind: 'act',
-        text: `${actionOf(t.name)}${obj ? ` ${obj}` : ''}`,
+        status: statusTextOf(t.name, true),
+        text: primaryOf(t.name, t.args),
+        key: keyOf(t),
         running: true,
       });
     } else if (t.type === 'tool') {
-      // 有对应的 running 行就原地替换，避免同一次调用出现两行
-      const key = `${actionOf(t.name)}${objectOf(t.args) ? ` ${objectOf(t.args)}` : ''}`;
-      const idx = out.findIndex((b) => b.kind === 'act' && b.running && b.text === key);
-      if (idx >= 0) {
-        out[idx] = {
-          kind: 'act',
-          text: key,
-          detail: summarizeResult(t.result_preview),
-          ok: !isError(t.result_preview),
-          ms: t.cost_ms,
-        };
-        continue;
-      }
-      const obj = objectOf(t.args);
-      out.push({
+      const done: BeatItem = {
         kind: 'act',
-        text: `${actionOf(t.name)}${obj ? ` ${obj}` : ''}`,
-        detail: summarizeResult(t.result_preview),
+        status: statusTextOf(t.name, false),
+        text: primaryOf(t.name, t.args),
+        key: keyOf(t),
+        secondary: summarizeResult(t.result_preview),
         ok: !isError(t.result_preview),
         ms: t.cost_ms,
-      });
+      };
+      // 有对应 running 行就原地替换，避免同一次调用出现两行
+      const idx = out.findIndex((b) => b.kind === 'act' && b.running && b.key === done.key);
+      if (idx >= 0) out[idx] = done;
+      else out.push(done);
     }
   }
   return out;
 }
 
-/**
- * 把工具返回压成一句人话。
- *
- * 直接取 result_preview 首行会得到一坨原始 JSON
- * （实测「{"ok": true, "exit": 0, "stdout": "total 3408\ndrwxr-x…」），
- * 那是给机器看的，不是给用户看执行节奏用的。这里只抽关键计数/状态。
- */
 export function summarizeResult(raw: string | undefined): string | undefined {
   const s = (raw ?? '').trim();
   if (!s) return undefined;
@@ -283,7 +351,19 @@ export function summarizeResult(raw: string | undefined): string | undefined {
   if (s.startsWith('{') || s.startsWith('[')) {
     try {
       const o = JSON.parse(s);
-      const r = Array.isArray(o) ? { count: o.length } : (o as Record<string, unknown>);
+      let r = Array.isArray(o) ? { count: o.length } : (o as Record<string, unknown>);
+
+      /* MCP 工具返回是双层 JSON：外层 {success, is_error, text}，
+         text 本身又是一段 JSON 字符串。实测界面上直接糊出
+         「{"success": true, "is_error": false, "text": "…」。
+         这里剥掉外层，对内层再走一遍同样的摘要规则。 */
+      if (typeof r.success === 'boolean' && typeof r.text === 'string') {
+        if (r.success === false || r.is_error === true) return '失败';
+        const inner = summarizeResult(r.text);
+        if (inner) return inner;
+        const t = r.text.trim();
+        return t ? (t.length > 40 ? `${t.slice(0, 40)}…` : t) : '完成';
+      }
 
       if (r.ok === false || typeof r.error === 'string') {
         const e = String(r.error ?? '失败');
@@ -296,10 +376,12 @@ export function summarizeResult(raw: string | undefined): string | undefined {
       if (Array.isArray(r.files)) return `${r.files.length} 个文件`;
       if (Array.isArray(r.entries)) return `${r.entries.length} 条记录`;
       if (Array.isArray(r.results)) return `${r.results.length} 条结果`;
+      if (Array.isArray(r.items)) return `${r.items.length} 条`;
       if (typeof r.path === 'string') {
-        const n = r.path.split('/').pop() || r.path;
+        // 只报行数，不重复文件名 —— 文件名已由 primaryContent 显示。
+        // 实测出现过「已读取 README.md  README.md · 5 行」这种重复。
         const lines = typeof r.content === 'string' ? r.content.split('\n').length : 0;
-        return lines ? `${n} · ${lines} 行` : n;
+        return lines ? `${lines} 行` : undefined;
       }
       if (typeof r.stdout === 'string') {
         const lines = r.stdout.split('\n').filter(Boolean).length;
@@ -316,10 +398,26 @@ export function summarizeResult(raw: string | undefined): string | undefined {
       const err = m(/"error"\s*:\s*"([^"]{1,40})/);
       if (err) return `失败：${err}`;
       if (/"ok"\s*:\s*false/.test(s)) return '失败';
+
+      /* MCP 双层返回被截断的情况（实测最常见）：
+         外层 {"success":true,"is_error":false,"text":"{\n \"city\"…
+         200 字符上限几乎必然砍在 text 中间，JSON.parse 一定失败，
+         所以上面的对象分支根本走不到 —— 必须在正则兜底里也处理。 */
+      if (/"success"\s*:\s*true/.test(s) && /"text"\s*:/.test(s)) {
+        if (/"is_error"\s*:\s*true/.test(s)) return '失败';
+        // 从被转义的内层 JSON 里抠线索：items 条数 / 城市 / AQI
+        const city = m(/\\"(?:城市|city)\\"\s*:\s*\\"([^\\"]{1,16})/);
+        const aqi = m(/\\"AQI\\"\s*:\s*\\"?(\d{1,3})/);
+        if (city && aqi) return `${city} AQI ${aqi}`;
+        if (city) return city;
+        const total = m(/\\"total\\"\s*:\s*(\d+)/);
+        if (total) return `${total} 条`;
+        return '完成';
+      }
+      if (/"success"\s*:\s*false/.test(s) || /"is_error"\s*:\s*true/.test(s)) return '失败';
       const cnt = m(/"count"\s*:\s*(\d+)/) ?? m(/"total"\s*:\s*(\d+)/);
       if (cnt) return `${cnt} 条`;
-      const path = m(/"path"\s*:\s*"([^"]+)"/);
-      if (path) return path.split('/').pop() || path;
+      // 截断残片里的 path 同样不重复报文件名
       if (/"ok"\s*:\s*true/.test(s)) return '完成';
       /* 抠不出任何结构化线索：不返回 undefined（那会让这一行没有任何结果提示），
          落到下面的纯文本分支，至少给出首行内容。 */

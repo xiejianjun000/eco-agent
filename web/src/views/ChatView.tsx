@@ -557,11 +557,12 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
               <span className={`turn-anchor-dot${
                 b.kind === 'act' ? (b.running ? ' running' : b.ok ? ' ok' : ' err') : ''}`}
                     aria-hidden="true" />
+              {/* 三段式（对标 WorkBuddy ToolHeader）：动词 · 主体 · 次要信息，互不重复 */}
               <span className="turn-anchor-text">
-                {b.text}
-                {b.running && <span className="beat-detail"> — 进行中…</span>}
-                {b.detail && <span className="beat-detail"> — {b.detail}</span>}
-                {b.ms !== undefined && b.ms > 0 && <span className="beat-ms"> {fmtMs(b.ms)}</span>}
+                {b.status && <span className="beat-status">{b.status}</span>}
+                {b.text && <span className="beat-primary">{b.text}</span>}
+                {b.secondary && <span className="beat-second">{b.secondary}</span>}
+                {b.ms !== undefined && b.ms > 0 && <span className="beat-ms">{fmtMs(b.ms)}</span>}
               </span>
             </div>
           ))}
