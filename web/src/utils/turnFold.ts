@@ -156,3 +156,152 @@ export function dedupeAdjacent(texts: string[]): string[] {
   for (const t of texts) if (t !== out[out.length - 1]) out.push(t);
   return out;
 }
+
+// ── 执行节奏时间线 ──────────────────────────────────────────────
+//
+// 用户要的效果：「思考一下，输出一行，查看文件，输出一行，修改文件，输出一行…」
+//
+// 直接做法是强制模型串行调工具（每次只发一个 + 一行旁白），但那会牺牲并行
+// 速度——实测模型一轮并行发 3 个工具只需 20s，串行要 60s+。
+// 折中：保留并行，由 UI 把「旁白」与「每个工具」按发生顺序交织成时间线，
+// 每个工具自带动作词与结果摘要，读起来仍是一步一行的节奏。
+
+export interface BeatItem {
+  kind: 'say' | 'act';
+  text: string;
+  detail?: string;
+  ok?: boolean;
+  ms?: number;
+}
+
+/** 工具名 → 中文动作词（与后端 _NARR_ACTION 同源，前端独立一份避免多一次往返） */
+const ACTION: Record<string, string> = {
+  file_read: '读取', file_write: '写入', file_edit: '修改',
+  save_document: '生成文档', generate_pptx: '生成课件',
+  tdocs_upload_html: '上传腾讯文档', chart_render: '出图',
+  shell_run: '执行命令', execute_code: '运行代码', glob: '查找文件',
+  grep: '搜索内容', analyze_document: '分析文档',
+  kb_search: '检索知识库', kb_semantic_search: '语义检索',
+  statute_search: '检索法条', statute_lookup: '查法条',
+  statute_related: '查关联法条', web_search: '联网搜索',
+  web_fetch: '抓取网页', open_url: '打开网页',
+  hunan_case_list: '查案卷台账', query_air_quality: '查空气质量',
+  inspect: '自检', audit_tail: '查审计链', session_log_tail: '查日志',
+  api_probe: '探测接口', detect_data_anomaly: '检测异常',
+  calculate_carbon_emission: '核算碳排',
+};
+
+export function actionOf(name: string | undefined): string {
+  if (!name) return '执行';
+  if (name.startsWith('mcp__')) return 'MCP 调用';
+  return ACTION[name] ?? name;
+}
+
+/** 从工具参数里挑一个可读的对象名 */
+export function objectOf(args: unknown): string {
+  if (!args || typeof args !== 'object') return '';
+  const a = args as Record<string, unknown>;
+  for (const k of ['path', 'file', 'filename', 'query', 'q', 'command', 'url',
+                   'keyword', 'title', 'kind', 'pattern']) {
+    const v = a[k];
+    if (typeof v === 'string' && v.trim()) {
+      let s = v.trim();
+      if (k !== 'command' && s.includes('/')) s = s.split('/').pop() || s;
+      return s.length > 32 ? `${s.slice(0, 32)}…` : s;
+    }
+  }
+  return '';
+}
+
+/**
+ * 把一轮 trace 编织成节奏时间线。
+ * narration → say 行；tool → act 行（动作 + 对象 + 结果摘要）。
+ * 保持事件原始顺序，因此并行调用的多个工具会各占一行，读起来仍是逐步推进。
+ */
+export function buildBeats(
+  trace: { type?: string; text?: string; name?: string; args?: unknown;
+           result_preview?: string; cost_ms?: number }[],
+  isError: (s: string | undefined) => boolean,
+): BeatItem[] {
+  const out: BeatItem[] = [];
+  for (const t of trace) {
+    if (t.type === 'narration') {
+      const c = cleanNarration(t.text);
+      if (c && !(out.length && out[out.length - 1].kind === 'say'
+                 && out[out.length - 1].text === c)) {
+        out.push({ kind: 'say', text: c });
+      }
+    } else if (t.type === 'tool') {
+      const obj = objectOf(t.args);
+      out.push({
+        kind: 'act',
+        text: `${actionOf(t.name)}${obj ? ` ${obj}` : ''}`,
+        detail: summarizeResult(t.result_preview),
+        ok: !isError(t.result_preview),
+        ms: t.cost_ms,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * 把工具返回压成一句人话。
+ *
+ * 直接取 result_preview 首行会得到一坨原始 JSON
+ * （实测「{"ok": true, "exit": 0, "stdout": "total 3408\ndrwxr-x…」），
+ * 那是给机器看的，不是给用户看执行节奏用的。这里只抽关键计数/状态。
+ */
+export function summarizeResult(raw: string | undefined): string | undefined {
+  const s = (raw ?? '').trim();
+  if (!s) return undefined;
+
+  if (s.startsWith('{') || s.startsWith('[')) {
+    try {
+      const o = JSON.parse(s);
+      const r = Array.isArray(o) ? { count: o.length } : (o as Record<string, unknown>);
+
+      if (r.ok === false || typeof r.error === 'string') {
+        const e = String(r.error ?? '失败');
+        return `失败：${e.length > 40 ? `${e.slice(0, 40)}…` : e}`;
+      }
+      // 常见计数字段，按信息量优先
+      for (const [k, label] of [['count', '条'], ['total', '条'], ['matches', '处']] as const) {
+        if (typeof r[k] === 'number') return `${r[k]} ${label}`;
+      }
+      if (Array.isArray(r.files)) return `${r.files.length} 个文件`;
+      if (Array.isArray(r.entries)) return `${r.entries.length} 条记录`;
+      if (Array.isArray(r.results)) return `${r.results.length} 条结果`;
+      if (typeof r.path === 'string') {
+        const n = r.path.split('/').pop() || r.path;
+        const lines = typeof r.content === 'string' ? r.content.split('\n').length : 0;
+        return lines ? `${n} · ${lines} 行` : n;
+      }
+      if (typeof r.stdout === 'string') {
+        const lines = r.stdout.split('\n').filter(Boolean).length;
+        return lines ? `${lines} 行输出` : '无输出';
+      }
+      if (r.ok === true) return '完成';
+      return undefined;
+    } catch {
+      /* JSON.parse 失败的主因不是「不是 JSON」，而是被截断。
+         后端 result_preview 只留 200 字符（chat.py:153），
+         长返回必然在中途被砍成非法 JSON。这里用正则从残片里
+         抠出关键计数/状态，而不是把半截 JSON 原样糊到界面上。 */
+      const m = (re: RegExp) => s.match(re)?.[1];
+      const err = m(/"error"\s*:\s*"([^"]{1,40})/);
+      if (err) return `失败：${err}`;
+      if (/"ok"\s*:\s*false/.test(s)) return '失败';
+      const cnt = m(/"count"\s*:\s*(\d+)/) ?? m(/"total"\s*:\s*(\d+)/);
+      if (cnt) return `${cnt} 条`;
+      const path = m(/"path"\s*:\s*"([^"]+)"/);
+      if (path) return path.split('/').pop() || path;
+      if (/"ok"\s*:\s*true/.test(s)) return '完成';
+      /* 抠不出任何结构化线索：不返回 undefined（那会让这一行没有任何结果提示），
+         落到下面的纯文本分支，至少给出首行内容。 */
+    }
+  }
+  const first = s.split('\n')[0].trim();
+  if (!first) return undefined;
+  return first.length > 46 ? `${first.slice(0, 46)}…` : first;
+}

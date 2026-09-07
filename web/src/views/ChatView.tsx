@@ -9,7 +9,7 @@ import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../c
 import { ChatSearchButton, UserPromptListButton } from '../components/ChatTopbar';
 import CompactDivider, { isCompactContent, inferCompactType } from '../components/CompactDivider';
 import { buildAtom, selectSummary, renderSummary, type AtomStatus } from '../utils/metaFold';
-import { cleanNarration, dedupeAdjacent } from '../utils/turnFold';
+import { buildBeats } from '../utils/turnFold';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -540,20 +540,25 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
 
      故这里对 narration 类型全量常显；computeAnchors 的原语义完整保留在
      utils/turnFold.ts 中（含单测），供未来对长正文分段时使用。 */
-  const anchors = dedupeAdjacent(
-    trace.filter((t) => t.type === 'narration')
-      .map((t) => cleanNarration(t.text))
-      .filter((t): t is string => t !== null),
-  );
+  /* 执行节奏时间线：旁白与每个工具按发生顺序交织，一步一行。
+     模型会一轮并行发多个工具（快，20s vs 串行 60s+），旁白只出现在轮次边界，
+     所以光渲染旁白会得到「1 行 + 一坨工具」。这里把工具也各占一行，
+     还原「输出一行 → 查文件 → 输出一行 → 改文件」的阅读节奏。 */
+  const beats = buildBeats(trace as never[], isErrorResult);
 
   return (
     <div className={`proc-wrap${open ? ' open' : ''}${live ? ' live' : ''}`}>
-      {!open && anchors.length > 0 && (
+      {!open && beats.length > 0 && (
         <div className="turn-anchors">
-          {anchors.map((a, i) => (
-            <div className="turn-anchor" key={i}>
-              <span className="turn-anchor-dot" aria-hidden="true" />
-              <span className="turn-anchor-text">{a}</span>
+          {beats.map((b, i) => (
+            <div className={`turn-anchor beat-${b.kind}`} key={i}>
+              <span className={`turn-anchor-dot${b.kind === 'act' ? (b.ok ? ' ok' : ' err') : ''}`}
+                    aria-hidden="true" />
+              <span className="turn-anchor-text">
+                {b.text}
+                {b.detail && <span className="beat-detail"> — {b.detail}</span>}
+                {b.ms !== undefined && b.ms > 0 && <span className="beat-ms"> {fmtMs(b.ms)}</span>}
+              </span>
             </div>
           ))}
         </div>

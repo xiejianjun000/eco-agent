@@ -1616,3 +1616,10 @@ mark.chat-search-hit-active { background: #FE9D2E; color: #fff; }
 .audit-breaks { margin: 6px 0; padding: 8px 10px; border-left: 2px solid #FE9D2E; background: var(--fill); border-radius: 0 5px 5px 0; }
 .audit-breaks .muted { margin-bottom: 6px; font-size: 12px; line-height: 1.6; }
 .badge.amber { background: rgba(254, 157, 46, .16); color: #C97614; }
+
+/* 执行节奏时间线：say=旁白（醒目），act=工具（次级，带结果与耗时） */
+.turn-anchor.beat-act .turn-anchor-text { color: var(--t-sub); font-size: 12.5px; }
+.turn-anchor-dot.ok { background: var(--olive); }
+.turn-anchor-dot.err { background: #D9534F; }
+.beat-detail { color: var(--t-faint); }
+.beat-ms { color: var(--t-faint); font-variant-numeric: tabular-nums; }
