@@ -80,4 +80,9 @@ CHANNEL_DISPATCHED: list[str] = [
     "eco_memory_prune",
     "eco_memory_sync",
     "eco_policy_reload",
+    # 三层穿透取证工具（handler 在 chat.py _run_tool 的 grep/glob/api_probe/inspect 分支）
+    "grep",
+    "glob",
+    "api_probe",
+    "inspect",
 ]
