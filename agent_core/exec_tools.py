@@ -125,7 +125,16 @@ def run_shell(command: str) -> str:
         return json.dumps({"ok": False, "error": "空命令"}, ensure_ascii=False)
     if _SHELL_DANGER_RE.search(cmd):
         _audit("shell", cmd, "deny", "危险语法（重定向/链/替换）")
-        return json.dumps({"ok": False, "error": "命令含危险语法（重定向/命令链/$替换/反引号均禁止）"}, ensure_ascii=False)
+        # 不放宽安全边界，但要把「怎么改」直接说清楚：
+        # 实测模型被拦后会反复换写法重试，白白烧掉 2~3 个轮次（见轮次预算修复）。
+        # 明确的整改指引能让它一次改对。
+        return json.dumps({
+            "ok": False,
+            "error": "命令含危险语法（重定向 > >> 2>、命令链 && || ;、$() 替换、反引号 均禁止）",
+            "hint": "改法：① 去掉 2>/dev/null，本工具已分离 stdout/stderr，不需要重定向；"
+                    "② 多条命令拆成多次调用，不要用 && 或 ; 串联；"
+                    "③ 需要过滤请用管道 |（管道是允许的），如 ls dir | grep foo。",
+        }, ensure_ascii=False)
     # 按管道分段，每段首命令必须白名单
     segments = [s.strip() for s in cmd.split("|") if s.strip()]
     if not segments:

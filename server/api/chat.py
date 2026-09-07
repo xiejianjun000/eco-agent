@@ -2319,6 +2319,11 @@ def _save_span_tree(tree) -> None:
         logger.warning("span tree save failed: %s", e)
 
 
+# 单轮对话墙钟预算（秒）：超出即停止继续调工具，基于已有结果总结作答。
+# 默认 900s；深度任务实测 90~300s，留 3 倍余量。可用 ECO_TURN_BUDGET_S 覆盖。
+_TURN_BUDGET_S = float(_os_default_model.environ.get("ECO_TURN_BUDGET_S", "900"))
+
+
 async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
                                 max_rounds: int = 8, on_event=None,
                                 stream_answer: bool = False, session_id: str = "",
@@ -2395,7 +2400,17 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
     _emit({"type": "think", "round": 0, "cost_ms": 0,
            "thought": "任务受理，正在规划执行路径（调用工具核实数据后再作答）…"})
     round_idx = 0
+    # 整轮墙钟预算（卡死修复）：单个 LLM/工具调用各自有超时，但 8 轮累积
+    # 仍可跑到数小时 —— 审计链实测 12424s 与 2055s 未收尾。这里给整轮兜底，
+    # 超预算即跳出循环走总结，用已有工具结果作答，而不是把用户无限挂住。
+    _turn_deadline = time.monotonic() + _TURN_BUDGET_S
+    _budget_hit = False
     for _ in range(max_rounds):
+        if time.monotonic() > _turn_deadline:
+            _budget_hit = True
+            _emit({"type": "correction", "round": round_idx,
+                   "note": f"整轮已达 {int(_TURN_BUDGET_S)}s 预算，停止继续调工具，基于已有结果作答"})
+            break
         round_idx += 1
         t_llm = time.monotonic()
         round_content_parts: list[str] = []
@@ -2709,10 +2724,12 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                            "必要时换参数或换工具重试一次；"
                            "确认确实查不到，再基于已有信息作答并标[待确认]，禁止编造。",
             })
-    # 循环耗尽：追加总结指令（终轮无工具，强制基于已检索结果作答）。
+    # 循环耗尽（或整轮预算耗尽）：追加总结指令，终轮无工具，强制基于已检索结果作答。
     messages.append({
         "role": "user",
-        "content": "工具检索已结束。请基于上面工具返回的真实结果直接给出最终回答。"
+        "content": ("已达本轮时间预算，工具检索到此为止。"
+                    if _budget_hit else "工具检索已结束。")
+                   + "请基于上面工具返回的真实结果直接给出最终回答。"
                    "格式：✅结论先行 + 证据表格/清单（关键数字、来源、时间点给全）"
                    "+ 诚实边界；查不到/不足的就标[待确认]，禁止编造；"
                    "不要输出工具调用格式，不要复盘检索过程。",

@@ -141,6 +141,11 @@ def summarize_llm_stats(limit: int = 0, stats_file=None) -> dict:
     }
 
 
+# 流式护栏（防单轮无限挂起）：整体墙钟与相邻块空闲上限，均可用环境变量覆盖。
+# 默认 600s / 120s —— 深度推理轮次实测 60~180s，留足余量又能在卡死时及时止损。
+_STREAM_TOTAL_TIMEOUT = float(os.environ.get("ECO_STREAM_TOTAL_TIMEOUT", "600"))
+_STREAM_IDLE_TIMEOUT = float(os.environ.get("ECO_STREAM_IDLE_TIMEOUT", "120"))
+
 class LLMClient:
     def __init__(self, provider: str | None = None, model: str | None = None):
         """可选 provider/model 覆盖（多模型并存路由用，如豆包 Agent Plan）。"""
@@ -696,7 +701,26 @@ class LLMClient:
                     self._last_error = {"kind": kind, "status": resp.status_code, "detail": detail}
                     self._record_usage(model, None, time.time() - t0, ok=False)
                     return None, f"HTTP {resp.status_code}"
+                # 流式双重护栏（卡死修复）：
+                # httpx 的 timeout=120 是「连接 + 单次读取间隔」超时，不是总时长。
+                # 上游只要持续缓慢吐字节，iter_lines() 可以跑到天荒地老 ——
+                # 审计链实测有单轮 12424 秒（3.5 小时）与 2055 秒未收尾的记录。
+                # 故显式加两道墙：整体墙钟上限 + 相邻数据块空闲上限。
+                _stream_deadline = t0 + _STREAM_TOTAL_TIMEOUT
+                _last_chunk_at = time.time()
                 for line in resp.iter_lines():
+                    _now = time.time()
+                    if _now > _stream_deadline:
+                        self._last_error = {"kind": "timeout", "status": None,
+                                            "detail": f"stream exceeded {_STREAM_TOTAL_TIMEOUT}s wall clock"}
+                        self._record_usage(model, None, _now - t0, ok=False)
+                        return None, f"stream timeout ({_STREAM_TOTAL_TIMEOUT}s)"
+                    if _now - _last_chunk_at > _STREAM_IDLE_TIMEOUT:
+                        self._last_error = {"kind": "timeout", "status": None,
+                                            "detail": f"stream idle over {_STREAM_IDLE_TIMEOUT}s"}
+                        self._record_usage(model, None, _now - t0, ok=False)
+                        return None, f"stream idle timeout ({_STREAM_IDLE_TIMEOUT}s)"
+                    _last_chunk_at = _now
                     if not line:
                         continue
                     line = line.decode("utf-8") if isinstance(line, bytes) else line
