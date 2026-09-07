@@ -9,6 +9,7 @@ import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../c
 import { ChatSearchButton, UserPromptListButton } from '../components/ChatTopbar';
 import CompactDivider, { isCompactContent, inferCompactType } from '../components/CompactDivider';
 import { buildAtom, selectSummary, renderSummary, type AtomStatus } from '../utils/metaFold';
+import { cleanNarration, dedupeAdjacent } from '../utils/turnFold';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -365,7 +366,7 @@ function latestLine(text: string): string {
  *  tool_start → running 行，tool 事件原地替换为 ok/error 完成行（DSH 三态）。 */
 function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
   if (!trace || trace.length === 0) return null;
-  const hasProc = trace.some((t) => ['think', 'think_delta', 'tool', 'tool_start', 'answer', 'correction'].includes(t.type));
+  const hasProc = trace.some((t) => ['think', 'think_delta', 'tool', 'tool_start', 'answer', 'correction', 'narration'].includes(t.type));
   if (!hasProc) return null;
 
   // 一、扁平化事件流
@@ -432,6 +433,16 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
       if (idx !== undefined && rows[idx]) rows[idx] = row;  // 原地替换 running 行
       else rows.push(row);
       delete runningIdx[name];
+      continue;
+    }
+    if (ev.type === 'narration') {
+      /* 工具间旁白 = turn-fold 锚点（WorkBuddy computeTurnFoldAnchors 对标）：
+         折叠态下常显，用户不展开也能看到执行节奏。 */
+      rows.push({
+        key: `narr-${rows.length}`,
+        icon: 'message', label: '', state: 'ok',
+        desc: ev.text || '',
+      });
       continue;
     }
     if (ev.type === 'answer') {
@@ -516,8 +527,37 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
     totalMs ? fmtMs(totalMs) : '',
   ].filter(Boolean);
 
+  /* turn-fold 锚点：旁白在折叠态也常显。
+     对标 buildTurnFoldSegments —— 锚点段永远可见，过程段才受折叠控制。
+
+     ⚠️ 此处刻意偏离 WorkBuddy 的 computeTurnFoldAnchors，理由如下：
+     原实现的锚点 = 「所有最长正文 + 最后一条正文」，那是为**长回答**设计的
+     ——一段 800 字的分析里挑最长段落当摘要，合理。
+     但 eco 的旁白（规则 8.1）是每次调工具前的**等长短句**，长度都在 15-25 字。
+     套用原规则会出现：3 行旁白只留下「最长的那句 + 最后一句」，中间被吞。
+     实测 [T('先看 helper 签名和可复用函数'), T('写完了'), T('部署')] → 只剩第 1、3 条。
+     那样恰好破坏了要还原的执行节奏，与目的相悖。
+
+     故这里对 narration 类型全量常显；computeAnchors 的原语义完整保留在
+     utils/turnFold.ts 中（含单测），供未来对长正文分段时使用。 */
+  const anchors = dedupeAdjacent(
+    trace.filter((t) => t.type === 'narration')
+      .map((t) => cleanNarration(t.text))
+      .filter((t): t is string => t !== null),
+  );
+
   return (
     <div className={`proc-wrap${open ? ' open' : ''}${live ? ' live' : ''}`}>
+      {!open && anchors.length > 0 && (
+        <div className="turn-anchors">
+          {anchors.map((a, i) => (
+            <div className="turn-anchor" key={i}>
+              <span className="turn-anchor-dot" aria-hidden="true" />
+              <span className="turn-anchor-text">{a}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <button
         className="proc-toggle"
         title={open ? '收起过程' : '展开过程（思考 / 执行 / 工具调用）'}
@@ -571,6 +611,11 @@ function buildTrajRows(trace: TraceEvent[]): TrajRow[] {
         desc: t.thought, cost: t.cost_ms,
         searchText: t.thought,
         body: <div className="dsh-body-text">{escapeHtml(t.thought)}</div>,
+      });
+    } else if (t.type === 'narration') {
+      rows.push({
+        key: `narr-${rows.length}`, round, kind: 'assistant', badge: 'NARRATION',
+        desc: t.text || '', searchText: t.text || '',
       });
     } else if (t.type === 'answer') {
       rows.push({

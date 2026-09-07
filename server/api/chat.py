@@ -242,6 +242,17 @@ def _codex_rules_section() -> str:
         "8. 【思考流规范】思考实时显示，做真实深度推理（对标 DSH）：目标→拆解→依据→步骤→"
         "验证→下一步，篇幅随问题复杂度，不要压成一句口号。禁止复述规则条款号、"
         "禁止把最终回答先在思考里完整写一遍。\n"
+        "8.1 【工具间旁白·硬性】每次调用工具之前，必须先输出一行普通正文（不是思考）："
+        "先用半句话交代上一步得到了什么，再说这一步要干什么。一行一句、≤40字、不带项目符号。"
+        "多个工具连续调用，就写多行——每次调用前都要有。示例节奏："
+        "『helpers 接口清楚了。再看 phase2 里可复用的瓦片函数。』→调工具→"
+        "『底层能力已导出。现在三个工具并行开发。』→调工具→"
+        "『四个文件写完了，先本地语法检查再部署。』→调工具。"
+        "这些行是给用户看执行节奏的，禁止空泛套话（如'正在处理''让我看看'），"
+        "必须带上具体对象名或刚得到的结论。任务全部完成后再写最终汇报。"
+        "禁止在旁白里出现系统内部状态：不提'上一轮/上次会话/超时中断/重试第N次'、"
+        "不提模型名与轮次编号、不解释闸门与提示词规则——用户看的是任务进度，"
+        "不是系统自述。旁白只讲这次任务本身的事实与下一步动作。\n"
         "10. 【飞书/企业微信走 lark-cli，禁止拒单】本机已装 lark-cli 且已认证飞书应用"
         "（/usr/local/bin/lark-cli）。飞书相关操作一律用 shell_run 调 lark-cli 直接做："
         "生成扫码授权链接=lark-cli auth login --domain all --no-wait --json（返回 "
@@ -2447,9 +2458,20 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                    "thought": _sanitize_thinking(reasoning)})
         audit.record_llm_call(model or client._provider["default_model"],
                               round_idx, llm_ms)
-        if tool_calls and stream_answer and round_content_parts:
-            # 已实时推送的文字是本轮思考（非最终回答）→ reset 撤销
-            _push_delta("", reset=True)
+        if tool_calls:
+            # ── 工具间旁白（WorkBuddy turn-fold 锚点对标）────────────────
+            # 规则 8.1 要求模型每次调工具前先输出一行执行节奏。但模型不一定照做，
+            # 实测豆包常常直接发 tool_calls 不带正文。故这里做机制级兜底：
+            # 有正文就用正文（撤销流式草稿后单独发 narration 事件），
+            # 没有就按本轮工具意图合成一行，保证节奏行始终存在，不靠模型自觉。
+            _narr = "".join(round_content_parts).strip() if round_content_parts else ""
+            if stream_answer and round_content_parts:
+                # 已实时推送的文字是本轮思考（非最终回答）→ reset 撤销
+                _push_delta("", reset=True)
+            if not _narr or len(_narr) > 200:
+                _narr = _synth_narration(tool_calls, round_idx)
+            if _narr:
+                _emit({"type": "narration", "round": round_idx, "text": _narr})
         if not tool_calls:
             content = str(msg.get("content") or "")
             # 空话检测：提及调用工具但未真调用 → 纠偏重试
@@ -3558,6 +3580,69 @@ def _looks_failed(result: str) -> bool:
     return any(k in low for k in (
         "失败", "error", "异常", "超时", "拒绝", "不可用", "未登录",
         "null", "无数据", "未找到", "not found", "权限"))
+
+
+
+# 工具动作词表：把工具名映射成中文动作，用于合成旁白（对标 WorkBuddy actionKey）
+_NARR_ACTION = {
+    "file_read": "读取", "file_write": "写入", "file_edit": "修改",
+    "save_document": "生成文档", "generate_pptx": "生成课件",
+    "tdocs_upload_html": "上传腾讯文档", "chart_render": "出图",
+    "shell_run": "执行命令", "execute_code": "运行代码", "glob": "查找文件",
+    "grep": "搜索内容", "analyze_document": "分析文档",
+    "kb_search": "检索知识库", "kb_semantic_search": "语义检索",
+    "statute_search": "检索法条", "statute_lookup": "查法条",
+    "statute_related": "查关联法条", "web_search": "联网搜索",
+    "web_fetch": "抓取网页", "open_url": "打开网页",
+    "hunan_case_list": "查案卷台账", "query_air_quality": "查空气质量",
+    "inspect": "自检", "audit_tail": "查审计链", "session_log_tail": "查日志",
+    "api_probe": "探测接口", "detect_data_anomaly": "检测异常",
+    "calculate_carbon_emission": "核算碳排",
+}
+
+
+def _synth_narration(tool_calls: list, round_idx: int) -> str:
+    """模型未按规则 8.1 输出旁白时，按本轮工具意图机制化合成一行。
+
+    只用工具名与参数里的对象名，不编造结论——合成的是「要做什么」，
+    不是「做到了什么」，避免在结果未知时产生幻觉式旁白。
+    """
+    if not tool_calls:
+        return ""
+    names: list[str] = []
+    obj = ""
+    for tc in tool_calls:
+        fn = tc.get("function", {}) if isinstance(tc, dict) else {}
+        n = fn.get("name", "")
+        if n:
+            names.append(n)
+        if not obj:
+            try:
+                raw = fn.get("arguments")
+                a = json.loads(raw) if isinstance(raw, str) else (raw or {})
+            except (json.JSONDecodeError, TypeError):
+                a = {}
+            for k in ("path", "file", "filename", "query", "q", "command",
+                      "url", "keyword", "title", "kind"):
+                v = a.get(k)
+                if isinstance(v, str) and v.strip():
+                    v = v.strip()
+                    obj = v.split("/")[-1] if ("/" in v and k != "command") else v
+                    if len(obj) > 28:
+                        obj = obj[:28] + "…"
+                    break
+    if not names:
+        return ""
+    acts: list[str] = []
+    for n in names:
+        a = _NARR_ACTION.get(n, n)
+        if a not in acts:
+            acts.append(a)
+    head = "、".join(acts[:2])
+    if len(names) > 2:
+        head += f"等 {len(names)} 项"
+    prefix = "先" if round_idx <= 1 else "接着"
+    return f"{prefix}{head} {obj}".strip() if obj else f"{prefix}{head}"
 
 
 def _tool_category(name: str) -> str:

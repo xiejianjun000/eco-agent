@@ -1599,3 +1599,15 @@ mark.chat-search-hit-active { background: #FE9D2E; color: #fff; }
   color: var(--t-sub); white-space: pre-wrap; word-break: break-word;
   max-height: 300px; overflow: auto;
 }
+
+/* ── turn-fold 锚点（WorkBuddy turn-fold-anchors 对标）──────────────
+   工具间旁白在折叠态常显，展开后并入过程块。用户不展开也能看执行节奏。 */
+.turn-anchors { display: flex; flex-direction: column; gap: 5px; margin: 2px 0 8px; }
+.turn-anchor { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.6; color: var(--t-main); }
+.turn-anchor-dot {
+  flex-shrink: 0; width: 5px; height: 5px; margin-top: 8px;
+  border-radius: 50%; background: var(--terra);
+}
+.turn-anchor-text { flex: 1; min-width: 0; }
+/* 轨迹页 NARRATION 徽章 */
+.dsh-badge.narration, [data-badge="NARRATION"] { color: var(--terra); }

@@ -53,7 +53,7 @@ export interface ChatUsage {
 }
 
 export interface TraceEvent {
-  type: 'think' | 'think_delta' | 'tool_start' | 'tool' | 'answer' | 'correction' | 'document' | 'card' | 'artifact' | 'approval';
+  type: 'think' | 'think_delta' | 'tool_start' | 'tool' | 'answer' | 'correction' | 'document' | 'card' | 'artifact' | 'approval' | 'narration';
   round?: number;
   name?: string;
   category?: 'read' | 'write' | 'exec';
