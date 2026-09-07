@@ -18,15 +18,6 @@ import re
 
 # 执法平台工具 → 追问模板
 _TOOL_FOLLOWUPS: dict[str, str] = {
-    "sthjzf_water_task_statistics": "查看冷水江市待核实任务的具体线索详情",
-    "sthjzf_water_task_list": "把任务台账里待核实的线索整理成核查要点清单",
-    "sthjzf_query_cases": "查询案件详情，并检索对应法典条文",
-    "sthjzf_query_case_statistics": "把案件来源类型统计整理成月度执法态势报告",
-    "wryzxjc_list_alarms": "拉取超标预警数据的历史趋势（分钟/时/日）",
-    "wryzxjc_list_devices": "筛查断线设备清单，生成现场核查线索表",
-    "wryzxjc_list_pollution_sources": "查询该污染源的实时与历史监测数据",
-    "permit_license_list": "把许可证查询结果落盘为核查清单",
-    "permit_jgzf_license_execution": "汇总未提交执行报告的企业名单",
     "hunan_case_list": "打包下载相关案卷 PDF 并归档",
     "statute_lookup": "引用条文出处是否准确？帮我逐条核对",
     "statute_search": "继续检索相关司法解释与裁量基准",
