@@ -706,10 +706,15 @@ def _codex_tools() -> list[dict]:
             "type": "function",
             "function": {
                 "name": "file_read",
-                "description": "读取仓库/工作区内任意文本文件的完整内容（绝对路径，最多 12000 字符）。",
+                "description": "读取仓库/工作区内文本文件。默认整文件（最多 12000 字符）；"
+                               "传 offset/limit 则按行分页并返回带行号内容 + next_offset，可精确定位到行、续读大文件。",
                 "parameters": {
                     "type": "object",
-                    "properties": {"path": {"type": "string", "description": "文件绝对路径"}},
+                    "properties": {
+                        "path": {"type": "string", "description": "文件绝对路径"},
+                        "offset": {"type": "integer", "description": "起始行号（1-based），用于分页续读"},
+                        "limit": {"type": "integer", "description": "读取行数（默认 400）"},
+                    },
                     "required": ["path"],
                 },
             },
@@ -1225,6 +1230,76 @@ def _codex_tools() -> list[dict]:
                 "parameters": {"type": "object", "properties": {}, "required": []},
             },
         },
+        # ── 自省与穿透取证（L1 感知 / L2 穿透 / L3 验证）──
+        {
+            "type": "function",
+            "function": {
+                "name": "inspect",
+                "description": "自省当前运行时真实能力目录：有哪些工具/服务/插件/槽位可用及其契约。"
+                               "动手前先开雷达——不要凭 system prompt 描述或记忆猜测能力是否存在。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "kind": {
+                            "type": "string",
+                            "enum": ["catalog", "tools", "services", "plugins", "slots"],
+                            "description": "catalog=全目录；其余为分类列表",
+                        },
+                        "name": {"type": "string", "description": "可选，精确查询某一项的契约（配合 kind 使用）"},
+                    },
+                    "required": ["kind"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "grep",
+                "description": "正则全文搜索仓库/工作区源码，返回 file:line:text。"
+                               "用于定位「某符号/某逻辑写在哪」——核实代码结论前必须先 grep 定位再读。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "pattern": {"type": "string", "description": "正则表达式"},
+                        "path": {"type": "string", "description": "可选，限定搜索目录或文件（绝对路径）"},
+                        "include": {"type": "string", "description": "可选，文件名过滤如 *.py（默认全部）"},
+                    },
+                    "required": ["pattern"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "glob",
+                "description": "按模式发现文件路径（如 **/*.py、handler.py），按修改时间倒序返回。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "pattern": {"type": "string", "description": "glob 模式；不含 / 时匹配任意深度的文件名"},
+                        "path": {"type": "string", "description": "可选，搜索根目录（绝对路径）"},
+                    },
+                    "required": ["pattern"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "api_probe",
+                "description": "实测本机 HTTP 接口的真实返回（只读 GET/HEAD，仅环回地址）。"
+                               "用于验证服务实况——例如断言「MCP 没挂载」前，先探 /api/connectors 看真值，"
+                               "不要拿某个函数返回值外推系统状态。外网抓取请用 web_fetch。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string", "description": "如 /api/connectors 或 http://127.0.0.1:8000/api/health"},
+                        "method": {"type": "string", "enum": ["GET", "HEAD"], "description": "默认 GET"},
+                    },
+                    "required": ["url"],
+                },
+            },
+        },
     ]
     # 挂载 govmcp 政务平台只读工具（排污许可/在线监测/国家四平台，L1 闸门）
     _ensure_platform_tools()
@@ -1598,13 +1673,104 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             return run_shell(str(arguments.get("command", "")))
         if name == "file_read":
             return file_read(str(arguments.get("path", "")),
-                             max_chars=int(arguments.get("max_chars", 12000) or 12000))
+                             max_chars=int(arguments.get("max_chars", 12000) or 12000),
+                             offset=int(arguments.get("offset", 0) or 0),
+                             limit=int(arguments.get("limit", 0) or 0))
         if name == "file_write":
             return file_write(str(arguments.get("path", "")),
                               str(arguments.get("content", "")))
         return file_edit(str(arguments.get("path", "")),
                          str(arguments.get("old_string", "")),
                          str(arguments.get("new_string", "")))
+    if name in ("grep", "glob", "api_probe"):
+        # 穿透取证：源码定位 + 本机实况（exec_tools 自带边界校验与审计）
+        from agent_core.exec_tools import api_probe, code_glob, code_grep
+
+        if name == "grep":
+            return code_grep(str(arguments.get("pattern", "")),
+                             path=str(arguments.get("path", "") or ""),
+                             include=str(arguments.get("include", "*") or "*"))
+        if name == "glob":
+            return code_glob(str(arguments.get("pattern", "")),
+                             path=str(arguments.get("path", "") or ""))
+        return api_probe(str(arguments.get("url", "")),
+                         method=str(arguments.get("method", "GET") or "GET"))
+    if name == "inspect":
+        # 能力自省：只描述形状（name/description/schema），不返回业务数据
+        from agent_core import inspect as _inspect
+
+        kind = str(arguments.get("kind", "catalog") or "catalog")
+        target = str(arguments.get("name", "") or "")
+        # 目录类查询上限：需容纳 govmcp 平台工具全量挂载后的 70+ 条名称摘要，
+        # 否则尾部（政务只读工具）会被裁掉 → 自省出现盲区。
+        _INSPECT_CAP = 24000
+
+        def _cap(payload) -> str:
+            """序列化并保证结果仍是合法 JSON：超限时逐级降级，绝不截断字符串。
+
+            降级顺序：完整 → 去掉 schema（保留 name+description）→ 截条目。
+            目的是让"我有哪些工具"这类目录查询永远能返回可用清单，
+            而不是退化成一句"结果过大"——那等于自省失效。
+            """
+            s = json.dumps(payload, ensure_ascii=False)
+            if len(s) <= _INSPECT_CAP:
+                return s
+
+            def _slim(items):
+                return [{"name": i.get("name", ""),
+                         "description": (i.get("description", "") or "")[:100]}
+                        for i in items if isinstance(i, dict)]
+
+            if isinstance(payload, list):
+                payload = _slim(payload)
+                payload.append({"_note": "已省略 schema；用 kind+name 查询单项完整契约"})
+            elif isinstance(payload, dict):
+                for key in list(payload):
+                    if isinstance(payload[key], list):
+                        payload[key] = _slim(payload[key])
+                payload["_note"] = "已省略 schema；用 kind+name 查询单项完整契约"
+            s = json.dumps(payload, ensure_ascii=False)
+            if len(s) <= _INSPECT_CAP:
+                return s
+
+            # 仍超限：按条目二分裁剪，保证输出始终是完整合法 JSON
+            def _fits(p) -> bool:
+                return len(json.dumps(p, ensure_ascii=False)) <= _INSPECT_CAP
+
+            if isinstance(payload, list):
+                n = len(payload)
+                while n > 1 and not _fits(payload[:n]):
+                    n //= 2
+                payload = payload[:n]
+            elif isinstance(payload, dict):
+                for key in list(payload):
+                    if not isinstance(payload[key], list):
+                        continue
+                    n = len(payload[key])
+                    while n > 1 and not _fits(payload):
+                        n //= 2
+                        payload[key] = payload[key][:n]
+            return json.dumps(payload, ensure_ascii=False)
+
+        try:
+            if target and kind != "catalog":
+                return _cap(_inspect.query(kind, target))
+            if kind == "catalog":
+                cat = _inspect.catalog()
+                # 全目录只回名称摘要，避免 schema 撑爆上下文；细节用 kind+name 精查
+                slim = {
+                    k: [{"name": i.get("name", ""), "description": (i.get("description", "") or "")[:80]}
+                        for i in v]
+                    for k, v in cat.items()
+                }
+                return _cap(slim)
+            lister = {"tools": _inspect.list_tools, "services": _inspect.list_services,
+                      "plugins": _inspect.list_plugins, "slots": _inspect.list_slots}.get(kind)
+            if lister is None:
+                return json.dumps({"error": f"未知 kind: {kind}"}, ensure_ascii=False)
+            return _cap(lister())
+        except Exception as e:  # noqa: BLE001
+            return json.dumps({"error": f"inspect 失败: {e}"}, ensure_ascii=False)
     if name == "query_air_quality":
         from agent_core.tools_registry import execute_tool
 
@@ -2016,6 +2182,37 @@ def _law_status_trigger(message: str) -> bool:
                 and _LAW_ENTITY_RE.search(message or ""))
 
 
+# 取证类工具：调用过其中任一个，才算这轮结论有实测支撑
+_EVIDENCE_TOOLS = frozenset({
+    "api_probe", "inspect", "grep", "glob",
+    "file_read", "shell_run", "web_fetch", "audit_tail", "session_log_tail",
+})
+
+# 系统实况断言：对「本系统当前处于什么状态」下判定的措辞
+_SYS_STATE_RE = re.compile(
+    r"(没有(挂载|加载|注册|启用|配置|连接)|未(挂载|加载|注册|启用|配置|连接|生效|实现)|"
+    r"(挂载|加载|注册|连接)(数|量)?\s*(为|是)?\s*0|"
+    r"0\s*个|不存在|缺(失|少)|尚未|均未|全部未|没有实现|无法使用|不可用|"
+    r"已(挂载|启用|生效|连接|注册)|正常(工作|运行|挂载)|运行正常)")
+
+# 系统对象：判定的对象得是本系统的运行时构件，而不是业务实体
+_SYS_OBJECT_RE = re.compile(
+    r"(MCP|mcp|工具|服务|插件|connector|连接器|接口|端点|API|api|"
+    r"模块|组件|注册表|槽位|slot|provider|能力|函数|配置项|环境变量)")
+
+
+def _sys_claim_trigger(content: str) -> bool:
+    """识别「对本系统运行实况下判定」的回答（需实测证据支撑）。
+
+    要求状态措辞与系统对象同现，避免把业务结论（如"该企业未取得排污许可"）
+    误判为系统状态断言。
+    """
+    t = content or ""
+    if len(t) < 8:
+        return False
+    return bool(_SYS_STATE_RE.search(t) and _SYS_OBJECT_RE.search(t))
+
+
 def _llm_error_reply(err: str) -> str:
     """LLM 失败回复（A 维度：凭证/配额类错误附带自愈指引，而非裸报错）。"""
     msg = f"[eco-server] LLM 调用失败: {err}"
@@ -2355,6 +2552,28 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                                "这类结论严禁凭记忆断言——必须先用 web_fetch 抓官网栏目"
                                "（mee.gov.cn/gov.cn）或 statute_lookup/检索核实，"
                                "拿到工具真实返回后再回答；查不到就标[待确认]。",
+                })
+                continue
+            # 系统状态结论 gate（机制级确定性闸门）：当回答对「本系统运行实况」
+            # 下判定（挂载数/连通/启用/存在与否/生效状态）却全程没做过任何取证
+            # 类调用（api_probe/inspect/grep/file_read/shell_run）时，禁止直接
+            # 交付——强制补一轮实测。防的是「拿某个函数返回值外推系统状态」。
+            if (_sys_claim_trigger(content) and not any(
+                    e.get("type") == "tool" and
+                    e.get("name", "") in _EVIDENCE_TOOLS
+                    for e in trace)):
+                if stream_answer:
+                    _push_delta("", reset=True)
+                _emit({"type": "correction", "round": round_idx,
+                       "note": "系统状态结论未取证，强制实测", "cost_ms": llm_ms})
+                messages.append({"role": "assistant", "content": content})
+                messages.append({
+                    "role": "user",
+                    "content": "你对本系统的运行实况下了判断（是否挂载/连通/启用/存在/生效），"
+                               "但本轮没有任何实测证据。这类结论严禁由单个函数返回值外推——"
+                               "必须先取证：用 api_probe 探本机接口真值（如 /api/connectors）、"
+                               "用 inspect 查当前真实能力目录、用 grep 定位源码、用 file_read 读实现。"
+                               "拿到真实返回后再回答；确实查不到就标[待确认]，不要断言。",
                 })
                 continue
             _emit({"type": "answer", "round": round_idx, "cost_ms": llm_ms,

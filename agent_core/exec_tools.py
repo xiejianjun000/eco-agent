@@ -192,7 +192,13 @@ def _resolve_within(path_str: str, for_write: bool) -> tuple[Path | None, str]:
     return real, ""
 
 
-def file_read(path: str, max_chars: int = 12000) -> str:
+def file_read(path: str, max_chars: int = 12000, offset: int = 0, limit: int = 0) -> str:
+    """读取文本文件。
+
+    offset/limit 以「行」为单位（offset 为 1-based 起始行，0/1 均表示从头）：
+    命中分页时返回带行号的 numbered 文本 + next_offset，供续读定位到行。
+    未传分页参数时保持旧行为（整文件 + max_chars 截断），向后兼容。
+    """
     real, err = _resolve_within(path, for_write=False)
     if err:
         _audit("file_read", path, "deny", err)
@@ -204,13 +210,49 @@ def file_read(path: str, max_chars: int = 12000) -> str:
     except OSError as e:
         return json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False)
     _audit("file_read", str(real), "allow", "只读放行")
+
+    lines = text.splitlines()
+    total_lines = len(lines)
+
+    # ── 分页模式：offset/limit 任一显式给出 ──
+    if offset or limit:
+        start = max(1, int(offset or 1))
+        count = int(limit) if limit and limit > 0 else 400
+        chunk = lines[start - 1 : start - 1 + count]
+        width = len(str(min(start + len(chunk) - 1, total_lines)))
+        numbered = "\n".join(f"{start + i:>{width}}: {ln}" for i, ln in enumerate(chunk))
+        cut = len(numbered) > max_chars
+        if cut:
+            numbered = numbered[:max_chars]
+        end_line = start + len(chunk) - 1
+        has_more = end_line < total_lines
+        return json.dumps(
+            {
+                "ok": True,
+                "path": str(real),
+                "total_lines": total_lines,
+                "start_line": start,
+                "end_line": end_line,
+                "returned_lines": len(chunk),
+                "has_more": has_more,
+                "next_offset": (end_line + 1) if has_more else None,
+                "truncated": cut,
+                "content": numbered,
+            },
+            ensure_ascii=False,
+        )
+
+    # ── 兼容模式：整文件 + 字符截断 ──
     truncated = len(text) > max_chars
     return json.dumps(
         {
             "ok": True,
             "path": str(real),
             "chars": min(len(text), max_chars),
+            "total_lines": total_lines,
             "truncated": truncated,
+            # 截断时给出续读指引，避免"读不全又不知从哪续"
+            "hint": ("内容被截断：改用 offset/limit 按行分页续读" if truncated else ""),
             "content": text[:max_chars],
         },
         ensure_ascii=False,
@@ -260,3 +302,171 @@ def file_edit(path: str, old_string: str, new_string: str) -> str:
     return json.dumps(
         {"ok": True, "path": str(real), "replaced": 1, "bytes": len(new_text.encode("utf-8"))}, ensure_ascii=False
     )
+
+
+# ─── ③ 穿透工具：grep / glob（L2 源码定位）───────────────────────
+
+_GREP_MAX_MATCHES = 200
+_GLOB_MAX_FILES = 300
+_SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", ".mypy_cache",
+              ".pytest_cache", ".ruff_cache", "dist", "build", ".next"}
+
+
+def _iter_files(root: Path, pattern: str):
+    """在 root 下按 glob 模式产出文件，跳过噪声目录。"""
+    for p in root.rglob(pattern):
+        if not p.is_file():
+            continue
+        if any(part in _SKIP_DIRS for part in p.parts):
+            continue
+        yield p
+
+
+def code_grep(pattern: str, path: str = "", include: str = "*", max_matches: int = _GREP_MAX_MATCHES) -> str:
+    """正则全文搜索，返回 file:line:text（对标 DSH grep）。"""
+    if not (pattern or "").strip():
+        return json.dumps({"ok": False, "error": "pattern 不能为空"}, ensure_ascii=False)
+    try:
+        rx = re.compile(pattern)
+    except re.error as e:
+        return json.dumps({"ok": False, "error": f"正则无效: {e}"}, ensure_ascii=False)
+
+    if path:
+        root, err = _resolve_within(path, for_write=False)
+        if err:
+            _audit("grep", path, "deny", err)
+            return json.dumps({"ok": False, "error": err}, ensure_ascii=False)
+    else:
+        root = _allowed_roots()[0]
+    if root.is_file():
+        targets = [root]
+    else:
+        targets = _iter_files(root, include or "*")
+
+    cap = max(1, min(int(max_matches or _GREP_MAX_MATCHES), _GREP_MAX_MATCHES))
+    matches, scanned, truncated = [], 0, False
+    for f in targets:
+        scanned += 1
+        try:
+            text = f.read_text(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            continue
+        if "\0" in text[:1024]:
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
+            if rx.search(line):
+                matches.append({"file": str(f), "line": i, "text": line[:300]})
+                if len(matches) >= cap:
+                    truncated = True
+                    break
+        if truncated:
+            break
+    _audit("grep", f"{pattern} @{root}", "allow", f"{len(matches)} 命中")
+    return json.dumps(
+        {"ok": True, "pattern": pattern, "root": str(root), "scanned_files": scanned,
+         "match_count": len(matches), "truncated": truncated, "matches": matches},
+        ensure_ascii=False,
+    )
+
+
+def code_glob(pattern: str, path: str = "") -> str:
+    """按模式发现文件，按修改时间倒序（对标 DSH glob）。"""
+    if not (pattern or "").strip():
+        return json.dumps({"ok": False, "error": "pattern 不能为空"}, ensure_ascii=False)
+    if path:
+        root, err = _resolve_within(path, for_write=False)
+        if err:
+            _audit("glob", path, "deny", err)
+            return json.dumps({"ok": False, "error": err}, ensure_ascii=False)
+    else:
+        root = _allowed_roots()[0]
+    # 无分隔符的模式匹配任意深度的 basename
+    pat = pattern if "/" in pattern else f"**/{pattern}"
+    try:
+        found = list(_iter_files(root, pat))
+    except (OSError, ValueError) as e:
+        return json.dumps({"ok": False, "error": f"匹配失败: {e}"}, ensure_ascii=False)
+    found.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+    truncated = len(found) > _GLOB_MAX_FILES
+    _audit("glob", f"{pattern} @{root}", "allow", f"{len(found)} 命中")
+    return json.dumps(
+        {"ok": True, "pattern": pattern, "root": str(root), "count": len(found),
+         "truncated": truncated, "files": [str(p) for p in found[:_GLOB_MAX_FILES]]},
+        ensure_ascii=False,
+    )
+
+
+# ─── ④ api_probe：本机只读 API 实测（L3 取证）────────────────────
+#
+# 不解封 shell 的 curl：curl 一旦放行即等于开放任意外网 + 任意方法 + 隐式写。
+# 这里只开一条窄通道——本机环回地址 + 只读方法——够 agent 自证"服务实况"，
+# 又不新增外网出口。外网抓取仍走既有 web_fetch（政务域名白名单）。
+
+_PROBE_ALLOWED_HOSTS = {"127.0.0.1", "localhost", "::1", "0.0.0.0"}
+_PROBE_METHODS = {"GET", "HEAD"}
+_PROBE_MAX_CHARS = 8000
+
+
+def api_probe(url: str, method: str = "GET", max_chars: int = _PROBE_MAX_CHARS) -> str:
+    """探查本机 HTTP 接口真实返回（只读，仅环回地址）。"""
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    u = (url or "").strip()
+    if not u:
+        return json.dumps({"ok": False, "error": "url 不能为空"}, ensure_ascii=False)
+    # 允许简写 /api/xxx → 本机默认端口
+    if u.startswith("/"):
+        port = os.environ.get("ECO_PORT", "8000").strip() or "8000"
+        u = f"http://127.0.0.1:{port}{u}"
+    if not u.startswith(("http://", "https://")):
+        return json.dumps({"ok": False, "error": "url 必须以 http(s):// 或 / 开头"}, ensure_ascii=False)
+
+    host = (urllib.parse.urlparse(u).hostname or "").lower()
+    if host not in _PROBE_ALLOWED_HOSTS:
+        _audit("api_probe", u, "deny", f"非本机地址 {host}")
+        return json.dumps(
+            {"ok": False, "error": f"api_probe 仅允许本机环回地址（收到 {host}）；外网抓取请用 web_fetch"},
+            ensure_ascii=False,
+        )
+    m = (method or "GET").upper()
+    if m not in _PROBE_METHODS:
+        _audit("api_probe", u, "deny", f"非只读方法 {m}")
+        return json.dumps({"ok": False, "error": f"api_probe 只允许 {sorted(_PROBE_METHODS)}（收到 {m}）"},
+                          ensure_ascii=False)
+
+    import time as _t
+    t0 = _t.monotonic()
+    try:
+        req = urllib.request.Request(u, method=m, headers={"User-Agent": "eco-agent api_probe"})
+        with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310 (host 已限环回)
+            body = resp.read().decode("utf-8", errors="replace")
+            status = resp.status
+    except urllib.error.HTTPError as e:
+        body, status = e.read().decode("utf-8", errors="replace"), e.code
+    except Exception as e:  # noqa: BLE001
+        _audit("api_probe", u, "deny", f"请求失败 {e}")
+        return json.dumps({"ok": False, "url": u, "error": f"请求失败: {e}"}, ensure_ascii=False)
+
+    _audit("api_probe", u, "allow", f"HTTP {status}")
+    cap = max(1, min(int(max_chars or _PROBE_MAX_CHARS), _PROBE_MAX_CHARS))
+    parsed = None
+    try:
+        parsed = json.loads(body)
+    except (ValueError, TypeError):
+        pass
+    out = {
+        "ok": True,
+        "url": u,
+        "status": status,
+        "duration_ms": int((_t.monotonic() - t0) * 1000),
+        "truncated": len(body) > cap,
+    }
+    if parsed is not None and isinstance(parsed, (dict, list)):
+        s = json.dumps(parsed, ensure_ascii=False)
+        out["json"] = parsed if len(s) <= cap else None
+        out["body"] = None if out["json"] is not None else s[:cap]
+    else:
+        out["body"] = body[:cap]
+    return json.dumps(out, ensure_ascii=False)
