@@ -53,21 +53,52 @@ def list_plugins() -> list[dict]:
 
 
 def list_tools() -> list[dict]:
+    """当前可调用的工具全集：内置/通道工具 + 已挂载的 MCP 工具。
+
+    MCP 工具由 attach_mcp_tools() 在运行时异步挂载，_codex_tools() 取的是
+    挂载前的快照，只报内置工具。若此处不补 MCP，agent 会看到「目录里没有
+    mcp__ 工具」却又能调用成功——正是本工具要消灭的口径分裂。
+    """
     out = []
+    seen = set()
     try:
         from server.api.chat import _codex_tools
 
         for tool in _codex_tools():
             fn = tool.get("function", {})
+            name = fn.get("name", "")
+            if name in seen:
+                continue
+            seen.add(name)
             out.append(
                 {
-                    "name": fn.get("name", ""),
+                    "name": name,
                     "description": fn.get("description", ""),
                     "schema": fn.get("parameters"),
                 }
             )
     except Exception as e:  # noqa: BLE001
         logger.warning("inspect tools failed: %s", e)
+
+    # 补已挂载的 MCP 工具（不触发挂载，只读当前实况）
+    try:
+        from agent_core import tools_registry as tr
+
+        for d in getattr(tr, "ALL_TOOL_DEFS", []):
+            fn = d.get("function", {})
+            name = fn.get("name", "")
+            if not name.startswith("mcp__") or name in seen:
+                continue
+            seen.add(name)
+            out.append(
+                {
+                    "name": name,
+                    "description": fn.get("description", ""),
+                    "schema": fn.get("parameters"),
+                }
+            )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("inspect mcp tools failed: %s", e)
     return out
 
 
