@@ -1,0 +1,65 @@
+subagent_cleaner 已启用: ttl=1800.0s interval=300.0s
+audit_panel 面板已注册 side.tab
+[tools_registry] 外部工具已注册: statute_lookup (L1, builtin-ecocodex)
+[tools_registry] 外部工具已注册: statute_search (L1, builtin-ecocodex)
+[govmcp_tools_loader] 组合装配注册 0 个政务平台工具: []
+[builtin_tools] 组合装配注册 0 个内置工具: []
+cordis 应用上下文已装配: {'services': ['goals', 'lessons', 'llm', 'slots', 'subagents', 'trace_audit'], 'plugins': {'agent_core.cordis_plugins.subagent_cleaner': 'active', 'agent_core.cordis_plugins.audit_panel': 'active', 'agent_core.cordis_plugins.govmcp_tools_loader': 'active', 'agent_core.cordis_plugins.builtin_tools': 'active'}, 'events': {}}
+
+  eco Agent Management API (v1.0.0)
+  Web GUI:  http://127.0.0.1:8788/
+  API docs: http://127.0.0.1:8788/docs
+  Health:   http://127.0.0.1:8788/healthz
+  Chat:     POST http://127.0.0.1:8788/api/v1/chat
+
+[soul] SOUL.md 已加载: E:\DSH\eco-Agent\profiles\eco-agent\SOUL.md (硬边界=有)
+数据库 Schema 已加载
+Memory Tree 初始化完成: E:\DSH\eco-Agent\memory-tree\data\eco_memory.db
+[tools_registry] 外部工具已注册: wryzxjc_list_regions (L1, govmcp-wryzxjc)
+[tools_registry] 外部工具已注册: wryzxjc_list_pollution_sources (L1, govmcp-wryzxjc)
+[tools_registry] 外部工具已注册: wryzxjc_get_pollution_source (L1, govmcp-wryzxjc)
+[tools_registry] 外部工具已注册: wryzxjc_list_alarms (L1, govmcp-wryzxjc)
+[tools_registry] 外部工具已注册: wryzxjc_list_devices (L1, govmcp-wryzxjc)
+[tools_registry] 外部工具已注册: wryzxjc_list_realtime_data (L1, govmcp-wryzxjc)
+[tools_registry] 外部工具已注册: wryzxjc_list_jcd_tree (L1, govmcp-wryzxjc)
+[tools_registry] 外部工具已注册: wryzxjc_list_history_data (L1, govmcp-wryzxjc)
+[tools_registry] 外部工具已注册: sthjzf_query_view (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_get_menu (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_get_view_config (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_query_cases (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_list_depts (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_query_case_detail (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_query_case_statistics (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_water_task_statistics (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_water_task_list (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_water_supervise_statistics (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: sthjzf_water_current_user (L1, govmcp-sthjzf)
+[tools_registry] 外部工具已注册: permit_menu (L1, govmcp-permit_management)
+[tools_registry] 外部工具已注册: permit_license_list (L1, govmcp-permit_management)
+[tools_registry] 外部工具已注册: permit_enterprise_list (L1, govmcp-permit_management)
+[tools_registry] 外部工具已注册: permit_jgzf_menu (L1, govmcp-permit_management)
+[tools_registry] 外部工具已注册: permit_jgzf_license_execution (L1, govmcp-permit_management)
+[tools_registry] 外部工具已注册: permit_jgzf_stop_production (L1, govmcp-permit_management)
+[tools_registry] 外部工具已注册: permit_jgzf_enterprise_archive (L1, govmcp-permit_management)
+[tools_registry] 外部工具已注册: permit_area_list (L1, govmcp-permit_management)
+[tools_registry] 外部工具已注册: permit_industry_list (L1, govmcp-permit_management)
+[tools_registry] 外部工具已注册: water_station_realtime (L1, govmcp-env_open_data)
+[tools_registry] 外部工具已注册: air_forecast (L1, govmcp-env_open_data)
+[tools_registry] 外部工具已注册: hunan_env_monthly_report (L1, govmcp-hunan_env)
+数据库 Schema 已加载
+Memory Tree 初始化完成: E:\DSH\eco-Agent\memory-tree\data\eco_memory.db
+数据库 Schema 已加载
+Memory Tree 初始化完成: E:\DSH\eco-Agent\memory-tree\data\eco_memory.db
+[permissions] PERMISSION.md 覆盖 81 项工具风险级
+[permissions] PERMISSION.md 覆盖 81 项工具风险级
+[permissions] PERMISSION.md 覆盖 81 项工具风险级
+[permissions] PERMISSION.md 覆盖 81 项工具风险级
+[permissions] PERMISSION.md 覆盖 81 项工具风险级
+[permissions] PERMISSION.md 覆盖 81 项工具风险级
+[permissions] PERMISSION.md 覆盖 81 项工具风险级
+[permissions] PERMISSION.md 覆盖 81 项工具风险级
+os_sandbox degraded execution (non-Linux platform Windows): ['E:\\DSH\\eco-Agent\\.venv\\Scripts\\python.exe']
+resource module unavailable, rlimits skipped
+[permissions] PERMISSION.md 覆盖 81 项工具风险级
+os_sandbox degraded execution (non-Linux platform Windows): ['E:\\DSH\\eco-Agent\\.venv\\Scripts\\python.exe']
+resource module unavailable, rlimits skipped
