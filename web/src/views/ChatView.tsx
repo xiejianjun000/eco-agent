@@ -720,9 +720,11 @@ export default function ChatView({
     setSideTab(t);
     window.localStorage.setItem(`eco-side-tab-${sessionId}`, t);
   };
-  const [taskLogContent, setTaskLogContent] = useState('');
-  const [taskLogStats, setTaskLogStats] = useState<{ days: number; files: string[] }>({ days: 0, files: [] });
-  const [sysInfo, setSysInfo] = useState<Record<string, unknown> | null>(null);
+  // 以下三组状态的写入入口（上下文 / 日志 tab）已按需求从右侧栏移除，
+  // 面板渲染代码保留以便后续按抽屉方式复用，故只保留读取端。
+  const [taskLogContent] = useState('');
+  const [taskLogStats] = useState<{ days: number; files: string[] }>({ days: 0, files: [] });
+  const [sysInfo] = useState<Record<string, unknown> | null>(null);
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
   const [docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
   /** 磁盘上已持久化的 MD 产物（重启/刷新后仍可点开，对齐 DSH 文件产物持久化） */
@@ -750,7 +752,8 @@ export default function ChatView({
   const [panelOpen, setPanelOpen] = useState<boolean>(() => window.localStorage.getItem('eco-panel-open') !== '0');
   const [panelW, setPanelW] = useState<number>(() => {
     const saved = Number(window.localStorage.getItem('eco-panel-w'));
-    return Number.isFinite(saved) && saved >= 260 && saved <= 900 ? saved : 340;
+    // 默认 420：WorkBuddy 抽屉实测宽度；仍可拖拽，用户自定义值优先
+    return Number.isFinite(saved) && saved >= 260 && saved <= 900 ? saved : 420;
   });
 
   const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -1002,6 +1005,7 @@ export default function ChatView({
   const refreshTaskList = () => {
     void api.subagentList().then((l) => setTaskAgents(l.agents)).catch(() => {});
   };
+  void refreshTaskList; // 任务 tab 已从右侧栏移除；保留函数供后续抽屉面板复用
 
   /** 工作空间选择：__new__ 走 prompt 新建（成功后刷新列表并选中；取消/失败时受控 select 自动回退原值） */
   const onWorkspaceSelect = (v: string) => {
@@ -1571,53 +1575,7 @@ export default function ChatView({
           >
             轨迹{activeTrace.length > 0 ? ` (${activeTrace.length})` : ''}
           </button>
-          <button
-            className={`side-tab${sideTab === 'context' ? ' active' : ''}`}
-            onClick={() => {
-              switchTab('context');
-              api.system().then((d) => setSysInfo(d)).catch(() => setSysInfo({}));
-            }}
-          >
-            上下文
-          </button>
-          <button
-            className={`side-tab${sideTab === 'artifact' ? ' active' : ''}`}
-            onClick={() => switchTab('artifact')}
-          >
-            产物{artifacts.length + allMdArtifacts.length > 0 ? ` (${artifacts.length + allMdArtifacts.length})` : ''}
-          </button>
-          <button
-            className={`side-tab${sideTab === 'doc' ? ' active' : ''}`}
-            onClick={() => switchTab('doc')}
-          >
-            文档{docFiles.length > 0 ? ` (${docFiles.length})` : ''}
-          </button>
-          <button
-            className={`side-tab${sideTab === 'preview' ? ' active' : ''}${previewUrl ? ' has-dot' : ''}`}
-            title="文档生成后自动在此内嵌打开（docs.qq.com）"
-            onClick={() => switchTab('preview')}
-          >
-            预览
-          </button>
-          <button
-            className={`side-tab${sideTab === 'task' ? ' active' : ''}`}
-            onClick={() => { switchTab('task'); refreshTaskList(); }}
-          >
-            任务{taskAgents.length > 0 ? ` (${taskAgents.length})` : ''}
-          </button>
-          <button
-            className={`side-tab${sideTab === 'tasklog' ? ' active' : ''}`}
-            title="任务段记忆（WorkBuddy memory 对标）：任务完成自动沉淀，下次会话注入"
-            onClick={() => {
-              switchTab('tasklog');
-              void api.taskLog().then((r) => {
-                setTaskLogContent(r.content ?? '');
-                setTaskLogStats(r.stats ?? { days: 0, files: [] });
-              }).catch(() => setTaskLogContent('（任务日志加载失败）'));
-            }}
-          >
-            日志{taskLogStats.days > 0 ? ` (${taskLogStats.days}天)` : ''}
-          </button>
+          {/* 审计链：原为 slot 面板，按需求提到轨迹之后作为固定第二个 tab */}
           {slotPanels.map((p) => (
             <button
               key={p.id}
