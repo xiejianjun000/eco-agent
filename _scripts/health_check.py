@@ -53,28 +53,22 @@ def check() -> dict:
     except Exception as e:  # noqa: BLE001
         rows.append({"group": "凭证配置", "name": "检查失败", "ok": False, "detail": str(e)})
 
-    # ── 2. govmcp 工具注册表 ──
+    # ── 2. 工具注册表 ──
     try:
-        from govmcp_tools import register_all, registry
+        from agent_core import tools_registry as tr
 
-        if registry.count() == 0:
-            register_all()
-        cats: dict[str, int] = {}
-        for name, tool in registry.tools.items():
-            meta = getattr(tool.handler, "_govmcp_meta", {})
-            cat = meta.get("category", "未分类")
-            cats[cat] = cats.get(cat, 0) + 1
-        platforms = "、".join(f"{c}({n})" for c, n in cats.items() if c.startswith("执法平台"))
+        count = len(getattr(tr, "_HANDLERS", {}))
+        mcp_count = len([n for n in getattr(tr, "_HANDLERS", {}) if n.startswith("mcp__")])
         rows.append(
             {
                 "group": "工具注册",
-                "name": f"govmcp 工具 {registry.count()} 个",
-                "ok": registry.count() >= 100,
-                "detail": "三平台: " + platforms,
+                "name": f"工具注册表 {count} 个",
+                "ok": count > 0,
+                "detail": f"内置 {count - mcp_count} 个 / MCP {mcp_count} 个",
             }
         )
     except Exception as e:  # noqa: BLE001
-        rows.append({"group": "工具注册", "name": "govmcp 注册表", "ok": False, "detail": str(e)})
+        rows.append({"group": "工具注册", "name": "工具注册表", "ok": False, "detail": str(e)})
 
     # ── 3. 聊天通道接线 ──
     try:

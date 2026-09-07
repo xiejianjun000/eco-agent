@@ -2,10 +2,11 @@
 """
 server/api/tools.py — 工具目录 API
 
-聚合三源工具目录：
-1. govmcp 政务工具注册表（govmcp_tools，100+ 工具，按 category 分组）
-2. MCP 连接器（agent_core.mcp_connector，外部 MCP server 工具）
-3. 内置工具（agent_core 自注册工具）
+数据源：agent_core.tools_registry（内置工具 + 外部注册工具）。
+
+历史：原先聚合 govmcp_tools 政务工具注册表（100+ 工具）。该包已于 2026-09
+移除（依赖内网域名与凭证，通用环境不可达），本接口改读 tools_registry，
+即 LLM 实际可调用的工具全集——避免目录与真实能力脱节。
 """
 
 from __future__ import annotations
@@ -19,40 +20,49 @@ logger = logging.getLogger("eco.server.tools")
 router = APIRouter()
 
 
-def _govmcp_catalog() -> list[dict]:
-    """govmcp 政务工具目录（懒加载注册，按 category 分组返回）。"""
+def _tool_catalog() -> list[dict]:
+    """当前运行时真实可用的工具目录（来源 tools_registry）。"""
     try:
-        from govmcp_tools import register_all
-        from govmcp_tools import registry as govmcp_registry
+        from agent_core import tools_registry as tr
 
-        if govmcp_registry.count() == 0:
-            register_all()
+        # ALL_TOOL_DEFS 是 OpenAI tools 格式，name/description 从 function 取
+        descs = {
+            d.get("function", {}).get("name", ""): d.get("function", {}).get("description", "")
+            for d in getattr(tr, "ALL_TOOL_DEFS", [])
+        }
+        sources = getattr(tr, "_EXTERNAL_TOOL_SOURCES", {})
+        risks = getattr(tr, "_EXTERNAL_RISK_OVERRIDES", {})
         out = []
-        for name, tool in sorted(govmcp_registry.tools.items()):
-            meta = getattr(tool.handler, "_govmcp_meta", {})
+        for name in sorted(getattr(tr, "_HANDLERS", {})):
+            source = sources.get(name) or ("mcp" if name.startswith("mcp__") else "builtin")
+            try:
+                category = tr._schema_category(name)
+            except Exception:  # noqa: BLE001
+                category = ""
             out.append(
                 {
-                    "source": "govmcp",
+                    "source": source,
                     "name": name,
-                    "description": tool.description,
-                    "category": meta.get("category", ""),
-                    "tags": meta.get("tags", []),
-                    "approval_required": tool.approval_required,
+                    "description": descs.get(name, ""),
+                    "category": category,
+                    "tags": [],
+                    # L3/L4 视为需审批（与权限闸门口径一致）
+                    "approval_required": risks.get(name, "") in ("L3", "L4"),
                 }
             )
         return out
     except Exception as e:  # noqa: BLE001
-        logger.warning("govmcp catalog unavailable: %s", e)
+        logger.warning("tool catalog unavailable: %s", e)
         return []
 
 
 @router.get("/tools")
 async def list_tools(
-    source: str | None = Query(default=None, description="工具来源过滤: govmcp / mcp / builtin"),
+    source: str | None = Query(default=None, description="工具来源过滤: mcp / builtin / 其他注册源"),
     q: str | None = Query(default=None, description="名称/描述关键词"),
 ) -> dict:
-    tools = _govmcp_catalog()
-    if source and source != "govmcp":
+    tools = _tool_catalog()
+    if source:
         tools = [t for t in tools if t["source"] == source]
     if q:
         ql = q.lower()
@@ -70,7 +80,7 @@ async def list_tools(
 
 @router.get("/tools/stats")
 async def tool_stats() -> dict:
-    tools = _govmcp_catalog()
+    tools = _tool_catalog()
     categories: dict[str, int] = {}
     approval_count = 0
     for t in tools:

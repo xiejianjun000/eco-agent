@@ -8,80 +8,9 @@
 
 from __future__ import annotations
 
-
-def _platform_chat_tools() -> list[str]:
-    """单一权威源：govmcp 三个平台模块导出的 CHAT_TOOLS（聊天暴露子集）。"""
-    from govmcp_tools import permit_management, sthjzf, wryzxjc
-
-    names: list[str] = []
-    for mod in (wryzxjc, sthjzf, permit_management):
-        names.extend(mod.CHAT_NAMES)
-    return names
-
-
-def test_platform_tools_in_chat_list():
-    """① govmcp CHAT_TOOLS → 聊天工具表：全量一致。"""
-    from server.api.chat import _codex_tools
-
-    chat = {t["function"]["name"] for t in _codex_tools()}
-    missing = [n for n in _platform_chat_tools() if n not in chat]
-    assert not missing, f"平台工具未进聊天工具表: {missing}"
-
-
-def test_platform_tools_in_wiring_manifest():
-    """② 聊天工具表 → wiring_manifest.WIRED_REQUIRED：全量登记。"""
-    from agent_core.wiring_manifest import WIRED_REQUIRED
-
-    missing = [n for n in _platform_chat_tools() if n not in WIRED_REQUIRED]
-    assert not missing, f"平台工具未登记接线清单: {missing}"
-
-
-def test_platform_tools_have_handlers():
-    """③ 每个平台聊天工具都能反查到 handler（分发/注册二选一）。"""
-    from agent_core.tools_registry import _HANDLERS, resolve_tool_name
-    from agent_core.wiring_manifest import CHANNEL_DISPATCHED
-
-    no_handler = [
-        n
-        for n in _platform_chat_tools()
-        if n not in CHANNEL_DISPATCHED and n not in _HANDLERS and resolve_tool_name(n) not in _HANDLERS
-    ]
-    assert not no_handler, f"平台工具无 handler: {no_handler}"
-
-
-# 政务边界收紧（2026-08-24）：涉执法数据工具升级 L4 审批；菜单/区域/目录类保留 L1
-_KEEP_L1 = {
-    "wryzxjc_list_regions",
-    "sthjzf_get_menu",
-    "sthjzf_get_view_config",
-    "sthjzf_list_depts",
-    "sthjzf_query_view",
-    "permit_menu",
-    "permit_area_list",
-    "permit_industry_list",
-}
-
-
-def test_platform_tools_permission_l1():
-    """④ 平台工具权限分级：菜单/目录类 L1，涉执法数据类 L4（需审批）。"""
-    from agent_core.permissions import load_overrides
-
-    ov = load_overrides()
-    wrong = [n for n in _platform_chat_tools() if ov.get(n) != ("L1" if n in _KEEP_L1 else "L4")]
-    assert not wrong, f"平台工具权限分级不符: {wrong}"
-
-
-def test_write_tools_not_in_chat_and_l4():
-    """⑤ 敏感写入工具：不进聊天表 + PERMISSION L4 + govmcp approval_required。"""
-    from agent_core.permissions import load_overrides
-    from govmcp_tools import register_all, registry
-
-    if registry.count() == 0:
-        register_all()
-    for n in ("sthjzf_water_clue_verify", "sthjzf_water_clue_confirm"):
-        assert n not in _platform_chat_tools()
-        assert load_overrides().get(n) == "L4"
-        assert registry.get(n).approval_required is True
+# 政务平台工具集（govmcp_tools）已于 2026-09 移除：依赖内网域名与凭证，
+# 通用环境不可达。原 ①~⑤ 平台工具交叉校验用例随之删除；
+# 下方通用接线校验（switch_persona/open_url 等）继续保留。
 
 
 def test_switch_persona_wired():

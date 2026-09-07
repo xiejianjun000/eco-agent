@@ -326,20 +326,15 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default", wor
     except Exception:  # noqa: BLE001
         pass
 
-    # 政务平台/公开数据工具路由指南（govmcp 直连工具，禁止用 web_search/web_fetch 绕路）
+    # 政务平台/公开数据工具路由指南（MCP 直连工具，禁止用 web_search/web_fetch 绕路）
     add(
         "tool_guidance.platform", "工具指南·政务平台与公开数据",
         "【政务平台/公开数据工具路由——直接调用】\n"
-        "1. 湖南全省环境质量月报/县市区断面水质/流域数据：hunan_env_monthly_report"
-        "（year+month 必传，keyword 可传'冷水江'等县市区名）——直接调用，"
-        "禁止用 web_search 或抓官网首页绕路。\n"
-        "2. 地表水自动站实时数据：water_station_realtime；空气质量预报：air_forecast。\n"
-        "3. 污染源在线监控：wryzxjc_*；国家四平台执法数据：sthjzf_*；排污许可：permit_*。\n"
-        "4. 数据图表：chart_render（line/bar/stacked_bar/pie）——趋势曲线/因子对比/占比\n"
+        "1. 数据图表：chart_render（line/bar/stacked_bar/pie）——趋势曲线/因子对比/占比\n"
         "必须调用它出卡片；函数清单里一定有这个工具，禁止声称'当前会话无 chart_render 工具'。\n"
-        "5. 排污许可证公开信息（企业许可证/执行报告/整改公告/排放口）：mcp__eco-pollution-permit__*。\n"
-        "6. 部官网数据（空气质量/地表水/海水/辐射/部要闻/政策库）：mcp__eco-mee-encyclopedia__*。\n"
-        "7. 湖南实时数据（14市州实时AQI/逐小时/预报/排名/环评公示/政策文件/执法案例/\n"
+        "2. 排污许可证公开信息（企业许可证/执行报告/整改公告/排放口）：mcp__eco-pollution-permit__*。\n"
+        "3. 部官网数据（空气质量/地表水/海水/辐射/部要闻/政策库）：mcp__eco-mee-encyclopedia__*。\n"
+        "4. 湖南实时数据（14市州实时AQI/逐小时/预报/排名/环评公示/政策文件/执法案例/\n"
         "信用评价/环境质量月报）：mcp__eco-hunan-env__*——查湖南省内数据优先走这里。\n"
         "这些工具是实测直连端点，调用即得真实数据；查不到时才说查不到，不要绕去搜网页。",
         "tool_guidance",
@@ -526,55 +521,6 @@ def _build_messages(message: str, history: list[dict], session_id: str = "defaul
         messages.append({"role": h["role"], "content": content})
     messages.append({"role": "user", "content": message})
     return messages
-
-
-# ── govmcp 政务平台工具（三平台：排污许可/在线监测/国家四平台）────
-# 只读工具经 register_external_tool 注册进 tools_registry：
-# LLM 可见定义 + L1 权限闸门 + SM3 审计链，与内置工具同等待遇。
-_PLATFORM_TOOLS_READY = False
-_PLATFORM_CHAT_NAMES: list[str] = []
-_PLATFORM_CHAT_DEFS: list[dict] = []
-
-
-def _ensure_platform_tools() -> None:
-    """把 govmcp_tools 三平台只读工具注册进 tools_registry（幂等）。
-
-    依赖缺失/已注册等异常不阻断主工具链。
-    """
-    global _PLATFORM_TOOLS_READY
-    if _PLATFORM_TOOLS_READY:
-        return
-    try:
-        from agent_core.tools_registry import register_external_tool
-        from govmcp_tools import env_open_data, hunan_env, permit_management, sthjzf, wryzxjc
-
-        for mod in (wryzxjc, sthjzf, permit_management, env_open_data,
-                    hunan_env):
-            for name, spec in getattr(mod, "CHAT_TOOLS", {}).items():
-                try:
-                    register_external_tool(
-                        name,
-                        spec["description"],
-                        spec["parameters"],
-                        spec["handler"],
-                        risk_level="L1",
-                        source="govmcp-" + mod.__name__.rsplit(".", 1)[-1],
-                    )
-                except ValueError:
-                    pass  # 已注册（重复导入等），handler 已存在
-                if name not in _PLATFORM_CHAT_NAMES:
-                    _PLATFORM_CHAT_NAMES.append(name)
-                    _PLATFORM_CHAT_DEFS.append({
-                        "type": "function",
-                        "function": {
-                            "name": name,
-                            "description": spec["description"],
-                            "parameters": spec["parameters"],
-                        },
-                    })
-        _PLATFORM_TOOLS_READY = True
-    except Exception:  # noqa: BLE001 — 平台工具不可用不影响主流程
-        logger.warning("govmcp platform tools registration failed", exc_info=True)
 
 
 def _codex_tools() -> list[dict]:
@@ -1301,9 +1247,6 @@ def _codex_tools() -> list[dict]:
             },
         },
     ]
-    # 挂载 govmcp 政务平台只读工具（排污许可/在线监测/国家四平台，L1 闸门）
-    _ensure_platform_tools()
-    defs.extend(_PLATFORM_CHAT_DEFS)
     return defs
 
 
@@ -1906,15 +1849,6 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             "filename": arguments.get("filename", ""),
         })
         return result[:2000]
-    if name in _PLATFORM_CHAT_NAMES or name.startswith(("wryzxjc_", "sthjzf_", "permit_")):
-        # govmcp 政务平台工具（L1 只读，经 execute_tool 权限闸门 + SM3 审计）
-        _ensure_platform_tools()
-        from agent_core.tools_registry import execute_tool
-
-        result = await execute_tool(name, arguments)
-        # 不在此截断：完整结果交给 _smart_preview（tool 事件预览化），
-        # 模型侧拿完整数据，避免 [:4000] 把 JSON 切坏
-        return result
     if name == "switch_persona":
         # 执法阶段人设切换（DSH 式提示词状态机）：inspection/documentation/review
         from agent_core.prompt_engine import PHASE_NAMES, get_prompt_engine

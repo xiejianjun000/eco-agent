@@ -33,12 +33,6 @@ def _build_parser():
     p.add_argument("--port", type=int, default=7070)
     p.add_argument("--daemon", action="store_true")
 
-    p = sub.add_parser("mcp", help="MCP protocol server")
-    p.add_argument("action", choices=["serve"], nargs="?", default="serve")
-    p.add_argument("--http", action="store_true")
-    p.add_argument("--port", type=int, default=8000)
-    p.add_argument("--transport", choices=["stdio", "sse", "websocket"], default=None)
-
     p = sub.add_parser("serve", help="OpenAI-compatible API")
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--host", default="127.0.0.1")

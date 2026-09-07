@@ -56,9 +56,9 @@ def run(args):
     try:
         import govmcp  # noqa: F401
 
-        checks.append(("GovMCP (governance MCP)", OK))
+        checks.append(("govmcp crypto (SM3 审计链)", OK))
     except ImportError:
-        checks.append(("GovMCP (optional)", WA))
+        checks.append(("govmcp crypto (optional)", WA))
     checks.append(("Gateway config", OK if (ROOT / "gateway" / "gateway.yaml").exists() else WA))
     try:
         import mcp  # noqa: F401

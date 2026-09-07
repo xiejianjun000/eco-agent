@@ -301,11 +301,9 @@ class TestToolSchemaQuality:
         assert not missing, f"参数缺 description: {missing}"
 
     def test_no_chinese_identifiers_in_source(self):
-        """govmcp_tools 源文件不得再有中文函数名/工具名残留"""
-        import glob
-
+        """工具注册源文件不得有中文函数名/工具名残留"""
         bad = []
-        for fp in glob.glob("govmcp_tools/*.py") + ["agent_core/tools_registry.py"]:
+        for fp in ["agent_core/tools_registry.py"]:
             with open(fp, encoding="utf-8") as f:
                 src = f.read()
             for m in re.finditer(r'def ([^\s(]*[一-鿿][^\s(]*)|name="([^"]*[一-鿿][^"]*)"', src):

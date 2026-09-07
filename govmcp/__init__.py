@@ -1,28 +1,16 @@
 #!/usr/bin/env python3
 """
-govmcp — 国产信创MCP协议（对标国内等保合规）
+govmcp — 国密加密与审计链（精简版）
 =============================================
 
-中国政务MCP (Model Context Protocol) 标准实现。
-在标准MCP协议基础上增加国密加密、审批工作流、不可篡改审计链。
+保留 eco-agent 实际依赖的两部分：
+- crypto：SM2/SM3/SM4 国密算法 + 不可篡改审计链（trace_audit 等保台账地基）
+- tools.registry：工具注册表与 @govmcp_tool 装饰器
 
-协议层:
-- JSON-RPC 2.0 over stdio (兼容标准MCP)
-- SM4 加密传输层 (govmcp独有)
-- SM3 数据完整性校验 (govmcp独有)
-
-实现状态（1.0）:
-- 可用: crypto（SM2/SM3/SM4）、tools.registry（100+ 政务工具注册/调用）、
-        server.approval（审批工作流）、protocol.server（核心骨架）
-- 规划: authorization / elicitation / sampling / tasks / models / transport
-        协议层模块（引用处已 try/except 隔离，补齐计划见 docs/ROADMAP-1.0.md）
-
-产品矩阵:
-- open-taiji    开源多智能体框架
-- govmcp        国产信创MCP协议 ← 本包
-- taiji-agent   政务智能体框架
-- TaijiVerify   全球首创防虚幻技术
-- TaijiHub      国产大模型API聚合网关
+已移除（2026-09，未被使用/不可达）：
+- protocol / server / models：MCP 协议层与审批工作流骨架
+- 各 *-mcp-server 子服务实现（github/eia/hunan-env/mee/pollution-permit）
+- govmcp_tools：政务平台工具集（依赖内网域名与凭证，通用环境不可达）
 
 Author: Taiji Agent Team
 License: Apache 2.0
@@ -78,45 +66,8 @@ __all__ = [
 ]
 
 try:
-    from govmcp.protocol.server import GovMCPServer  # noqa: F401
-
-    __all__.append("GovMCPServer")
-except ImportError:
-    pass
-
-try:
     from govmcp.tools.registry import ToolRegistry, govmcp_tool  # noqa: F401
 
     __all__.extend(["ToolRegistry", "govmcp_tool"])
-except ImportError:
-    pass
-
-try:
-    from govmcp.server.approval import ApprovalFlow, ApprovalStatus  # noqa: F401
-
-    __all__.extend(["ApprovalFlow", "ApprovalStatus"])
-except ImportError:
-    pass
-
-try:
-    from govmcp.models import (
-        get_model,  # noqa: F401
-        list_models,  # noqa: F401
-        register_model,  # noqa: F401
-        validate_model,  # noqa: F401
-    )
-    from govmcp.models.registry import LLMProvider, ModelConfig, ModelRegistry  # noqa: F401
-
-    __all__.extend(
-        [
-            "LLMProvider",
-            "ModelConfig",
-            "ModelRegistry",
-            "register_model",
-            "get_model",
-            "list_models",
-            "validate_model",
-        ]
-    )
 except ImportError:
     pass
