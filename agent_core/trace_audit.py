@@ -51,6 +51,8 @@ class TraceAudit:
         # 跨进程互斥：线程锁只在单进程内有效，实测 3 个进程并发写仍在第 2 行断裂。
         # 用 flock 排他锁把「取链尾 → 算哈希 → 落盘」在进程间也串行化。
         self._lock_path = self.base_dir / "trace_audit.lock"
+        # verify 计算锁：防止并发请求同时冷算全链（见 verify 的踩踏说明）
+        self._verify_lock = threading.Lock()
 
     # ── 记录 ─────────────────────────────────────────────
 
@@ -115,9 +117,16 @@ class TraceAudit:
         cached = getattr(self, "_verify_cache", None)
         if cached is not None and cached[0] == fp:
             return dict(cached[1])
-        result = self._verify_uncached()
-        self._verify_cache = (fp, dict(result))
-        return result
+        # 缓存踩踏防护（k6 实测）：20 VU 并发时缓存同时未命中，
+        # 每个请求各自跑一遍 20 秒的 SM3 全链重算 —— p95 21.8s、最坏 41.8s。
+        # 加锁后只有第一个请求真算，其余等待并复用结果。
+        with self._verify_lock:
+            cached = getattr(self, "_verify_cache", None)
+            if cached is not None and cached[0] == fp:
+                return dict(cached[1])   # 等锁期间别人已算好
+            result = self._verify_uncached()
+            self._verify_cache = (fp, dict(result))
+            return result
 
     def _verify_uncached(self) -> dict:
         """真正执行逐行 SM3 重算（无缓存）。
@@ -193,17 +202,29 @@ class TraceAudit:
         return result
 
     def stats(self) -> dict:
+        """链统计（verify 结果 + 按操作类型计数）。
+
+        by_operation 需要逐行 json.loads 全文件（7000+ 行），
+        与 verify 同样按文件指纹缓存，避免每次面板刷新都重算。
+        """
         v = self.verify()
-        by_what: dict[str, int] = {}
-        for line in self._raw_lines():
-            try:
-                e = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            what = str(e.get("what", "?")).split(":")[0]
-            by_what[what] = by_what.get(what, 0) + 1
-        v["by_operation"] = by_what
-        v["size_bytes"] = self.chain_path.stat().st_size if self.chain_path.exists() else 0
+        fp = self._chain_fingerprint()
+        cached = getattr(self, "_stats_cache", None)
+        if cached is not None and cached[0] == fp:
+            by_what, size = cached[1], cached[2]
+        else:
+            by_what = {}
+            for line in self._raw_lines():
+                try:
+                    e = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                what = str(e.get("what", "?")).split(":")[0]
+                by_what[what] = by_what.get(what, 0) + 1
+            size = self.chain_path.stat().st_size if self.chain_path.exists() else 0
+            self._stats_cache = (fp, by_what, size)
+        v["by_operation"] = dict(by_what)
+        v["size_bytes"] = size
         return v
 
     # ── 内部 ─────────────────────────────────────────────
