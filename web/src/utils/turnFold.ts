@@ -222,6 +222,12 @@ export interface BeatItem {
   /** 写文件类的变更行数，渲染为分色 +N -M */
   added?: number;
   removed?: number;
+  /** 展开明细所需的原始信息（仅 act）。
+   *  刻意只存这三样：工具名、参数、结果预览，
+   *  由 resolveToolDetail 在渲染时解析成结构化明细。 */
+  toolName?: string;
+  toolArgs?: unknown;
+  resultPreview?: string;
   /** running↔done 配对键，内部用 */
   key?: string;
   ok?: boolean;
@@ -376,6 +382,8 @@ export function buildBeats(
           status: h.statusText || statusTextOf(t.name, true),
           text: h.primaryContent || primaryOf(t.name, t.args),
           viewId: h.viewId,
+          toolName: t.name,
+          toolArgs: t.args,
           key: keyOf(t),
           running: true,
         });
@@ -403,6 +411,9 @@ export function buildBeats(
         viewId: hd.viewId,
         added: hd.added,
         removed: hd.removed,
+        toolName: t.name,
+        toolArgs: t.args,
+        resultPreview: t.result_preview,
         key: keyOf(t),
         secondary: summarizeResult(t.result_preview),
         ok: !failed,

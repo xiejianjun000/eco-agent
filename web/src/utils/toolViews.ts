@@ -14,6 +14,27 @@
  * children 明细面板留到后续按需补。
  */
 
+/**
+ * 展开明细。
+ *
+ * 重要设计约束（查证自 WorkBuddy）：**不是每个工具都可展开**。
+ * 它 37 个 view 里只有 18 个用 ToolExpandable，10 个是纯 ToolHeader
+ * （read-file / web-fetch / skill / delete-files / image-gen …）。
+ * 判据是「有没有值得展开的结构化内容」——读个文件就是读了，
+ * 展开一个空面板反而是噪音。
+ *
+ * 因此 detail 返回 null 表示该次调用不可展开，箭头不出现。
+ */
+export type ToolDetail =
+  /** 命令 + 输出，等宽（对标 tool-exec：bash 标题 / command / output） */
+  | { kind: 'command'; command: string; output?: string }
+  /** 结果条目列表（对标 tool-web-search__results） */
+  | { kind: 'list'; items: { text: string; sub?: string }[]; more?: number }
+  /** 纯文本块，超长截断 */
+  | { kind: 'text'; text: string }
+  /** 键值对 */
+  | { kind: 'kv'; rows: { k: string; v: string }[] }
+
 /** 匹配优先级，语义对齐 WorkBuddy 的 NONE/DEFAULT/EXACT */
 export const MatchPriority = { NONE: 0, DEFAULT: 1, EXACT: 10 } as const
 
@@ -55,6 +76,11 @@ export interface ToolViewEntry {
     /** 目标文件已存在 → 编辑；否则创建。动词不同。 */
     isModify?: boolean
   }) => Omit<ToolHeadContent, 'viewId'>
+  /**
+   * 由工具结果推出展开明细；返回 null 表示不可展开。
+   * 不实现即视为纯头部视图（对齐 WorkBuddy 的 10 个 header-only view）。
+   */
+  detail?: (ctx: { name: string; args: Record<string, unknown>; result: Record<string, unknown> }) => ToolDetail | null
 }
 
 /** 计算某 entry 对一个工具的匹配优先级（0 表示不处理） */
@@ -96,6 +122,16 @@ export const TOOL_VIEWS: ToolViewEntry[] = [
       primaryContent: s(args, 'query', 'q', 'keyword'),
       secondaryInfo: count ? `${count} 条` : undefined,
     }),
+    detail: ({ result }) => {
+      const rs = Array.isArray(result?.results) ? result.results
+        : Array.isArray(result?.items) ? result.items : []
+      if (!rs.length) return null
+      const items = rs.slice(0, 10).map((r: Record<string, unknown>) => ({
+        text: String(r?.title ?? r?.name ?? r?.text ?? '').trim().slice(0, 120),
+        sub: typeof r?.url === 'string' ? r.url : undefined,
+      })).filter((x) => x.text)
+      return items.length ? { kind: 'list', items, more: Math.max(0, rs.length - items.length) } : null
+    },
   },
   {
     id: 'web-fetch',
@@ -146,6 +182,12 @@ export const TOOL_VIEWS: ToolViewEntry[] = [
       statusText: phase === 'running' ? '执行中' : '已执行命令',
       primaryContent: s(args, 'command', 'cmd'),
     }),
+    detail: ({ args, result }) => {
+      const cmd = s(args, 'command', 'cmd')
+      const out = [result?.stdout, result?.stderr].filter((x) => typeof x === 'string' && x).join('\n')
+      if (!cmd && !out) return null
+      return { kind: 'command', command: cmd, output: out || undefined }
+    },
   },
   {
     id: 'execute-code',
@@ -154,6 +196,13 @@ export const TOOL_VIEWS: ToolViewEntry[] = [
       icon: 'code',
       statusText: phase === 'running' ? '运行代码中' : '已运行代码',
     }),
+    detail: ({ args, result }) => {
+      const code = s(args, 'code', 'source')
+      const out = [result?.stdout, result?.stderr, result?.output]
+        .filter((x) => typeof x === 'string' && x).join('\n')
+      if (!code && !out) return null
+      return { kind: 'command', command: code, output: out || undefined }
+    },
   },
   {
     id: 'grep',
@@ -163,6 +212,16 @@ export const TOOL_VIEWS: ToolViewEntry[] = [
       statusText: phase === 'running' ? '检索代码中' : '已检索代码',
       primaryContent: s(args, 'pattern'),
     }),
+    detail: ({ result }) => {
+      const ms = Array.isArray(result?.matches) ? result.matches : []
+      if (!ms.length) return null
+      const items = ms.slice(0, 20).map((m: Record<string, unknown>) => ({
+        text: String(m?.line ?? m?.text ?? '').trim().slice(0, 160),
+        sub: m?.file ? `${m.file}${m.lineno ? ':' + m.lineno : ''}` : undefined,
+      })).filter((x) => x.text)
+      if (!items.length) return null
+      return { kind: 'list', items, more: Math.max(0, ms.length - items.length) }
+    },
   },
   {
     id: 'glob',
@@ -181,6 +240,15 @@ export const TOOL_VIEWS: ToolViewEntry[] = [
       statusText: phase === 'running' ? '自检中' : '已自检',
       secondaryInfo: count ? `${count} 项` : undefined,
     }),
+    detail: ({ result }) => {
+      const rows: { k: string; v: string }[] = []
+      for (const k of ['tools', 'services', 'plugins', 'slots']) {
+        const v = result?.[k]
+        const n = Array.isArray(v) ? v.length : typeof v === 'number' ? v : undefined
+        if (n !== undefined) rows.push({ k, v: String(n) })
+      }
+      return rows.length ? { kind: 'kv', rows } : null
+    },
   },
   {
     id: 'api-probe',
@@ -361,4 +429,49 @@ export function resolveToolHead(
     }
   }
   return { ...best.head({ name, args, phase, count, ...extra }), viewId: best.id }
+}
+
+/** 命中的 entry；供 detail 解析复用，避免两次遍历逻辑不一致 */
+function pick(name: string): ToolViewEntry | null {
+  let best: ToolViewEntry | null = null
+  let bestP: number = MatchPriority.NONE
+  for (const e of TOOL_VIEWS) {
+    const p = matchPriority(e.match, name)
+    if (p > bestP) { bestP = p; best = e }
+  }
+  return best
+}
+
+/**
+ * 解析展开明细。返回 null 表示该次调用不可展开（不出箭头）。
+ *
+ * 三种情况都返回 null，这是刻意的：
+ *  1. 视图没实现 detail   → 纯头部视图，对齐 WorkBuddy 的 10 个 header-only view
+ *  2. 结果不是 JSON       → 被截断或非结构化，不猜内容
+ *  3. detail 判定无内容   → 空面板比不展开更糟
+ */
+export function resolveToolDetail(
+  name: string,
+  args: Record<string, unknown> = {},
+  resultPreview?: string,
+): ToolDetail | null {
+  const e = pick(name)
+  if (!e?.detail) return null
+  // 结果解析失败不等于没内容：像 shell_run 这样命令本身就在参数里，
+  // 结果被截断时仍应能展开看到执行了什么。所以退化成空结果交给
+  // detail 自行判断，由它决定「有没有值得展开的东西」。
+  let result: Record<string, unknown> = {}
+  try {
+    const parsed = JSON.parse(resultPreview || '{}')
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      result = parsed as Record<string, unknown>
+    }
+  } catch { /* 非 JSON：按空结果处理，不猜内容 */ }
+  try {
+    return e.detail({ name, args, result })
+  } catch {
+    // 单个工具的 detail 抛错不应带走整条对话
+    // （对标 WorkBuddy 给每个 view 包 ToolErrorBoundary）
+    return null
+  }
 }

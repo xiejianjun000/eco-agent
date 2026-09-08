@@ -9,7 +9,9 @@ import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../c
 import { ChatSearchButton, UserPromptListButton } from '../components/ChatTopbar';
 import CompactDivider, { isCompactContent, inferCompactType } from '../components/CompactDivider';
 import { buildAtom, mcpObject, selectSummary, renderSummary, type AtomStatus } from '../utils/metaFold';
-import { buildBeats, extractPresented, fmtSize, stripToolNames } from '../utils/turnFold';
+import { buildBeats, extractPresented, fmtSize, stripToolNames, type BeatItem } from '../utils/turnFold';
+import { resolveToolDetail } from '../utils/toolViews';
+import { ToolDetailPanel } from '../components/ToolDetailPanel';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -513,6 +515,58 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
 
 /** 过程块容器：流式中实时展开，回答输出完成后自动收起为一行摘要。
  *  用户可点摘要行随时回看完整过程（DSH 整洁版面对标：过程不长期占版）。 */
+/**
+ * 单条执行节奏行。
+ *
+ * 独立成组件是为了「逐行展开」：每行自己持有展开态。
+ * WorkBuddy 的 ToolExpandable 也是每个工具实例各管各的，
+ * 而不是整段过程共用一个开关 —— 后者会导致展开一个工具就把
+ * 十几个工具的明细全铺开，反而更乱。
+ *
+ * 头部结构与折叠态完全一致，明细只挂在下方 shell（见 ToolDetailPanel）。
+ */
+function BeatRow({ b }: { b: BeatItem }): React.ReactElement {
+  const [open, setOpen] = React.useState(false);
+  // 只有 act 且真有结构化内容才可展开；detail 为 null 时不出箭头
+  const detail = b.kind === 'act'
+    ? resolveToolDetail(b.toolName || '', (b.toolArgs || {}) as Record<string, unknown>, b.resultPreview)
+    : null;
+  const canExpand = detail !== null;
+  return (
+    <div className={`turn-anchor beat-${b.kind}${b.running ? ' beat-running' : ''}${canExpand ? ' beat-expandable' : ''}${open ? ' beat-open' : ''}`}
+         data-tool-view={b.kind === 'act' ? (b.viewId || 'fallback') : undefined}>
+      <div className="turn-anchor-head"
+           onClick={canExpand ? () => setOpen((v) => !v) : undefined}
+           role={canExpand ? 'button' : undefined}
+           tabIndex={canExpand ? 0 : undefined}
+           onKeyDown={canExpand ? (e) => {
+             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); }
+           } : undefined}>
+        <span className={`turn-anchor-dot${
+          b.kind === 'act' ? (b.running ? ' running' : b.ok ? ' ok' : ' err') : ''}`}
+              aria-hidden="true" />
+        {/* 三段式（对标 WorkBuddy ToolHeader）：动词 · 主体 · 次要信息，互不重复 */}
+        <span className="turn-anchor-text">
+          {b.status && <span className="beat-status">{b.status}</span>}
+          {b.text && <span className="beat-primary">{b.text}</span>}
+          {/* 变更行数：加/删分色两段，不塞进文字里（对标 WorkBuddy +N -M）。
+              创建文件时 removed 为 0 也照常显示，与「编辑」形成对照。 */}
+          {(b.added !== undefined || b.removed !== undefined) && (
+            <span className="beat-diff">
+              <span className="beat-diff-add">+{b.added ?? 0}</span>
+              <span className="beat-diff-del">-{b.removed ?? 0}</span>
+            </span>
+          )}
+          {b.secondary && <span className="beat-second">{b.secondary}</span>}
+          {b.ms !== undefined && b.ms > 0 && <span className="beat-ms">{fmtMs(b.ms)}</span>}
+        </span>
+        {canExpand && <span className="beat-arrow" aria-hidden="true">▾</span>}
+      </div>
+      {detail && <ToolDetailPanel detail={detail} open={open} />}
+    </div>
+  );
+}
+
 function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): React.ReactElement | null {
   const [open, setOpen] = React.useState(live);
   const wasLive = React.useRef(live);
@@ -588,29 +642,7 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
           等于两套皮并存，改造过的那套只在折叠时可见。 */}
       {beats.length > 0 && (
         <div className="turn-anchors">
-          {beats.map((b, i) => (
-            <div className={`turn-anchor beat-${b.kind}${b.running ? ' beat-running' : ''}`} key={i}
-                 data-tool-view={b.kind === 'act' ? (b.viewId || 'fallback') : undefined}>
-              <span className={`turn-anchor-dot${
-                b.kind === 'act' ? (b.running ? ' running' : b.ok ? ' ok' : ' err') : ''}`}
-                    aria-hidden="true" />
-              {/* 三段式（对标 WorkBuddy ToolHeader）：动词 · 主体 · 次要信息，互不重复 */}
-              <span className="turn-anchor-text">
-                {b.status && <span className="beat-status">{b.status}</span>}
-                {b.text && <span className="beat-primary">{b.text}</span>}
-                {/* 变更行数：加/删分色两段，不塞进文字里（对标 WorkBuddy +N -M）。
-                    创建文件时 removed 为 0 也照常显示，与「编辑」形成对照。 */}
-                {(b.added !== undefined || b.removed !== undefined) && (
-                  <span className="beat-diff">
-                    <span className="beat-diff-add">+{b.added ?? 0}</span>
-                    <span className="beat-diff-del">-{b.removed ?? 0}</span>
-                  </span>
-                )}
-                {b.secondary && <span className="beat-second">{b.secondary}</span>}
-                {b.ms !== undefined && b.ms > 0 && <span className="beat-ms">{fmtMs(b.ms)}</span>}
-              </span>
-            </div>
-          ))}
+          {beats.map((b, i) => <BeatRow b={b} key={i} />)}
         </div>
       )}
       <button

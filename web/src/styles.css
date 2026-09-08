@@ -1628,7 +1628,20 @@ mark.chat-search-hit-active { background: #FE9D2E; color: #fff; }
    不靠分隔线。此前 eco 的 beat-primary 用 --t-main，与正文同权重，
    于是满屏一样重，看不出哪是过程哪是结论。
    头部节奏对齐测量值：gap 8px / font-size 14px / line-height 1.75。 */
-.turn-anchor.beat-act { display: flex; align-items: center; gap: 8px; min-width: 0; line-height: 1.75; }
+.turn-anchor.beat-act { display: block; min-width: 0; }
+/* 头部一行：三段式在这里排布；明细 shell 作为兄弟节点挂在下方，
+   所以展开时头部完全不动（这是 ToolExpandable 的核心纪律）。 */
+.turn-anchor-head { display: flex; align-items: center; gap: 8px; min-width: 0; line-height: 1.75; }
+.turn-anchor.beat-expandable > .turn-anchor-head { cursor: pointer; user-select: none; }
+.turn-anchor.beat-expandable > .turn-anchor-head:hover { background: var(--bg-hover, rgba(127,127,127,.06)); border-radius: 6px; }
+/* 箭头：默认隐藏、-90deg，展开时转正并显形（数值同 WorkBuddy） */
+.beat-arrow {
+  flex: none; margin-left: 2px; font-size: 10px; color: var(--t-faint);
+  opacity: 0; transform: rotate(-90deg);
+  transition: transform .24s cubic-bezier(.2,.8,.2,1), opacity .18s ease;
+}
+.turn-anchor.beat-expandable:hover .beat-arrow { opacity: .7; }
+.turn-anchor.beat-open .beat-arrow { opacity: .9; transform: rotate(0deg); }
 .beat-status { color: var(--t-sub); flex: none; }
 .beat-primary {
   color: var(--t-sub);
@@ -1664,3 +1677,61 @@ mark.chat-search-hit-active { background: #FE9D2E; color: #fff; }
   color: var(--terra); font-weight: 600; }
 .artifact-chip-name { color: var(--t-main); }
 .artifact-chip-size { color: var(--t-faint); font-variant-numeric: tabular-nums; }
+
+/* ── 工具展开明细面板 ──────────────────────────────────────
+   对标 WorkBuddy ToolExpandable 的 children shell。
+   纪律：头部恒在，面板只挂头部下方；逐行独立展开，不是整段一起开合。
+   动效与外边距取自实测：
+     height .28s cubic-bezier(.33,1,.68,1) / opacity .2s
+     收起 height:0 + visibility 延迟 .28s（等高度动画走完再隐藏）
+     展开态 margin: 4px 0 8px；内容 translateY(-6px) → 0 */
+.tool-exp-shell {
+  height: 0; opacity: 0; visibility: hidden; pointer-events: none;
+  overflow: hidden; contain: layout paint; margin: 0;
+  transition: height .28s cubic-bezier(.33,1,.68,1), opacity .18s ease-out,
+              visibility 0s linear .28s;
+}
+.tool-exp-shell.open {
+  height: auto; opacity: 1; visibility: visible; pointer-events: auto;
+  margin: 4px 0 8px;
+  transition: height .28s cubic-bezier(.33,1,.68,1), opacity .2s ease-out,
+              visibility 0s linear 0s;
+}
+.tool-exp-content { opacity: 0; transform: translateY(-6px); transition: opacity .2s, transform .2s; }
+.tool-exp-shell.open .tool-exp-content { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .tool-exp-shell, .tool-exp-content { transition: none; }
+}
+
+/* 命令与输出：等宽，命令用主色（是用户要看的东西），输出次级 */
+.tool-exp-cmd {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px; line-height: 1.6; color: var(--t-main);
+  white-space: pre-wrap; word-break: break-all;
+}
+.tool-exp-out {
+  margin: 4px 0 0; padding: 6px 8px;
+  background: var(--bg-inset, rgba(127,127,127,.06)); border-radius: 6px;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px; line-height: 18px; color: var(--t-sub);
+  white-space: pre-wrap; word-break: break-all;
+  max-height: 220px; overflow: auto;
+}
+
+/* 结果列表：行悬停高亮，主文本次级、附注更淡 */
+.tool-exp-list { display: flex; flex-direction: column; gap: 2px; }
+.tool-exp-item {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  padding: 2px 6px; border-radius: 6px; color: var(--t-sub); font-size: 12px;
+  transition: background-color .15s ease, color .15s ease;
+}
+.tool-exp-item:hover { background: var(--bg-hover, rgba(127,127,127,.08)); }
+.tool-exp-item-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-exp-item-sub { flex: none; color: var(--t-faint); font-size: 11px; }
+.tool-exp-more { padding: 2px 6px; color: var(--t-faint); font-size: 11px; }
+
+/* 键值对 */
+.tool-exp-kv { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.tool-exp-kv-row { display: inline-flex; align-items: baseline; gap: 5px; font-size: 12px; }
+.tool-exp-kv-k { color: var(--t-faint); }
+.tool-exp-kv-v { color: var(--t-sub); font-variant-numeric: tabular-nums; }
