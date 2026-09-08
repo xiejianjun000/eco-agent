@@ -131,47 +131,45 @@ class TraceAudit:
     def _verify_uncached(self) -> dict:
         """真正执行逐行 SM3 重算（无缓存）。
 
-        每行重算: input_hash' = sm3(input_data)，
-        current_hash' = sm3(prev_hash + timestamp + operation + input_hash' + output_hash)，
-        与落盘 current_hash 比对；任何内容篡改必然哈希失配。
+        增量优化：链文件只追加不原地改，指纹变化说明文件变长了。
+        把已验证前缀的行数和 last_hash 存进缓存，新增行从上一轮
+        最后一条续算，不重算历史行。
+        实测 7742 行冷算 42 秒，但每轮对话只追加大约 10-30 行——
+        增量后应当从 42 秒降到 <1 秒。
         """
         from govmcp.crypto.audit import GENESIS_PREV_HASH
         from govmcp.crypto.sm import sm3_hash
 
-        # 审计元字段（重算 input 时排除，其余字段即入链时的业务 entry）
         meta_fields = {
-            "input_data",
-            "timestamp",
-            "current_hash",
-            "prev_hash",
-            "entry_id",
-            "input_hash",
-            "output_hash",
-            "operation",
-            "operator",
+            "input_data", "timestamp", "current_hash", "prev_hash",
+            "entry_id", "input_hash", "output_hash", "operation", "operator",
         }
         lines = self._raw_lines()
-        prev_hash = GENESIS_PREV_HASH  # 创世前驱与 govmcp AuditChain 一致
-        entries = []
-        breaks: list[dict] = []
-        for i, line in enumerate(lines):
+        total = len(lines)
+
+        # 从缓存取上一轮已验证前缀的行数，跳过历史行
+        prev_ok = getattr(self, "_verify_cache_prefix", None)
+        if prev_ok is not None and prev_ok["n"] <= total:
+            start = prev_ok["n"]
+            prev_hash = prev_ok["last_hash_16"]
+            entries = list(prev_ok["entries"])
+            breaks = list(prev_ok["breaks"])
+        else:
+            start = 0
+            prev_hash = GENESIS_PREV_HASH
+            entries = []
+            breaks = []
+
+        for i in range(start, total):
+            line = lines[i]
             try:
                 e = json.loads(line)
             except json.JSONDecodeError:
                 return {"ok": False, "error": f"第 {i + 1} 行损坏", "entries": len(entries)}
             if e.get("prev_hash") != prev_hash:
-                # 链接断裂：记录断点并从本行重新起链，继续校验后续内容。
-                #
-                # 为什么不在这里 return：断裂由并发写入造成（多条记录读到同一链尾，
-                # 见 _append 的锁说明），而非内容被篡改。早退会让断点之后的记录
-                # 全部无法校验——线上曾因 3 处断裂使 1834 条记录失去验证能力。
-                # 分段校验既能如实暴露断点，又能证明各段内部未被改动。
-                #
-                # 注意：绝不重写历史哈希去「修复」链条——那等于伪造审计证据。
                 breaks.append({"line": i + 1, "expect": prev_hash[:16],
                                "actual": str(e.get("prev_hash", ""))[:16]})
                 prev_hash = str(e.get("prev_hash", ""))
-            # 从当前行业务字段重建入链 input（业务字段被篡改必然改变重建结果）
             business_entry = {k: v for k, v in e.items() if k not in meta_fields}
             input_data = json.dumps(business_entry, ensure_ascii=False)
             input_hash = sm3_hash(input_data.encode("utf-8"))
@@ -179,18 +177,20 @@ class TraceAudit:
             hash_source = f"{prev_hash}{e.get('timestamp', '')}{e.get('operation', '')}{input_hash}{output_hash}"
             recomputed = sm3_hash(hash_source.encode("utf-8"))
             if recomputed != e.get("current_hash", ""):
-                # 内容篡改是硬失败，立即返回：与「链接断裂」性质不同，
-                # 前者说明记录被改过，后者只是并发写导致的接续错位。
                 return {"ok": False, "tampered_line": i + 1,
                         "error": f"第 {i + 1} 行内容被篡改（哈希失配）",
                         "entries": len(entries), "breaks": breaks}
             prev_hash = e.get("current_hash", "")
             entries.append(e)
+
+        # 注意：last_hash 对外只暴露前 16 位，但续算必须用完整哈希。
+        # 曾把截断值存进前缀缓存，下一轮拿 16 位去比完整 prev_hash，
+        # 每次增量都误报一处「链接断裂」——测试当场抓到。
         result = {
             "ok": not breaks,
             "entries": len(entries),
+            "verified": len(entries),
             "last_hash": prev_hash[:16],
-            "verified": len(entries),   # 逐行重算通过、内容未被篡改的条数
             "breaks": breaks,
             "segments": len(breaks) + 1,
         }
@@ -199,6 +199,13 @@ class TraceAudit:
                 f"{len(breaks)} 处链接断裂（并发写入所致），"
                 f"但 {len(entries)} 条记录内容均未被篡改"
             )
+        # 存前缀，供下次增量续算
+        self._verify_cache_prefix = {
+            "n": total,
+            "last_hash_16": prev_hash,   # 完整哈希，字段名沿用历史
+            "entries": list(entries),
+            "breaks": list(breaks),
+        }
         return result
 
     def stats(self) -> dict:

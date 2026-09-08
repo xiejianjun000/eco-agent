@@ -21,6 +21,8 @@ const healthMs = new Trend('eco_health_ms');
 const auditMs = new Trend('eco_audit_ms');
 const toolsMs = new Trend('eco_tools_ms');
 const staticMs = new Trend('eco_static_ms');
+const presentMs = new Trend('eco_presented_ms');
+const guardMs = new Trend('eco_guard_ms');
 const errRate = new Rate('eco_errors');
 
 export const options = {
@@ -43,8 +45,18 @@ export const options = {
     'eco_static_ms':  ['p(95)<800'],
     'eco_tools_ms':   ['p(95)<1500'],
     'eco_audit_ms':   ['p(95)<2000'],
+    // present_files 下载：纯静态文件读，应当很快
+    'eco_presented_ms': ['p(95)<500'],
+    // 越权拦截必须同样快 —— 慢速拒绝会被拿来做资源耗尽
+    'eco_guard_ms':   ['p(95)<300'],
     'eco_errors':     ['rate<0.01'],
-    'http_req_failed': ['rate<0.01'],
+    // 守卫组故意打越权路径，403/404 是正确行为，k6 却按 HTTP 失败计数。
+    // 所以只对非 guard 的请求设阈值，否则会把「安全生效」报成「压测失败」。
+    'http_req_failed{ep:health}':    ['rate<0.01'],
+    'http_req_failed{ep:static}':    ['rate<0.01'],
+    'http_req_failed{ep:audit}':     ['rate<0.01'],
+    'http_req_failed{ep:tools}':     ['rate<0.01'],
+    'http_req_failed{ep:presented}': ['rate<0.01'],
   },
 };
 
@@ -78,6 +90,31 @@ export default function () {
       },
     });
     errRate.add(!ok);
+  });
+
+  // 本轮新增：present_files 成果下载 + 其白名单边界
+  group('presented', () => {
+    const f = __ENV.ECO_PRESENT_FILE || '';
+    if (f) {
+      const r = http.get(`${BASE}/api/v1/presented?path=${encodeURIComponent(f)}`,
+        { tags: { ep: 'presented' }, timeout: '30s' });
+      presentMs.add(r.timings.duration);
+      errRate.add(!check(r, {
+        'presented 200': (x) => x.status === 200,
+        'presented has body': (x) => (x.body || '').length > 0,
+      }));
+    }
+  });
+
+  group('presented-guard', () => {
+    // 越界路径必须一直被拒 —— 并发下不能因为竞态漏一个进去
+    const r = http.get(`${BASE}/api/v1/presented?path=%2Fetc%2Fpasswd`,
+      { tags: { ep: 'guard' }, timeout: '30s' });
+    guardMs.add(r.timings.duration);
+    errRate.add(!check(r, {
+      'guard rejects': (x) => x.status === 403 || x.status === 404,
+      'guard leaks nothing': (x) => !(x.body || '').includes('root:'),
+    }));
   });
 
   group('tools', () => {
