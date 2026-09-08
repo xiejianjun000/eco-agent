@@ -355,7 +355,7 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default", wor
                 "【已挂载 MCP 工具——真实可用，直接 function calling 调用】\n"
                 + "、".join(mcp_names)
                 + "\nGitHub 仓库检索/读文件/查提交与 Issue **只能**通过 mcp__github__* 工具执行；"
-                  "环评与排污许可知识用 mcp__eia__* 工具。"
+                  "环评法规/标准/排放限值/官方问答用 mcp__eia-* 工具族（环评云助手）。"
                   "禁止声称这些 MCP'未挂载/无法调用'；"
                   "禁止用 web_fetch 或 execute_code 替代抓取 GitHub API——"
                   "那是 MCP 工具的职责，绕开会丢失审计链。\n"
@@ -1361,9 +1361,22 @@ _CHAT_MCP_TOOLS = (
     "mcp__github__list_issues", "mcp__github__get_issue",
     "mcp__github__search_issues", "mcp__github__search_users",
     "mcp__github__list_branches",
-    # 环评知识库 MCP（L1 只读）
-    "mcp__eia__kb_search", "mcp__eia__kb_verify",
-    "mcp__eia__kb_calculate", "mcp__eia__kb_industry_info",
+    # 环评云助手 MCP（mcp.eiacloud.com，L1 只读，11 个工具 / 4 台服务器）
+    # 法规导则关键词检索：103075 份文件，按名称/文号/术语命中原文
+    "mcp__eia-law-keyword__search_keyword_policy",
+    "mcp__eia-law-keyword__search_keyword_standard",
+    # 法规导则语义检索：63905 份，自然语言跨法规召回，适配模糊提问
+    "mcp__eia-law-semantic__search_nationwide_semantic_policy",
+    "mcp__eia-law-semantic__search_nationwide_semantic_standard",
+    "mcp__eia-law-semantic__search_semantic_province_sta_pol",
+    # 问答检索：生态环境部官方答复与部长信箱口径，补充条文之外的执行口径
+    "mcp__eia-qa__search_keyword_qa",
+    "mcp__eia-qa__search_semantic_qa",
+    # 排放限值：大气/水的结构化数值库，支撑环评与排污许可达标核算
+    "mcp__eia-emission__query_emission_water_place",
+    "mcp__eia-emission__query_emission_water_country",
+    "mcp__eia-emission__query_emission_gas_place",
+    "mcp__eia-emission__query_emission_gas_country",
     # 腾讯文档官方 MCP（读 L1 / 建文档 L2；删除/权限类不进聊天表）
     "mcp__tencent_docs__get_content",
     "mcp__tencent_docs__manage_search_file",
