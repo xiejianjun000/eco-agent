@@ -281,6 +281,7 @@ def _codex_rules_section() -> str:
         "  · 处罚裁量幅度/按日计罚 → atom-discretion\n"
         "  · 证据三性与链条闭环 → atom-evidence-chain\n"
         "  · 环评文件与排污许可审查 → eia-review\n"
+        "  · 环评云检索（法规/标准/限值/官方口径，不确定用哪台或参数名时）→ eia-router\n"
         "  · 法规依据速查 → fagui-query\n"
         "  · 公文/红头文件排版 → gongwen-format\n"
         "  · 做 PPT/幻灯片 → huashu-slides\n"
@@ -768,7 +769,7 @@ def _codex_tools() -> list[dict]:
                                "再按规程办事。可用技能见下方清单；不确定叫什么就先用 list=true 列出全部。"
                                "违法构成要件分析=atom-constitutive，裁量幅度推算=atom-discretion，"
                                "证据链核查=atom-evidence-chain，环评与排污许可审查=eia-review，"
-                               "法规依据速查=fagui-query，公文排版=gongwen-format，"
+                               "法规依据速查=fagui-query，环评云检索调度=eia-router，公文排版=gongwen-format，"
                                "做PPT=huashu-slides，湖南执法平台操作=hunan-env-law。",
                 "parameters": {
                     "type": "object",
