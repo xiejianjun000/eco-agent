@@ -1654,12 +1654,20 @@ class PromptEngine:
         self.soul = soul
         self._injections: list[dict] = []  # {"source","content","task_id","ts"}
         self._phase: str = "general"
+        # 输出档位（按责任后果自动判定，见 agent_core/output_tier.py）。
+        # 默认 None = 不注入任何档位规格，行为与改造前一致；
+        # 只有 apply_tier() 被调用过才生效，保证老调用方不受影响。
+        self._tier: object = None
 
         # ── 基础提示词片段（默认四段，可被插件 register_section 覆盖/新增）──
         self.sections = PromptSectionRegistry()
         self.sections.register("safety", "安全准则", self.safety_layer, priority=PRIORITY["safety"], source="builtin")
         self.sections.register("persona", "人设", self.persona_layer, priority=PRIORITY["persona"], source="profile")
         self.sections.register("phase", "执法阶段", self._phase_text, priority=PRIORITY["phase"], source="builtin")
+        self.sections.register(
+            "output_tier", "输出档位", self._tier_text,
+            priority=PRIORITY["output_tier"], source="builtin",
+        )
         self.sections.register(
             "tool_capability",
             "工具能力",
@@ -1671,6 +1679,45 @@ class PromptEngine:
     def _phase_text(self) -> str:
         """当前阶段预设文本（callable 片段，随状态机实时求值）。"""
         return "\n".join(PHASE_PRESETS[self._phase])
+
+    def _tier_text(self) -> str:
+        """当前输出档位规格（callable，随每轮判定实时求值）。未判定时为空。"""
+        if self._tier is None:
+            return ""
+        from agent_core.output_tier import tier_sections
+
+        return "\n\n".join(tier_sections(self._tier))
+
+    @property
+    def tier(self):
+        """当前输出档位决策（TierDecision 或 None）。"""
+        return self._tier
+
+    def apply_tier(self, message: str, *, has_attachment: bool = False, task_id: str = ""):
+        """
+        按用户问题自动判定输出档位并生效。
+
+        为什么写审计链：档位决定了回答要不要给法条、要不要逐项溯源。
+        一次判错（把处罚裁量判成简答）会让输出少掉裁量说明，
+        事后必须能查出「当时判成了哪一档、依据什么特征」。
+        黑盒打分做不到这点，所以 classify() 返回可读理由一并入链。
+        """
+        from agent_core.output_tier import classify
+
+        d = classify(message, has_attachment=has_attachment)
+        old = self._tier
+        self._tier = d
+        old_s = getattr(old, "tier", "none")
+        if old_s != d.tier or getattr(old, "numeric", None) != d.numeric:
+            self.audit.append(
+                source="output_tier",
+                content=f"{old_s} -> {d.summary()}" + ("（含数值强制溯源）" if d.numeric else ""),
+                task_id=task_id,
+                phase=self._phase,
+                accepted=True,
+            )
+        logger.info(f"[PromptEngine] 输出档位: {d.summary()}")
+        return d
 
     def reload_soul(self):
         """重新加载 SOUL.md（SOUL 文件变更后调用）"""

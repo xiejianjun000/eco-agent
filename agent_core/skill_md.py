@@ -189,6 +189,55 @@ def render_skill_md(name: str, description: str, steps: list,
     return "\n".join(sections)
 
 
+# ═══════════════════════════════════
+# 3.5 结晶质量闸（防"对话原话变技能"）
+# ═══════════════════════════════════
+
+# 一次性对话指令的语言特征。这些是「对某个 agent 说的一句话」而非
+# 「一类可复用任务」的判据，经 8 个已清理的坏样本 + 50 个真技能校准，
+# 坏样本覆盖 8/8，真技能误伤 0。
+#
+# 注意：不能简单禁用「你/我/?」——真技能 eia-router 的描述含「你」、
+# code-review 含「?」，一刀切会误伤。必须匹配**祈使+人称**的组合。
+_ONESHOT_IMPERATIVE = re.compile(
+    r"(你|我)(不会|直接做|授权|要你|写|去|再|们)"
+    r"|^没要|不要核查|现在你|退出后"
+)
+# 链式一次性指令："先A再B然后C" —— 是具体任务编排，不是可复用技能
+_CHAINED_COMMAND = re.compile(r"再用|再读|再查|然后再|，再|直接做：|按以下|执行以下")
+
+
+def is_degenerate_workflow(steps: Optional[list]) -> bool:
+    """工作流是否退化：去重后不足半数（如 6 步全是 shell_run）。
+
+    skill_hatcher 直接把工具调用序列当步骤传入，同一工具连续调用
+    就会产出「1. shell_run 2. shell_run …」这种零信息工作流。
+    """
+    s = [x for x in (steps or []) if x]
+    return len(s) >= 2 and len(set(s)) * 2 <= len(s)
+
+
+def assess_skill_value(desc: str, steps: Optional[list] = None) -> dict:
+    """判断一次孵化是否值得落盘为技能。
+
+    返回 {"worth": bool, "reasons": [str]}。这是**内容价值**判断，
+    与 validate_skill_content 的**结构合法性**校验互补：后者只看
+    frontmatter/kebab-case 是否齐全，一句用户原话照样能通过。
+    """
+    reasons: list = []
+    d = (desc or "").strip()
+
+    if _ONESHOT_IMPERATIVE.search(d):
+        reasons.append("描述是一次性对话指令（含祈使/人称），非可复用任务类型")
+    if _CHAINED_COMMAND.search(d):
+        reasons.append("描述是链式一次性命令（先A再B），属具体任务编排而非技能")
+    if is_degenerate_workflow(steps):
+        uniq = len({x for x in steps if x})
+        reasons.append(f"工作流退化：{len(steps)} 步仅 {uniq} 种工具，无可复用流程")
+
+    return {"worth": not reasons, "reasons": reasons}
+
+
 def build_skill_draft(desc: str, steps: list, tools: Optional[list] = None,
                       output: str = "", used: Optional[set] = None) -> dict:
     """由任务描述 + 步骤 + 工具 + 输出，构建一份完整 SKILL.md 草稿。

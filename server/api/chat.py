@@ -553,6 +553,16 @@ def _build_messages(message: str, history: list[dict], session_id: str = "defaul
     from agent_core.prompt_engine import get_prompt_engine
 
     eng = get_prompt_engine()
+    # 按「答错的代价」自动判定输出档位（简答/分析/正式）。
+    # 此前 eco 有四档人设预设，但切换靠模型自己调 switch_persona 工具——
+    # 实测两种差异极大的问题（1 次工具 vs 8 次工具）它一次都没调过，
+    # 四档全程走 general，等于摆设。这里改为每轮请求确定性判定。
+    # 判定理由写入 SM3 审计链，事后可复核「当时判成哪一档、依据什么」。
+    try:
+        eng.apply_tier(message or "", task_id=session_id or "default")
+    except Exception:  # noqa: BLE001
+        # 判定失败不能挡住回答：退化为不注入档位规格，行为同改造前
+        logger.warning("[chat] 输出档位判定失败，本轮不注入档位规格", exc_info=True)
     dynamic = _dynamic_prompt_sections(message, eng, session_id or "default", workspace)
     # 注入抗性增强：用户消息命中安全红线特征（validate_injection 拒绝）时，
     # 追加确定性警示——引用此类文本 ≠ 授权执行，模型须坚定拒绝并给依法处置路径

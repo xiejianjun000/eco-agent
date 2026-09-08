@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from agent_core.skill_md import (
+    assess_skill_value,
     build_skill_draft,
     eco_skill_name,
     format_frontmatter,
@@ -220,6 +221,17 @@ class AutoLearnEngine:
 
         # 新技能条件：达到最少步骤数且有明确输出
         if len(task_steps) < min_steps or not task_output:
+            return None
+
+        # 内容价值闸：结构合法 ≠ 值得存在。
+        # 历史教训：7 个 auto_learn 技能的 description 直接是用户原话
+        # （"到本地电脑去找"、"退出后，我不会重新启动你"），工作流是 6 行
+        # 重复的 shell_run，meta-audit 仅 40-50 分（及格 70），无一被复用。
+        # 它们全部通过了 validate_skill_content —— 因为那只校验结构。
+        value = assess_skill_value(desc, task_steps)
+        if not value["worth"]:
+            logger.info("[Skill] 无复用价值，放弃孵化: %s | %s",
+                        desc[:40], "；".join(value["reasons"]))
             return None
 
         # 自动分类

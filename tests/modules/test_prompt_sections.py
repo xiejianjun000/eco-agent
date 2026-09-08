@@ -81,7 +81,9 @@ def test_engine_default_sections(engine):
     from agent_core.prompt_engine import SAFETY_LAYER
 
     ids = [s["section_id"] for s in engine.list_sections()]
-    assert ids == ["safety", "persona", "tool_capability", "phase"]
+    # output_tier 为新增内置片段（输出档位规格，priority 37，排在 phase 之后）。
+    # 未调用 apply_tier 时其内容为空串，不改变组装结果，仅出现在注册表里。
+    assert ids == ["safety", "persona", "tool_capability", "phase", "output_tier"]
     prompt = engine.build_system_prompt()
     assert prompt.startswith(SAFETY_LAYER)
     assert "当前视角：生态环境系统全要素" in prompt  # 默认全要素通用，不再默认现场巡查
@@ -118,7 +120,7 @@ def test_engine_overview(engine):
     ov = engine.overview()
     assert ov["phase"] == "general"
     assert ov["phase_name"] == "全要素通用"
-    assert len(ov["sections"]) == 4
+    assert len(ov["sections"]) == 5  # 含新增 output_tier
     assert "assembled_preview" in ov and "assembled_len" in ov
 
 
