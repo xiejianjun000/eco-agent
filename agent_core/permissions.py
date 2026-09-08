@@ -264,7 +264,10 @@ def _path_denied(path: str) -> str | None:
 # 与"MCP 一律 L3"保守策略并存：只对已确认只读的数据源豁免，写工具仍走 L3/L4。
 _READONLY_MCP_SERVERS = (
     "eco-hunan-env", "eco-mee-encyclopedia", "eco-cnemc-mcp", "eco-hnkqzl-mcp",
-    "eco-meteo-mcp", "ehs-kb-ops", "eia", "eco-gis-amap", "eco-gis-amap-remote",
+    "eco-meteo-mcp", "ehs-kb-ops", "eco-gis-amap", "eco-gis-amap-remote",
+    # 环评云助手（mcp.eiacloud.com）：4 台全部为纯检索服务，无任何写接口。
+    # 原名单里的 "eia" 指向一台并不存在的服务器，属历史遗留，一并清理。
+    "eia-law-keyword", "eia-law-semantic", "eia-qa", "eia-emission",
     "eco-pollution-permit", "eco-pollution-permit-remote",
     "epxz-mcp", "eco-epxz-mcp", "eco-cepc", "eco-cepc-remote",
 )

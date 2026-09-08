@@ -67,6 +67,26 @@ def test_servers_configured():
         assert want in names, f"缺少服务器配置: {want}"
 
 
+def test_all_eia_tools_are_l1():
+    """权限门必须判 L1，否则非交互模式直接 permission denied。
+
+    实测教训：token 换成真的之后调用仍然失败，报的是
+    「permission denied [L3]: 非交互模式拒绝（白名单外 L3）」——
+    模型收到这个就会反复换工具，8 次调用还没拿到数据。
+    MCP 工具默认 L3（服务端不受信，写操作可能伪装成 query_ 前缀），
+    必须把服务器显式加进 _READONLY_MCP_SERVERS 才降 L1。
+    """
+    from agent_core.permissions import tool_risk_level
+    bad = [t for t in EIA_TOOLS if tool_risk_level(t) != "L1"]
+    assert not bad, f"未降到 L1，非交互模式会被拒: {bad}"
+
+
+def test_dead_eia_server_removed_from_trust():
+    """信任名单里的 "eia" 指向不存在的服务器，属历史遗留。"""
+    from agent_core.permissions import _READONLY_MCP_SERVERS
+    assert "eia" not in _READONLY_MCP_SERVERS
+
+
 def test_servers_use_bearer_auth():
     """环评云用 Bearer token；认证头写错会静默返回 4001/4002。"""
     for c in _env_servers():
