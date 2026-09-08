@@ -10,7 +10,7 @@ eco Agent 独创——竞品均未系统化实现。
 
 用法：
   from agent_core.self_healing import SelfHealer
-  healer = SelfHealing()
+  healer = SelfHealer()
   result = healer.protect(lambda: risky_operation())
 """
 

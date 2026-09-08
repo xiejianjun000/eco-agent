@@ -24,12 +24,20 @@ from agent_core.heartbeat import PulseLoop, default_steps  # noqa: E402
 from agent_core.meta_evolution import MetaEvolution  # noqa: E402
 
 # ── L5 自愈（条件加载，允许缺失） ──
+# 历史缺陷：此处原先 import 的是 `SelfHealing`，而模块顶层实际只导出
+# `SelfHealer`（AST 确认）。于是 except ImportError 恒成立、_HAS_SELF_HEALING
+# 恒为 False、self.l5 恒为 None —— L5 在集成层从未被加载过。
+#
+# 注意（诚实边界）：修正导入只让 l5 实例真正建起来、状态位如实反映加载结果。
+# SelfHealer.protect() 目前在全仓仍无任何生产调用点，
+# 也就是说自愈能力「可用但未被使用」。接入调用点是独立的后续工作，
+# 不要因为 l5_healing=true 就认为异常已被自动兜住。
 try:
-    from agent_core.self_healing import SelfHealing
+    from agent_core.self_healing import SelfHealer
 
     _HAS_SELF_HEALING = True
 except ImportError:
-    SelfHealing = None
+    SelfHealer = None
     _HAS_SELF_HEALING = False
 
 
@@ -47,7 +55,7 @@ class EcoLoopsIntegration:
         self.l4 = MetaEvolution()
 
         # L5 自愈
-        self.l5 = SelfHealing() if _HAS_SELF_HEALING else None
+        self.l5 = SelfHealer() if _HAS_SELF_HEALING else None
 
         # ── L4 自动触发配置 ──
         self._task_count = 0

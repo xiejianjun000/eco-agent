@@ -140,9 +140,9 @@ async def _stream_response(query, model_id):
     yield f"data: {json.dumps({'id': rid, 'object': 'chat.completion.chunk', 'created': ts, 'model': model_id, 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})}\n\n"  # noqa: E501
     try:
         sys.path.insert(0, str(ROOT))
-        from agent_core.eco_loops_integration import EcoLoops
+        from agent_core.eco_loops_integration import EcoLoopsIntegration
 
-        loops = EcoLoops()
+        loops = EcoLoopsIntegration()
         loops.start()
         result = await asyncio.to_thread(loops.execute_task, query)
         loops.stop()
@@ -173,9 +173,9 @@ async def _sync_response(query, model_id):
     before = _token_totals()
     try:
         sys.path.insert(0, str(ROOT))
-        from agent_core.eco_loops_integration import EcoLoops
+        from agent_core.eco_loops_integration import EcoLoopsIntegration
 
-        loops = EcoLoops()
+        loops = EcoLoopsIntegration()
         loops.start()
         result = await asyncio.to_thread(loops.execute_task, query)
         loops.stop()
