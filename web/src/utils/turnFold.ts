@@ -463,3 +463,66 @@ export function summarizeResult(raw: string | undefined): string | undefined {
   if (!first) return undefined;
   return first.length > 46 ? `${first.slice(0, 46)}…` : first;
 }
+
+
+// ── 成果卡片（对标 WorkBuddy present_files → artifact cards）─────────
+//
+// WorkBuddy result-presentation.md 规定：任务产生可查看成果时，
+// 本轮最后一个工具调用必须是 present_files，界面渲染成可下载卡片。
+// 没有统一入口时产物只能散落在过程块里，用户根本看不到。
+
+export interface PresentedFile {
+  path: string;
+  name: string;
+  ext: string;
+  size: number;
+}
+
+/** 从一轮 trace 里抽出 present_files 呈现的成果文件（去重、保序） */
+export function extractPresented(
+  trace: { type?: string; name?: string; result_preview?: string }[],
+): PresentedFile[] {
+  const seen = new Set<string>();
+  const out: PresentedFile[] = [];
+  for (const t of trace) {
+    if (t.type !== 'tool' || t.name !== 'present_files') continue;
+    const raw = (t.result_preview ?? '').trim();
+    if (!raw) continue;
+    let files: unknown;
+    try {
+      files = (JSON.parse(raw) as { files?: unknown }).files;
+    } catch {
+      /* result_preview 截到 200 字符时 JSON 可能不完整，
+         用正则从残片里抠已完整的 {path,name,...} 对象 */
+      const got: PresentedFile[] = [];
+      const re = /"path":\s*"([^"]+)"[^}]*?"name":\s*"([^"]+)"[^}]*?"ext":\s*"([^"]*)"[^}]*?"size":\s*(\d+)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(raw)) !== null) {
+        got.push({ path: m[1], name: m[2], ext: m[3], size: Number(m[4]) });
+      }
+      files = got;
+    }
+    if (!Array.isArray(files)) continue;
+    for (const f of files) {
+      if (!f || typeof f !== 'object') continue;
+      const r = f as Record<string, unknown>;
+      const path = typeof r.path === 'string' ? r.path : '';
+      if (!path || seen.has(path)) continue;
+      seen.add(path);
+      out.push({
+        path,
+        name: typeof r.name === 'string' ? r.name : (path.split('/').pop() || path),
+        ext: typeof r.ext === 'string' ? r.ext : '',
+        size: typeof r.size === 'number' ? r.size : 0,
+      });
+    }
+  }
+  return out;
+}
+
+/** 人类可读文件大小 */
+export function fmtSize(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}

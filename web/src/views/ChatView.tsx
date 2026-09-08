@@ -9,7 +9,7 @@ import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../c
 import { ChatSearchButton, UserPromptListButton } from '../components/ChatTopbar';
 import CompactDivider, { isCompactContent, inferCompactType } from '../components/CompactDivider';
 import { buildAtom, selectSummary, renderSummary, type AtomStatus } from '../utils/metaFold';
-import { buildBeats } from '../utils/turnFold';
+import { buildBeats, extractPresented, fmtSize } from '../utils/turnFold';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -546,6 +546,10 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
      还原「输出一行 → 查文件 → 输出一行 → 改文件」的阅读节奏。 */
   const beats = buildBeats(trace as never[], isErrorResult);
 
+  /* 成果卡片（对标 WorkBuddy present_files → artifact cards）：
+     没有统一呈现入口时，产物只能散落在过程块里，用户根本看不到。 */
+  const presented = extractPresented(trace as never[]);
+
   return (
     <div className={`proc-wrap${open ? ' open' : ''}${live ? ' live' : ''}`}>
       {/* 折叠态或运行中都显示节奏行：运行中若隐藏，用户在几十秒的工具
@@ -581,6 +585,22 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
         </span>
       </button>
       {open && inner}
+      {/* 成果卡片（对标 WorkBuddy present_files → artifact cards）：
+          放在过程块外常显，折叠与否都能看到并下载。 */}
+      {presented.length > 0 && (
+        <div className="artifact-strip">
+          <div className="artifact-strip-title">成果</div>
+          {presented.map((f) => (
+            <a className="artifact-chip" key={f.path}
+               href={`/api/v1/presented?path=${encodeURIComponent(f.path)}`}
+               download={f.name} title={f.path}>
+              <span className="artifact-chip-ext">{f.ext || 'file'}</span>
+              <span className="artifact-chip-name">{f.name}</span>
+              <span className="artifact-chip-size">{fmtSize(f.size)}</span>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

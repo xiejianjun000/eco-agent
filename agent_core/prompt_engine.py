@@ -38,7 +38,9 @@ logger = logging.getLogger("prompt_engine")
 
 # ECO_DIR 环境变量可覆盖（与 observability/approvals 同口径），
 # 受限环境（沙箱无 ~/.eco 写权限）可指向可写目录，审计链照常落盘。
-ECO_DIR = Path(os.environ.get("ECO_DIR") or Path.home() / ".eco")
+from agent_core.eco_paths import eco_dir as _eco_dir
+
+ECO_DIR = _eco_dir()
 AUDIT_FILE = ECO_DIR / "prompt_audit.jsonl"
 
 # ═══════════════════════════════════

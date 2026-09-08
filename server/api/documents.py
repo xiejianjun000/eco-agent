@@ -77,6 +77,40 @@ async def list_documents() -> dict:
     return {"count": len(files) + len(artifacts), "files": files, "artifacts": artifacts}
 
 
+def _presentable_roots() -> list[Path]:
+    """present_files 允许下载的目录白名单。
+
+    严格限定，绝不接受任意路径 —— 端点入参是模型给的，
+    没有白名单就是任意文件读取漏洞。
+    """
+    roots = [_artifacts_dir(), OUTPUT_DIR]
+    repo = Path(__file__).resolve().parent.parent.parent
+    roots.append(repo / "deliverables")
+    ws = os.environ.get("ECO_WORKSPACE")
+    if ws:
+        roots.append(Path(ws) / "deliverables")
+    return [r for r in roots if r.is_dir()]
+
+
+@router.get("/presented")
+async def download_presented(path: str) -> FileResponse:
+    """下载 present_files 呈现的成果文件（对标 WorkBuddy artifact card）。
+
+    只允许白名单目录内的真实文件；软链接一律按解析后的真实路径再校验一次。
+    """
+    try:
+        target = Path(path).expanduser().resolve(strict=True)
+    except (OSError, RuntimeError) as e:
+        raise HTTPException(status_code=404, detail="file not found") from e
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="not a file")
+    roots = _presentable_roots()
+    if not any(target.is_relative_to(r.resolve()) for r in roots):
+        raise HTTPException(status_code=403, detail="path outside allowed roots")
+    return FileResponse(path=str(target), filename=target.name,
+                        media_type="application/octet-stream")
+
+
 @router.get("/documents/artifact/{name}")
 async def read_artifact(name: str) -> dict:
     """返回回答产物的 Markdown 原文（前端点开产物卡片时拉取渲染）。"""

@@ -46,6 +46,9 @@ WIRED_REQUIRED: list[str] = [
 # 通道级分发工具：实现不在 tools_registry._HANDLERS，而在 server/api/chat.py
 # 自身（web_fetch、generate_pptx 惰性挂 docgen 插件）或经 MCP 远程注册（kb_*）。
 CHANNEL_DISPATCHED: list[str] = [
+    # 成果统一呈现入口（对标 WorkBuddy present_files）：
+    # 只校验文件存在并回传元信息，由 chat.py 内部分派，无独立 handler。
+    "present_files",
     "web_fetch",
     "open_url",
     "generate_pptx",

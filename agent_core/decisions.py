@@ -19,7 +19,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-DECISIONS_FILE = Path.home() / ".eco" / "decisions.jsonl"
+from agent_core.eco_paths import eco_dir as _eco_dir
+
+DECISIONS_FILE = _eco_dir() / "decisions.jsonl"
 
 
 def get_decision_chain(path: Path | None = None):

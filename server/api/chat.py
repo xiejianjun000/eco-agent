@@ -270,6 +270,11 @@ def _codex_rules_section() -> str:
         "  · 多问必须逐问作答，答不了的明确标注[待确认]，不许悄悄跳过；\n"
         "  · 产出了文件就点名具体路径和改了什么；\n"
         "  · 只讲信息量最高的部分，全文不超过 70 行，不要逐条复述检索过程。\n"
+        # 对标 WorkBuddy result-presentation.md 的强制收尾契约
+        "8.3 【成果必须呈现】任务产生了可查看的成果（文书/报告/课件/图表文件）时，"
+        "本轮最后一个工具调用必须是 present_files，把真实文件路径传进去，"
+        "界面才会渲染成果卡片让用户下载。只呈现新产出的文件，不要呈现只读过的；"
+        "多个文件一次传完。路径必须来自工具真实返回，禁止臆造。\n"
         "10. 【飞书/企业微信走 lark-cli，禁止拒单】本机已装 lark-cli 且已认证飞书应用"
         "（/usr/local/bin/lark-cli）。飞书相关操作一律用 shell_run 调 lark-cli 直接做："
         "生成扫码授权链接=lark-cli auth login --domain all --no-wait --json（返回 "
@@ -737,6 +742,35 @@ def _codex_tools() -> list[dict]:
                         "station": {"type": "string", "description": "可选，指定站点名"},
                     },
                     "required": ["city"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "present_files",
+                # 对标 WorkBuddy craft/fragments/result-presentation.md：
+                # 「your FINAL tool call in that turn MUST be present_files」
+                # 产物散落在过程块里用户看不到，必须有统一呈现入口。
+                "description": "呈现本轮产出的成果文件（统一入口）。任务完成且产生了可查看的成果时，"
+                               "本轮最后一个工具调用必须是它。传入 save_document/generate_pptx 等"
+                               "返回的真实文件路径，界面会渲染成可下载的成果卡片。"
+                               "只呈现新产出的文件，不要呈现你只是读过或原地改过的文件；"
+                               "多个文件一次调用传完，不要一个文件调一次。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "paths": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "成果文件的绝对路径列表（来自工具真实返回，不要臆造）",
+                        },
+                        "summary": {
+                            "type": "string",
+                            "description": "一句话说明这批成果是什么（≤40字）",
+                        },
+                    },
+                    "required": ["paths"],
                 },
             },
         },
@@ -1536,6 +1570,7 @@ _READONLY_TOOLS = frozenset({
 _MUTATING_TOOLS = frozenset({
     "file_write", "file_edit", "shell_run", "execute_code",
     "save_document", "generate_pptx", "chart_render", "tdocs_upload_html",
+    "present_files",
 })
 
 
@@ -1834,6 +1869,35 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             "station": str(arguments.get("station", "")),
         })
         return result[:2000]
+    if name == "present_files":
+        # 成果呈现：只校验文件真实存在，不搬运内容（前端按路径拉取）。
+        # 严格校验是为了防止模型臆造路径 —— 实测它编造过文件路径。
+        from pathlib import Path as _P
+
+        raw = arguments.get("paths") or []
+        if isinstance(raw, str):
+            raw = [raw]
+        items, missing = [], []
+        for x in list(raw)[:12]:
+            fp = _P(str(x)).expanduser()
+            if fp.exists() and fp.is_file():
+                items.append({
+                    "path": str(fp),
+                    "name": fp.name,
+                    "ext": fp.suffix.lstrip(".").lower(),
+                    "size": fp.stat().st_size,
+                })
+            else:
+                missing.append(str(x))
+        return json.dumps({
+            "ok": bool(items),
+            "presented": len(items),
+            "files": items,
+            "missing": missing,
+            "summary": str(arguments.get("summary") or "")[:80],
+            "note": ("部分路径不存在，已跳过；请用工具真实返回的路径"
+                     if missing else "成果已呈现为卡片"),
+        }, ensure_ascii=False)
     if name in ("save_document", "analyze_document"):
         from agent_core.tools_registry import execute_tool
 
@@ -3742,6 +3806,7 @@ def _looks_failed(result: str) -> bool:
 _NARR_ACTION = {
     "file_read": "读取", "file_write": "写入", "file_edit": "修改",
     "save_document": "生成文档", "generate_pptx": "生成课件",
+    "present_files": "呈现成果",
     "tdocs_upload_html": "上传腾讯文档", "chart_render": "出图",
     "shell_run": "执行命令", "execute_code": "运行代码", "glob": "查找文件",
     "grep": "搜索内容", "analyze_document": "分析文档",

@@ -27,7 +27,9 @@ from pathlib import Path
 
 logger = logging.getLogger("checkpoint")
 
-ECO_DIR = Path.home() / ".eco"
+from agent_core.eco_paths import eco_dir as _eco_dir
+
+ECO_DIR = _eco_dir()
 CP_ROOT = ECO_DIR / "checkpoints"
 DECISIONS_FILE = ECO_DIR / "decisions.jsonl"
 

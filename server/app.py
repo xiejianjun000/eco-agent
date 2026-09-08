@@ -138,6 +138,25 @@ def create_app() -> FastAPI:
         workspaces,
     )
 
+    @app.on_event("startup")
+    async def _warm_audit_cache() -> None:
+        """后台预热审计链缓存。
+
+        实测：7684 条链首次 stats() 要 41.3 秒（全量 SM3 重算），
+        命中缓存后 0.1 毫秒。不预热的话每次重启后第一个请求都要等 41 秒，
+        而且链只会越来越长。放后台线程跑，不阻塞启动与首个请求。
+        """
+        import asyncio
+
+        def _warm() -> None:
+            try:
+                from agent_core.trace_audit import get_trace_audit
+                get_trace_audit().stats()
+            except Exception:  # noqa: BLE001  预热失败不影响服务
+                pass
+
+        asyncio.get_running_loop().run_in_executor(None, _warm)
+
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
     app.include_router(files.router, prefix="/api/v1", tags=["files"])
     app.include_router(chat.router, prefix="/api/v1", tags=["chat"])

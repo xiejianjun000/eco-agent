@@ -1918,7 +1918,18 @@ def _h_save_document(filename: str, content: str, workspace: str = ""):
         # 无激活工作区：落到 default 工作区，保证产物一定真实落盘
         ws = mgr.get("default") or mgr.create("default", category="通用")
     deliv = ws.path / "deliverables"
-    deliv.mkdir(parents=True, exist_ok=True)
+    # 目标目录不可写时回退到仓库 output/。
+    # 实测：工作区根在 ~/.eco/workspaces/，进程沙箱只允许写仓库目录，
+    # save_document 直接 [Errno 1] Operation not permitted，
+    # 模型只好绕道 execute_code 自己写文件 —— 那等于绕过了落盘审计。
+    try:
+        deliv.mkdir(parents=True, exist_ok=True)
+        _probe = deliv / ".w"
+        _probe.write_text("", encoding="utf-8")
+        _probe.unlink()
+    except OSError:
+        deliv = _P(__file__).resolve().parent.parent / "output"
+        deliv.mkdir(parents=True, exist_ok=True)
     target = deliv / fname
     # 同名不覆盖，自动追加序号
     n = 1

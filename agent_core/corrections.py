@@ -20,7 +20,9 @@ from pathlib import Path
 
 logger = logging.getLogger("corrections")
 
-ECO_DIR = Path.home() / ".eco"
+from agent_core.eco_paths import eco_dir as _eco_dir
+
+ECO_DIR = _eco_dir()
 CORRECTIONS_FILE = ECO_DIR / "corrections.jsonl"
 
 # 自然语言纠错识别 pattern

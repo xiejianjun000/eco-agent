@@ -26,9 +26,13 @@ logger = logging.getLogger("eco.observability")
 
 
 def _eco_home() -> Path:
-    """ECO_DIR 环境变量优先（沙箱/home 只读时可重定向），默认 ~/.eco。"""
-    env = os.environ.get("ECO_DIR", "").strip()
-    return Path(env).expanduser() if env else Path.home() / ".eco"
+    """运行时根目录。委托给 eco_paths：ECO_DIR 优先，~/.eco 不可写则回退仓库 .eco/。
+
+    此前只认 ECO_DIR，未设置时硬走 ~/.eco —— 沙箱下实测
+    「span tree 落盘失败（/Users/mac/.eco/traces）: [Errno 1]」，轨迹整批丢失。
+    """
+    from agent_core.eco_paths import eco_dir
+    return eco_dir()
 
 
 TRACES_DIR = _eco_home() / "traces"
@@ -37,6 +41,9 @@ TRACES_DIR = _eco_home() / "traces"
 def _default_traces_dir() -> Path:
     """落盘目录：运行时动态读 ECO_DIR，未设置时回退 TRACES_DIR（兼容测试注入）。"""
     env = os.environ.get("ECO_DIR", "").strip()
+    # 未设 ECO_DIR 时必须回退到模块级 TRACES_DIR，而不是重新调 _eco_home()：
+    # 测试用 mock.patch.object(obs, "TRACES_DIR", tmp) 注入，
+    # 重新解析会绕过注入点（实测打挂 test_otel_export 两项）。
     return Path(env).expanduser() / "traces" if env else TRACES_DIR
 
 
