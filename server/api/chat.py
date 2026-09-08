@@ -2613,25 +2613,71 @@ async def _call_llm_with_span(tree, client, model, messages, tools, round_idx,
     span 语义与 client._call_chat_with_tools(_stream) 完全一致；
     调用前 start（model/provider），调用后 end（finish_reason="ok"/"error"）。
     on_reasoning: 推理流（reasoning_content）实时回调，推 think_delta 事件（DSH Think 流）。
-    不改变业务逻辑，仅增加观测埋点。
+
+    本函数是 Web/流式主路径唯一的 LLM 收口点（11 个调用点全经此处），
+    因此把两件本该有、原先只存在于 CLI 侧 chat_with_tools 的事补在这里：
+
+      1) provider failover —— Web 路径直接调私有方法
+         _call_chat_with_tools(_stream)，绕过了 chat_with_tools 内的
+         _try_failover_provider()。结果是 CLI 遇 429/401/5xx 会自动换
+         provider，浏览器用户只能吃到错误文案。降级重试沿用同一 stream
+         形态，不退化成非流式。ECO_WEB_FAILOVER=0 可关闭（回退开关）。
+      2) record_decision 决策留痕 —— 同理原先只有 CLI 侧有，
+         Web 主路径零留痕，SM3 决策链整段缺失浏览器侧记录。
     """
     model_name = model or client._provider["default_model"]
     provider = getattr(client, "_provider_name", "unknown")
     span_id = tree.start(f"round{round_idx}", "llm_call",
                          model=model_name, provider=provider)
     loop = asyncio.get_running_loop()
-    try:
+
+    def _invoke(mdl):
         if stream:
-            msg, err = await loop.run_in_executor(
-                None, lambda: client._call_chat_with_tools_stream(
-                    model_name, messages, tools, on_chunk=on_chunk,
-                    on_reasoning=on_reasoning))
-        else:
-            msg, err = await loop.run_in_executor(
-                None, lambda: client._call_chat_with_tools(model_name, messages, tools))
+            return client._call_chat_with_tools_stream(
+                mdl, messages, tools, on_chunk=on_chunk, on_reasoning=on_reasoning)
+        return client._call_chat_with_tools(mdl, messages, tools)
+
+    try:
+        msg, err = await loop.run_in_executor(None, lambda: _invoke(model_name))
     except Exception as e:  # noqa: BLE001 — 观测不应改变调用语义
         msg, err = None, str(e)
+
+    # ── provider 降级重试（对齐 CLI 侧 chat_with_tools 行为）──────────
+    if msg is None and _os_default_model.environ.get(
+            "ECO_WEB_FAILOVER", "1").strip().lower() not in ("0", "false", "no"):
+        try:
+            last_err = getattr(client, "_last_error", None) or {}
+            if client._is_recoverable_error(last_err) and client._try_failover_provider():
+                model_name = client._provider["default_model"]
+                provider = getattr(client, "_provider_name", "unknown")
+                friendly = client._friendly_error(last_err)
+                logger.warning("[web] 主 provider 失败，降级到 %s 重试", provider)
+                if on_chunk:
+                    on_chunk(f"\n  [提示] 主模型不可用（{friendly}），"
+                             f"已自动切换到备用模型 {model_name} 重试...\n")
+                msg, err = await loop.run_in_executor(None, lambda: _invoke(model_name))
+        except Exception as e:  # noqa: BLE001 — 降级失败不得掩盖原始错误
+            logger.warning("[web] provider 降级重试失败: %s", e)
+
     tree.end(span_id, finish_reason="ok" if (err is None and msg is not None) else "error")
+
+    # ── 决策留痕（旁路：失败绝不影响主流程）──────────────────────────
+    try:
+        from agent_core.decisions import record_decision
+
+        _tcs = (msg.get("tool_calls") or []) if isinstance(msg, dict) else []
+        record_decision(
+            candidate_tools=len(tools or []),
+            selected_tools=[tc["function"]["name"] for tc in _tcs],
+            finish_reason=("tool_calls" if _tcs else ("error" if msg is None else "stop")),
+            raw_tool_calls=_tcs,
+            model=model_name,
+            provider=provider,
+            round_idx=round_idx,
+        )
+    except Exception:  # noqa: BLE001 — 留痕失败不影响主流程
+        pass
+
     return msg, err
 
 
