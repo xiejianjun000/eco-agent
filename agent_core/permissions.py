@@ -249,14 +249,99 @@ def _deny_command_hit(cmd: str) -> str | None:
     return None
 
 
+# ── deny 检查的参数键覆盖面 ────────────────────────────────────────
+# 历史缺陷：deny 只读 command/code/path/filename 四个键，于是
+#   gate_tool_call("file_read", {"file_path": "/etc/shadow"})  → 放行
+# 而 gate_tool_call("file_read", {"path": "/etc/shadow"})      → 拒绝
+# 同一危险路径换个参数名就绕过整个 deny 层。仓内确有用 file_path 的工具
+# （analyze_document）。这里把常见别名一次收齐，宁可多查不可漏查。
+_CMD_ARG_KEYS = ("command", "code", "cmd", "script", "shell", "exec", "run")
+_PATH_ARG_KEYS = (
+    "path", "filename", "file_path", "filepath", "file",
+    "target", "dest", "destination", "src", "source",
+    "output_path", "input_path", "dir", "directory", "folder",
+)
+
+
+def _collect_args(args: dict | None, keys: tuple[str, ...]) -> list[str]:
+    """收集指定键的字符串值（逐个全取，不短路）。
+
+    列表/元组值会展开 —— 批量删除类工具常用 paths=[...] 形态传参。
+    """
+    out: list[str] = []
+    if not args:
+        return out
+    for k in keys:
+        v = args.get(k)
+        if v is None:
+            continue
+        if isinstance(v, (list, tuple)):
+            out.extend(str(x) for x in v if x)
+        elif v != "":
+            out.append(str(v))
+    # 复数形态（paths/files/filenames）一并覆盖
+    for k in keys:
+        pv = args.get(k + "s")
+        if isinstance(pv, (list, tuple)):
+            out.extend(str(x) for x in pv if x)
+        elif isinstance(pv, str) and pv:
+            out.append(pv)
+    return out
+
+
+def _load_md_path_denies() -> tuple[str, ...]:
+    """解析 PERMISSION.md 的 deny: 块路径规则（增量收紧，不替代硬编码底座）。
+
+    历史缺陷：PERMISSION.md 里声明的 deny 规则（**/.env、*.key、*.pem、
+    Obsidian Vault 只读）从来没有任何 loader 读取过 —— 文档写了、代码没实现，
+    实测 `.env` 可被 file_read 直接放行。本函数补上这条解析链。
+
+    设计约束：
+      - 只做「增量收紧」：结果与 _PATH_DENY_GLOBS 合并，永不覆盖或删减硬编码项；
+      - 解析失败一律返回空元组，让硬编码底座独立兜底（安全底座不依赖文本解析）；
+      - ECO_DENY_FROM_MD=0 可关闭本解析（回退开关），硬编码 deny 不受影响。
+    """
+    if os.environ.get("ECO_DENY_FROM_MD", "1").strip().lower() in ("0", "false", "no"):
+        return ()
+    try:
+        text = _load_permission_md()
+        if not text:
+            return ()
+        # deny: 块 → 到下一个顶格非空行（同级键）或文本结束；只取 - path: "..." 条目
+        m = re.search(r"^deny:\s*$(.*?)(?:^\S|\Z)", text, re.DOTALL | re.MULTILINE)
+        if not m:
+            return ()
+        pats = [pm.group(1).strip() for pm in re.finditer(r"-\s*path:\s*\"([^\"]+)\"", m.group(1))]
+        return tuple(p for p in pats if p)
+    except Exception as e:  # noqa: BLE001 — 解析失败不得削弱硬编码 deny
+        logger.warning("[permissions] PERMISSION.md deny 块解析失败，仅用硬编码底座: %s", e)
+        return ()
+
+
 def _path_denied(path: str) -> str | None:
-    """路径 glob 危险路径检测：命中返回该模式，否则 None。"""
+    """路径 glob 危险路径检测：命中返回该模式，否则 None。
+
+    匹配两套规则：硬编码 _PATH_DENY_GLOBS（不可覆盖底座）
+    + PERMISSION.md deny 块（增量收紧）。
+
+    额外对 `**/x` 形态做兜底匹配 —— fnmatch 没有 `**` 递归语义，
+    `**/.env` 匹配不到 `./.env`、`.env` 这类写法。
+    """
     p = path.strip()
     if not p:
         return None
-    for pat in _PATH_DENY_GLOBS:
+    try:
+        md_pats = _load_md_path_denies()
+    except Exception:  # noqa: BLE001 — 硬编码底座必须独立可用
+        md_pats = ()
+    for pat in tuple(_PATH_DENY_GLOBS) + md_pats:
         if _glob_match(pat, p):
             return pat
+        if pat.startswith("**/"):
+            tail = pat[3:]
+            if (_glob_match("*/" + tail, p) or _glob_match(tail, p)
+                    or _glob_match(tail, p.lstrip("./"))):
+                return pat
     return None
 
 
@@ -395,18 +480,20 @@ def gate_tool_call(tool_name: str, args: dict | None = None, overrides: dict[str
     level = tool_risk_level(tool_name, overrides)
 
     # 参数 glob：危险命令命中即拒绝（不可被白名单覆盖）
-    cmd_arg = str((args or {}).get("command", "") or (args or {}).get("code", ""))
-    hit = _deny_command_hit(cmd_arg)
-    if hit:
-        _audit_decision(tool_name, level, "deny", f"危险命令 glob 命中: {hit}")
-        return False, level, f"危险命令 glob 命中: {hit}"
+    # 逐个别名全检，不用 `a or b` 短路 —— 否则危险值藏在后面的键里就逃过检查。
+    for cmd_arg in _collect_args(args, _CMD_ARG_KEYS):
+        hit = _deny_command_hit(cmd_arg)
+        if hit:
+            _audit_decision(tool_name, level, "deny", f"危险命令 glob 命中: {hit}")
+            return False, level, f"危险命令 glob 命中: {hit}"
 
     # 路径 glob：危险路径命中即拒绝（读/写系统敏感路径）
-    path_arg = str((args or {}).get("path", "") or (args or {}).get("filename", ""))
-    phit = _path_denied(path_arg)
-    if phit:
-        _audit_decision(tool_name, level, "deny", f"危险路径 glob 命中: {phit}")
-        return False, level, f"危险路径 glob 命中: {phit}"
+    # 历史缺陷：原先只看 path/filename，于是 file_path=/etc/shadow 被直接放行。
+    for path_arg in _collect_args(args, _PATH_ARG_KEYS):
+        phit = _path_denied(path_arg)
+        if phit:
+            _audit_decision(tool_name, level, "deny", f"危险路径 glob 命中: {phit}")
+            return False, level, f"危险路径 glob 命中: {phit}"
 
     if level in ("L1", "L2"):
         _audit_decision(tool_name, level, "allow", "自动放行")
