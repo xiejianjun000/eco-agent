@@ -8,8 +8,8 @@ import DocDrawer from '../components/DocDrawer';
 import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../components/DocViewer';
 import { ChatSearchButton, UserPromptListButton } from '../components/ChatTopbar';
 import CompactDivider, { isCompactContent, inferCompactType } from '../components/CompactDivider';
-import { buildAtom, selectSummary, renderSummary, type AtomStatus } from '../utils/metaFold';
-import { buildBeats, extractPresented, fmtSize } from '../utils/turnFold';
+import { buildAtom, mcpObject, selectSummary, renderSummary, type AtomStatus } from '../utils/metaFold';
+import { buildBeats, extractPresented, fmtSize, stripToolNames } from '../utils/turnFold';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -123,6 +123,24 @@ function fmtArgs(args?: Record<string, unknown>): string {
   } catch {
     return '';
   }
+}
+
+/** 展开态工具行描述：动作 + 对象，复用 buildAtom 的语义解析。
+ *
+ *  此前展开后直接把原始工具名拼进 desc，页面上就出现
+ *    mcp__eco-hunan-env__air_quality_hourly · {"city":"娄底市"}
+ *  折叠态早已做了三段式清洗，展开态却是裸的 —— 同一份内容两套面孔。
+ *  这里统一走 buildAtom（与 meta-fold 摘要、beats 同源），
+ *  拿不到语义时退回参数摘要，最后再兜一层 stripToolNames 防止漏网。 */
+function describeTool(name: string, args?: Record<string, unknown>): string {
+  const atom = buildAtom(name, args);
+  // MCP 工具的 object 不从参数提取（各服务器参数名千差万别），
+  // 改用内层工具名，例如 mcp__eco-hunan-env__air_quality_hourly → 「air quality hourly」
+  const obj = atom.object || (name.startsWith('mcp__') ? mcpObject(name) : undefined);
+  const head = obj ? `${atom.action}${obj}` : (atom.action || atom.noObject || '');
+  const detail = fmtArgs(args);
+  const tail = detail && detail !== '{}' ? ` · ${detail}` : '';
+  return stripToolNames(head ? `${head}${tail}` : `${name}${tail}`);
 }
 
 /** DSH 式过程块：按轮次渲染思考（完整 thought）+ 工具调用卡 */
@@ -382,7 +400,7 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
     delete live[r];
     rows.push({
       key: `live-${r}-${liveKey++}`,
-      icon: 'gear', label: 'Think', state: 'running', follow: true,
+      icon: 'gear', label: '思考', state: 'running', follow: true,
       desc: latestLine(text), meta: `R${r}`,
       body: <div className="dsh-body-text">{escapeHtml(text)}</div>,
     });
@@ -400,7 +418,7 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
       if (ev.thought) {
         rows.push({
           key: `think-${r}-${ev.cost_ms ?? rows.length}`,
-          icon: 'gear', label: 'Think', state: 'ok',
+          icon: 'gear', label: '思考', state: 'ok',
           desc: firstLine(ev.thought), meta: `R${r}`, cost: ev.cost_ms,
           body: <div className="dsh-body-text">{escapeHtml(ev.thought)}</div>,
         });
@@ -412,8 +430,8 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
       runningIdx[name] = rows.length;
       rows.push({
         key: `run-${name}-${rows.length}`,
-        icon: getEventIcon('tool_start', name), label: 'Tool call',
-        desc: `${name} · 执行中…`, state: 'running',
+        icon: getEventIcon('tool_start', name), label: '执行',
+        desc: `${describeTool(name, ev.args)} · 执行中…`, state: 'running',
       });
       continue;
     }
@@ -422,8 +440,8 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
       const err = isErrorResult(ev.result_preview);
       const row: Row = {
         key: `tool-${name}-${ev.cost_ms ?? rows.length}-${rows.length}`,
-        icon: getEventIcon('tool', name), label: 'Tool call',
-        desc: `${name} · ${fmtArgs(ev.args)}${err ? ' · 失败' : ''}`,
+        icon: getEventIcon('tool', name), label: '执行',
+        desc: `${describeTool(name, ev.args)}${err ? ' · 失败' : ''}`,
         state: err ? 'error' : 'ok', cost: ev.cost_ms,
         body: ev.result_preview
           ? <pre className="dsh-body-result" dangerouslySetInnerHTML={{ __html: renderToolResult(ev.result_preview) }} />
@@ -441,14 +459,17 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
       rows.push({
         key: `narr-${rows.length}`,
         icon: 'message', label: '', state: 'ok',
-        desc: ev.text || '',
+        // 旁白是模型自由生成的，规则 8.1 要求不写工具名但模型不一定照做
+        // （实测「先mcp__eco-hunan-env__air_quality_hourly」这类原样漏出），
+        // 渲染前统一过一遍清洗，不指望模型自觉。
+        desc: stripToolNames(ev.text || ''),
       });
       continue;
     }
     if (ev.type === 'answer') {
       rows.push({
         key: `answer-${rows.length}`,
-        icon: 'message', label: 'Answer', state: 'ok',
+        icon: 'message', label: '作答', state: 'ok',
         desc: `生成最终回答（共 ${(ev.chars ?? 0).toLocaleString('en-US')} 字）`,
         cost: ev.cost_ms,
       });
@@ -457,7 +478,7 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
     if (ev.type === 'correction') {
       rows.push({
         key: `corr-${rows.length}`,
-        icon: 'refresh', label: 'Correction', state: 'ok',
+        icon: 'refresh', label: '纠偏', state: 'ok',
         desc: ev.note || '自我纠偏', cost: ev.cost_ms,
       });
       continue;
@@ -466,9 +487,16 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
   // 尾部未收尾的 think_delta 也 flush 出来（流式进行中）
   for (const r of Object.keys(live).map(Number)) flushLive(r);
 
-  // 相邻去重：同一 Think 内容连续出现（流式累积 + 权威事件重复）只保留一条
+  /* 相邻去重：同一内容连续出现只保留一条。
+     不比对 label —— 实测同一句话会以两种身份连着出现：
+       [ ]      冷水江为县级市，CNEMC 未收录独立站点，以娄底市国控站为背景参考…
+       [思考]   冷水江为县级市，CNEMC 未收录独立站点，以娄底市国控站为背景参考…
+     前者是 narration（label 为空），后者是 think 事件，内容一字不差。
+     旧写法要求 label 也相同，这类跨类型重复就漏了过去。
+     保留先出现的那条（narration 在前，正是执行节奏所在的位置）。 */
+  const norm = (t: string) => (t || '').replace(/\s+/g, '').trim();
   const deduped = rows.filter((row, i) =>
-    i === 0 || !(row.label === rows[i - 1].label && row.desc === rows[i - 1].desc));
+    i === 0 || norm(row.desc) === '' || norm(row.desc) !== norm(rows[i - 1].desc));
 
   return (
     <div className="process-block dsh-process">
@@ -552,9 +580,13 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
 
   return (
     <div className={`proc-wrap${open ? ' open' : ''}${live ? ' live' : ''}`}>
-      {/* 折叠态或运行中都显示节奏行：运行中若隐藏，用户在几十秒的工具
-          执行期里只能看到摘要数字跳动，看不到「正在做什么」。 */}
-      {(!open || live) && beats.length > 0 && (
+      {/* 节奏行始终常显 —— 折叠、展开、运行中都在。
+          对标 WorkBuddy ToolExpandable：展开只是在同一个三段式头部下面
+          追加 children 细节，不会换成另一套视觉语言。
+          此前写的是 (!open || live)，导致一展开三段式整体消失、
+          换回裸露的 Think / Tool call / mcp__xxx__yyy 原始行，
+          等于两套皮并存，改造过的那套只在折叠时可见。 */}
+      {beats.length > 0 && (
         <div className="turn-anchors">
           {beats.map((b, i) => (
             <div className={`turn-anchor beat-${b.kind}${b.running ? ' beat-running' : ''}`} key={i}>
@@ -645,7 +677,8 @@ function buildTrajRows(trace: TraceEvent[]): TrajRow[] {
     } else if (t.type === 'narration') {
       rows.push({
         key: `narr-${rows.length}`, round, kind: 'assistant', badge: 'NARRATION',
-        desc: t.text || '', searchText: t.text || '',
+        // 同过程块：显示前清洗工具名；searchText 保留原文，便于按真实名检索
+        desc: stripToolNames(t.text || ''), searchText: t.text || '',
       });
     } else if (t.type === 'answer') {
       rows.push({

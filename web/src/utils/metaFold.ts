@@ -214,6 +214,33 @@ for (const d of TOOL_DESCRIPTORS) {
 
 const AUTOMATION_SUFFIX = '_automation_update';
 
+/** MCP 内层工具名 → 动作词。
+ *
+ *  此前所有 mcp__ 工具都折成 mcp_call_tool，展开态一律显示「调用 · {参数}」，
+ *  17 个 MCP 服务器几百个工具全长一个样，等于没有信息。
+ *  这里按内层名里的动词推断，命中不了才退回泛化的「调用」。
+ *  只读语义为主 —— eco 挂载的 MCP 绝大多数是查询类。 */
+const MCP_VERB_RULES: ReadonlyArray<readonly [RegExp, string]> = [
+  [/^(search|query|find|lookup)_/, '检索'],
+  [/^(get|read|fetch|list)_/, '读取'],
+  [/^(download)_/, '下载'],
+  [/^(air_quality|water_quality|weather)/, '查询'],
+  [/(_search|_query)$/, '检索'],
+  [/(_list|_detail)$/, '读取'],
+];
+
+/** 从 mcp__server__tool 提取可读的对象名：内层工具名去掉动词前缀、下划线转空格 */
+export function mcpObject(raw: string): string | undefined {
+  const parts = raw.split('__');
+  if (parts.length < 3) return undefined;
+  const inner = parts.slice(2).join('__');
+  const stripped = inner
+    .replace(/^(search|query|get|read|fetch|list|find|lookup|download)_/, '')
+    .replace(/_/g, ' ')
+    .trim();
+  return stripped || undefined;
+}
+
 /** 对标 WorkBuddy normalizeToolName：CLI/别名/mcp_ 前缀 → canonical */
 export function normalizeToolName(raw: unknown): string {
   if (typeof raw !== 'string' || !raw) return 'unknown';
@@ -228,6 +255,25 @@ export function normalizeToolName(raw: unknown): string {
 /** 对标 getToolDescriptor：未命中时兜底但保留原名 */
 export function getToolDescriptor(rawName: unknown): ToolDescriptor {
   const canonical = normalizeToolName(rawName);
+  // MCP 工具：按内层动词细化，避免几百个工具共用一个「调用」
+  if (canonical === 'mcp_call_tool' && typeof rawName === 'string') {
+    const parts = rawName.split('__');
+    const inner = parts.length >= 3 ? parts.slice(2).join('__').toLowerCase() : '';
+    for (const [re, action] of MCP_VERB_RULES) {
+      if (re.test(inner)) {
+        /* 必须补齐 aliases / objectFields。
+           缺了 objectFields 会让 extractObject 对 undefined 做 for...of，
+           抛 "objectFields is not iterable" —— 整页白屏，不是局部降级。
+           这里刻意显式标注类型而不是 as ToolDescriptor 断言：
+           断言会让 tsc 放行缺字段，构建通过、运行时炸。 */
+        const d: ToolDescriptor = {
+          canonical, aliases: [], category: 'mcp_call', group: 'external',
+          action, objectFields: [], noObject: action,
+        };
+        return d;
+      }
+    }
+  }
   const d = CANONICAL_TO_DESCRIPTOR.get(canonical);
   if (d) return d;
   return { ...UNKNOWN_DESCRIPTOR, canonical: canonical || 'unknown' };
@@ -249,7 +295,10 @@ export interface SummaryAtom {
 /** 从工具 args 里按 objectFields 顺序取第一个可用对象，长路径只留末段 */
 export function extractObject(d: ToolDescriptor, args?: Record<string, unknown>): string | undefined {
   if (!args) return undefined;
-  for (const f of d.objectFields) {
+  // 防御：单个 descriptor 少写 objectFields 不应该让整页白屏。
+  // 实测教训 —— 手写 MCP descriptor 时漏了这个字段，for...of undefined
+  // 直接把 ChatView 整棵树炸掉，页面连输入框都渲染不出来。
+  for (const f of d.objectFields ?? []) {
     const v = args[f];
     if (typeof v === 'string' && v.trim()) {
       const s = v.trim();

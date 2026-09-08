@@ -433,7 +433,11 @@ export async function streamChat(
           traceAcc = obj.trace;
           continue;
         }
-        if (obj.delta) {
+        // 注意判空方式：撤销草稿的事件是 {"delta": "", "reset": true}，
+        // 空字符串是 falsy，写成 if (obj.delta) 会把整个 reset 分支跳过 ——
+        // 实测后果是工具间旁白全部堆进最终答案气泡（刷新页面才恢复正常，
+        // 因为存储的内容是对的，只有实时渲染没吃掉撤销）。
+        if (typeof obj.delta === 'string') {
           onDelta(obj.delta, {
             ttft_ms: obj.ttft_ms,
             reset: obj.reset,
