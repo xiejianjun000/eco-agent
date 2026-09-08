@@ -141,9 +141,45 @@ const VAGUE_RE = /^\s*(正在处理|让我看看|稍等|马上|好的|收到|开
  * 规则 8.1 已在提示词里要求，这里做机制兜底——实测模型会写出
  * 「上一轮这个任务因 LLM 超时中断了」这类系统自述，必须拦掉。
  */
+/**
+ * 工具标识符 → 自然说法。
+ *
+ * WorkBuddy craft/fragments/tool-use.md 原文硬规则：
+ *   "NEVER mention specific tool names in user-facing messages or status descriptions."
+ * 实测 eco 旁白 13 条里 5 条泄露工具名（38%）。提示词是软约束，
+ * 这里做硬兜底 —— 模型漏写时前端替换，而不是把标识符糊给用户。
+ */
+const TOOL_NAME_SUBS: [RegExp, string][] = [
+  [/\bmcp__[a-zA-Z0-9_-]+__([a-zA-Z0-9_]+)/g, '外部服务'],
+  [/\b(audit_tail|审计链工具)\b/gi, '审计链'],
+  [/\bsession_log_tail\b/gi, '会话日志'],
+  [/\bshell_run\b/gi, '命令行'],
+  [/\bexecute_code\b/gi, '代码执行'],
+  [/\bfile_read\b/gi, '读取'],
+  [/\bfile_write\b/gi, '写入'],
+  [/\bfile_edit\b/gi, '编辑'],
+  [/\bchart_render\b/gi, '出图'],
+  [/\bkb_semantic_search\b/gi, '语义检索'],
+  [/\bkb_search\b/gi, '知识库检索'],
+  [/\bstatute_(search|lookup|related)\b/gi, '法条检索'],
+  [/\bweb_(search|fetch)\b/gi, '联网检索'],
+  [/\b(glob|grep)\b/gi, '检索'],
+  [/\binspect\b/gi, '自检'],
+  [/\bMCP\b/g, '外部服务'],
+];
+
+/** 去掉旁白里的工具标识符，换成自然说法 */
+export function stripToolNames(t: string): string {
+  let out = t;
+  for (const [re, rep] of TOOL_NAME_SUBS) out = out.replace(re, rep);
+  // 「用检索扫」「调用外部服务查」这类残留句式收一下
+  out = out.replace(/(?:用|调用|通过)\s*(检索|自检|外部服务|命令行|审计链)\s*(工具)?\s*/g, '');
+  return out.replace(/\s{2,}/g, ' ').trim();
+}
+
 export function cleanNarration(text: string | undefined | null): string | null {
   if (typeof text !== 'string') return null;
-  const t = text.trim();
+  const t = stripToolNames(text.trim());
   if (!t) return null;
   if (VAGUE_RE.test(t)) return null;
   if (INTERNAL_STATE_RE.test(t)) return null;

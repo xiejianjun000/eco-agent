@@ -250,9 +250,26 @@ def _codex_rules_section() -> str:
         "『四个文件写完了，先本地语法检查再部署。』→调工具。"
         "这些行是给用户看执行节奏的，禁止空泛套话（如'正在处理''让我看看'），"
         "必须带上具体对象名或刚得到的结论。任务全部完成后再写最终汇报。"
+        # WorkBuddy craft/fragments/tool-use.md 原文硬规则：
+        # 「NEVER mention specific tool names in user-facing messages or status descriptions.」
+        # 实测 eco 旁白 13 条里 5 条泄露工具名（glob/MCP/audit_tail），占 38%。
+        "【禁提工具名·硬性】旁白里绝不出现工具标识符：不写 glob/grep/shell_run/file_read/"
+        "audit_tail/inspect/chart_render/mcp__xxx 之类的名字，也不写'调用XX工具'。"
+        "改用自然动作描述——'扫一遍全仓 README''查审计链末尾''取湖南实时空气'。"
+        "用户看的是你在做什么事，不是你按了哪个按钮。"
         "禁止在旁白里出现系统内部状态：不提'上一轮/上次会话/超时中断/重试第N次'、"
         "不提模型名与轮次编号、不解释闸门与提示词规则——用户看的是任务进度，"
         "不是系统自述。旁白只讲这次任务本身的事实与下一步动作。\n"
+        # 对标 WorkBuddy craft/fragments/result-presentation.md 的
+        # <final_answer_instructions>：中间工具调用与观察在 UI 里是折叠的，
+        # 用户可能只看最终回复，所以折叠内容里的关键结果必须被带出来。
+        "8.2 【最终回复·带出折叠内容】过程块里的工具调用、观察与旁白在界面上是"
+        "折叠的，用户很可能只读你的最终回复。所以最终回复必须自成一体：\n"
+        "  · 复述关键结果——重要的命令输出、查到的文件路径、改动了什么、"
+        "数字结论、报错、未决风险、后续建议；\n"
+        "  · 多问必须逐问作答，答不了的明确标注[待确认]，不许悄悄跳过；\n"
+        "  · 产出了文件就点名具体路径和改了什么；\n"
+        "  · 只讲信息量最高的部分，全文不超过 70 行，不要逐条复述检索过程。\n"
         "10. 【飞书/企业微信走 lark-cli，禁止拒单】本机已装 lark-cli 且已认证飞书应用"
         "（/usr/local/bin/lark-cli）。飞书相关操作一律用 shell_run 调 lark-cli 直接做："
         "生成扫码授权链接=lark-cli auth login --domain all --no-wait --json（返回 "
@@ -925,12 +942,16 @@ def _codex_tools() -> list[dict]:
             "type": "function",
             "function": {
                 "name": "audit_tail",
-                "description": "读取 SM3 审计链最近记录（权限决策/提示词注入接受与拒绝/阶段切换/片段注册）。"
-                               "用户问'刚才的审计记录/操作留痕/安全决策'时调用，用于审计回溯自证。",
+                "description": "读取 SM3 审计链（权限决策/提示词注入接受与拒绝/阶段切换/片段注册）。"
+                               "用户问'刚才的审计记录/操作留痕/安全决策'时调用，用于审计回溯自证。"
+                               "问'审计链有多少条/链完整吗/按类型统计'时用 stats=true —— "
+                               "直接返回总条数、校验结果与按操作类型的计数，不要去翻链文件。",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "n": {"type": "integer", "description": "返回最近条数（默认10，最多50）"},
+                        "stats": {"type": "boolean",
+                                  "description": "true=返回全链统计（总条数/校验/按类型计数），不返回条目明细"},
                     },
                     "required": [],
                 },
@@ -1482,9 +1503,89 @@ def _slim_tool_defs(defs: list[dict]) -> list[dict]:
     return out
 
 
-def _chat_tool_list() -> list[dict]:
-    """聊天通道完整工具清单（定义已瘦身，控制 prompt 体量）。"""
-    return _slim_tool_defs(_codex_tools() + _mcp_tool_defs())
+# ── 模式级工具白名单（对标 WorkBuddy interactionmode/*/fragments/interaction.md）────
+#
+# WorkBuddy 按交互模式分层授权，实测：
+#   ask    10 个 —— 只读：Read/Glob/Grep/WebFetch/WebSearch，无 Write、无 Bash
+#   craft  37 个 —— 全能力
+#   plan   37 个 —— craft + EnterPlanMode/ExitPlanMode
+#   expert 37 个 —— 同 plan
+#
+# eco 此前一次性给出全部 44 个工具，只读问答场景也拿到 shell 与写文件权限
+# —— 既是安全面，也让模型在简单问答里乱调工具。
+#
+# 这里只做「只读 / 全能力」两档：eco 场景不需要 plan/expert 的模式切换，
+# 但「查一下」这类问答必须拿不到写权限。
+
+_READONLY_TOOLS = frozenset({
+    # 检索
+    "statute_lookup", "statute_search", "statute_related",
+    "kb_search", "kb_semantic_search",
+    # 文件只读
+    "file_read", "glob", "grep", "analyze_document",
+    # 网络只读
+    "web_search", "web_fetch", "open_url",
+    # 自检与审计只读
+    "inspect", "audit_tail", "session_log_tail", "api_probe",
+    # 领域只读查询
+    "hunan_case_list", "query_air_quality", "detect_data_anomaly",
+    "calculate_carbon_emission",
+})
+
+# 写入/执行类：只读模式下必须拿不到
+_MUTATING_TOOLS = frozenset({
+    "file_write", "file_edit", "shell_run", "execute_code",
+    "save_document", "generate_pptx", "chart_render", "tdocs_upload_html",
+})
+
+
+def _is_readonly_request(message: str) -> bool:
+    """判断本轮是否为只读问答。
+
+    保守策略：只有明确的查询句式才降权，任何写入/执行意图一律给全能力。
+    误判成全能力只是多给权限（与改造前一致），误判成只读会让任务做不完 ——
+    所以宁可放过，不可错杀。
+    """
+    m = (message or "").strip()
+    if not m:
+        return False
+    # 出现任何产出/修改意图 → 全能力
+    if re.search(r"写|改|修|删|建|生成|导出|部署|执行|运行|跑一下|出图|画|上传|保存|提交", m):
+        return False
+    # 纯查询句式 → 只读
+    return bool(re.search(r"^(查|看|读|搜|找|检索|列|统计|多少|哪些|是什么|有没有|为什么|怎么样)", m))
+
+
+# MCP 工具名里的写动词。腾讯文档 MCP 单独就挂了 100+ 个工具，
+# 其中 insert_/delete_/set_/update_ 之类全是写操作 —— 只按内置清单过滤
+# 会让只读模式仍然拿到一大批写权限（实测 115→91 时仍放行了全部 MCP 写工具）。
+_MCP_WRITE_VERBS = (
+    "insert", "delete", "remove", "set_", "update", "create", "add_",
+    "write", "modify", "replace", "rename", "move", "copy", "merge",
+    "unmerge", "clear", "import", "export", "upload", "commit", "undo",
+    "accept", "edit", "reimport", "bind", "operation", "toexcel", "toword",
+)
+
+
+def _tool_is_readonly(name: str) -> bool:
+    """只读判定。内置工具查白名单，MCP 工具按动词判断。"""
+    if not name:
+        return False
+    if name.startswith("mcp__"):
+        tail = name.split("__", 2)[-1].lower()
+        return not any(v in tail for v in _MCP_WRITE_VERBS)
+    return name in _READONLY_TOOLS
+
+
+def _chat_tool_list(readonly: bool = False) -> list[dict]:
+    """聊天通道工具清单（定义已瘦身，控制 prompt 体量）。
+
+    readonly=True 时只给只读工具，对标 WorkBuddy 的 ask 模式。
+    """
+    defs = _codex_tools() + _mcp_tool_defs()
+    if readonly:
+        defs = [d for d in defs if _tool_is_readonly(d.get("function", {}).get("name", ""))]
+    return _slim_tool_defs(defs)
 
 
 _WEB_WHITELIST = (
@@ -1877,11 +1978,39 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
         # SM3 审计链回溯（自证能力：权限决策/注入接受拒绝/阶段切换全在链上）
         from agent_core.prompt_engine import get_prompt_engine
 
+        audit_obj = get_prompt_engine().audit
+        # stats 模式：直接给全链统计。
+        # 没有它时模型问「审计链多少条」只能去翻 900 万字符的链文件 ——
+        # 实测绕了 14 次工具调用（api_probe×5 + glob×4 + file_read×2）才拿到数。
+        if arguments.get("stats"):
+            out: dict = {"ok": True}
+            # 提示词审计链（PromptAuditChain）：只有 verify_chain
+            try:
+                v = audit_obj.verify_chain()
+                out["prompt_chain"] = {"entries": v.get("entries"),
+                                       "valid": v.get("valid")}
+            except Exception as e:  # noqa: BLE001
+                out["prompt_chain"] = {"error": str(e)[:120]}
+            # 轨迹审计链（TraceAudit）：条目数 / 校验 / 断裂 / 按操作计数
+            try:
+                from agent_core.trace_audit import get_trace_audit
+                st = get_trace_audit().stats()
+                out["trace_chain"] = {
+                    "entries": st.get("entries"),
+                    "verified": st.get("verified"),
+                    "valid": st.get("ok"),
+                    "breaks": len(st.get("breaks") or []),
+                    "size_bytes": st.get("size_bytes"),
+                    "by_operation": st.get("by_operation"),
+                }
+            except Exception as e:  # noqa: BLE001
+                out["trace_chain"] = {"error": str(e)[:120]}
+            return json.dumps(out, ensure_ascii=False, default=str)
         try:
             n = max(1, min(int(arguments.get("n", 10) or 10), 50))
         except (TypeError, ValueError):
             n = 10
-        entries = get_prompt_engine().audit.tail(n)
+        entries = audit_obj.tail(n)
         return json.dumps({"ok": True, "count": len(entries),
                            "entries": entries}, ensure_ascii=False, default=str)
     if name == "session_log_tail":
@@ -2365,7 +2494,12 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
     from agent_core.trace_audit import get_trace_audit
 
     audit = _svc("trace_audit", get_trace_audit)
-    tools = _chat_tool_list()
+    # 模式级授权（对标 WorkBuddy ask vs craft）：纯查询问答不给写入/执行工具。
+    # 本函数没有 message 参数，用户输入要从 messages 里取最后一条 user 消息。
+    _last_user = next((m.get("content", "") for m in reversed(messages)
+                       if isinstance(m, dict) and m.get("role") == "user"), "")
+    _readonly = _is_readonly_request(_last_user if isinstance(_last_user, str) else "")
+    tools = _chat_tool_list(readonly=_readonly)
     trace: list[dict] = []
     total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     first_llm_ms: int | None = None
@@ -2385,6 +2519,10 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
             except Exception:  # noqa: BLE001 — 推送失败不影响主流程
                 pass
 
+    if _readonly:
+        # 只读问答模式（对标 WorkBuddy ask）：过程块里显式告知本轮授权范围
+        _emit({"type": "correction", "round": 0,
+               "note": f"只读问答模式：本轮仅授予 {len(tools)} 个只读工具"})
     def _push_delta(text: str, reset: bool = False) -> None:
         """流式增量推送：只推不记 trace（避免轨迹被逐字块淹没）。"""
         if on_event is not None:

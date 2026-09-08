@@ -1,4 +1,4 @@
-import { summarizeResult, statusTextOf, primaryOf, buildBeats } from '../turnFold.ts';
+import { summarizeResult, statusTextOf, primaryOf, buildBeats, stripToolNames, cleanNarration } from '../turnFold.ts';
 let p=0,f=0;
 const eq=(n,g,w)=>{const ok=JSON.stringify(g)===JSON.stringify(w);
   console.log(`${ok?'✅':'❌'} ${n}`+(ok?'':` got=${JSON.stringify(g)} want=${JSON.stringify(w)}`)); ok?p++:f++;};
@@ -116,6 +116,21 @@ const r4=buildBeats([
   {type:'tool',name:'file_read',args:{path:'/b.md'},result_preview:'{"ok":true}',cost_ms:1},
 ], ()=>false);
 eq('同名不同参各自配对', r4.map(x=>[x.text,!!x.running]), [['a.md',true],['b.md',false]]);
+
+console.log('\n=== 6. 旁白禁提工具名（WorkBuddy tool-use.md 硬规则）===');
+// 实测泄露样本，逐条取自页面
+eq('glob → 检索', stripToolNames('先查审计链末 3 条，同时用 glob 扫全部 README。'),
+   '先查审计链末 3 条，同时扫全部 README。');
+eq('句中 glob', stripToolNames('审计链末 3 条已取到，glob 命中 23 个 README。'),
+   '审计链末 3 条已取到，检索 命中 23 个 README。');
+eq('MCP 端点名', stripToolNames('挂载清单里没有 mcp__eco-cnemc-mcp__air_realtime 端点'),
+   '挂载清单里没有 外部服务 端点');
+eq('裸 MCP', stripToolNames('总站 MCP 当前确实不在'), '总站 外部服务 当前确实不在');
+eq('audit_tail', stripToolNames('audit_tail 取末尾 3 条'), '审计链 取末尾 3 条');
+eq('无工具名不动', stripToolNames('先看两市实况，再出对比图。'), '先看两市实况，再出对比图。');
+// cleanNarration 串联：先脱敏，再过滤内部状态
+eq('脱敏后仍过滤空泛', cleanNarration('正在处理'), null);
+eq('脱敏并保留正文', cleanNarration('用 grep 搜一下 TODO'), '搜一下 TODO');
 
 console.log(`\n通过 ${p} · 失败 ${f}`);
 process.exit(f?1:0);
