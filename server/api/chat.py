@@ -275,6 +275,17 @@ def _codex_rules_section() -> str:
         "本轮最后一个工具调用必须是 present_files，把真实文件路径传进去，"
         "界面才会渲染成果卡片让用户下载。只呈现新产出的文件，不要呈现只读过的；"
         "多个文件一次传完。路径必须来自工具真实返回，禁止臆造。\n"
+        # 对标 WorkBuddy：Skill 是按需加载的专业操作手册，不是全量塞提示词。
+        "8.4 【专业任务先取手册】遇到执法办案类专项任务，先用 use_skill 取对应手册再动手：\n"
+        "  · 违法构成要件拆解 → atom-constitutive\n"
+        "  · 处罚裁量幅度/按日计罚 → atom-discretion\n"
+        "  · 证据三性与链条闭环 → atom-evidence-chain\n"
+        "  · 环评文件与排污许可审查 → eia-review\n"
+        "  · 法规依据速查 → fagui-query\n"
+        "  · 公文/红头文件排版 → gongwen-format\n"
+        "  · 做 PPT/幻灯片 → huashu-slides\n"
+        "  · 湖南执法平台取案卷 → hunan-env-law\n"
+        "不确定叫什么就 use_skill(list=true) 先看清单。手册里的规程优先于你的经验。\n"
         "10. 【飞书/企业微信走 lark-cli，禁止拒单】本机已装 lark-cli 且已认证飞书应用"
         "（/usr/local/bin/lark-cli）。飞书相关操作一律用 shell_run 调 lark-cli 直接做："
         "生成扫码授权链接=lark-cli auth login --domain all --no-wait --json（返回 "
@@ -742,6 +753,32 @@ def _codex_tools() -> list[dict]:
                         "station": {"type": "string", "description": "可选，指定站点名"},
                     },
                     "required": ["city"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "use_skill",
+                # 对标 WorkBuddy use_skill：Skill 是「专业领域的操作手册」，
+                # 按需加载而非全量塞进系统提示词。
+                # eco 有 54 个 SKILL.md，此前只有 eco-codex 被硬编码注入，
+                # 其余 52 个模型既看不见也调不了 —— 全是死资产。
+                "description": "加载专业技能手册。遇到需要专门方法论的任务时先调它拿到操作规程，"
+                               "再按规程办事。可用技能见下方清单；不确定叫什么就先用 list=true 列出全部。"
+                               "违法构成要件分析=atom-constitutive，裁量幅度推算=atom-discretion，"
+                               "证据链核查=atom-evidence-chain，环评与排污许可审查=eia-review，"
+                               "法规依据速查=fagui-query，公文排版=gongwen-format，"
+                               "做PPT=huashu-slides，湖南执法平台操作=hunan-env-law。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string",
+                                 "description": "技能目录名，如 atom-discretion"},
+                        "list": {"type": "boolean",
+                                 "description": "true=只列出可用技能清单，不加载正文"},
+                    },
+                    "required": [],
                 },
             },
         },
@@ -1571,6 +1608,7 @@ _MUTATING_TOOLS = frozenset({
     "file_write", "file_edit", "shell_run", "execute_code",
     "save_document", "generate_pptx", "chart_render", "tdocs_upload_html",
     "present_files",
+    "use_skill",
 })
 
 
@@ -1869,6 +1907,62 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             "station": str(arguments.get("station", "")),
         })
         return result[:2000]
+    if name == "use_skill":
+        # 加载 SKILL.md 正文。frontmatter 里的 allowed-tools / disable-model-invocation
+        # 是 WorkBuddy 的授权约定，这里如实解析并回传，不做静默放行。
+        from pathlib import Path as _P
+
+        root = _P(__file__).resolve().parent.parent.parent / "ecoskills"
+        if not root.is_dir():
+            return json.dumps({"ok": False, "error": "ecoskills 目录不存在"},
+                              ensure_ascii=False)
+
+        def _fm(text: str) -> dict:
+            m = re.match(r"^---\n(.*?)\n---", text, re.S)
+            if not m:
+                return {}
+            out: dict = {}
+            for ln in m.group(1).splitlines():
+                mm = re.match(r"^([a-zA-Z_-]+):\s*(.*)$", ln)
+                if mm:
+                    out[mm.group(1)] = mm.group(2).strip()
+            return out
+
+        if arguments.get("list") or not arguments.get("name"):
+            items = []
+            for d in sorted(root.iterdir()):
+                f = d / "SKILL.md"
+                if not f.is_file():
+                    continue
+                meta = _fm(f.read_text(encoding="utf-8", errors="ignore"))
+                if str(meta.get("disable-model-invocation", "")).lower() == "true":
+                    continue  # 禁止模型自主调用的不出现在清单里
+                items.append({"name": d.name,
+                              "description": (meta.get("description") or "")[:110]})
+            return json.dumps({"ok": True, "count": len(items), "skills": items},
+                              ensure_ascii=False)
+
+        want = _P(str(arguments.get("name"))).name  # 防路径穿越
+        f = root / want / "SKILL.md"
+        if not f.is_file():
+            avail = sorted(d.name for d in root.iterdir() if (d / "SKILL.md").is_file())
+            return json.dumps({"ok": False, "error": f"技能不存在: {want}",
+                               "hint": "用 list=true 查看可用技能",
+                               "available": avail[:40]}, ensure_ascii=False)
+        text = f.read_text(encoding="utf-8", errors="ignore")
+        meta = _fm(text)
+        if str(meta.get("disable-model-invocation", "")).lower() == "true":
+            return json.dumps({"ok": False,
+                               "error": f"{want} 标记为禁止模型自主调用"},
+                              ensure_ascii=False)
+        body = text[:14000]
+        return json.dumps({
+            "ok": True, "name": want,
+            "allowed_tools": meta.get("allowed-tools", ""),
+            "risk_level": meta.get("risk_level", ""),
+            "truncated": len(text) > 14000,
+            "content": body,
+        }, ensure_ascii=False)
     if name == "present_files":
         # 成果呈现：只校验文件真实存在，不搬运内容（前端按路径拉取）。
         # 严格校验是为了防止模型臆造路径 —— 实测它编造过文件路径。
@@ -3806,7 +3900,7 @@ def _looks_failed(result: str) -> bool:
 _NARR_ACTION = {
     "file_read": "读取", "file_write": "写入", "file_edit": "修改",
     "save_document": "生成文档", "generate_pptx": "生成课件",
-    "present_files": "呈现成果",
+    "present_files": "呈现成果", "use_skill": "加载技能",
     "tdocs_upload_html": "上传腾讯文档", "chart_render": "出图",
     "shell_run": "执行命令", "execute_code": "运行代码", "glob": "查找文件",
     "grep": "搜索内容", "analyze_document": "分析文档",

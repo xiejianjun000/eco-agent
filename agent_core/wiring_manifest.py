@@ -49,6 +49,8 @@ CHANNEL_DISPATCHED: list[str] = [
     # 成果统一呈现入口（对标 WorkBuddy present_files）：
     # 只校验文件存在并回传元信息，由 chat.py 内部分派，无独立 handler。
     "present_files",
+    # 按需加载 SKILL.md（对标 WorkBuddy use_skill），chat.py 内部分派
+    "use_skill",
     "web_fetch",
     "open_url",
     "generate_pptx",
