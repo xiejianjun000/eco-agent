@@ -23,7 +23,6 @@ interface Msg {
   rating?: 'up' | 'down' | null;
   branchId?: string;    // 该消息所属分支（分支新对话后标记）
   trace?: TraceEvent[]; // 执行轨迹（DSH 式折叠展示）
-  suggestions?: string[]; // 后续提问建议（DSH suggest-prompt 对标，点击填入输入框）
   attachments?: { name: string; path: string; size_kb: number }[]; // 用户消息附件（DSH 式 chips）
 }
 
@@ -1306,7 +1305,6 @@ export default function ChatView({
             trace: meta.trace ?? last.trace,
             usage: meta.usage ?? last.usage,
             ttftMs: meta.ttft_ms ?? last.ttftMs,
-            suggestions: meta.suggestions ?? last.suggestions,
             time: fmtClock(),
           };
           return next;
@@ -1568,20 +1566,6 @@ export default function ChatView({
                       <Icon name="paperclip" size={13} /> {a.name}
                       {a.size_kb > 0 ? ` · ${a.size_kb}KB` : ''}
                     </span>
-                  ))}
-                </div>
-              )}
-              {m.role === 'assistant' && !busy && (m.suggestions?.length ?? 0) > 0 && (
-                <div className="suggest-row">
-                  {m.suggestions!.map((s, si) => (
-                    <button
-                      key={si}
-                      className="suggest-chip"
-                      title="点击填入输入框"
-                      onClick={() => { setInput(s); }}
-                    >
-                      {s}
-                    </button>
                   ))}
                 </div>
               )}

@@ -436,14 +436,6 @@ html[data-theme='dark'] .brand-icon { filter: brightness(1.3) drop-shadow(0 1px 
 }
 .md-option:hover { background: var(--terra); color: #fff; }
 
-/* 后续提问建议气泡（DSH suggest-prompt 对标） */
-.suggest-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.suggest-chip {
-  border: 1px dashed var(--terra); background: transparent; color: var(--t-aux);
-  border-radius: 14px; padding: 4px 12px; font-size: 12px; cursor: pointer;
-  font-family: inherit; transition: all 120ms;
-}
-.suggest-chip:hover { border-style: solid; background: var(--terra); color: #fff; }
 
 /* Slot 面板（DSH provider 视图） */
 .audit-card { display: flex; flex-direction: column; gap: 6px; }
@@ -1083,10 +1075,6 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
   color: var(--t-sub); margin-bottom: 8px;
 }
 .hero-sub .sub-accent { color: var(--eco-teal); font-weight: 700; }
-.hero-chips {
-  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px;
-}
-.hero-chips .suggest-chip { font-size: 12.5px; padding: 6px 14px; }
 
 /* ── 右栏「上下文」面板（会话/模型/用量/系统状态） ── */
 .side-context { padding: 12px; overflow-y: auto; }

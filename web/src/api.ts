@@ -371,7 +371,7 @@ export async function streamChat(
   workspace = '',
   onDelta: (text: string, meta?: { ttft_ms?: number; reset?: boolean }) => void,
   onEvent?: (ev: TraceEvent) => void,
-  onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[]; usage?: ChatUsage; ttft_ms?: number; suggestions?: string[] }) => void,
+  onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[]; usage?: ChatUsage; ttft_ms?: number }) => void,
 ): Promise<void> {
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
@@ -410,7 +410,6 @@ export async function streamChat(
           ttft_ms?: number;
           duration_ms?: number;
           usage?: ChatUsage;
-          suggestions?: string[];
         };
         if (obj.error) throw new Error(obj.error);
         if (obj.done) {
@@ -419,7 +418,6 @@ export async function streamChat(
             trace: obj.trace ?? traceAcc,
             usage: obj.usage,
             ttft_ms: obj.ttft_ms,
-            suggestions: obj.suggestions ?? [],
           });
           continue;
         }

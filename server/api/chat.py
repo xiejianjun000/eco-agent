@@ -165,8 +165,6 @@ class ChatResponse(BaseModel):
     duration_ms: int = Field(default=0, description="总耗时（毫秒）")
     ttft_ms: int = Field(default=0, description="首 token 耗时（毫秒）")
     trace: list[dict] = Field(default_factory=list, description="执行轨迹（思考/工具调用/耗时）")
-    suggestions: list[str] = Field(default_factory=list,
-                                  description="后续提问建议（DSH suggest-prompt 对标，Web UI 快捷气泡）")
 
 
 
@@ -2550,8 +2548,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
     if _full_reply:
         _persist_turn(req.session_id, req.message, _full_reply, ok=True)
         return ChatResponse(reply=_full_reply, model=req.model or DEFAULT_CHAT_MODEL,
-                            usage={}, duration_ms=0, ttft_ms=0, trace=[],
-                            suggestions=[])
+                            usage={}, duration_ms=0, ttft_ms=0, trace=[])
 
     client, _eff_model = _client_for(req.model)
     messages = _build_messages(req.message, req.history, req.session_id or "default", req.workspace)
@@ -2569,21 +2566,11 @@ async def chat(req: ChatRequest) -> ChatResponse:
         duration_ms = int((time.monotonic() - t0) * 1000)
         _persist_turn(req.session_id, req.message, reply, ok=True, trace=trace,
                       usage=usage, duration_ms=duration_ms)
-        suggestions = []
-        try:
-            from agent_core.prompt_engine import get_prompt_engine
-            from agent_core.suggest import build_suggestions_hybrid
-
-            suggestions = build_suggestions_hybrid(req.message, reply, trace,
-                                                   get_prompt_engine().phase)
-        except Exception:  # noqa: BLE001
-            pass
         # 进化闭环收尾（RoleSwarm 分支同样走）：DOCX 双产物 + 任务段记忆
         _ensure_docx_artifact(req.message, reply, trace)
         _maybe_task_log(req.message, reply, trace)
         return ChatResponse(reply=reply, model=req.model or DEFAULT_CHAT_MODEL, usage=usage,
-                            duration_ms=duration_ms, ttft_ms=0, trace=trace,
-                            suggestions=suggestions)
+                            duration_ms=duration_ms, ttft_ms=0, trace=trace)
     try:
         reply, trace, usage, first_llm_ms, first_token_ms = await _chat_with_codex_loop(
             client, messages, _eff_model, session_id=req.session_id, user_message=req.message)
@@ -2613,19 +2600,10 @@ async def chat(req: ChatRequest) -> ChatResponse:
     # 任务段记忆（WorkBuddy 对标：任务完成即写当日工作日志，下次注入）
     _maybe_task_log(req.message, reply, trace)
     # 会话级 token 计量 + 首个 LLM 响应耗时（非流式下为近似首响应，非逐 token 采样）
-    suggestions: list[str] = []
-    try:
-        from agent_core.prompt_engine import get_prompt_engine
-        from agent_core.suggest import build_suggestions_hybrid
-
-        suggestions = build_suggestions_hybrid(req.message, reply, trace,
-                                               get_prompt_engine().phase)
-    except Exception as e:  # noqa: BLE001 — 建议失败不影响主流程
-        logger.warning("suggestions build failed: %s", e)
     return ChatResponse(reply=reply, model=req.model or DEFAULT_CHAT_MODEL, usage=usage,
                         duration_ms=duration_ms,
                         ttft_ms=ttft_ms,
-                        trace=trace, suggestions=suggestions)
+                        trace=trace)
 
 
 async def _call_llm_with_span(tree, client, model, messages, tools, round_idx,
@@ -4092,7 +4070,6 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
                 "trace": [],
                 "ttft_ms": 0,
                 "duration_ms": 0,
-                "suggestions": [],
             }
             yield f"data: {json.dumps(done_payload, ensure_ascii=False)}\n\n"
             yield "data: [DONE]\n\n"
@@ -4132,8 +4109,7 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
             done_payload = json.dumps({"done": True, "usage": swarm_out["usage"],
                                        "trace": swarm_out["trace"],
                                        "ttft_ms": 0,
-                                       "duration_ms": duration_ms,
-                                       "suggestions": []})
+                                       "duration_ms": duration_ms})
             yield f"data: {done_payload}\n\n"
             yield "data: [DONE]\n\n"
             return
@@ -4194,20 +4170,9 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
         # DOCX 双产物 + 任务段记忆（流式端点同样走进化闭环收尾）
         _ensure_docx_artifact(req.message, reply, trace)
         _maybe_task_log(req.message, reply, trace)
-        # 建议提示词（DSH suggest-prompt 对标）：规则引擎，可选 LLM 增强
-        suggestions: list[str] = []
-        try:
-            from agent_core.prompt_engine import get_prompt_engine
-            from agent_core.suggest import build_suggestions_hybrid
-
-            suggestions = build_suggestions_hybrid(req.message, reply, trace,
-                                                   get_prompt_engine().phase)
-        except Exception:  # noqa: BLE001 — 建议失败不影响主流程
-            pass
         done_payload = json.dumps({"done": True, "usage": usage, "trace": trace,
                                    "ttft_ms": ttft,
-                                   "duration_ms": duration_ms,
-                                   "suggestions": suggestions})
+                                   "duration_ms": duration_ms})
         yield f"data: {done_payload}\n\n"
         yield "data: [DONE]\n\n"
 
