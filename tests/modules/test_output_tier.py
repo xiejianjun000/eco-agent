@@ -162,3 +162,76 @@ class TestEngineIntegration:
         eng.apply_tier("起草处罚决定书")
         p = eng.build_system_prompt()
         assert p.index(SAFETY_LAYER[:40]) < p.index("输出规格")
+
+
+class TestRealDomainQuestions:
+    """真实领域问法回归。
+
+    语料来源：ecoskills/eia-router/SKILL.md 的意图信号词，
+    以及从 ecoskills/ 挖出的行业术语（未批先建/重大变动/稀释排放/
+    自动监测/台账/执行报告/重点管理…）。
+
+    这批问句一次性暴露了 5 个漏判——都是我自己编测试用例编不出来的，
+    因为行业惯用语（「如何处罚」而非「行政处罚」、「台账保存几年」）
+    不在通用直觉里。故固化为回归测试。
+    """
+
+    @pytest.mark.parametrize("q", [
+        "执行报告多久提交一次",
+        "台账要保存几年",
+        "排污许可证有效期几年",
+    ])
+    def test_deadline_query_is_brief(self, q):
+        """期限/频次是查规定，不是判定。原正则漏了「多久/几年」。"""
+        assert classify(q).tier == Tier.BRIEF
+
+    @pytest.mark.parametrize("q", [
+        "什么情况下需要重新报批环评",
+        "这个项目要不要做环评",
+        "排污登记和排污许可有什么区别",
+        "属于重点管理还是简化管理",
+        "这算重大变动吗",
+        "稀释排放怎么认定",
+        "旁路偷排怎么查",
+        "这算不算未批先建",
+        "这个企业没验收就投产了，怎么处理",
+    ])
+    def test_determination_is_analysis(self, q):
+        """定性、口径、处置路径 → 分析档。
+
+        注意「这算不算未批先建」和「没验收就投产怎么处理」：
+        问的是定性与处置路径，回答不进法律文件，不该升到正式档。
+        扩词表时一度把它们误升，这两条专门守住边界。
+        """
+        assert classify(q).tier == Tier.ANALYSIS
+
+    @pytest.mark.parametrize("q", [
+        "未批先建如何处罚",
+        "无证排污怎么处罚",
+        "超标排放的处罚依据是什么",
+        "自动监测数据能不能作为处罚依据",
+    ])
+    def test_penalty_question_is_formal(self, q):
+        """口语化处罚问法必须进正式档。
+
+        「未批先建如何处罚」是 eia-router 明列的日常问句，
+        但原正则只认「行政处罚/处罚决定」，把它判成了分析档——
+        少给条款级依据和裁量说明，这是会出事的漏判。
+
+        「自动监测数据能不能作为处罚依据」问的是证据能力，
+        答错会导致证据被排除，同样按正式档处理。
+        """
+        assert classify(q).tier == Tier.FORMAL
+
+    def test_violation_word_alone_not_formal(self):
+        """违法情形词单独出现不足以升档——避免过度分类。"""
+        assert classify("未批先建是什么意思").tier != Tier.FORMAL
+
+    def test_compound_question_keeps_numeric_guard(self):
+        """eia-router 举的复合问句：手续 + 限值 + 口径。
+
+        只要含限值就必须挂数值守卫，不因为问题混杂而丢掉。
+        """
+        d = classify("这个火电项目要办什么手续、氮氧化物限值多少、有没有官方口径")
+        assert d.numeric is True
+        assert NUMERIC_GUARD in "".join(tier_sections(d))

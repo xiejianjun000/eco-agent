@@ -1,3 +1,62 @@
+## [2026-09-09] 清理 7 个 auto_learn 垃圾技能 + 补结晶质量闸（修根因）
+
+### 现象
+`ecoskills/` 下有 7 个哈希名技能（`skill-187fe152` 等），其 `description`
+直接是当时的用户原话——"到本地电脑去找"、"退出后，我不会重新启动你"、
+"没要你写检查表格？"，工作流是 6 行重复的 `shell_run`，零信息量。
+
+### 删除依据（非"名字难看"）
+| 证据 | 结论 |
+|---|---|
+| `author` | 全部 `auto_learn`，`usage_count: 1` —— 生成后从未复用 |
+| **meta-audit 评分** | **40-50 分，及格线 70**（对照 jiance-guifan 100 / eco-codex 80 / skill-vetter 70） |
+| 外部引用 | 仅 `skill_registry.json` 与审计日志，无代码依赖 |
+| 注册表一致性 | 第 8 条 `skill-790f9c12` 目录早已不存在，registry 与磁盘本就不一致 |
+
+`skill-vetter` 有真名、有 `manifest.json`、审计 70 分 —— **保留**。
+备份：`_deprecated/auto_learn_skills_20260909/`（7 个目录 + registry 快照），可还原。
+
+### 根因
+`agent_core/skill_system.py:learn_from_task` 的落盘前校验只有
+`validate_skill_content`，而它**只校验结构**（frontmatter 齐全、kebab-case、
+非空）——一句用户原话结构完全合法，照样通过。
+
+放大器在 `cordis_plugins/skill_hatcher.py:82`：`task_steps=tools[:6]`
+把**工具调用序列直接当工作流**，同一工具连调 6 次就产出
+"1. shell_run 2. shell_run …"；`task_desc` 则是用户原话截断。
+
+### Added — 内容价值闸
+- `skill_md.assess_skill_value(desc, steps) -> {"worth", "reasons"}`
+  与 `is_degenerate_workflow(steps)`，在 `learn_from_task` 中于落盘前拦截。
+  三条判据（经 8 个真实坏样本 + 50 个真技能校准，**覆盖 8/8，误伤 0**）：
+  1. 一次性对话指令：祈使＋人称组合（`你/我` + `不会/授权/直接做/…`）
+  2. 链式一次性命令：`再用/再读/然后再/执行以下` —— 属具体任务编排
+  3. 工作流退化：去重后步骤数不足半数（6 步仅 1 种工具）
+
+  **关键校准**：不能简单禁用「你 / 我 / ?」——真技能 `eia-router` 描述含"你"、
+  `code-review` 含"?"，一刀切会误伤，故必须匹配祈使与人称的**组合**。
+
+- `tests/modules/test_skill_value_gate.py`：16 项，以 8 个真实历史坏样本
+  与 5 条真技能描述作 fixture 双向守护。含回归锚点
+  `test_structural_validation_alone_would_pass_bad_samples` —— 断言坏样本
+  **结构校验确实通过**，证明价值闸不可被结构校验替代。
+
+### 验证
+- 新增测试 16/16 通过；技能相关四套 67 项全通过
+- 全量 pytest 失败集与改动前**逐项一致**（8 项，均为预存在：tdocs_import ×5、
+  prompt_sections、mcp_connector、spec_gaps）——无新增回归
+- `run_evals.py --mechanical` **452/452**
+- 端到端隔离验证：坏样本被拦并输出可行动理由，正常任务正常落盘，
+  真实 `ecoskills/` 未被触碰（50 个）
+
+### 已知遗留
+- `spec_gaps` 那项失败源自 `.venv-mcp/` 内 onnxruntime 的硬编码 temperature，
+  与本次改动无关（还原技能后照样失败，已验证）。
+- 合法技能落盘仍取哈希名（中文描述走 `skill_md.py:83` md5 回退），
+  可读性差，另行处理。
+- 本次清理被并发的另一 Codex 进程的 UI commit `9829be1` 一并卷入提交，
+  版本记录不干净，已向用户报告。
+
 ## [2026-09-08] EcoBench 测评：本地法典检索通道，引用准确率 42.95% → 72.38%
 
 ### 背景
