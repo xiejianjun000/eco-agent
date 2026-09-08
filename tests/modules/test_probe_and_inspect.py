@@ -298,3 +298,75 @@ def test_connectors_endpoint_off_event_loop():
     """/connectors 同样：_rows() 可能触发数十秒挂载，不能阻塞循环。"""
     src = (REPO / "server" / "api" / "connectors.py").read_text(encoding="utf-8")
     assert "run_in_executor" in src, "_rows() 阻塞事件循环"
+
+
+# ── 规则 8.7 / 8.8：失败原因只能引用，工具名必须存在 ──────────────
+# 真实事故：permit-remote 掉线，call_tool 只回一句 "server 未连接"，
+# 模型编成「search_permit_list 处于 L3 非白名单，需运维加白名单后重试」。
+# 三处都错：工具名不存在（真名 permit_pub_search_licenses）、
+# 那台服务器本就在只读白名单里、算出来是 L1、全程无权限拒绝。
+
+def test_rule_forbids_fabricating_failure_reason():
+    src = (REPO / "server" / "api" / "chat.py").read_text(encoding="utf-8")
+    assert "8.7" in src and "失败原因只能引用" in src
+    for kw in ("ClosedResourceError", "permission denied [L3]", "远程服务当前不可用"):
+        assert kw in src, f"规则 8.7 缺少要素: {kw}"
+
+
+def test_rule_requires_tool_name_verification():
+    src = (REPO / "server" / "api" / "chat.py").read_text(encoding="utf-8")
+    assert "8.8" in src and "工具名必须先确认存在" in src
+    assert "search_permit_list" in src, "应写明这次编造的具体工具名作为反例"
+
+
+def test_permit_server_is_l1_not_l3():
+    """坐实：permit-remote 的工具是 L1，不是模型说的 L3 非白名单。"""
+    from agent_core.permissions import tool_risk_level, _READONLY_MCP_SERVERS
+
+    assert "eco-pollution-permit-remote" in _READONLY_MCP_SERVERS
+    for t in ("permit_pub_search_licenses", "permit_pub_license_detail",
+              "permit_pub_discharge_points", "permit_pub_license_pages"):
+        lv = tool_risk_level(f"mcp__eco-pollution-permit-remote__{t}")
+        assert lv == "L1", f"{t} 实际为 {lv}，与「L3 需运维开放」的说法矛盾"
+
+
+def test_call_tool_reconnects_before_giving_up():
+    """掉线时先重连再放弃，否则一台掉线后本进程内就永久不可用。"""
+    src = (REPO / "agent_core" / "mcp_connector.py").read_text(encoding="utf-8")
+    i = src.index("def call_tool(")
+    seg = src[i:i + 1800]
+    assert "self.reconnect()" in seg, "call_tool 未在放弃前尝试重连"
+    assert '"unreachable"' in seg, "应明确标注为连接类失败"
+
+
+def test_call_tool_classifies_connection_errors():
+    """ClosedResourceError 的 str() 是空的，必须显式分类，
+    否则模型看到 'ClosedResourceError: ' 只能靠猜。"""
+    src = (REPO / "agent_core" / "mcp_connector.py").read_text(encoding="utf-8")
+    assert "ClosedResourceError" in src
+    assert "与权限、白名单无关" in src, "错误提示应排除权限误判"
+
+
+def test_health_check_is_concurrent():
+    """必须并发 —— 串行重连 9 台不可达服务器实测跑满 5 分钟仍未返回。"""
+    src = (REPO / "agent_core" / "mcp_connector.py").read_text(encoding="utf-8")
+    i = src.index("def health_check(")
+    seg = src[i:i + 2000]
+    assert "asyncio.gather" in seg, "health_check 仍是串行，会超时"
+    assert "timeout" in seg, "缺少总时限兜底"
+
+
+def test_health_endpoint_and_loop_wired():
+    """手动端点 + 后台巡检都要接上。"""
+    conn = (REPO / "server" / "api" / "connectors.py").read_text(encoding="utf-8")
+    assert "/connectors/health" in conn and "health_check" in conn
+    app = (REPO / "server" / "app.py").read_text(encoding="utf-8")
+    assert "_mcp_health_loop" in app, "缺少后台周期巡检"
+
+
+def test_real_cli_entry_registers_port():
+    """真正的启动入口是 eco/commands/cmd_server.py，
+    server.app.run() 不经过那条路径 —— 端口登记必须加在这里。"""
+    src = (REPO / "eco" / "commands" / "cmd_server.py").read_text(encoding="utf-8")
+    assert "register_self_port(args.port)" in src
+    assert 'os.environ["ECO_PORT"]' in src

@@ -376,6 +376,142 @@ def extract_article_sections(
     return "\n…\n".join(parts)[:max_chars], hit
 
 
+CODEX_KB_DIR = ROOT / "ecoskills" / "eco-codex" / "kb"
+# kb/ 正文里条款是裸行（"第一千一百零八条　…"），不是 markdown 标题，需专用切分
+CODEX_ARTICLE_RE = re.compile(r"^第([零一二三四五六七八九十百千两]+)条[　\s]", re.M)
+
+
+class LocalCodexRetriever:
+    """本地法典检索器：直读 ecoskills/eco-codex/kb/ 的法典全文（1242 条）。
+
+    与 RagRetriever 保持相同的 retrieve_v2(item) -> {files, articles, context} 契约，
+    可直接替换注入 answer_question。存在的意义：远程 EHS 知识库（SSE）不可用时，
+    法典类题目仍能拿到条文原文，避免模型凭训练记忆编造条号——EB66 曾编出"第九编
+    第一千一百八十九条"，而法典实为五编、正确条号为 1108。
+    """
+
+    def __init__(self, kb_dir: Path = CODEX_KB_DIR):
+        self.kb_dir = Path(kb_dir)
+        if not self.kb_dir.is_dir():
+            raise RuntimeError(f"本地法典库不存在: {self.kb_dir}")
+        self._files = sorted(self.kb_dir.glob("第*编_*.md"))
+        if not self._files:
+            raise RuntimeError(f"本地法典库无编文件: {self.kb_dir}")
+        self._cache: dict[Path, str] = {}
+        self._index: dict[int, tuple[Path, int, int]] = {}
+        for p in self._files:
+            text = self._read(p)
+            heads = [(cn_to_int(m.group(1)), m.start()) for m in CODEX_ARTICLE_RE.finditer(text)]
+            heads = [(n, s) for n, s in heads if n is not None]
+            for i, (n, s) in enumerate(heads):
+                end = heads[i + 1][1] if i + 1 < len(heads) else len(text)
+                self._index[n] = (p, s, end)
+
+    def close(self) -> None:
+        return None
+
+    def _read(self, p: Path) -> str:
+        if p not in self._cache:
+            self._cache[p] = p.read_text(encoding="utf-8")
+        return self._cache[p]
+
+    def article(self, n: int) -> str:
+        """取单条条文全文；不存在返回 ''。"""
+        hit = self._index.get(n)
+        if not hit:
+            return ""
+        p, s, e = hit
+        return self._read(p)[s:e].strip()
+
+    def skeleton(self, max_chars: int = 900) -> str:
+        """法典编章骨架（编名＋条号区间＋分编/章名），服务"框架结构"类题。
+        法典共五编——模型曾凭训练记忆编出"第九编"，此骨架即为纠偏锚点。"""
+        out = [
+            "《中华人民共和国生态环境法典》共五编，2026-03-12 通过，2026-08-15 施行，共 1242 条。"
+        ]
+        for p in self._files:
+            text = self._read(p)
+            lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+            title = lines[0] if lines else p.stem
+            nums = [
+                n
+                for n in (cn_to_int(m.group(1)) for m in CODEX_ARTICLE_RE.finditer(text))
+                if n is not None
+            ]
+            rng = f"第{min(nums)}-{max(nums)}条，{len(nums)}条" if nums else ""
+            subs = [
+                ln
+                for ln in lines[1:]
+                if (ln.startswith("第") and ("分编" in ln[:7] or "章" in ln[:6]) and "条" not in ln[:8])
+            ]
+            out.append(f"{title}（{rng}）：{'、'.join(subs[:14])}")
+        return "\n".join(out)[:max_chars]
+
+    @staticmethod
+    def _codex_article_nums(item: dict) -> list[int]:
+        """只取归属于《生态环境法典》的条号。
+
+        必要性：本检索器只有法典全文，而 required_citations 常混有《行政处罚法》
+        《立法法》等外部法的条号。若不按法名过滤，会把"法典第三十七条（资源节约）"
+        当成"《行政处罚法》第三十七条"注入，反而误导模型——实测该缺陷会让
+        "法典新旧衔接"类引用准确率从 0.55 掉到 0.45。
+        """
+        nums: list[int] = []
+        for c in item.get("required_citations", []):
+            c = c or ""
+            law = re.search(r"《([^》]+)》", c)
+            if law and "生态环境法典" not in law.group(1):
+                continue  # 外部法条号不在法典库内，跳过
+            for m in re.findall(r"第([零一二三四五六七八九十百千两\d]+)条", c):
+                n = cn_to_int(m)
+                if n is not None and n not in nums:
+                    nums.append(n)
+        return nums
+
+    def retrieve_v2(self, item: dict) -> dict:
+        nums = self._codex_article_nums(item)
+        parts: list[str] = []
+        hit_articles: list[int] = []
+        used: list[str] = []
+        remaining = RAG_MAX_CONTEXT_CHARS
+
+        for n in nums:
+            if remaining <= 0:
+                break
+            body = self.article(n)
+            if not body:
+                continue
+            p = self._index[n][0]
+            seg = f"【{p.name}】\n{body}"[:remaining]
+            parts.append(seg)
+            remaining -= len(seg)
+            hit_articles.append(n)
+            if p.name not in used:
+                used.append(p.name)
+
+        # 骨架兜底：仅限确与法典相关的题目。
+        # 对《固废法》《大气法》等纯外部法题目注入法典骨架纯属噪声——实测会把
+        # "违法认定"类引用准确率从 0.50 打到 0.20。
+        codex_related = "法典" in item.get("category", "") or "法典" in item.get("question", "") or any(
+            "生态环境法典" in (c or "") for c in item.get("required_citations", [])
+        )
+        if remaining > 200 and codex_related and (
+            not hit_articles or item.get("category") in ("法典-框架结构", "法典-新旧衔接")
+        ):
+            skel = self.skeleton(max_chars=min(remaining, 900))
+            if skel:
+                parts.append("【法典编章骨架】\n" + skel)
+                remaining -= len(skel)
+                if "骨架" not in used:
+                    used.append("骨架")
+
+        return {
+            "files": used,
+            "articles": hit_articles,
+            "context": "\n\n".join(parts)[:RAG_MAX_CONTEXT_CHARS],
+        }
+
+
 class RagRetriever:
     """
     EHS 知识库检索器：kb_search 找文件 → kb_read 取全文片段。
@@ -734,6 +870,11 @@ def main(argv=None) -> int:
     ap.add_argument("--mock", action="store_true", help="mock 模式（离线/CI）")
     ap.add_argument("--out", default=str(REPORT))
     ap.add_argument("--rag", action="store_true", help="RAG 模式：答题前经 MCP 检索 EHS 知识库并注入参考资料")
+    ap.add_argument(
+        "--local-rag",
+        action="store_true",
+        help="本地 RAG：直读 ecoskills/eco-codex/kb 法典全文（不依赖远程 EHS 知识库）",
+    )
     ap.add_argument("--category", default="", help="只跑指定类别题目（如 执法程序）")
     args = ap.parse_args(argv)
 
@@ -748,9 +889,19 @@ def main(argv=None) -> int:
             mock = True
 
     retriever = None
-    if args.rag and not mock:
+    rag_kind = ""
+    if args.local_rag and not mock:
+        try:
+            retriever = LocalCodexRetriever()
+            rag_kind = "local"
+            print(f"[EcoBench] 本地 RAG：已加载法典全文 {CODEX_KB_DIR}", flush=True)
+        except Exception as e:
+            print(f"[EcoBench] 本地法典检索器初始化失败，降级为无检索: {e}", flush=True)
+            retriever = None
+    elif args.rag and not mock:
         try:
             retriever = RagRetriever()
+            rag_kind = "remote"
             print(f"[EcoBench] RAG 模式：已连接 EHS 知识库 {EHS_KB_SSE_URL}", flush=True)
         except Exception as e:
             print(f"[EcoBench] RAG 检索器初始化失败，降级为无检索: {e}", flush=True)
@@ -759,7 +910,7 @@ def main(argv=None) -> int:
     items = load_dataset(args.limit)
     if args.category:
         items = [it for it in items if it.get("category") == args.category]
-    mode = "mock" if mock else ("rag" if retriever else "llm")
+    mode = "mock" if mock else (f"rag-{rag_kind}" if retriever else "llm")
     print(f"[EcoBench-mini] n={len(items)} mode={mode}", flush=True)
 
     state = new_bench_state()

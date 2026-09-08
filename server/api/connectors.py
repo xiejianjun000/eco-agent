@@ -97,3 +97,33 @@ async def refresh_connectors() -> dict:
         "tool_total": sum(r["tool_count"] for r in rows),
         "connectors": rows,
     }
+
+
+@router.post("/connectors/health")
+async def health_check_connectors() -> dict:
+    """轻量健康检查：只对掉线的 server 重连，不动正常连接。
+
+    与 /connectors/refresh 的区别：refresh 是全量重建（close 掉所有连接再重连，
+    正常的那些也会被断开重来，代价大）；本端点只修掉线的那几台。
+    远程 MCP 会不定时掉线，这是巡检之外的手动补救入口。
+    """
+    import asyncio
+
+    import agent_core.tools_registry as tr
+
+    mgr = tr._MCP_MGR  # noqa: SLF001
+    if mgr is None:
+        return {"ok": False, "error": "MCP 尚未挂载", "checked": 0}
+    # health_check 内部会对不可达主机做秒级超时连接，丢线程池避免阻塞事件循环
+    status = await asyncio.get_running_loop().run_in_executor(None, mgr.health_check)
+    rows = await asyncio.get_running_loop().run_in_executor(None, _rows)
+    recovered = [n for n, ok in status.items() if ok]
+    down = [n for n, ok in status.items() if not ok]
+    return {
+        "ok": True,
+        "checked": len(status),
+        "connected": sum(1 for r in rows if r["connected"]),
+        "tool_total": sum(r["tool_count"] for r in rows),
+        "down": down,
+        "recovered_or_healthy": recovered,
+    }

@@ -45,6 +45,16 @@ def run(args):
             "请检查仓库 .env / ~/.eco/.env，或运行 python3 _scripts/setup_credentials.py"
         )
 
+    # 登记真实监听端口，供 api_probe 解析 "/api/xxx" 简写。
+    # 这里是真正的启动入口（server.app.run() 不经过本路径），
+    # 曾经三个默认端口互不相同：api_probe 硬编码 8000、server.run 默认 8788、
+    # 实跑 8321，结果自检探针打到空端口拿 Connection refused，
+    # 模型据此断言「没有单独运行的外部服务网关服务」。
+    from agent_core.exec_tools import register_self_port
+
+    register_self_port(args.port)
+    os.environ["ECO_PORT"] = str(args.port)
+
     app = create_app()
     log.info("\n  eco Agent Management API (v%s)", get_version())
     log.info("  Web GUI:  http://%s:%s/", args.host, args.port)

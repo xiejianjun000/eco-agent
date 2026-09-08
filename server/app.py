@@ -170,9 +170,37 @@ def create_app() -> FastAPI:
             except Exception:  # noqa: BLE001
                 pass
 
+        async def _mcp_health_loop() -> None:
+            """周期巡检 MCP 连接，掉线自动重连。
+
+            远程那批（111.230.89.107:800x）会不定时掉线。没有巡检时，
+            掉线要等到下次有人调用才被发现 —— 而那次调用本身就已经失败了。
+            实测事故：permit-remote 启动时正常发现 12 个工具，用户查排污许可证时
+            已掉线，模型把 ClosedResourceError 编成「L3 权限未开放，需要运维加白名单」。
+            主动巡检让恢复发生在后台，用户下次调用时通常已经好了。
+
+            间隔取 180 秒：短于此会对不可达主机反复做 12 秒级超时连接，
+            长于此则掉线窗口过久。巡检本身跑在线程池，不占事件循环。
+            """
+            import asyncio as _aio
+
+            interval = float(os.environ.get("ECO_MCP_HEALTH_INTERVAL", "180") or 180)
+            while True:
+                await _aio.sleep(interval)
+                try:
+                    from agent_core import tools_registry as tr
+
+                    mgr = tr._MCP_MGR  # noqa: SLF001
+                    if mgr is None:
+                        continue
+                    await _aio.get_running_loop().run_in_executor(None, mgr.health_check)
+                except Exception as e:  # noqa: BLE001 巡检失败不影响服务
+                    logging.getLogger(__name__).warning("MCP 健康巡检异常: %s", e)
+
         loop = asyncio.get_running_loop()
         loop.run_in_executor(None, _warm)
         loop.run_in_executor(None, _warm_mcp)
+        app.state._mcp_health_task = loop.create_task(_mcp_health_loop())
 
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
     app.include_router(files.router, prefix="/api/v1", tags=["files"])

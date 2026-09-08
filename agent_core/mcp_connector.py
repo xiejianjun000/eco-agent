@@ -250,7 +250,22 @@ class MCPServerConnection:
         连接类错误自动重连重试一次；超时/协议错误走统一错误处理。
         """
         if not self.connected or self._session is None:
-            return {"success": False, "error": f"server 未连接: {self.config.name}"}
+            # 先尝试重连再放弃 —— 远程服务器会掉线，掉线后 connected 置 False，
+            # 此处若直接返回，这台在本进程内就再也不可用了，哪怕对方几秒后恢复。
+            # 实测事故：permit-remote 启动时正常发现 12 个工具，调用时已掉线，
+            # 只回一句 "server 未连接"，模型看不出是掉线，
+            # 编成「L3 权限未开放，需要运维加白名单」—— 完全不存在的制度理由，
+            # 而那台服务器本就在只读白名单里、工具算出来是 L1。
+            logger.info(f"[MCP] {self.config.name} 未连接，尝试重连后再调用 {tool}")
+            if not self.reconnect():
+                return {
+                    "success": False,
+                    "error": f"远程服务当前不可用（重连失败）: {self.config.name}",
+                    "failure": "unreachable",
+                    "hint": "远程 MCP 服务器掉线或网络不通，与权限、白名单无关；稍后重试。",
+                    "server": self.config.name,
+                    "tool": tool,
+                }
 
         start = time.time()
         last_exc: Exception | None = None
@@ -284,9 +299,30 @@ class MCPServerConnection:
                     # 断线重连后重试一次
                     if not self.reconnect():
                         break
+        # 错误串要让模型看得懂。ClosedResourceError 的 str() 是空的，
+        # 拼出来就是 "ClosedResourceError: " —— 模型无从判断这是连接问题，
+        # 于是编了个「L3 权限未开放」的理由。这里显式分类并带上处置提示。
+        _name = type(last_exc).__name__
+        _msg = str(last_exc).strip()
+        _conn_errs = ("ClosedResourceError", "ConnectionError", "BrokenResourceError",
+                      "IncompleteRead", "RemoteProtocolError")
+        if _name in _conn_errs or "closed" in _msg.lower():
+            _failure, _hint = "unreachable", (
+                "远程 MCP 服务器连接已断开（服务端掉线或网络中断），"
+                "与权限、白名单无关；稍后重试。"
+            )
+            _err = f"远程服务连接中断（{_name}）: {self.config.name}"
+        elif isinstance(last_exc, TimeoutError) or "timeout" in _msg.lower():
+            _failure, _hint = "timeout", "远程服务响应超时，可稍后重试或缩小查询范围。"
+            _err = f"远程服务超时（{_name}）: {self.config.name}"
+        else:
+            _failure, _hint = "error", "远程服务返回错误，请核对参数名与取值。"
+            _err = f"{_name}: {_msg}" if _msg else f"{_name}（无错误详情）"
         return {
             "success": False,
-            "error": f"{type(last_exc).__name__}: {last_exc}",
+            "error": _err,
+            "failure": _failure,
+            "hint": _hint,
             "server": self.config.name,
             "tool": tool,
             "elapsed_ms": int((time.time() - start) * 1000),
@@ -350,6 +386,55 @@ class MCPConnectorManager:
 
     def get(self, name: str) -> MCPServerConnection | None:
         return self._servers.get(name)
+
+    def health_check(self, timeout: float = 45.0) -> dict[str, bool]:
+        """巡检所有已知 server，对掉线的并发重连一次。返回巡检后的连通状态。
+
+        远程 MCP（尤其 111.230.89.107 那批）会不定时掉线。没有巡检时，
+        一台服务器掉线后要等到下次有人调用它才会被发现，而那次调用本身就失败了 ——
+        用户看到的是「查不到」，模型看到的是一个空消息的 ClosedResourceError，
+        实测被编成了「L3 权限未开放，需要运维加白名单」。
+
+        必须并发：实测 9 台不可达时串行重连跑满 5 分钟仍未返回
+        （每台十几秒超时 × 9）。connect_all 早就是并发的，这里对齐它的做法，
+        并加总时限兜底 —— 巡检超时只意味着这一轮没修完，下一轮继续。
+        """
+        result: dict[str, bool] = {}
+        down = []
+        for name, conn in list(self._servers.items()):
+            if conn.connected:
+                result[name] = True
+            else:
+                down.append((name, conn))
+        if not down:
+            return result
+
+        async def _try(name: str, conn: MCPServerConnection) -> tuple[str, bool]:
+            try:
+                await asyncio.wait_for(conn._connect_async(), timeout=conn.config.timeout + 5)
+                logger.info(f"[MCP健康检查] {name}: 已自动恢复，{len(conn.tools)} 个工具")
+                return name, True
+            except Exception as e:  # noqa: BLE001 单台失败不影响其余
+                conn.connected = False
+                conn.last_error = str(e)
+                logger.warning(f"[MCP健康检查] {name}: 仍不可达")
+                return name, False
+
+        async def _all() -> list:
+            return await asyncio.gather(*(_try(n, c) for n, c in down),
+                                        return_exceptions=True)
+
+        try:
+            # 管理器没有 _run（那是单个连接的方法），用 connect_all 同款做法：
+            # 把协程投到共享后台事件循环上跑
+            for item in asyncio.run_coroutine_threadsafe(_all(), self._loop).result(timeout) or []:
+                if isinstance(item, tuple):
+                    result[item[0]] = item[1]
+        except Exception as e:  # noqa: BLE001 整轮超时：本轮没修完，下轮继续
+            logger.warning(f"[MCP健康检查] 本轮未完成（{e}），下轮继续")
+        for name, _ in down:
+            result.setdefault(name, False)
+        return result
 
     def available(self, name: str) -> bool:
         conn = self._servers.get(name)
