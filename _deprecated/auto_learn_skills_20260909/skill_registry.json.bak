@@ -1,0 +1,286 @@
+{
+  "skill_d9cdf2ef": {
+    "id": "skill_d9cdf2ef",
+    "name": "skill-9a3ff7d4",
+    "version": "0.1.0",
+    "description": "Use when 到本地电脑去找, especially when using `shell_run`, `shell_run`, `shell_run`.",
+    "category": "general",
+    "author": "auto_learn",
+    "triggers": [
+      "到本地电脑去找"
+    ],
+    "steps": [
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run"
+    ],
+    "tools": [
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run"
+    ],
+    "examples": [
+      "✅ **全盘（桌面/下载/文档）已检索完毕，没有名为《MCP使用手册.md》的文件**——含\"MCP\"的文件有上百个，但没有一个叫\"MCP使用手册\"。\n\n## 一、检索范围与结果\n\n| 检索式 | 范"
+    ],
+    "requirements": [],
+    "usage_count": 1,
+    "avg_score": 3.0,
+    "created_at": "2026-09-02T00:07:49.392993",
+    "updated_at": "2026-09-02T00:07:49.392993",
+    "status": "active",
+    "source": "auto_learned"
+  },
+  "skill_b767795f": {
+    "id": "skill_b767795f",
+    "name": "skill-187fe152",
+    "version": "0.1.0",
+    "description": "Use when 没要你写检查表格？, especially when using `shell_run`, `shell_run`, `file_read`.",
+    "category": "writing",
+    "author": "auto_learn",
+    "triggers": [
+      "没要你写检查表格？"
+    ],
+    "steps": [
+      "shell_run",
+      "shell_run",
+      "file_read"
+    ],
+    "tools": [
+      "shell_run",
+      "shell_run",
+      "file_read"
+    ],
+    "examples": [
+      "✅ 读到了——你 @ 的是我上一条回答的落盘存档（`秋冬季是执法督察最吃劲的窗口...md`），内容是\"我能帮你干哪些活\"的清单，结尾问你\"要不要先做检查清单，还是手上有要核的企业/信访线索\"。\n\n是"
+    ],
+    "requirements": [],
+    "usage_count": 1,
+    "avg_score": 3.0,
+    "created_at": "2026-09-02T01:59:22.262019",
+    "updated_at": "2026-09-02T01:59:22.262019",
+    "status": "active",
+    "source": "auto_learned"
+  },
+  "skill_99ec013c": {
+    "id": "skill_99ec013c",
+    "name": "skill-d3de927a",
+    "version": "0.1.0",
+    "description": "Use when 那为什么这个mcp服务器登录不了？, especially when using `shell_run`, `shell_run`, `execute_code`.",
+    "category": "general",
+    "author": "auto_learn",
+    "triggers": [
+      "那为什么这个mcp服务器登录不了？"
+    ],
+    "steps": [
+      "shell_run",
+      "shell_run",
+      "execute_code",
+      "execute_code",
+      "shell_run",
+      "shell_run"
+    ],
+    "tools": [
+      "shell_run",
+      "shell_run",
+      "execute_code",
+      "execute_code",
+      "shell_run",
+      "shell_run"
+    ],
+    "examples": [
+      "✅ **8004 根本不需要\"登录\"，也\"登录\"得上——它用的是 API Key 鉴权（请求头），不是账号登录；带正确 Key 实测 SSE 握手 200 成功。\"登录不了\"是三层误判叠加的假象。**"
+    ],
+    "requirements": [],
+    "usage_count": 1,
+    "avg_score": 3.0,
+    "created_at": "2026-09-06T00:17:23.016884",
+    "updated_at": "2026-09-06T00:17:23.016884",
+    "status": "active",
+    "source": "auto_learned"
+  },
+  "skill_071d1806": {
+    "id": "skill_071d1806",
+    "name": "skill-fbc8a038",
+    "version": "0.1.0",
+    "description": "Use when 退出后，我不会重新启动你, especially when using `shell_run`, `shell_run`, `shell_run`.",
+    "category": "general",
+    "author": "auto_learn",
+    "triggers": [
+      "退出后，我不会重新启动你"
+    ],
+    "steps": [
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run"
+    ],
+    "tools": [
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run"
+    ],
+    "examples": [
+      "✅ **不用重启也能收口——本轮把 `mcp_count=0` 的代码级根因挖到了：它是个“假读数”（reload 从不清理旧注册，重连成功也计 0）；配置层已实测健康（17/17 解析成功、8004"
+    ],
+    "requirements": [],
+    "usage_count": 1,
+    "avg_score": 3.0,
+    "created_at": "2026-09-06T07:17:17.630853",
+    "updated_at": "2026-09-06T07:17:17.630853",
+    "status": "active",
+    "source": "auto_learned"
+  },
+  "skill_eb89c2d1": {
+    "id": "skill_eb89c2d1",
+    "name": "skill-f4d57811",
+    "version": "0.1.0",
+    "description": "Use when 作为人类操作员，我授权你在工作区目录里直接复跑回归测试（不用沙箱），验证补丁是否真的有效。如果是沙箱环境问题导致的 ma, especially when using `shell_run`, `shell_run`, `shell_run`.",
+    "category": "general",
+    "author": "auto_learn",
+    "triggers": [
+      "作为人类操作员，我授权你在工作区目录里直接复跑回归测试（不用沙箱），验证补丁是否真的有效。如果是沙箱"
+    ],
+    "steps": [
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "file_read",
+      "shell_run"
+    ],
+    "tools": [
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "file_read",
+      "shell_run"
+    ],
+    "examples": [
+      "✅ **Loop 2 上下文已完整定位（补丁=memory_tree FTS5 的 DELETE+INSERT 替代，卡点=沙箱内 `database disk image is malformed`"
+    ],
+    "requirements": [],
+    "usage_count": 1,
+    "avg_score": 3.0,
+    "created_at": "2026-09-06T09:07:03.047336",
+    "updated_at": "2026-09-06T09:07:03.047336",
+    "status": "active",
+    "source": "auto_learned"
+  },
+  "skill_07c22305": {
+    "id": "skill_07c22305",
+    "name": "skill-c3ce7b4c",
+    "version": "0.1.0",
+    "description": "Use when 执行以下动作，不要核查了：, especially when using `shell_run`, `execute_code`, `shell_run`.",
+    "category": "writing",
+    "author": "auto_learn",
+    "triggers": [
+      "执行以下动作，不要核查了：\n\n1. 用 execute_code 或 shell_run，在工作区目"
+    ],
+    "steps": [
+      "shell_run",
+      "execute_code",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run"
+    ],
+    "tools": [
+      "shell_run",
+      "execute_code",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run"
+    ],
+    "examples": [
+      "[eco-server] LLM 调用失败: The read operation timed out"
+    ],
+    "requirements": [],
+    "usage_count": 1,
+    "avg_score": 3.0,
+    "created_at": "2026-09-06T09:10:45.247511",
+    "updated_at": "2026-09-06T09:10:45.247511",
+    "status": "active",
+    "source": "auto_learned"
+  },
+  "skill_e9bf3fe3": {
+    "id": "skill_e9bf3fe3",
+    "name": "skill-50dc7a42",
+    "version": "0.1.0",
+    "description": "Use when Loop 2 Step 6 失败原因已定位：测试代码传了 str 而不是 Path。现在你直接做：, especially when using `shell_run`, `shell_run`, `shell_run`.",
+    "category": "coding",
+    "author": "auto_learn",
+    "triggers": [
+      "Loop 2 Step 6 失败原因已定位：测试代码传了 str 而不是 Path。现在你直接做：\n"
+    ],
+    "steps": [
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run"
+    ],
+    "tools": [
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run",
+      "shell_run"
+    ],
+    "examples": [
+      "[eco-server] LLM 调用失败: The read operation timed out"
+    ],
+    "requirements": [],
+    "usage_count": 1,
+    "avg_score": 3.0,
+    "created_at": "2026-09-06T22:11:09.305500",
+    "updated_at": "2026-09-06T22:11:09.305500",
+    "status": "active",
+    "source": "auto_learned"
+  },
+  "skill_c6fa025d": {
+    "id": "skill_c6fa025d",
+    "name": "skill-790f9c12",
+    "version": "0.1.0",
+    "description": "Use when 查审计链最后3条，再用 glob 找所有 README，再读 eco-agent README 前 5 行, especially when using `audit_tail`, `glob`, `file_read`.",
+    "category": "general",
+    "author": "auto_learn",
+    "triggers": [
+      "查审计链最后3条，再用 glob 找所有 README，再读 eco-agent README 前 "
+    ],
+    "steps": [
+      "audit_tail",
+      "glob",
+      "file_read"
+    ],
+    "tools": [
+      "audit_tail",
+      "glob",
+      "file_read"
+    ],
+    "examples": [
+      "✅ **三项完成：审计链末 3 条为 execute_code 放行记录且哈希链完整；glob 实测 README 共 23 个（下表 23 行逐一对应）；仓库根 README 前 5 行已读（v1."
+    ],
+    "requirements": [],
+    "usage_count": 1,
+    "avg_score": 3.0,
+    "created_at": "2026-09-08T02:15:53.496326",
+    "updated_at": "2026-09-08T02:15:53.496326",
+    "status": "active",
+    "source": "auto_learned"
+  }
+}

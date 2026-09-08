@@ -18,6 +18,8 @@
  *   「计算 turn-fold 折叠态常显锚点：所有最长正文 + 最后一条正文，按原始顺序去重。」
  */
 
+import { resolveToolHead } from './toolViews';
+
 export interface FoldItem<T> {
   content: T;
   index: number;
@@ -151,6 +153,10 @@ const VAGUE_RE = /^\s*(正在处理|让我看看|稍等|马上|好的|收到|开
  */
 const TOOL_NAME_SUBS: [RegExp, string][] = [
   [/\bmcp__[a-zA-Z0-9_-]+__([a-zA-Z0-9_]+)/g, '外部服务'],
+  // 截断残片：模型输出被裁断时会留下 "mcp__eco-hunan-env__" 这种没有内层名的
+  // 半截串，上一条要求 __内层名 故匹配不到，于是原样漏进 DOM。
+  // 实测浏览器里抓到 6 处，全是这个形态。必须排在完整式之后。
+  [/\bmcp__[a-zA-Z0-9_-]+__?/g, '外部服务'],
   [/\b(audit_tail|审计链工具)\b/gi, '审计链'],
   [/\bsession_log_tail\b/gi, '会话日志'],
   [/\bshell_run\b/gi, '命令行'],
@@ -210,6 +216,12 @@ export interface BeatItem {
   status?: string;
   /** 次要信息，仅 act：3 条 / 15 行（对标 secondaryInfo） */
   secondary?: string;
+  /** 命中的工具视图 id，落到 DOM data-tool-view 便于断言；未命中为 'fallback'
+   *  （对标 WorkBuddy ToolbarShell 的 debugAttrs） */
+  viewId?: string;
+  /** 写文件类的变更行数，渲染为分色 +N -M */
+  added?: number;
+  removed?: number;
   /** running↔done 配对键，内部用 */
   key?: string;
   ok?: boolean;
@@ -354,21 +366,46 @@ export function buildBeats(
         out.push({ kind: 'say', text: c });
       }
     } else if (t.type === 'tool_start') {
-      out.push({
-        kind: 'act',
-        status: statusTextOf(t.name, true),
-        text: primaryOf(t.name, t.args),
-        key: keyOf(t),
-        running: true,
-      });
+      {
+        // 每工具独立视图（见 utils/toolViews.ts 与 docs/RENDER_SPEC.md §3）。
+        // 此前所有工具共用 statusTextOf，搜索/读文件/执行命令长得一样，
+        // 这正是「调用工具都混在一起」的根因。
+        const h = resolveToolHead(t.name || '', (t.args || {}) as Record<string, unknown>, 'running');
+        out.push({
+          kind: 'act',
+          status: h.statusText || statusTextOf(t.name, true),
+          text: h.primaryContent || primaryOf(t.name, t.args),
+          viewId: h.viewId,
+          key: keyOf(t),
+          running: true,
+        });
+      }
     } else if (t.type === 'tool') {
+      const failed = isError(t.result_preview);
+      // 从工具结果里取变更行数（对标 WorkBuddy writeFile 的 +N -M）
+      let diff: { added?: number; removed?: number } | undefined;
+      try {
+        const r = JSON.parse(t.result_preview || '{}');
+        const a = r.added_lines ?? r.added;
+        const d = r.removed_lines ?? r.removed;
+        if (typeof a === 'number' || typeof d === 'number') {
+          diff = { added: typeof a === 'number' ? a : 0, removed: typeof d === 'number' ? d : 0 };
+        }
+      } catch { /* 结果非 JSON 或被截断：不显示行数，不猜 */ }
+      const hd = resolveToolHead(
+        t.name || '', (t.args || {}) as Record<string, unknown>,
+        failed ? 'error' : 'success', undefined, diff,
+      );
       const done: BeatItem = {
         kind: 'act',
-        status: statusTextOf(t.name, false),
-        text: primaryOf(t.name, t.args),
+        status: hd.statusText || statusTextOf(t.name, false),
+        text: hd.primaryContent || primaryOf(t.name, t.args),
+        viewId: hd.viewId,
+        added: hd.added,
+        removed: hd.removed,
         key: keyOf(t),
         secondary: summarizeResult(t.result_preview),
-        ok: !isError(t.result_preview),
+        ok: !failed,
         ms: t.cost_ms,
       };
       // 有对应 running 行就原地替换，避免同一次调用出现两行

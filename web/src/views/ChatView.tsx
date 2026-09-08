@@ -589,7 +589,8 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
       {beats.length > 0 && (
         <div className="turn-anchors">
           {beats.map((b, i) => (
-            <div className={`turn-anchor beat-${b.kind}${b.running ? ' beat-running' : ''}`} key={i}>
+            <div className={`turn-anchor beat-${b.kind}${b.running ? ' beat-running' : ''}`} key={i}
+                 data-tool-view={b.kind === 'act' ? (b.viewId || 'fallback') : undefined}>
               <span className={`turn-anchor-dot${
                 b.kind === 'act' ? (b.running ? ' running' : b.ok ? ' ok' : ' err') : ''}`}
                     aria-hidden="true" />
@@ -597,6 +598,14 @@ function ProcessBlock({ trace, live }: { trace: TraceEvent[]; live: boolean }): 
               <span className="turn-anchor-text">
                 {b.status && <span className="beat-status">{b.status}</span>}
                 {b.text && <span className="beat-primary">{b.text}</span>}
+                {/* 变更行数：加/删分色两段，不塞进文字里（对标 WorkBuddy +N -M）。
+                    创建文件时 removed 为 0 也照常显示，与「编辑」形成对照。 */}
+                {(b.added !== undefined || b.removed !== undefined) && (
+                  <span className="beat-diff">
+                    <span className="beat-diff-add">+{b.added ?? 0}</span>
+                    <span className="beat-diff-del">-{b.removed ?? 0}</span>
+                  </span>
+                )}
                 {b.secondary && <span className="beat-second">{b.secondary}</span>}
                 {b.ms !== undefined && b.ms > 0 && <span className="beat-ms">{fmtMs(b.ms)}</span>}
               </span>
