@@ -30,6 +30,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 EVALS_DIR = ROOT / "evals"
 LOOKUP = ROOT / "ecoskills" / "eco-codex" / "scripts" / "lookup.py"
+JC_LOOKUP = ROOT / "ecoskills" / "jiance-guifan" / "scripts" / "lookup.py"
 
 
 def parse_suite(path: Path) -> list[dict]:
@@ -71,6 +72,27 @@ def mechanical_check(q: dict) -> tuple[bool, str]:
     if c.startswith("path="):
         p = ROOT / c.split("=", 1)[1].strip()
         return p.exists(), f"path={p.name} {'存在' if p.exists() else '缺失'}"
+    if c.startswith("std="):
+        code = c.split("=", 1)[1].strip()
+        try:
+            r = subprocess.run([sys.executable, str(JC_LOOKUP), "std", code],
+                               capture_output=True, text=True, timeout=20)
+            data = json.loads(r.stdout.strip() or "{}")
+            hit = data.get("count", 0) > 0 and data.get("match") == "exact"
+            return hit, f"std={code} {'命中' if hit else '清单查无'}"
+        except Exception as e:  # noqa: BLE001
+            return False, f"std={code} 校验异常: {e}"
+    if c.startswith("jcfa="):
+        ref = c.split("=", 1)[1].strip()
+        doc, _, art = ref.rpartition(":")
+        try:
+            r = subprocess.run([sys.executable, str(JC_LOOKUP), "law", doc, art],
+                               capture_output=True, text=True, timeout=20)
+            data = json.loads(r.stdout.strip() or "{}")
+            ok = bool(data.get("text"))
+            return ok, f"jcfa={ref} {'命中' if ok else data.get('error', '查无')}"
+        except Exception as e:  # noqa: BLE001
+            return False, f"jcfa={ref} 校验异常: {e}"
     return True, "skip"
 
 

@@ -20,11 +20,20 @@ router = APIRouter()
 
 
 def _rows() -> list[dict]:
-    """配置清单 × 运行时连接状态（_MCP_MGR 未连接时仅回配置元信息）。"""
+    """配置清单 × 运行时连接状态。"""
     import agent_core.tools_registry as tr
     from agent_core.mcp_connector import load_configs_from_env
 
     configs = load_configs_from_env()
+    # 先确保挂载已发生，否则这个端点会在 MCP 尚未挂载时把 14 台全报
+    # connected=False / tool_count=0 —— 而它们其实连得好好的。
+    # 这正是自检端点最不该犯的错：用「还没连」冒充「连不上」。
+    # attach_mcp_tools() 幂等，已挂载时直接返回。
+    if tr._MCP_MGR is None:  # noqa: SLF001
+        try:
+            tr.attach_mcp_tools()
+        except Exception:  # noqa: BLE001
+            pass  # 连不上就如实回落到配置元信息
     mgr = tr._MCP_MGR  # noqa: SLF001
     rows: list[dict] = []
     for cfg in configs:
@@ -52,7 +61,14 @@ def _rows() -> list[dict]:
 
 @router.get("/connectors")
 async def list_connectors() -> dict:
-    rows = _rows()
+    # _rows() 是同步阻塞的，且可能触发 attach_mcp_tools()（冷启动数十秒）。
+    # 直接在事件循环里跑会冻结整个 loop —— 包括正在用 api_probe 探测本端点的
+    # 那次对话，于是自检工具把自己堵死，返回 timeout，
+    # 模型据此得出「无法获取远程 MCP 连通状态」。
+    # 丢线程池执行，让循环继续处理探测请求。
+    import asyncio
+
+    rows = await asyncio.get_running_loop().run_in_executor(None, _rows)
     connected = sum(1 for r in rows if r["connected"])
     tool_total = sum(r["tool_count"] for r in rows)
     return {"count": len(rows), "connected": connected, "tool_total": tool_total, "connectors": rows}

@@ -2398,6 +2398,11 @@ if __name__ == "__main__":
 # ── MCP 远程工具并入（ECO_MCP_SERVERS 配置驱动，优雅降级）─────────────
 _MCP_MGR = None
 _MCP_ATTACHED = False
+# 上次挂载尝试时刻（monotonic）与冷却秒数。
+# 部分连接失败时允许重试，但不能每个请求都去重连那几台连不上的远程服务器 ——
+# 一次 connect_all 对不可达主机是 12 秒级超时，无冷却会把请求全拖死。
+_MCP_LAST_TRY: float | None = None
+_MCP_RETRY_COOLDOWN = 120.0
 
 
 def attach_mcp_tools() -> list[str]:
@@ -2406,26 +2411,51 @@ def attach_mcp_tools() -> list[str]:
     远程工具命名 mcp__{server}__{tool}，schema 入 ALL_TOOL_DEFS、handler 入
     _HANDLERS，与内置工具同等待遇（权限闸门按 mcp__ 内层名归一化分级，见
     permissions.tool_risk_level）。未配置 / mcp SDK 缺失 / 连接失败均返回 []
-    并优雅降级，不影响内置工具。幂等：重复调用不重复连接、不重复注册。
+    并优雅降级，不影响内置工具。
+
+    幂等语义：**全部连上才锁定**。
+    此前是「进函数就置 _MCP_ATTACHED = True」，一次部分失败就永久锁死 ——
+    实测启动预热时远程 9 台不可达，只连上 5 台，之后整个进程再也不重试，
+    connectors 端点从此稳定报 5/14。本地那台在的时候看不出问题，
+    远程抖一下就永久降级，比慢一点严重得多。
+    改为：全连上才置位；部分失败留重试余地，但加冷却窗口，
+    避免每个请求都去重连那几台连不上的。
     """
-    global _MCP_MGR, _MCP_ATTACHED
+    global _MCP_MGR, _MCP_ATTACHED, _MCP_LAST_TRY
     if _MCP_ATTACHED:
         return [n for n in _HANDLERS if n.startswith("mcp__")]
-    _MCP_ATTACHED = True
+    # 冷却：上次尝试后 _MCP_RETRY_COOLDOWN 秒内不重连，防止请求风暴
+    import time as _time
+    now = _time.monotonic()
+    if _MCP_LAST_TRY is not None and (now - _MCP_LAST_TRY) < _MCP_RETRY_COOLDOWN:
+        return [n for n in _HANDLERS if n.startswith("mcp__")]
+    _MCP_LAST_TRY = now
     try:
         from agent_core.mcp_connector import MCP_AVAILABLE, MCPConnectorManager
 
         if not MCP_AVAILABLE:
+            _MCP_ATTACHED = True  # SDK 缺失是永久事实，无需重试
             return []
-        mgr = MCPConnectorManager()
-        if not mgr.configs:
-            mgr.close()
-            return []
-        status = mgr.connect_all()
-        if not any(status.values()):
-            mgr.close()
-            return []
-        _MCP_MGR = mgr
+        if _MCP_MGR is not None:
+            mgr = _MCP_MGR  # 复用已有 manager，只补连失败的那几台
+            status = mgr.connect_all()
+        else:
+            mgr = MCPConnectorManager()
+            if not mgr.configs:
+                mgr.close()
+                _MCP_ATTACHED = True  # 没配置也是永久事实
+                return []
+            status = mgr.connect_all()
+            if not any(status.values()):
+                mgr.close()
+                return []  # 全失败：不置位，下个冷却窗口后重试
+            _MCP_MGR = mgr
+        # 全部连上才认为挂载完成；否则保留重试机会
+        if status and all(status.values()):
+            _MCP_ATTACHED = True
+        else:
+            failed = [k for k, v in (status or {}).items() if not v]
+            log.warning("[tools_registry] MCP 部分未连上，保留重试: %s", failed)
     except Exception as e:
         log.warning("[tools_registry] MCP 接入失败（降级跳过）: %s", e)
         return []

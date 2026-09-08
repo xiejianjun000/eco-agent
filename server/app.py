@@ -29,6 +29,7 @@ server/app.py — eco Agent 管理 API 应用工厂
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -155,7 +156,23 @@ def create_app() -> FastAPI:
             except Exception:  # noqa: BLE001  预热失败不影响服务
                 pass
 
-        asyncio.get_running_loop().run_in_executor(None, _warm)
+        def _warm_mcp() -> None:
+            """后台预热 MCP 挂载。
+
+            /api/v1/connectors 与 inspect 都要求「先确保挂载」才能报出真实状态，
+            但冷启动首次挂载实测 66.8 秒（14 台并发连接），而 api_probe 超时是 15 秒。
+            结果自检工具探自己的端点直接超时 —— 口径修对了，却变成探不到。
+            放后台预热：启动后自行连接，首个请求到来时通常已就绪（命中后 3 毫秒）。
+            """
+            try:
+                from agent_core.tools_registry import attach_mcp_tools
+                attach_mcp_tools()
+            except Exception:  # noqa: BLE001
+                pass
+
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(None, _warm)
+        loop.run_in_executor(None, _warm_mcp)
 
     app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
     app.include_router(files.router, prefix="/api/v1", tags=["files"])
@@ -244,5 +261,14 @@ def _mount_web_gui(app: FastAPI) -> None:
 def run(host: str = "127.0.0.1", port: int = 8788, reload: bool = False) -> None:
     """uvicorn 入口（供 CLI / 脚本调用）。"""
     import uvicorn
+
+    # 登记真实监听端口，供 api_probe 解析 "/api/xxx" 简写。
+    # 此处默认 8788、api_probe 曾硬编码 8000、实跑 8321 —— 三个数字互不相同，
+    # 结果自检探针打到空端口拿 Connection refused，模型据此得出错误结论。
+    from agent_core.exec_tools import register_self_port
+    register_self_port(port)
+    # 用环境变量传递：reload=True 时 uvicorn 在子进程重建 app，
+    # 模块级的登记值不会继承，只有环境变量能跨进程。
+    os.environ["ECO_PORT"] = str(port)
 
     uvicorn.run("server.app:create_app", factory=True, host=host, port=port, reload=reload)

@@ -287,6 +287,21 @@ def _codex_rules_section() -> str:
         "  · 做 PPT/幻灯片 → huashu-slides\n"
         "  · 湖南执法平台取案卷 → hunan-env-law\n"
         "不确定叫什么就 use_skill(list=true) 先看清单。手册里的规程优先于你的经验。\n"
+        "8.5 【探测失败只能得出探测失败】连接被拒、超时、404、命令报错，"
+        "只证明这一次访问没成功，不能据此推断被访问对象不存在、没启动、没挂载。"
+        "地址写错、端口不对、路径少一段，表现和'服务不存在'一模一样。"
+        "真实事故：探 /api/connectors 拿到 Connection refused，就下结论"
+        "'没有单独运行的外部服务网关'，而正确地址 /api/v1/connectors 上"
+        "14 台连接器全部连通、487 个工具在跑。"
+        "要断言某能力不存在，必须有正面证据（查配置、查注册表、换正确地址重试），"
+        "不能拿一次失败当证据。同理，也不能因为清单里没看到就说'已经全挂上了'——"
+        "自检数字与结论矛盾时，先怀疑自检口径，别硬圆结论。\n"
+        "8.6 【自检走权威端点，不要猜端口】要看 MCP/外部服务挂载与连通状态，"
+        "直接 api_probe('/api/v1/connectors')——它返回 count/connected/tool_total "
+        "和每台的连接状态，是唯一权威口径。要看工具目录用 inspect。"
+        "禁止自己猜 8080/8100/8200 之类的端口去试，猜不中就报'服务未运行'；"
+        "也不要去 curl 远程 MCP 的公网地址判断连通性——连接器由本进程维持长连接，"
+        "从外部探那个地址探不出真实状态。\n"
         "10. 【飞书/企业微信走 lark-cli，禁止拒单】本机已装 lark-cli 且已认证飞书应用"
         "（/usr/local/bin/lark-cli）。飞书相关操作一律用 shell_run 调 lark-cli 直接做："
         "生成扫码授权链接=lark-cli auth login --domain all --no-wait --json（返回 "
@@ -1835,8 +1850,16 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
         if name == "glob":
             return code_glob(str(arguments.get("pattern", "")),
                              path=str(arguments.get("path", "") or ""))
-        return api_probe(str(arguments.get("url", "")),
-                         method=str(arguments.get("method", "GET") or "GET"))
+        # api_probe 用同步 urllib 请求「本进程自己的端点」。
+        # 直接在事件循环里跑会自死锁：循环被这次调用占住 → 本进程无法处理
+        # 那个 HTTP 请求 → 15 秒后超时。实测自检探 /api/v1/connectors 必超时，
+        # 而同一端点用 curl 只要 3 毫秒。模型据此得出「无法获取连通状态」。
+        # 丢线程池，让事件循环腾出手来响应自己。
+        return await asyncio.get_running_loop().run_in_executor(
+            None,
+            lambda: api_probe(str(arguments.get("url", "")),
+                              method=str(arguments.get("method", "GET") or "GET")),
+        )
     if name == "inspect":
         # 能力自省：只描述形状（name/description/schema），不返回业务数据
         from agent_core import inspect as _inspect

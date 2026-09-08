@@ -1,0 +1,21 @@
+{
+  "name": "jiance-guifan",
+  "version": "1.0.0",
+  "author": "eco-official",
+  "description": "生态环境监测技术规范清单速查——209 项监测标准定位与 8 份配套法规全文检索",
+  "category": "法规查询",
+  "tags": [
+    "监测技术规范",
+    "监测标准",
+    "标准号",
+    "自行监测",
+    "验收技术规范",
+    "资质认定",
+    "弄虚作假"
+  ],
+  "trust_tier": "official",
+  "signature": "",
+  "entry": "SKILL.md",
+  "requires": [],
+  "min_eco_version": "1.0.0"
+}

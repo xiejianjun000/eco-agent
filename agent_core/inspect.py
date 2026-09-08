@@ -80,9 +80,22 @@ def list_tools() -> list[dict]:
     except Exception as e:  # noqa: BLE001
         logger.warning("inspect tools failed: %s", e)
 
-    # 补已挂载的 MCP 工具（不触发挂载，只读当前实况）
+    # 补已挂载的 MCP 工具。
+    #
+    # 这里必须先确保挂载已完成，不能只读快照。
+    # attach_mcp_tools() 是幂等的（已挂载则直接返回），代价只有首次连接。
+    #
+    # 真实事故：自检时 MCP 尚未挂载，list_tools() 只报 46 个（mcp__ 为 0），
+    # 而对话通道当时实际有 128 个工具、其中 82 个是 MCP。
+    # 模型拿着这份「MCP 数为 0」的清单，却断言「所有外部服务工具都已挂载」——
+    # 结论碰巧对，证据完全不支持。自检工具报错误数字，比不报更危险。
     try:
         from agent_core import tools_registry as tr
+
+        try:
+            tr.attach_mcp_tools()  # 幂等；失败时降级为只读快照
+        except Exception as e:  # noqa: BLE001
+            logger.warning("inspect attach_mcp_tools failed: %s", e)
 
         for d in getattr(tr, "ALL_TOOL_DEFS", []):
             fn = d.get("function", {})

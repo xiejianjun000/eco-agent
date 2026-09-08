@@ -468,6 +468,42 @@ _PROBE_ALLOWED_NAMES = {"localhost"}
 _PROBE_METHODS = {"GET", "HEAD"}
 _PROBE_MAX_CHARS = 8000
 
+# 本进程实际监听的端口，由 server/app.py 启动时登记。
+# 不能硬编码默认值 —— 此前写死 "8000"，而服务器实际跑在 8321，
+# 于是 api_probe("/api/connectors") 打到一个没有 eco 的端口，
+# 返回 [Errno 61] Connection refused，模型据此推断
+# 「没有单独运行的外部服务网关服务」，而真相是 14 台连接器全在跑。
+# 探测工具给出错误的失败信号，比不给信号更糟。
+_SELF_PORT: str | None = None
+
+
+def register_self_port(port: int | str) -> None:
+    """由服务器启动时调用，登记本进程真实监听端口。"""
+    global _SELF_PORT
+    p = str(port).strip()
+    if p.isdigit():
+        _SELF_PORT = p
+
+
+def _self_port() -> str:
+    """解析本机端口：登记值 > ECO_PORT 环境变量 > 实际监听探测 > 8000。"""
+    if _SELF_PORT:
+        return _SELF_PORT
+    env = os.environ.get("ECO_PORT", "").strip()
+    if env.isdigit():
+        return env
+    # 兜底：从本进程监听的套接字里找。避免拿一个纯猜的端口去报“连接被拒”。
+    try:
+        import socket
+        for cand in ("8321", "8000"):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.2)
+                if s.connect_ex(("127.0.0.1", int(cand))) == 0:
+                    return cand
+    except Exception:  # noqa: BLE001
+        pass
+    return "8000"
+
 
 def _is_loopback_host(host: str) -> bool:
     """判定主机是否为本机环回地址（跨平台，按 IP 语义而非字符串比对）。
@@ -510,10 +546,9 @@ def api_probe(url: str, method: str = "GET", max_chars: int = _PROBE_MAX_CHARS) 
     u = (url or "").strip()
     if not u:
         return json.dumps({"ok": False, "error": "url 不能为空"}, ensure_ascii=False)
-    # 允许简写 /api/xxx → 本机默认端口
+    # 允许简写 /api/xxx → 本机实际监听端口
     if u.startswith("/"):
-        port = os.environ.get("ECO_PORT", "8000").strip() or "8000"
-        u = f"http://127.0.0.1:{port}{u}"
+        u = f"http://127.0.0.1:{_self_port()}{u}"
     if not u.startswith(("http://", "https://")):
         return json.dumps({"ok": False, "error": "url 必须以 http(s):// 或 / 开头"}, ensure_ascii=False)
 
@@ -540,8 +575,36 @@ def api_probe(url: str, method: str = "GET", max_chars: int = _PROBE_MAX_CHARS) 
     except urllib.error.HTTPError as e:
         body, status = e.read().decode("utf-8", errors="replace"), e.code
     except Exception as e:  # noqa: BLE001
-        _audit("api_probe", u, "deny", f"请求失败 {e}")
-        return json.dumps({"ok": False, "url": u, "error": f"请求失败: {e}"}, ensure_ascii=False)
+        # 区分失败类型 —— 这是关键。
+        # 此前无论端口没服务、服务在忙、DNS 解析不了，都返回同一句「请求失败」，
+        # 模型只能凭猜，实测就猜成了「没有单独运行的外部服务网关服务」，
+        # 而真相是 14 台连接器全在跑，只是首次挂载要几十秒。
+        # 明确告诉它「超时 ≠ 不存在」，并给出下一步动作。
+        import socket as _sock
+        msg = str(e)
+        if isinstance(e, (TimeoutError, _sock.timeout)) or "timed out" in msg.lower():
+            kind, hint = "timeout", (
+                "服务在响应但超过 15 秒未返回 —— 通常是首次调用触发了冷启动"
+                "（如 MCP 挂载需数十秒）。这不代表服务不存在，稍后重试即可。"
+            )
+        elif isinstance(e, ConnectionRefusedError) or "refused" in msg.lower():
+            kind, hint = "refused", (
+                "该端口上没有进程监听。先确认端口对不对："
+                "本服务端口见 ECO_PORT，简写 '/api/xxx' 会自动补本机端口，"
+                "不要自己猜 8080/8100 之类。"
+            )
+        else:
+            kind, hint = "error", "网络层错误，先核对地址与端口是否正确。"
+        _audit("api_probe", u, "deny", f"请求失败[{kind}] {e}")
+        return json.dumps(
+            {
+                "ok": False, "url": u, "failure": kind,
+                "error": f"请求失败: {e}",
+                "hint": hint,
+                "note": "探测失败只能证明这次访问没成功，不能据此断言被访问对象不存在或未启动。",
+            },
+            ensure_ascii=False,
+        )
 
     _audit("api_probe", u, "allow", f"HTTP {status}")
     cap = max(1, min(int(max_chars or _PROBE_MAX_CHARS), _PROBE_MAX_CHARS))
