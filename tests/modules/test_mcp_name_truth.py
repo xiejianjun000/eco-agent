@@ -152,3 +152,28 @@ def test_every_allowlist_entry_exists_on_a_configured_server():
         and n.replace("-", "_") not in configured
     )
     assert not unknown, f"允许清单含未配置的 MCP 服务器: {unknown}"
+
+
+# ── 轮次上限的正确度量方式（一次指标纠错的留痕）─────────────────
+def test_max_rounds_limits_rounds_not_tool_count():
+    """max_rounds 限制的是轮数，不是工具总数。
+
+    我一度用「工具数 ≥ 8」判定「撞满 max_rounds=8」，那是错的指标：
+    codex 循环在同一轮内**并行执行全部 tool_calls**
+    （见 chat.py 注释「并行执行同轮全部工具调用」），
+    所以 12 个工具分布在 8 轮内完全合法，并非越界。
+
+    权威数据来自 SM3 决策链（.eco/decisions.jsonl，每轮一条 round 记录）：
+        round 1..8 均有记录，最大轮次恰好 8，从未越界；
+        round 8 中 44%（17/39）的 finish_reason 仍是 tool_calls，
+        即被上限截断 —— 但实测这些会话的最终答案完整且有真实溯源
+        （如危险废物贮存问题给出 GB 18597 与部官网 PDF 链接），
+        被截断的是探索过程而非结论，故不盲目提高上限。
+
+    本用例锁死循环结构：并行执行不得退化为串行，
+    否则「工具数」会重新变成「轮数」的代理指标，同一误判会再次发生。
+    """
+    src = CHAT.read_text(encoding="utf-8")
+    assert "并行执行同轮全部工具调用" in src, "同轮并行执行的注释被移除了"
+    assert "asyncio.gather" in src or "gather(" in src, (
+        "未见并行聚合调用，同轮工具可能已退化为串行执行")
