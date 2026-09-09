@@ -10,7 +10,9 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 from server.api.chat import (  # noqa: E402
-    _chat_tool_list, _is_readonly_request, _MUTATING_TOOLS, _READONLY_TOOLS,
+    _MUTATING_TOOLS,
+    _chat_tool_list,
+    _is_readonly_request,
 )
 
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """生成 eco-agent 可检索知识库：JSON / JSONL / Markdown 速查表 / 法规全文。"""
-import json, os, re
+import json
+import os
 from collections import defaultdict
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'kb')

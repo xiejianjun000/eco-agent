@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """逐条生成可机械校验的学习题库：每项标准至少 1 题，另加法规条文题与易混辨析题。
 每题带 answer_key（标准号/条号），可用 evals runner 机械判分。"""
-import json, os, re, random
-from collections import defaultdict
+import json
+import os
+import random
+import re
 
 random.seed(20260908)
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'kb')
@@ -52,7 +54,7 @@ for x in [c for c in cat if c['prefix'] == 'HJ/T']:
     add('时效风险',
         f"{x['code']}《{x['name']}》属于 HJ/T 旧行业序列（{x['issued']} 发布）。执法引用前必须核实什么？",
         ['现行有效', '是否被替代'],
-        f"HJ/T 为旧序列，多数已被同名 HJ 标准替代；须核对现行有效版本后引用",
+        "HJ/T 为旧序列，多数已被同名 HJ 标准替代；须核对现行有效版本后引用",
         dict(std_id=x['id']))
 
 # ---- E 类：法规条文题（附录 8 份，逐条）----
@@ -90,7 +92,8 @@ with open(f'{OUT}/学习题库.jsonl', 'w') as f:
     for x in items:
         f.write(json.dumps(x, ensure_ascii=False) + '\n')
 
-from collections import Counter
+from collections import Counter  # noqa: E402 — 延后导入是刻意设计，见上方注释
+
 print('题库总数', len(items))
 for k, v in Counter(x['category'] for x in items).most_common():
     print(f'  {v:>4}  {k}')

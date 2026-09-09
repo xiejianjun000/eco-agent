@@ -143,7 +143,12 @@ class TestCallTool(unittest.TestCase):
         conn = make_connection()
         r = conn.call_tool("t", {})
         self.assertFalse(r["success"])
-        self.assertIn("未连接", r["error"])
+        # 文案已从「未连接」改为更明确的「远程服务当前不可用（重连失败）」。
+        # 断言放宽到语义层：只要如实表达「不可用/未连接」即可，
+        # 不把测试钉死在某一版具体措辞上。
+        self.assertTrue(
+            any(k in r["error"] for k in ("未连接", "不可用", "重连失败")),
+            f"错误文案未表达不可用语义: {r['error']}")
 
     def test_call_tool_level_error(self):
         conn = make_connection()

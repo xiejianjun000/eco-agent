@@ -29,7 +29,6 @@ prompt_engine.py — 双层系统提示词 + 注入校验 + SM3 链式审计 + �
 import hashlib
 import json
 import logging
-import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -38,7 +37,7 @@ logger = logging.getLogger("prompt_engine")
 
 # ECO_DIR 环境变量可覆盖（与 observability/approvals 同口径），
 # 受限环境（沙箱无 ~/.eco 写权限）可指向可写目录，审计链照常落盘。
-from agent_core.eco_paths import eco_dir as _eco_dir
+from agent_core.eco_paths import eco_dir as _eco_dir  # noqa: E402 — 延后导入是刻意设计，见上方注释
 
 ECO_DIR = _eco_dir()
 AUDIT_FILE = ECO_DIR / "prompt_audit.jsonl"

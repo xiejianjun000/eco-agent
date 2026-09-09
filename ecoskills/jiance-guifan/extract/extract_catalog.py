@@ -2,7 +2,11 @@
 """《生态环境监测技术规范清单（2026.7）》清单表抽取。
 四列 x 位置全文稳定：序号≈92 / 名称≈117 / 编号≈335-370 / 日期≈451-458。
 按 x 分列、按序号行的 y 锚点切行，名称与编号允许跨行续接。"""
-import fitz, os, re, json
+import json
+import os
+import re
+
+import fitz
 
 PDF = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'raw', '规范清单2026.7.pdf')
 doc = fitz.open(PDF)
@@ -56,7 +60,8 @@ def split_inline(rec):
 def split_code_date(rec):
     m0 = re.match(r'^(?P<code>.*?\d)(?P<date>\d{4}-\d{2}-\d{2})$', (rec['code'] or '').replace(' ', ''))
     if m0 and not rec['date']:
-        rec['code'] = m0.group('code'); rec['date'] = m0.group('date')
+        rec['code'] = m0.group('code')
+        rec['date'] = m0.group('date')
         return rec
     """编号列里粘进了发布时间时拆回。"""
     m = re.match(r'^(?P<code>\S+\s?\S*?)\s+(?P<date>\d{4}-\d{1,2}-\d{1,2})$', rec['code'] or '')
@@ -78,11 +83,16 @@ def build():
             if t == WATERMARK:
                 continue
             if PART_RE.match(t):
-                pending_part = t; continue
+                pending_part = t
+                continue
             if pending_part:
-                part = pending_part + '　' + t; sub = None; pending_part = None; continue
+                part = pending_part + '　' + t
+                sub = None
+                pending_part = None
+                continue
             if SUB_RE.match(t) and len(t) <= 14:
-                sub = t; continue
+                sub = t
+                continue
             if t in HDR:
                 continue
             if ln['y'] > 760:            # 页脚页码
@@ -102,8 +112,10 @@ def build():
                 if ln['c'] == 0 or not (lo <= ln['y'] < hi):
                     continue
                 if ln['c'] == 1: name.append(ln['t'])
-                elif ln['c'] == 2: code.append(ln['t'])
-                elif ln['c'] == 3 and DATE_RE.match(ln['t']): date = ln['t']
+                elif ln['c'] == 2:
+                    code.append(ln['t'])
+                elif ln['c'] == 3 and DATE_RE.match(ln['t']):
+                    date = ln['t']
             recs.append(dict(part=body[ai]['part'], sub=body[ai]['sub'],
                              no=int(body[ai]['t']),
                              name=re.sub(r'\s+', '', ''.join(name)),

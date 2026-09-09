@@ -167,8 +167,15 @@ class TestTemperatureEnforcement:
     def test_no_hardcoded_temperature_payloads_repo_wide(self):
         """架构级收口：全仓 payload 构造禁止数字字面量 temperature"""
         offenders = []
-        for root, _, files in os.walk("."):
-            if ".git" in root or "test" in root.lower():
+        # 只扫本仓自有代码：虚拟环境/第三方库/前端依赖不在本项约束范围内。
+        # 曾因扫到 .venv-mcp 里 onnxruntime 的 whisper_helper.py
+        # （"temperature": 1.0）而恒定失败 —— 那是测试自身的扫描范围缺陷，
+        # 不是 eco 存在旁路硬编码。
+        _SKIP = (".git", ".venv", "venv", "node_modules", ".libs",
+                 "site-packages", "__pycache__", ".eco", "dist", "build")
+        for root, dirs, files in os.walk("."):
+            dirs[:] = [d for d in dirs if not any(s in d for s in _SKIP)]
+            if any(s in root for s in _SKIP) or "test" in root.lower():
                 continue
             for f in files:
                 if not f.endswith(".py"):

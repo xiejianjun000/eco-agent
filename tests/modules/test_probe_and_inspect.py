@@ -172,8 +172,8 @@ def _reset(tr):
 
 def test_partial_failure_keeps_retry_open(monkeypatch):
     """部分连上时不能锁死 —— 远程抖一下不该让进程永久降级。"""
-    from agent_core import tools_registry as tr
     import agent_core.mcp_connector as mc
+    from agent_core import tools_registry as tr
 
     fake = _FakeMgr([{"a": True, "b": False}])
     monkeypatch.setattr(mc, "MCP_AVAILABLE", True)
@@ -185,8 +185,8 @@ def test_partial_failure_keeps_retry_open(monkeypatch):
 
 def test_full_success_locks_in(monkeypatch):
     """全部连上才锁定，之后不再重连。"""
-    from agent_core import tools_registry as tr
     import agent_core.mcp_connector as mc
+    from agent_core import tools_registry as tr
 
     fake = _FakeMgr([{"a": True, "b": True}])
     monkeypatch.setattr(mc, "MCP_AVAILABLE", True)
@@ -200,8 +200,8 @@ def test_full_success_locks_in(monkeypatch):
 
 def test_retry_actually_reconnects(monkeypatch):
     """冷却窗口过后确实会重试，并在成功时补齐。"""
-    from agent_core import tools_registry as tr
     import agent_core.mcp_connector as mc
+    from agent_core import tools_registry as tr
 
     fake = _FakeMgr([{"a": True, "b": False}, {"a": True, "b": True}])
     monkeypatch.setattr(mc, "MCP_AVAILABLE", True)
@@ -217,8 +217,8 @@ def test_retry_actually_reconnects(monkeypatch):
 def test_cooldown_blocks_reconnect_storm(monkeypatch):
     """冷却期内不重连 —— 对不可达主机 connect_all 是 12 秒级超时，
     无冷却会让每个请求都去重连，把服务拖死。"""
-    from agent_core import tools_registry as tr
     import agent_core.mcp_connector as mc
+    from agent_core import tools_registry as tr
 
     fake = _FakeMgr([{"a": True, "b": False}])
     monkeypatch.setattr(mc, "MCP_AVAILABLE", True)
@@ -232,8 +232,8 @@ def test_cooldown_blocks_reconnect_storm(monkeypatch):
 
 def test_no_config_locks_in(monkeypatch):
     """没有配置是永久事实，不必反复重试。"""
-    from agent_core import tools_registry as tr
     import agent_core.mcp_connector as mc
+    from agent_core import tools_registry as tr
 
     class _Empty:
         configs = []
@@ -271,6 +271,7 @@ def test_probe_refused_carries_hint():
     """端到端：连接被拒时返回 failure/hint/note 三件套。"""
     import asyncio
     import json as _json
+
     from server.api.chat import _run_tool
 
     r = _json.loads(asyncio.run(_run_tool("api_probe", {"url": "http://127.0.0.1:9/x"})))
@@ -321,7 +322,7 @@ def test_rule_requires_tool_name_verification():
 
 def test_permit_server_is_l1_not_l3():
     """坐实：permit-remote 的工具是 L1，不是模型说的 L3 非白名单。"""
-    from agent_core.permissions import tool_risk_level, _READONLY_MCP_SERVERS
+    from agent_core.permissions import _READONLY_MCP_SERVERS, tool_risk_level
 
     assert "eco-pollution-permit-remote" in _READONLY_MCP_SERVERS
     for t in ("permit_pub_search_licenses", "permit_pub_license_detail",

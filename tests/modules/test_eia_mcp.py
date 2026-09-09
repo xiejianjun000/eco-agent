@@ -53,7 +53,8 @@ def test_all_eia_tools_are_readonly():
 
 def _env_servers():
     """直接从仓库 .env 读，不依赖 pytest 的工作目录。"""
-    import json, re
+    import json
+    import re
     txt = (REPO / ".env").read_text(encoding="utf-8")
     m = re.search(r"ECO_MCP_SERVERS='(\[.*?\])'", txt, re.S)
     assert m, ".env 里没有 ECO_MCP_SERVERS"

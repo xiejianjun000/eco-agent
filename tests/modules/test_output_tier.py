@@ -157,7 +157,7 @@ class TestEngineIntegration:
 
     def test_safety_layer_still_first(self):
         """追加式改造：安全层位置不得被档位规格挤动。"""
-        from agent_core.prompt_engine import PromptEngine, SAFETY_LAYER
+        from agent_core.prompt_engine import SAFETY_LAYER, PromptEngine
         eng = PromptEngine()
         eng.apply_tier("起草处罚决定书")
         p = eng.build_system_prompt()

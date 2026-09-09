@@ -27,7 +27,7 @@ from pathlib import Path
 
 logger = logging.getLogger("checkpoint")
 
-from agent_core.eco_paths import eco_dir as _eco_dir
+from agent_core.eco_paths import eco_dir as _eco_dir  # noqa: E402 — 延后导入是刻意设计，见上方注释
 
 ECO_DIR = _eco_dir()
 CP_ROOT = ECO_DIR / "checkpoints"

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """附录条号连续性校验 + 与仓库权威全文交叉比对。"""
-import json, re
+import json
 
 CN = '一二三四五六七八九'
 def cn2i(s):

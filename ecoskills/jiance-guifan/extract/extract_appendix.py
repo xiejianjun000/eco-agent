@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """附录 8 份法规/规范性文件全文抽取（PDF p19-88），按条/章切分。"""
-import re, json, os
+import json
+import re
+
 from extract_catalog import doc
 
 DOCS = [  # (起始页index, 结束页index含, 标题, 文号/发布信息)
@@ -156,7 +158,8 @@ def structure(lines):
                       or re.match(r'^[（(][一二三四五六七八九十\d]+[)）]', l)
                       or re.match(r'^[一二三四五六七八九十]+、', l))
         if starts and buf:
-            paras.append(buf); buf = l
+            paras.append(buf)
+            buf = l
         else:
             buf = (buf + l) if buf else l
     if buf:

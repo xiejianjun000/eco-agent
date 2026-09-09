@@ -4,7 +4,8 @@
   std=<标准号>            → jiance-guifan lookup.py std 必须命中
   jcfa=<法规名>:<条号>     → jiance-guifan lookup.py law 必须返回条文
 """
-import json, os, re
+import json
+import re
 
 ROOT = '/Users/mac/Documents/deepseek/eco-agent'
 quiz = json.load(open('../kb/学习题库.json'))['items']

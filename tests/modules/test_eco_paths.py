@@ -5,7 +5,6 @@
 其中权限审计整条丢失却只在 stderr 打一行——合规系统不能这么丢证据。
 """
 import importlib
-import os
 import sys
 from pathlib import Path
 

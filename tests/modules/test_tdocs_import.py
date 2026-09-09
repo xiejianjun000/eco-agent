@@ -7,10 +7,20 @@ token 缺失报错、async_import 直接返回 file_url 短路、轮询进度 10
 import asyncio
 import json
 import pathlib
+import shutil
 
 import pytest
 
 from agent_core import tdocs_import as ti
+
+# 打包步骤依赖真实 node 执行 aipage_pack.js。node 不在 PATH 时应当
+# 「跳过」而非「失败」—— 缺少外部环境依赖不等于代码有缺陷，否则这 5 个
+# FileNotFoundError 会长期占着红灯，掩盖真正的回归。
+# （本机 node 装在 /usr/local/bin，未进 pytest 继承的 PATH。）
+pytestmark = pytest.mark.skipif(
+    shutil.which("node") is None,
+    reason="需要 node 执行 aipage_pack.js；PATH 中未找到 node",
+)
 
 
 def _sample_html(tmp_path: pathlib.Path) -> pathlib.Path:

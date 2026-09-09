@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """标准号解析、分类、替代关系推断，产出规范化知识库条目。"""
-import json, re
+import json
+import re
 from collections import defaultdict
 
 recs = json.load(open('catalog_raw.json'))
@@ -52,10 +53,14 @@ for i, r in enumerate(recs, 1):
     method = None
     if r['sub']:
         if '手工' in r['sub']: method = '手工监测'
-        elif '自动' in r['sub']: method = '自动监测'
-        elif '自行监测' in r['sub']: method = '自行监测技术指南'
-        elif '验收' in r['sub']: method = '竣工环保验收技术规范'
-        else: method = '其他'
+        elif '自动' in r['sub']:
+            method = '自动监测'
+        elif '自行监测' in r['sub']:
+            method = '自行监测技术指南'
+        elif '验收' in r['sub']:
+            method = '竣工环保验收技术规范'
+        else:
+            method = '其他'
     out.append(dict(
         id=f'JCGF-{i:04d}',
         medium=MEDIUM.get(part_key, part_key),
@@ -93,7 +98,8 @@ json.dump(out, open('catalog.json', 'w'), ensure_ascii=False, indent=1)
 
 # 统计
 print('条目', len(out))
-from collections import Counter
+from collections import Counter  # noqa: E402 — 延后导入是刻意设计，见上方注释
+
 print('\n按要素：')
 for k, v in Counter(x['medium'] for x in out).most_common():
     print(f'  {v:>4}  {k}')
