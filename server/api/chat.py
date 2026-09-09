@@ -2681,6 +2681,52 @@ async def _call_llm_with_span(tree, client, model, messages, tools, round_idx,
     return msg, err
 
 
+# ── 事件协议双写：eco 原生事件名 → 规格事件名 ──────────────────────
+# 规格要求的事件集合为 think / tool_call / tool_result / content_chunk /
+# final / error / status，而 eco 历史上用的是自己一套（tool_start / tool /
+# answer / narration / correction / card / artifact）。
+#
+# 直接改名会一次性打碎前端 —— ChatView.tsx、turnFold.ts、每工具视图与
+# 展开面板全部按 tool_start/tool/answer 匹配。因此采用双写：
+# 原 type 字段保持不变，额外附一个 spec_type 供按规格消费的客户端使用。
+# 前端可逐步迁移，迁移完成后再考虑收敛 type 本身。
+_SPEC_EVENT_MAP = {
+    "think": "think",
+    "think_delta": "think",
+    "tool_start": "tool_call",
+    "tool": "tool_result",
+    "answer": "final",
+    "error": "error",
+    # eco 独有语义：narration（旁白）与 correction（自我纠偏）都属于
+    # 「过程状态说明」，规格里最接近的是 status。
+    "narration": "status",
+    "correction": "status",
+    # card / artifact / document 是产物投递，approval 是 L4 待人工确认；
+    # 规格无对应项，统一映射为 status —— 客户端不会收到未知类型，
+    # 富渲染仍可依据原 type 分流。
+    "card": "status",
+    "artifact": "status",
+    "document": "status",
+    "approval": "status",
+}
+
+
+def _with_spec_type(ev: dict) -> dict:
+    """给轨迹事件附加规格事件名（双写，不改动原字段）。
+
+    未收录的事件类型不加 spec_type —— 宁可缺字段，也不猜一个错的映射
+    让客户端据此做出错误分支。
+    """
+    if not isinstance(ev, dict):
+        return ev
+    spec = _SPEC_EVENT_MAP.get(str(ev.get("type") or ""))
+    if not spec:
+        return ev
+    out = dict(ev)
+    out["spec_type"] = spec
+    return out
+
+
 def _save_span_tree(tree) -> None:
     """span 树落盘（优雅降级：失败仅 warning，绝不抛错）。"""
     try:
@@ -4112,6 +4158,7 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
             _persist_turn(req.session_id, req.message, _full_reply, ok=True)
             done_payload = {
                 "done": True,
+                "spec_type": "final",
                 "usage": {},
                 "trace": [],
                 "ttft_ms": 0,
@@ -4135,7 +4182,7 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
                 await asyncio.sleep(0.05)
                 continue
             last_emit = time.monotonic()
-            yield f"data: {json.dumps({'trace_event': ev}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'trace_event': _with_spec_type(ev)}, ensure_ascii=False)}\n\n"
         try:
             swarm_out = swarm_fut.result()
         except Exception:  # noqa: BLE001 — 协作异常回落单循环
@@ -4152,7 +4199,7 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
             _persist_turn(req.session_id, req.message, reply, ok=ok,
                           trace=swarm_out["trace"], usage=swarm_out["usage"],
                           duration_ms=duration_ms)
-            done_payload = json.dumps({"done": True, "usage": swarm_out["usage"],
+            done_payload = json.dumps({"done": True, "spec_type": "final", "usage": swarm_out["usage"],
                                        "trace": swarm_out["trace"],
                                        "ttft_ms": 0,
                                        "duration_ms": duration_ms})
@@ -4182,13 +4229,13 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
                 if not streamed:
                     first_delta_ms = int((time.monotonic() - t0) * 1000)
                 streamed = True
-                payload = {"delta": ev.get("text", "")}
+                payload = {"delta": ev.get("text", ""), "spec_type": "content_chunk"}
                 if ev.get("reset"):
                     payload["reset"] = True
                 yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
                 continue
             # think/tool/correction 轨迹事件实时推送
-            yield f"data: {json.dumps({'trace_event': ev}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'trace_event': _with_spec_type(ev)}, ensure_ascii=False)}\n\n"
         # 循环结束：取结果收尾
         try:
             reply, trace, usage, first_llm_ms, first_token_ms = task.result()
@@ -4216,7 +4263,7 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
         # DOCX 双产物 + 任务段记忆（流式端点同样走进化闭环收尾）
         _ensure_docx_artifact(req.message, reply, trace)
         _maybe_task_log(req.message, reply, trace)
-        done_payload = json.dumps({"done": True, "usage": usage, "trace": trace,
+        done_payload = json.dumps({"done": True, "spec_type": "final", "usage": usage, "trace": trace,
                                    "ttft_ms": ttft,
                                    "duration_ms": duration_ms})
         yield f"data: {done_payload}\n\n"
