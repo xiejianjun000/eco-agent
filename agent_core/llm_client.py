@@ -146,6 +146,36 @@ def summarize_llm_stats(limit: int = 0, stats_file=None) -> dict:
 _STREAM_TOTAL_TIMEOUT = float(os.environ.get("ECO_STREAM_TOTAL_TIMEOUT", "600"))
 _STREAM_IDLE_TIMEOUT = float(os.environ.get("ECO_STREAM_IDLE_TIMEOUT", "120"))
 
+# 工具决策温度：「选哪个工具 / 要不要调工具」属于决策，不是创作。
+#
+# 实测缺陷：两条工具路径原先硬编码 temperature=0.7，导致同一句「你好」
+# 在全新会话下重复 3 次，2 次零工具直接作答、1 次调了 3 个工具
+# （air_quality_realtime + chart_render ×2，耗时从 3s 涨到 31s）。
+# 同一问题时而查库时而空手作答，既不可复现，也白烧配额。
+#
+# 取 0.1 而非 0：留极小随机性，避免工具集里有多个近义候选时
+# 完全僵化在同一个次优选择上；但已足够低，决策实测稳定。
+# 正文行文质量由提示词与 max_tokens 决定，低温不影响表达。
+TOOL_DECISION_TEMPERATURE = 0.1
+
+
+def _tool_temperature() -> float:
+    """工具决策温度（ECO_TOOL_TEMPERATURE 可覆盖，非法值回落默认）。
+
+    收敛到 [0, 2]：不把越界值透传给上游 —— 各家 API 对越界处理不一，
+    有的直接 400，那会把「调参失误」变成「调用失败」。
+    """
+    raw = os.environ.get("ECO_TOOL_TEMPERATURE", "").strip()
+    if not raw:
+        return TOOL_DECISION_TEMPERATURE
+    try:
+        return max(0.0, min(2.0, float(raw)))
+    except (TypeError, ValueError):
+        logger.warning("[llm] ECO_TOOL_TEMPERATURE 非法值 %r，回落 %s",
+                       raw, TOOL_DECISION_TEMPERATURE)
+        return TOOL_DECISION_TEMPERATURE
+
+
 class LLMClient:
     def __init__(self, provider: str | None = None, model: str | None = None):
         """可选 provider/model 覆盖（多模型并存路由用，如豆包 Agent Plan）。"""
@@ -596,7 +626,7 @@ class LLMClient:
         body = {
             "model": model,
             "messages": messages,
-            "temperature": self._resolve_temperature(model, 0.7),
+            "temperature": self._resolve_temperature(model, _tool_temperature()),
             "stream": False,
             "max_tokens": _max_tokens(8192),
         }
@@ -659,7 +689,7 @@ class LLMClient:
         body = {
             "model": model,
             "messages": messages,
-            "temperature": self._resolve_temperature(model, 0.7),
+            "temperature": self._resolve_temperature(model, _tool_temperature()),
             "stream": True,
             # 要求上游在流末尾回传 usage chunk（OpenAI/DeepSeek 兼容），
             # 否则流式路径 tokens 只能记 0（约三成记录 tokens 失真的根因）

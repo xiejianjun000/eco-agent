@@ -132,7 +132,13 @@ class TestTemperatureEnforcement:
         state, calls = mock_post
         state["queue"] = [FakeResp(200, "ok")]
         c.chat_with_tools([{"role": "user", "content": "hi"}], tools=[])
-        assert calls[0]["json"]["temperature"] == 0.7
+        # 本用例锁的是「非 kimi 模型不被强制改写成 1」，即透传语义。
+        # 工具决策温度已从裸 0.7 收口到 _tool_temperature()（默认 0.1，
+        # 见 test_tool_decision_determinism.py：0.7 会让同一句「你好」
+        # 时而调工具时而不调），故此处跟随收口常量而非硬编码 0.7。
+        from agent_core.llm_client import _tool_temperature
+        assert calls[0]["json"]["temperature"] == _tool_temperature()
+        assert calls[0]["json"]["temperature"] != 1, "非 kimi 模型不应被强制为 1"
 
     def test_chat_stream_kimi_temp_one(self, kimi_client, monkeypatch):
         captured = {}

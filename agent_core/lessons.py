@@ -48,6 +48,34 @@ _FAILURE_HINTS = (
     "timeout",
 )
 
+# 否定式排除：这些句式里出现失败词，恰恰说明「没失败」。
+# 真实污染案例：某轮回复写着「…返回了有效结果：当前娄底市AQI 50…
+# 没有其他查询任务失败」，因含「失败」二字被判为失败并沉淀成教训，
+# 关键词落成 ['你好']。此后每次寒暄都注入「曾用 query_air_quality
+# 处理此问题」，模型照做 → 再次误调 → 再沉淀，形成自我强化的错误循环。
+_NEGATED_FAILURE = (
+    "没有其他", "没有任何", "均未失败", "没有失败", "未失败",
+    "不存在失败", "没有出现失败", "无失败",
+)
+
+# 明确成功的信号：出现即不沉淀 —— 成功不是教训。
+_SUCCESS_HINTS = (
+    "返回了有效结果", "查询成功", "已获取到", "获取成功",
+    "已成功", "调用成功", "取到了", "结果如下",
+)
+
+# 寒暄/元对话：没有稳定领域语义，作为教训主题会污染此后所有同类问题。
+_GREETING_PATTERNS = (
+    "你好", "您好", "在吗", "在不在", "你是谁", "你叫什么",
+    "你能做什么", "你可以做什么", "可以帮我做哪些", "能帮我做哪些",
+    "谢谢", "多谢", "再见", "hello",
+)
+
+# 召回门槛：泛词单独命中不足以召回（"你好"曾因此拉出空气质量教训）。
+# 长度 >= 该值的关键词视为足够特指，可单独命中
+#（如"生态环境保护督察工作条例"）。
+_SPECIFIC_KEYWORD_MIN_LEN = 6
+
 
 class LessonStore:
     """教训库：append + 关键词检索。"""
@@ -83,8 +111,11 @@ class LessonStore:
         scored = []
         for line in self._lessons:
             kws = line.get("keywords", [])
-            hits = sum(1 for kw in kws if kw and kw in text)
-            if hits:
+            matched = [kw for kw in kws if kw and kw in text]
+            hits = len(matched)
+            # 单个短泛词命中不足以召回（"你好"曾因此拉出空气质量教训）；
+            # 足够长的专有名词本身已特指，允许单独命中。
+            if hits >= 2 or any(len(kw) >= _SPECIFIC_KEYWORD_MIN_LEN for kw in matched):
                 scored.append((hits, line))
         scored.sort(key=lambda x: -x[0])
         return [line for _, line in scored[:limit]]
@@ -101,7 +132,27 @@ def extract_lesson(user_msg: str, reply: str, tool_names: list[str]) -> dict | N
     if not tool_names:
         return None
     reply = str(reply)
+
+    # 寒暄/元对话不作教训主题：没有稳定领域语义，沉淀后会污染此后所有同类问题。
+    # 只在寒暄构成消息主体时拦截 —— 「你好，帮我查一下危险废物贮存标准」
+    # 是寒暄前缀 + 真实业务诉求，那条业务教训仍应沉淀（关键词侧会剔掉寒暄词）。
+    _msg = str(user_msg).strip().lower()
+    _residual = _msg
+    for g in _GREETING_PATTERNS:
+        _residual = _residual.replace(g, "")
+    _residual = _residual.strip(" ，,。.!！?？、~…")
+    if any(g in _msg for g in _GREETING_PATTERNS) and len(_residual) < 6:
+        return None
+
+    # 明确成功不是教训
+    if any(h in reply for h in _SUCCESS_HINTS):
+        return None
+
     if not any(hint in reply for hint in _FAILURE_HINTS):
+        return None
+
+    # 否定式排除：「没有其他查询任务失败」这类句子里的失败词不算失败
+    if any(neg in reply for neg in _NEGATED_FAILURE):
         return None
     # 严格判失败：失败特征须出现在回复开头（真实错误报告），或回复极短。
     # 长回复中部出现"未检索到/0命中"是正常的诚实标注（[待确认]），不是失败。
@@ -111,7 +162,9 @@ def extract_lesson(user_msg: str, reply: str, tool_names: list[str]) -> dict | N
 
     # 教训主题 = 用户消息里的关键名词（去停用词）
     stopwords = {"的", "了", "吗", "呢", "在", "是", "有", "和", "与", "请", "帮", "我", "你"}
-    kws = [w for w in re.findall(r"[\u4e00-\u9fff]{2,8}", str(user_msg)) if w not in stopwords][:8]
+    kws = [w for w in re.findall(r"[\u4e00-\u9fff]{2,8}", str(user_msg))
+           if w not in stopwords
+           and not any(g in w for g in _GREETING_PATTERNS)][:8]
 
     # 失败原因（从回复提取第一句含失败特征的话）
     reason_m = re.search(rf"[^。]*(?:{'|'.join(_FAILURE_HINTS)})[^。]*。", reply)

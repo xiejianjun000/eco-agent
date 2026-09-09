@@ -312,6 +312,19 @@ def _codex_rules_section() -> str:
         "禁止凭印象拼一个名字（如把 permit_pub_search_licenses 说成 search_permit_list），"
         "更禁止为一个不存在的工具编造它为什么不可用。"
         "拿不准就 inspect(kind='catalog') 全量列出再按前缀过滤。\n"
+        "8.9 【先判要不要调，再判调哪个】上面所有「必查/必调」都以「问题真的需要外部事实」为前提。"
+        "以下四类直接作答，不调任何工具："
+        "①寒暄与元对话（你好/在吗/你是谁/谢谢/你能做什么）；"
+        "②纯常识与算术（1+1、单位换算、中文词义）；"
+        "③本轮对话里已出现过、且无需核实时效的事实；"
+        "④纯概念解释——问「什么是超低排放」这类要的是定义，凭专业知识讲清即可；"
+        "只有当用户要具体限值/标准号/适用条件时才必须查标准原文"
+        "（涉及数值仍按 NUMERIC_GUARD 走，缺标准号或适用条件就标[待确认]）。"
+        "判据一句话：这个问题的答案会随时间、地点或某份具体文件而变吗？"
+        "会变→必须查；不会变→直接答。"
+        "为一句寒暄去查空气质量、为 1+1 启动沙箱、为一道要定义的概念题连查八轮，"
+        "都是把用户的等待和额度花在零信息增益的调用上——这与「该查却凭记忆断言」"
+        "性质相反、代价相同，同样是错误。\n"
         "10. 【飞书/企业微信走 lark-cli，禁止拒单】本机已装 lark-cli 且已认证飞书应用"
         "（/usr/local/bin/lark-cli）。飞书相关操作一律用 shell_run 调 lark-cli 直接做："
         "生成扫码授权链接=lark-cli auth login --domain all --no-wait --json（返回 "
@@ -351,6 +364,69 @@ def _codex_rules_section() -> str:
         "【数据分析纪律】多期对比/多断面统计先算统计量再下结论：①变化率/降幅 ②占比 ③集中度 ④趋势方向。\n"
     )
     return codex_note
+
+
+_WORKLOG_SKIP_PATTERNS = (
+    "你好", "您好", "在吗", "在不在", "你是谁", "你叫什么",
+    "你能做什么", "你可以做什么", "能帮我做哪些", "可以帮我做哪些",
+    "谢谢", "多谢", "再见", "hello", "hi", "hey", "早上好", "晚上好",
+)
+
+# 延续语义：这类提问最需要历史任务上下文，必须放行
+_WORKLOG_KEEP_PATTERNS = (
+    "继续", "接着", "刚才", "上次", "上一轮", "之前", "昨天", "前面",
+    "那个", "还没", "做到哪",
+)
+
+
+def _worklog_is_relevant(message) -> bool:
+    """当前问题是否需要注入近 7 天工作日志。
+
+    为什么需要这道门槛（实测缺陷）：日志是「输入 → 结果 → 用了哪些工具」
+    的成功范例，无条件注入会让寒暄也照着范例调工具 ——
+    实测问「你好」连调 8 个工具查娄底空气质量、耗时 117 秒。
+
+    判据：延续类提问一律放行；纯寒暄/元对话与极短输入跳过；其余默认放行
+    （宁可多带上下文，也不要让真实业务丢掉延续性）。
+    """
+    msg = str(message or "").strip()
+    if not msg:
+        return False
+    low = msg.lower()
+
+    # 延续语义优先放行（"继续"很短，但恰恰最需要日志）
+    if any(k in msg for k in _WORKLOG_KEEP_PATTERNS):
+        return True
+
+    # 剥掉寒暄词后看剩下多少实质内容
+    residual = low
+    for g in _WORKLOG_SKIP_PATTERNS:
+        residual = residual.replace(g, "")
+    residual = residual.strip(" ，,。.!！?？、~…\t\n")
+
+    # 寒暄构成主体 → 跳过
+    if any(g in low for g in _WORKLOG_SKIP_PATTERNS) and len(residual) < 6:
+        return False
+
+    # 极短输入（嗯/好的/1+1）信息量不足，注入 2500 字符日志得不偿失
+    if len(residual) < 4:
+        return False
+
+    # 纯算术/单位换算：剔除数字、运算符与算术/换算用词后若无实质内容，则视为琐碎问题。
+    # 用「剔除后剩余」判定而非堆正则 —— 正则越堆越脆，中文数字、单位、
+    # 语气词的组合是穷举不完的。
+    _ARITH_WORDS = (
+        "等于", "多少", "平方", "立方", "次方", "加", "减", "乘", "除",
+        "开根", "根号", "吨", "公斤", "千克", "克", "米", "厘米", "升",
+        "毫升", "小时", "分钟", "是", "为", "几", "吗", "呢", "的", "少",
+    )
+    _res = re.sub(r"[\d\s+\-*/×÷=.()（）?？，,。!！一二三四五六七八九十百千万亿零点半]", "", msg)
+    for w in _ARITH_WORDS:
+        _res = _res.replace(w, "")
+    if not _res.strip():
+        return False
+
+    return True
 
 
 def _dynamic_prompt_sections(message: str, eng, session_id: str = "default", workspace: str = "") -> list[dict]:
@@ -460,12 +536,22 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default", wor
         pass
 
     # 任务段记忆注入（WorkBuddy .workbuddy/memory 对标）：近 7 天工作日志
+    #
+    # 相关性门槛（实测缺陷修复）：这段日志原先无条件注入每一次对话，
+    # 而日志内容是「输入 → 结果 → 用了哪些工具」的成功范例，例如
+    #     ## 我觉得你在吹牛（00:55）
+    #     - 结果：✅ 已经拿到娄底市实时空气质量数据
+    #     - 工具：query_air_quality
+    # 于是问「你好」时，模型把这些闲聊→调工具的记录当示范照做，
+    # 实测最长 117 秒、连调 8 个工具去查娄底空气质量。
+    # 寒暄与纯常识类输入不需要任务上下文，跳过注入。
     try:
-        from agent_core.task_log import load_recent_task_logs
+        if _worklog_is_relevant(message):
+            from agent_core.task_log import load_recent_task_logs
 
-        logs = load_recent_task_logs(days=7, max_chars=2500)
-        if logs:
-            add("tasklog.daily", "任务日志·近7天", logs, "custom")
+            logs = load_recent_task_logs(days=7, max_chars=2500)
+            if logs:
+                add("tasklog.daily", "任务日志·近7天", logs, "custom")
     except Exception:  # noqa: BLE001 — 任务日志注入失败不影响主流程
         pass
 
