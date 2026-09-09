@@ -36,7 +36,19 @@
   --t-main: #0F1115;
   --t-sub: var(--ds-n-600);
   --t-aux: var(--ds-n-500);
+  /* 第四层「极弱」：工具区耗时 / 参数名 / 条目副标题。
+     曾被 7 处样式引用却从未定义 —— var() 求值失败会让整条 color 声明失效，
+     那些文字于是继承成 --t-main 正文全黑。这正是「工具文字与正文同权重、
+     混在一起分不清」的根因（RENDER_SPEC §5 文字层级）。
+     取值锚在既有 DSH 刻度上，按 WCAG 对比度核算过（底 #FFFFFF）：
+       t-main 18.90:1 → t-sub 3.72 → t-aux 2.73 → t-faint 2.13
+     刻意低于 t-aux 一档：这类文字本就该退到背景，不参与阅读主线。 */
+  --t-faint: var(--ds-n-400);
   --t-invert: var(--ds-n-60);
+  /* 弱底：比 --fill 再深一档，用于产物药丸等需要轻微区分的小块 */
+  --bg-soft: var(--ds-n-75);
+  --bg-hover: rgba(127, 127, 127, 0.06);
+  --bg-inset: rgba(127, 127, 127, 0.06);
   --terra: var(--ds-brand);
   --terra-dark: var(--ds-brand-strong);
   --terra-soft: var(--ds-brand-soft);
@@ -75,7 +87,16 @@ html[data-theme='dark'] {
   --t-main: #F9FAFB;
   --t-sub: var(--ds-n-400);
   --t-aux: var(--ds-n-700);
+  /* 暗色的 t-faint 不能沿用亮色「刻度数字越大越淡」的方向：
+     暗底上越暗越不可读。ds-n-800 在 #151517 上只有 1.51:1，等于看不见。
+     按对比度反解取 #4A4D50 = 2.14:1，与亮色 t-faint 的 2.13:1 对称，
+     两个主题下「极弱」这一层的视觉权重才一致。 */
+  --t-faint: #4A4D50;
   --t-invert: var(--ds-n-800);
+  /* 弱底 / 悬停 / 内嵌：暗色用白色低透明度叠加，跟随 panel 深度自适应 */
+  --bg-soft: rgba(255, 255, 255, 0.04);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-inset: rgba(255, 255, 255, 0.05);
   --terra: var(--ds-brand-450);
   --terra-dark: var(--ds-brand);
   --terra-soft: rgba(86, 150, 254, 0.16);
