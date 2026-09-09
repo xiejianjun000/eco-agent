@@ -333,7 +333,7 @@ def _codex_rules_section() -> str:
         "或甩一个 OAuth 模板 URL 让用户自己拼 app_id/redirect_uri——那是拒单。\n"
         "11. 【任务一次做完，禁止半途反问】拆解→调工具→拿结果→下结论→一并汇报。\n"
         "12. 【MCP 路由铁律】先查 ecoskills/mcp-routing 速查表选对端：排污许可查公开端 "
-        "mcp__eco-pollution-permit__（免登录），管理端 mcp__eco-permit-management__ 需政务内网（公网连不上是常态，不是没配）；"
+        "mcp__eco-pollution-permit-remote__（免登录，工具名前缀 permit_pub_）；"
         "法规/标准用 mcp__eco-mee-encyclopedia__，湖南数据用 mcp__eco-hunan-env__，"
         "空气质量省内 eco-hnkqzl-mcp/全国 eco-cnemc-mcp，监测点位 eco-wryzxjc，环评 eco-epxz-mcp，"
         "地图 eco-gis-amap。工具返回「平台拦截/未登录/网络不可达」是环境问题不是数据为空，换端或换出口，禁止据此断言业务结论。"
@@ -456,7 +456,9 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default", wor
                 "tool_guidance.mcp", "工具指南·已挂载 MCP",
                 "【已挂载 MCP 工具——真实可用，直接 function calling 调用】\n"
                 + "、".join(mcp_names)
-                + "\nGitHub 仓库检索/读文件/查提交与 Issue **只能**通过 mcp__github__* 工具执行；"
+                + "\nGitHub 仓库操作：本机当前未挂载 github MCP，"
+                + "如需检索仓库/读文件/查提交，用 shell_run 调 gh CLI，"
+                + "或如实说明该渠道不可用——不要凭印象调不存在的 mcp__github__* 工具；"
                   "环评法规/标准/排放限值/官方问答用 mcp__eia-* 工具族（环评云助手）。"
                   "禁止声称这些 MCP'未挂载/无法调用'；"
                   "禁止用 web_fetch 或 execute_code 替代抓取 GitHub API——"
@@ -478,7 +480,9 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default", wor
         "【政务平台/公开数据工具路由——直接调用】\n"
         "1. 数据图表：chart_render（line/bar/stacked_bar/pie）——趋势曲线/因子对比/占比\n"
         "必须调用它出卡片；函数清单里一定有这个工具，禁止声称'当前会话无 chart_render 工具'。\n"
-        "2. 排污许可证公开信息（企业许可证/执行报告/整改公告/排放口）：mcp__eco-pollution-permit__*。\n"
+        "2. 排污许可证公开信息（企业许可证/执行报告/整改公告/排放口）："
+        "mcp__eco-pollution-permit-remote__*，工具名前缀 permit_pub_"
+        "（如 permit_pub_search_licenses / permit_pub_license_detail）。\n"
         "3. 部官网数据（空气质量/地表水/海水/辐射/部要闻/政策库）：mcp__eco-mee-encyclopedia__*。\n"
         "4. 湖南实时数据（14市州实时AQI/逐小时/预报/排名/环评公示/政策文件/执法案例/\n"
         "信用评价/环境质量月报）：mcp__eco-hunan-env__*——查湖南省内数据优先走这里。\n"
@@ -1478,11 +1482,6 @@ def _codex_tools() -> list[dict]:
 # 聊天通道可见的 MCP 工具子集（已挂载 MCP 的只读工具，防御性：未挂载时静默为空）
 _CHAT_MCP_TOOLS = (
     # GitHub MCP（L1 只读）
-    "mcp__github__search_repositories", "mcp__github__get_file_contents",
-    "mcp__github__list_commits", "mcp__github__search_code",
-    "mcp__github__list_issues", "mcp__github__get_issue",
-    "mcp__github__search_issues", "mcp__github__search_users",
-    "mcp__github__list_branches",
     # 环评云助手 MCP（mcp.eiacloud.com，L1 只读，11 个工具 / 4 台服务器）
     # 法规导则关键词检索：103075 份文件，按名称/文号/术语命中原文
     "mcp__eia-law-keyword__search_keyword_policy",
@@ -1501,19 +1500,10 @@ _CHAT_MCP_TOOLS = (
     "mcp__eia-emission__query_emission_gas_country",
     # 腾讯文档官方 MCP（读 L1 / 建文档 L2；删除/权限类不进聊天表）
     "mcp__tencent_docs__get_content",
-    "mcp__tencent_docs__manage_search_file",
     "mcp__tencent_docs__query_space_list",
-    "mcp__tencent_docs__manage_create_file",
-    "mcp__tencent_docs__doc_create_with_markdown",
     "mcp__tencent_docs__create_space_node",
     "mcp__tencent_docs__create_space",
     # 全国排污许可证公开端 MCP（L1 只读，免登录公开数据）
-    "mcp__eco-pollution-permit__search_licenses", "mcp__eco-pollution-permit__get_license_detail",
-    "mcp__eco-pollution-permit__get_license_pages", "mcp__eco-pollution-permit__download_license_page",
-    "mcp__eco-pollution-permit__get_qrcode_info", "mcp__eco-pollution-permit__get_post_permit_status",
-    "mcp__eco-pollution-permit__get_rectification", "mcp__eco-pollution-permit__get_announcements",
-    "mcp__eco-pollution-permit__list_policy_docs", "mcp__eco-pollution-permit__get_policy_detail",
-    "mcp__eco-pollution-permit__get_discharge_points", "mcp__eco-pollution-permit__get_monitoring_data",
     # 生态环境百科全书 MCP（L1 只读，部官网数据）
     "mcp__eco-mee-encyclopedia__read_web_page", "mcp__eco-mee-encyclopedia__list_web_links",
     "mcp__eco-mee-encyclopedia__read_air_quality", "mcp__eco-mee-encyclopedia__read_air_forecast",
@@ -1548,96 +1538,30 @@ _CHAT_MCP_TOOLS = (
     "mcp__eco-mee-encyclopedia__read_nnsa_list", "mcp__eco-mee-encyclopedia__list_standard_categories",
     "mcp__eco-mee-encyclopedia__list_domains_meta",
     # 高德地图 GIS MCP（eco-gis-amap，L1 只读/本地空间计算：地址↔经纬度/POI/路线/静态图/空间分析）
-    "mcp__eco-gis-amap__amap_key_diagnose", "mcp__eco-gis-amap__amap_geocode",
-    "mcp__eco-gis-amap__amap_regeocode", "mcp__eco-gis-amap__amap_search_poi",
-    "mcp__eco-gis-amap__amap_inputtips", "mcp__eco-gis-amap__amap_district",
-    "mcp__eco-gis-amap__amap_weather", "mcp__eco-gis-amap__amap_ip_location",
-    "mcp__eco-gis-amap__amap_route", "mcp__eco-gis-amap__amap_distance",
-    "mcp__eco-gis-amap__amap_static_map", "mcp__eco-gis-amap__amap_coordinate_convert",
-    "mcp__eco-gis-amap__amap_grasp_road",
-    "mcp__eco-gis-amap__spatial_buffer", "mcp__eco-gis-amap__spatial_overlay",
-    "mcp__eco-gis-amap__spatial_points_in_polygon", "mcp__eco-gis-amap__spatial_cluster",
-    "mcp__eco-gis-amap__spatial_interpolate", "mcp__eco-gis-amap__spatial_heatmap",
-    "mcp__eco-gis-amap__spatial_measure", "mcp__eco-gis-amap__spatial_nearest",
-    "mcp__eco-gis-amap__eco_site_scan", "mcp__eco-gis-amap__eco_compliance_check",
-    "mcp__eco-gis-amap__eco_grid_search", "mcp__eco-gis-amap__eco_plume_dispersion",
-    "mcp__eco-gis-amap__eco_trajectory_analyze", "mcp__eco-gis-amap__eco_spatial_join",
-    "mcp__eco-gis-amap__eco_source_apportionment", "mcp__eco-gis-amap__eco_back_trajectory",
-    "mcp__eco-gis-amap__eco_wind_rose", "mcp__eco-gis-amap__eco_timeseries_align",
-    "mcp__eco-gis-amap__eco_anomaly_detect", "mcp__eco-gis-amap__eco_compliance_stats",
-    "mcp__eco-gis-amap__eco_emergency_list", "mcp__eco-gis-amap__eco_static_map",
-    "mcp__eco-gis-amap__eco_interactive_map", "mcp__eco-gis-amap__eco_water_map",
-    "mcp__eco-gis-amap__qgis_run_algorithm", "mcp__eco-gis-amap__qgis_buffer",
-    "mcp__eco-gis-amap__qgis_overlay", "mcp__eco-gis-amap__qgis_reproject",
-    "mcp__eco-gis-amap__qgis_convert", "mcp__eco-gis-amap__qgis_slope",
-    "mcp__eco-gis-amap__qgis_idw_interpolate",
+    "mcp__eco-gis-amap-remote__amap_key_diagnose", "mcp__eco-gis-amap-remote__amap_geocode",
+    "mcp__eco-gis-amap-remote__amap_regeocode", "mcp__eco-gis-amap-remote__amap_search_poi",
+    "mcp__eco-gis-amap-remote__amap_inputtips", "mcp__eco-gis-amap-remote__amap_district",
+    "mcp__eco-gis-amap-remote__amap_weather", "mcp__eco-gis-amap-remote__amap_ip_location",
+    "mcp__eco-gis-amap-remote__amap_route", "mcp__eco-gis-amap-remote__amap_distance",
+    "mcp__eco-gis-amap-remote__amap_static_map", "mcp__eco-gis-amap-remote__amap_coordinate_convert",
+    "mcp__eco-gis-amap-remote__amap_grasp_road",
+    "mcp__eco-gis-amap-remote__spatial_buffer", "mcp__eco-gis-amap-remote__spatial_overlay",
+    "mcp__eco-gis-amap-remote__spatial_points_in_polygon", "mcp__eco-gis-amap-remote__spatial_cluster",
+    "mcp__eco-gis-amap-remote__spatial_interpolate", "mcp__eco-gis-amap-remote__spatial_heatmap",
+    "mcp__eco-gis-amap-remote__spatial_measure", "mcp__eco-gis-amap-remote__spatial_nearest",
+    "mcp__eco-gis-amap-remote__eco_site_scan", "mcp__eco-gis-amap-remote__eco_compliance_check",
+    "mcp__eco-gis-amap-remote__eco_grid_search", "mcp__eco-gis-amap-remote__eco_plume_dispersion",
+    "mcp__eco-gis-amap-remote__eco_trajectory_analyze", "mcp__eco-gis-amap-remote__eco_spatial_join",
+    "mcp__eco-gis-amap-remote__eco_source_apportionment", "mcp__eco-gis-amap-remote__eco_back_trajectory",
+    "mcp__eco-gis-amap-remote__eco_wind_rose", "mcp__eco-gis-amap-remote__eco_timeseries_align",
+    "mcp__eco-gis-amap-remote__eco_anomaly_detect", "mcp__eco-gis-amap-remote__eco_compliance_stats",
+    "mcp__eco-gis-amap-remote__eco_emergency_list", "mcp__eco-gis-amap-remote__eco_static_map",
+    "mcp__eco-gis-amap-remote__eco_interactive_map", "mcp__eco-gis-amap-remote__eco_water_map",
+    "mcp__eco-gis-amap-remote__qgis_run_algorithm", "mcp__eco-gis-amap-remote__qgis_buffer",
+    "mcp__eco-gis-amap-remote__qgis_overlay", "mcp__eco-gis-amap-remote__qgis_reproject",
+    "mcp__eco-gis-amap-remote__qgis_convert", "mcp__eco-gis-amap-remote__qgis_slope",
+    "mcp__eco-gis-amap-remote__qgis_idw_interpolate",
     # 政务平台七 MCP（8005-8011，L1 只读）
-    "mcp__eco-zfyth__zfyth_status",
-    "mcp__eco-zfyth__zfyth_query",
-    "mcp__eco-zfyth__zfyth_menu",
-    "mcp__eco-zfyth__zfyth_view_config",
-    "mcp__eco-zfyth__zfyth_query_by_name",
-    "mcp__eco-zfyth__zfyth_list_modules",
-    "mcp__eco-zfyth__zfyth_pollution_source",
-    "mcp__eco-zfyth__zfyth_form_get",
-    "mcp__eco-cepc__veto_rules_list",
-    "mcp__eco-cepc__public_project_search",
-    "mcp__eco-cepc__project_list",
-    "mcp__eco-cepc__project_detail",
-    "mcp__eco-cepc__region_statistics",
-    "mcp__eco-cepc__user_info",
-    "mcp__eco-cepc__user_menus",
-    "mcp__eco-cepc__notifications",
-    "mcp__eco-cepc__check_tasks",
-    "mcp__eco-cepc__export_tasks",
-    "mcp__eco-cepc__problem_projects",
-    "mcp__eco-cepc__area_tree",
-    "mcp__eco-cepc__dict_map",
-    "mcp__eco-sthjzf__list_views",
-    "mcp__eco-sthjzf__query_view",
-    "mcp__eco-sthjzf__get_menu",
-    "mcp__eco-sthjzf__get_view_config",
-    "mcp__eco-sthjzf__query_cases",
-    "mcp__eco-sthjzf__list_depts",
-    "mcp__eco-sthjzf__query_case_detail",
-    "mcp__eco-sthjzf__query_case_statistics",
-    "mcp__eco-sthjzf__water_current_user",
-    "mcp__eco-sthjzf__water_task_statistics",
-    "mcp__eco-sthjzf__water_task_list",
-    "mcp__eco-sthjzf__water_supervise_statistics",
-    "mcp__eco-sthjzf__status",
-    "mcp__eco-wryzxjc__status",
-    "mcp__eco-wryzxjc__list_regions",
-    "mcp__eco-wryzxjc__list_pollution_sources",
-    "mcp__eco-wryzxjc__get_pollution_source",
-    "mcp__eco-wryzxjc__list_alarms",
-    "mcp__eco-wryzxjc__list_devices",
-    "mcp__eco-wryzxjc__list_realtime_data",
-    "mcp__eco-wryzxjc__list_jcd_tree",
-    "mcp__eco-wryzxjc__list_history_data",
-    "mcp__eco-permit-enterprise__auth_status",
-    "mcp__eco-permit-enterprise__company_profile",
-    "mcp__eco-permit-enterprise__company_menu",
-    "mcp__eco-permit-enterprise__license_apply_list",
-    "mcp__eco-permit-enterprise__license_reapply_list",
-    "mcp__eco-permit-enterprise__license_change_list",
-    "mcp__eco-permit-enterprise__license_adjust_list",
-    "mcp__eco-permit-enterprise__license_renew_list",
-    "mcp__eco-permit-enterprise__license_reissue_list",
-    "mcp__eco-permit-enterprise__soil_manage_list",
-    "mcp__eco-permit-enterprise__register_list",
-    "mcp__eco-permit-enterprise__disclosure_list",
-    "mcp__eco-permit-enterprise__license_apply_check",
-    "mcp__eco-permit-enterprise__self_acceptance",
-    "mcp__eco-permit-enterprise__report_list",
-    "mcp__eco-permit-enterprise__unified_report_list",
-    "mcp__eco-permit-enterprise__monitor_info",
-    "mcp__eco-permit-enterprise__monitor_month_status",
-    "mcp__eco-permit-enterprise__ledger_list",
-    "mcp__eco-permit-enterprise__auto_monitor",
-    "mcp__eco-permit-enterprise__eia_apply",
-    "mcp__eco-permit-enterprise__carbon_report",
-    "mcp__eco-permit-enterprise__correction_status",
     "mcp__eco-epxz-mcp__xz_user_info",
     "mcp__eco-epxz-mcp__xz_search_reports",
     "mcp__eco-epxz-mcp__xz_search_terms",
@@ -1646,16 +1570,48 @@ _CHAT_MCP_TOOLS = (
     "mcp__eco-epxz-mcp__xz_publicity_list",
     "mcp__eco-epxz-mcp__xz_publicity_detail",
     "mcp__eco-epxz-mcp__xz_communication",
-    "mcp__eco-permit-management__permit_status",
-    "mcp__eco-permit-management__permit_menu",
-    "mcp__eco-permit-management__permit_license_list",
-    "mcp__eco-permit-management__permit_enterprise_list",
-    "mcp__eco-permit-management__permit_jgzf_menu",
-    "mcp__eco-permit-management__permit_jgzf_license_execution",
-    "mcp__eco-permit-management__permit_jgzf_stop_production",
-    "mcp__eco-permit-management__permit_jgzf_enterprise_archive",
-    "mcp__eco-permit-management__permit_area_list",
-    "mcp__eco-permit-management__permit_industry_list",
+    # eco-pollution-permit-remote（公开端，原名 eco-pollution-permit 已改名）
+    "mcp__eco-pollution-permit-remote__permit_pub_search_licenses",
+    "mcp__eco-pollution-permit-remote__permit_pub_license_detail",
+    "mcp__eco-pollution-permit-remote__permit_pub_license_pages",
+    "mcp__eco-pollution-permit-remote__permit_pub_qrcode_info",
+    "mcp__eco-pollution-permit-remote__permit_pub_post_permit_status",
+    "mcp__eco-pollution-permit-remote__permit_pub_rectification_list",
+    "mcp__eco-pollution-permit-remote__permit_pub_announcements",
+    "mcp__eco-pollution-permit-remote__permit_pub_policy_docs",
+    "mcp__eco-pollution-permit-remote__permit_pub_policy_detail",
+    "mcp__eco-pollution-permit-remote__permit_pub_discharge_points",
+    "mcp__eco-pollution-permit-remote__permit_pub_monitoring_entry",
+    # eco-cnemc-mcp（全国空气质量，工具名以 get_/query_ 为主，非 realtime_*）
+    "mcp__eco-cnemc-mcp__get_city_air_quality",
+    "mcp__eco-cnemc-mcp__get_station_air_quality",
+    "mcp__eco-cnemc-mcp__get_air_quality_rank",
+    "mcp__eco-cnemc-mcp__get_province_air_quality",
+    "mcp__eco-cnemc-mcp__get_air_quality_history",
+    "mcp__eco-cnemc-mcp__get_city_history",
+    "mcp__eco-cnemc-mcp__diagnose_critical_pollutant",
+    "mcp__eco-cnemc-mcp__analyze_pollution_source",
+    "mcp__eco-cnemc-mcp__assess_regional_transport",
+    "mcp__eco-cnemc-mcp__query_air_quality_standard",
+    "mcp__eco-cnemc-mcp__query_assessment_policy",
+    "mcp__eco-cnemc-mcp__explain_aqi_assessment",
+    # eco-meteo-mcp（气象与扩散条件；曾误答「不支持天气」，实际这些都在）
+    "mcp__eco-meteo-mcp__get_forecast",
+    "mcp__eco-meteo-mcp__get_history",
+    "mcp__eco-meteo-mcp__get_air_quality",
+    "mcp__eco-meteo-mcp__assess_dispersion",
+    "mcp__eco-meteo-mcp__pollution_meteorology_grade",
+    "mcp__eco-meteo-mcp__detect_exceedance",
+    "mcp__eco-meteo-mcp__pollution_process_profile",
+    # eco-hnkqzl-mcp（湖南空气质量，工具名以 hunan_ 前缀）
+    "mcp__eco-hnkqzl-mcp__hunan_realtime",
+    "mcp__eco-hnkqzl-mcp__hunan_list_stations",
+    "mcp__eco-hnkqzl-mcp__hunan_city_counties",
+    "mcp__eco-hnkqzl-mcp__hunan_province_overview",
+    "mcp__eco-hnkqzl-mcp__hunan_county_rank",
+    "mcp__eco-hnkqzl-mcp__hunan_history_24h",
+    "mcp__eco-hnkqzl-mcp__hunan_history_7day",
+
 )
 
 
@@ -4020,7 +3976,9 @@ def _tool_level(name: str) -> str:
     if name.startswith("statute_") or name in ("kb_search", "kb_semantic_search"):
         return "L1"
     if name.startswith(("mcp__github__", "mcp__eia__",
-                        "mcp__eco-pollution-permit__", "mcp__eco-mee-encyclopedia__", "mcp__eco-hunan-env__")):
+                        "mcp__eco-pollution-permit__",
+                        "mcp__eco-pollution-permit-remote__",
+                        "mcp__eco-mee-encyclopedia__", "mcp__eco-hunan-env__")):
         return "L1"
     if name == "chart_render":
         return "L1"
@@ -4181,7 +4139,9 @@ def _tool_category(name: str) -> str:
                   "chart_render")
     write_tools = ("kb_upload", "kb_delete", "kb_sync", "file_write", "tdocs_upload_html")
     if name.startswith(("mcp__github__", "mcp__eia__",
-                        "mcp__eco-pollution-permit__", "mcp__eco-mee-encyclopedia__", "mcp__eco-hunan-env__")):
+                        "mcp__eco-pollution-permit__",
+                        "mcp__eco-pollution-permit-remote__",
+                        "mcp__eco-mee-encyclopedia__", "mcp__eco-hunan-env__")):
         return "read"
     if name in read_tools or name.startswith("statute_"):
         return "read"
