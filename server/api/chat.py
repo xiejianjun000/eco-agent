@@ -53,7 +53,14 @@ class ChatRequest(BaseModel):
     message: str = Field(..., description="用户消息")
     history: list[dict] = Field(default_factory=list, description="历史消息 [{role, content}]")
     model: str = Field(default="", description="模型名，留空用默认")
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    # 保留字段，当前不生效：本路径的温度由 agent_core.llm_client 统一收口
+    #（工具决策走 _tool_temperature()，默认 0.1；见 TOOL_DECISION_TEMPERATURE
+    # 的注释——0.7 会让同一句「你好」时而调工具时而不调）。
+    # 保留它是为了不破坏已有前端请求体与 openapi 契约；如需按请求调温，
+    # 应显式贯通到 _call_llm_with_span 而不是让它静默失效。
+    temperature: float = Field(
+        default=0.7, ge=0.0, le=2.0,
+        description="保留字段，当前不生效；温度由服务端统一收口（工具决策用低温）")
     session_id: str = Field(default="", description="会话 id，留空用 default（消息落盘/恢复用）")
     workspace: str = Field(default="", description="当前工作空间名（前端工作空间选择器，注入上下文）")
 
