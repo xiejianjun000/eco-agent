@@ -86,6 +86,18 @@ def test_unknown_city():
 
 
 def test_audit_written():
+    """SM3 审计链落盘。
+
+    原先依赖「前面的用例已经发过工具调用」才有审计文件。在
+    pytest -n auto 并行下用例分散到不同 worker、执行顺序不保证，
+    干净检出（CI）里就会失败：AssertionError: 审计链未落盘。
+    改为本用例自己先触发一次真实调用，自足地建立前置条件。
+    """
+    _rpc(
+        {"jsonrpc": "2.0", "id": 99, "method": "tools/call",
+         "params": {"name": "weather_now", "arguments": {"city": "冷水江"}}},
+        timeout=120,
+    )
     audit_file = ROOT / "memory-tree" / "data" / "audit" / "weather_mcp_audit.jsonl"
     assert audit_file.exists(), "审计链未落盘"
     lines = audit_file.read_text(encoding="utf-8").strip().splitlines()

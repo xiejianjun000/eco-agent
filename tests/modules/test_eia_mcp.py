@@ -12,6 +12,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
@@ -61,6 +63,17 @@ def _env_servers():
     return json.loads(m.group(1))
 
 
+# 下面两个用例校验的是「本机环境配置」而非代码正确性，硬依赖仓库根的
+# .env。而 .env 含密钥、本就不该进版本库，CI 检出后必然缺失 ——
+# 这正是 CI 一直红的原因（FileNotFoundError: .../eco-agent/.env）。
+# 缺 .env 时如实跳过：本地开发照常校验，CI 不再被环境问题误判成代码缺陷。
+_needs_env = pytest.mark.skipif(
+    not (REPO / ".env").exists(),
+    reason="需要仓库根 .env（含密钥，不进版本库）；CI 环境无此文件",
+)
+
+
+@_needs_env
 def test_servers_configured():
     """4 台服务器配置必须在 ECO_MCP_SERVERS 里。"""
     names = {c["name"] for c in _env_servers()}
@@ -88,6 +101,7 @@ def test_dead_eia_server_removed_from_trust():
     assert "eia" not in _READONLY_MCP_SERVERS
 
 
+@_needs_env
 def test_servers_use_bearer_auth():
     """环评云用 Bearer token；认证头写错会静默返回 4001/4002。"""
     for c in _env_servers():
