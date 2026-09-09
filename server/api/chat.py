@@ -2732,6 +2732,12 @@ async def _call_llm_with_span(tree, client, model, messages, tools, round_idx,
             model=model_name,
             provider=provider,
             round_idx=round_idx,
+            # 从 messages 里取本轮用户问题做摘要，便于按提问反查留痕。
+            # 取最后一条 role=user 而不是 messages[-1]：多轮工具调用后，
+            # 末尾往往是 tool 结果消息，不是用户说的话。
+            user_intent=next(
+                (str(m.get("content") or "") for m in reversed(messages or [])
+                 if isinstance(m, dict) and m.get("role") == "user"), ""),
         )
     except Exception:  # noqa: BLE001 — 留痕失败不影响主流程
         pass

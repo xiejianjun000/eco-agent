@@ -59,9 +59,19 @@ def record_decision(
     prompt_phase: str = "",
     round_idx: int = 0,
     trace_id: str = "",
+    user_intent: str = "",
     path: Path | None = None,
 ) -> dict:
-    """追加一条 LLM 决策留痕（SM3 链）。返回写入的条目。"""
+    """追加一条 LLM 决策留痕（SM3 链）。返回写入的条目。
+
+    user_intent: 本轮用户问题的**摘要**（自动截断到 40 字）。
+    加它的原因来自一次真实的人工验收：军哥按协议连发多条探针，
+    我从留痕里只能看到「r1 stop 实选=[]」，无法确定哪条记录对应哪个提问，
+    只能靠时间顺序猜。留痕若不能定位到问题，就不足以支撑「可追溯」。
+
+    只存摘要不存全文：审计链是 SM3 append-only、不可篡改也不可删除，
+    用户问题里可能带企业名、人名、地址、案卷号，全文入链等于永久留存。
+    40 字足够定位是哪一问，又不足以构成完整的敏感信息载体。"""
     payload = {
         "candidate_tools": int(candidate_tools),
         "selected_tools": list(selected_tools),
@@ -72,6 +82,8 @@ def record_decision(
         "provider": provider,
         "round": round_idx,
         "trace_id": trace_id or _current_trace_id(),
+        # 摘要而非全文，且去掉换行避免破坏单行 JSONL 结构
+        "user_intent": " ".join((user_intent or "").split())[:40],
     }
     return get_decision_chain(path).append(
         source="llm_decision",
