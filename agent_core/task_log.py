@@ -86,8 +86,53 @@ def append_task_log(message: str, reply: str, trace: list | None = None) -> str 
         return None
 
 
+# ── 注入前过滤：会过期的结论不得进提示词 ─────────────────────────
+# 真实事故：日志里留了一条「确认排污许可公开端 MCP 未连通（connected: false），
+# 无法调用」。该结论在写下时是真的，但连接器修复后就过期了 —— 它仍被每轮注入，
+# 模型据此认为这个域查不了，或产出「上一轮其实是成功的」这类元叙述措辞。
+# 人工验收时连续两条回答末尾都冒出「上一轮返回本身成功，非查询失败」，
+# 溯源就到这里。
+#
+# 只滤两类**会随时间失效**的记录，不滤真实教训：
+#   1. 连通性/可用性结论 —— 连接器状态随时变，昨天不通今天通
+#   2. 基础设施故障 —— HTTP 402/500、超时，与业务无关
+# 「参数填错了」「这个标准要查附录」这类不随时间失效的教训必须保留。
+_STALE_MARKERS = (
+    "未连通", "connected: false", "connected:false",
+    "无法调用", "服务器当前未连通",
+    "HTTP 402", "HTTP 500", "HTTP 502", "HTTP 503",
+    "LLM 调用失败", "调用超时", "连接超时",
+)
+
+
+def _drop_stale_entries(md: str) -> str:
+    """按 `## ` 分条切割，丢掉含过期标记的条目，保留其余原文。
+
+    按条丢弃而非按行，避免留下「- 做了什么：…」这样没有结论的残缺条目 ——
+    半条日志比没有日志更容易误导。
+    """
+    if not md:
+        return md
+    head: list[str] = []
+    blocks: list[list[str]] = []
+    for ln in md.split("\n"):
+        if ln.startswith("## "):
+            blocks.append([ln])
+        elif blocks:
+            blocks[-1].append(ln)
+        else:
+            head.append(ln)
+    kept = [b for b in blocks
+            if not any(m in "\n".join(b) for m in _STALE_MARKERS)]
+    return "\n".join(head + [ln for b in kept for ln in b])
+
+
 def load_recent_task_logs(days: int = 7, max_chars: int = 3000) -> str:
-    """近 N 天任务日志拼接（供 prompt 注入），按天倒序，截断防爆上下文。"""
+    """近 N 天任务日志拼接（供 prompt 注入），按天倒序，截断防爆上下文。
+
+    注入前过滤掉会过期的连通性结论与基础设施故障（见 _STALE_MARKERS），
+    否则模型会把「昨天不通」当成「现在不通」。
+    """
     out: list[str] = []
     try:
         if not TASK_LOG_DIR.is_dir():
@@ -97,7 +142,10 @@ def load_recent_task_logs(days: int = 7, max_chars: int = 3000) -> str:
             d = today - timedelta(days=i)
             p = TASK_LOG_DIR / f"{d.strftime('%Y-%m-%d')}.md"
             if p.is_file():
-                out.append(p.read_text(encoding="utf-8", errors="replace").strip())
+                raw = p.read_text(encoding="utf-8", errors="replace").strip()
+                cleaned = _drop_stale_entries(raw).strip()
+                if cleaned:
+                    out.append(cleaned)
         joined = "\n\n".join(out)
         return joined[:max_chars]
     except Exception as e:  # noqa: BLE001

@@ -144,12 +144,53 @@ class SpanTree:
         d = Path(directory) if directory else _default_traces_dir()
         try:
             d.mkdir(parents=True, exist_ok=True)
+            # 默认沿用 session_id 命名 —— CLI 侧的 session_id 自带时间戳
+            #（形如 20260909-210540-32d0af），本来就唯一，不该被改名。
+            #
+            # 但 Web 侧是 f"web-{前端 session_id}"，而前端固定传 "web"，
+            # 于是同一浏览器会话的每轮对话都写 web-web.json，后一轮覆盖前一轮。
+            # 真实后果：一次六条探针的人工验收，核完第 1 条再回头读同一文件，
+            # 内容已变成第 3 条的 span，前面几条的轨迹证据全部丢失。
+            #
+            # 因此只在目标已存在且不属于本树时，才追加起始时间戳区分，
+            # 既修掉覆盖，又不影响本来唯一的命名。
             path = d / f"{self.session_id}.json"
+            if path.exists() and not self._owns(path):
+                stamp = ""
+                if self.spans:
+                    first = min(s.get("start") or 0 for s in self.spans)
+                    if first:
+                        stamp = datetime.fromtimestamp(
+                            first, timezone.utc).strftime("%Y%m%dT%H%M%S")
+                if stamp:
+                    path = d / f"{self.session_id}-{stamp}.json"
+                    # 同一秒内的两轮：再退一步用 span_id 保唯一，绝不覆盖
+                    if path.exists() and not self._owns(path) and self.spans:
+                        sid = self.spans[0].get("span_id", "")[:8]
+                        path = d / f"{self.session_id}-{stamp}-{sid}.json"
             path.write_text(json.dumps(self.to_dict(), ensure_ascii=False, indent=1), encoding="utf-8")
             return path
         except Exception as e:  # noqa: BLE001 — 落盘失败绝不抛错，仅降级告警
             logger.warning("span tree 落盘失败（%s）: %s", d, e)
             return None
+
+    def _owns(self, path: Path) -> bool:
+        """该文件是否是本树自己先前写下的（同一树多次 save 应就地更新）。
+
+        判据用首个 span_id：同一棵树在整个生命周期内不变，
+        跨树重复的概率可忽略。读不出来就保守判为「不属于本树」，
+        宁可多产生一个文件，也不要覆盖掉别人的证据。
+        """
+        if not self.spans:
+            return False
+        try:
+            old = json.loads(path.read_text(encoding="utf-8"))
+            old_spans = old.get("spans") or []
+            if not old_spans:
+                return False
+            return old_spans[0].get("span_id") == self.spans[0].get("span_id")
+        except Exception:  # noqa: BLE001
+            return False
 
     @staticmethod
     def load(session: str, directory: Path | None = None) -> SpanTree:
