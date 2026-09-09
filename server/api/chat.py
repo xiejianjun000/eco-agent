@@ -2732,11 +2732,13 @@ async def _call_llm_with_span(tree, client, model, messages, tools, round_idx,
             model=model_name,
             provider=provider,
             round_idx=round_idx,
-            # 从 messages 里取本轮用户问题做摘要，便于按提问反查留痕。
-            # 取最后一条 role=user 而不是 messages[-1]：多轮工具调用后，
-            # 末尾往往是 tool 结果消息，不是用户说的话。
+            # 从 messages 里取**首条**用户消息做摘要，便于按提问反查留痕。
+            # 曾取「最后一条 role=user」，结果抓错了对象：反思回路会以
+            # role="user" 注入「注意：上一轮部分工具返回了失败或空结果…」，
+            # 多轮后它排在末尾，被误当成用户提问，留痕里就出现这种系统提示。
+            # 首条才是本轮真正的用户问题 —— 系统注入永远排在它后面。
             user_intent=next(
-                (str(m.get("content") or "") for m in reversed(messages or [])
+                (str(m.get("content") or "") for m in (messages or [])
                  if isinstance(m, dict) and m.get("role") == "user"), ""),
         )
     except Exception:  # noqa: BLE001 — 留痕失败不影响主流程
