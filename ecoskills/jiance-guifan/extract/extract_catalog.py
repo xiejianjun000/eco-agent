@@ -21,29 +21,40 @@ WATERMARK = '独立环保人公众号'
 X_NO, X_NAME, X_CODE, X_DATE = 110.0, 330.0, 440.0, 999.0
 
 def col(x):
-    if x < X_NO:   return 0
-    if x < X_CODE: return 1 if x < X_CODE else 2
+    if x < X_NO:
+        return 0
+    if x < X_CODE:
+        return 1 if x < X_CODE else 2
     return 3
 
 def col_of(x):
     # 列 x 起点实测：序号≈89-92 / 名称≈117（续行可至 330）/ 编号≈348-380 / 日期≈457
-    if x < 110:  return 0
-    if x < 345:  return 1
-    if x < 445:  return 2
+    if x < 110:
+        return 0
+    if x < 345:
+        return 1
+    if x < 445:
+        return 2
     return 3
 
 def page_lines(pno):
     out = []
     for b in doc[pno].get_text("dict")["blocks"]:
-        for l in b.get("lines", []):
-            t = ''.join(s["text"] for s in l["spans"]).strip()
+        for line_ in b.get("lines", []):
+            t = ''.join(s["text"] for s in line_["spans"]).strip()
             if t:
-                out.append(dict(y=round(l["bbox"][1], 1), x=round(l["bbox"][0], 1), t=t))
+                out.append(dict(y=round(line_["bbox"][1], 1), x=round(line_["bbox"][0], 1), t=t))
     out.sort(key=lambda r: (round(r['y'] / 3), r['x']))
     return out
 
 
-CODE_INLINE = re.compile(r'^(?P<name>.*?)\s*(?P<code>(?:GB|HJ|NY|SL|DZ|DL|CJ|JJG|JJF|TD|LY|SC|QX|MT|AQ|WS|RB|CH|SN|YD|JT|SY|SH|TB|HG|HY|GY)(?:/[TZ])?\s?\d[\d.\-]*)(?:\s+(?P<date>\d{4}-\d{1,2}-\d{1,2}))?$')
+# 标准号前缀（行业代号），拆行只为满足行宽限制，语义与原单行完全一致
+_STD_PREFIX = (r'GB|HJ|NY|SL|DZ|DL|CJ|JJG|JJF|TD|LY|SC|QX|MT|'
+               r'AQ|WS|RB|CH|SN|YD|JT|SY|SH|TB|HG|HY|GY')
+CODE_INLINE = re.compile(
+    r'^(?P<name>.*?)\s*'
+    r'(?P<code>(?:' + _STD_PREFIX + r')(?:/[TZ])?\s?\d[\d.\-]*)'
+    r'(?:\s+(?P<date>\d{4}-\d{1,2}-\d{1,2}))?$')
 
 def split_inline(rec):
     """名称列里粘进了标准编号（甚至发布时间）时拆回各列。"""
@@ -111,7 +122,8 @@ def build():
             for ln in body:
                 if ln['c'] == 0 or not (lo <= ln['y'] < hi):
                     continue
-                if ln['c'] == 1: name.append(ln['t'])
+                if ln['c'] == 1:
+                    name.append(ln['t'])
                 elif ln['c'] == 2:
                     code.append(ln['t'])
                 elif ln['c'] == 3 and DATE_RE.match(ln['t']):
@@ -127,7 +139,9 @@ def build():
 if __name__ == '__main__':
     recs = build()
     print('records', len(recs))
-    json.dump(recs, open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'catalog_raw.json'), 'w'), ensure_ascii=False, indent=1)
+    _out = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'catalog_raw.json')
+    with open(_out, 'w', encoding='utf-8') as _fh:
+        json.dump(recs, _fh, ensure_ascii=False, indent=1)
     from collections import defaultdict
     g = defaultdict(list)
     for x in recs:
@@ -140,4 +154,5 @@ if __name__ == '__main__':
         print('OK ' if ok else 'BAD', k, len(v), '' if ok else v)
     miss = [r for r in recs if not r['name'] or not r['code'] or not r['date']]
     print('incomplete', len(miss))
-    for m in miss[:10]: print('  ', m)
+    for m in miss[:10]:
+        print('  ', m)

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """把 PDF 抽出的《生态环境监测条例》与仓库内 mee.gov.cn 权威全文逐条比对。
 重点验证三处字形缺陷修复（第三十一条 / 第四十一条 及 监督管理办法第二十一条）。"""
-import json, re, difflib
+import difflib
+import json
+import re
 
 KB = '/Users/mac/Documents/deepseek/eco-agent/ecoskills/fagui-query/kb/生态环境监测条例.md'
 docs = json.load(open('appendix.json'))
@@ -17,7 +19,8 @@ cur = None
 for line in kb.split('\n'):
     m = re.fullmatch(r'(第[一二三四五六七八九十百零]+条)', line.strip())
     if m:
-        cur = m.group(1); kb_arts[cur] = []
+        cur = m.group(1)
+        kb_arts[cur] = []
     elif cur:
         kb_arts[cur].append(line.strip())
 kb_arts = {k: norm(''.join(v)) for k, v in kb_arts.items()}
@@ -38,7 +41,9 @@ same = diff = only_pdf = 0
 for a, raw_body in spans.items():
     body = norm(raw_body)
     if a not in kb_arts:
-        print(f'  [仅PDF有] {a}'); only_pdf += 1; continue
+        print(f'  [仅PDF有] {a}')
+        only_pdf += 1
+        continue
     kb_body = kb_arts[a]
     # 权威库把“第X章”标题和文末“解读”链接并入了上一条，比对时以 PDF 正文为基准做包含判定
     ratio = difflib.SequenceMatcher(None, body, kb_body).ratio()

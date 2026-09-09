@@ -5,7 +5,8 @@ import json
 CN = '一二三四五六七八九'
 def cn2i(s):
     s = s.replace('第', '').replace('条', '')
-    if s == '十': return 10
+    if s == '十':
+        return 10
     if '十' not in s:
         return CN.index(s) + 1 if len(s) == 1 else None
     a, _, b = s.partition('十')

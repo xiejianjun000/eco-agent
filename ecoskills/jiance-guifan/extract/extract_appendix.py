@@ -56,11 +56,11 @@ def page_text(p):
     """保留 PyMuPDF 的行切分（版面正确），仅把被拆散的条号行与其正文行重新缝合。"""
     raw = []
     for blk in doc[p].get_text("dict")["blocks"]:
-        for l in blk.get("lines", []):
-            t = _render(l['spans']).strip()
+        for ln in blk.get("lines", []):
+            t = _render(ln['spans']).strip()
             if t:
-                raw.append((round(l['bbox'][1], 1), round(l['bbox'][0], 1), t,
-                            round(l['spans'][-1]['bbox'][2], 1), l['spans'][-1]))
+                raw.append((round(ln['bbox'][1], 1), round(ln['bbox'][0], 1), t,
+                            round(ln['spans'][-1]['bbox'][2], 1), ln['spans'][-1]))
     # 同一视觉行的各片段 y 存在亚像素抖动（条号常比正文低 0.2pt），
     # 直接按 y 排序会把正文排到条号之前，故先按 3pt 容差聚类成行，再行内按 x 排序。
     raw.sort()
@@ -115,17 +115,17 @@ def page_text(p):
 def restore_gaps(lines):
     """按条序还原被字形缺陷吞掉的个位数字（'第三十□条' → '第三十一条'）。"""
     out, last = [], 0
-    for l in lines:
-        m = re.match(r'^第([一二三四五六七八九十百零]*)十□条', l)
+    for ln in lines:
+        m = re.match(r'^第([一二三四五六七八九十百零]*)十□条', ln)
         if m:
             expect = last + 1
             tens, ones = divmod(expect, 10)
             cand = (CN_DIGITS[tens - 1] if tens > 1 else '') + '十' + (CN_DIGITS[ones - 1] if ones else '')
-            l = re.sub(r'^第[一二三四五六七八九十百零]*十□条', f'第{cand}条', l)
-        m2 = re.match(r'^第([一二三四五六七八九十百零]+)条', l)
+            ln = re.sub(r'^第[一二三四五六七八九十百零]*十□条', f'第{cand}条', ln)
+        m2 = re.match(r'^第([一二三四五六七八九十百零]+)条', ln)
         if m2:
             last = cn_to_int(m2.group(1))
-        out.append(l)
+        out.append(ln)
     return out
 
 
@@ -153,15 +153,15 @@ def structure(lines):
     """把行流合并为段落，并识别 章/条 边界。"""
     paras = []
     buf = ''
-    for l in lines:
-        starts = bool(ART.match(l) or CHAP.match(l) or NUMH.match(l)
-                      or re.match(r'^[（(][一二三四五六七八九十\d]+[)）]', l)
-                      or re.match(r'^[一二三四五六七八九十]+、', l))
+    for ln in lines:
+        starts = bool(ART.match(ln) or CHAP.match(ln) or NUMH.match(ln)
+                      or re.match(r'^[（(][一二三四五六七八九十\d]+[)）]', ln)
+                      or re.match(r'^[一二三四五六七八九十]+、', ln))
         if starts and buf:
             paras.append(buf)
-            buf = l
+            buf = ln
         else:
-            buf = (buf + l) if buf else l
+            buf = (buf + ln) if buf else ln
     if buf:
         paras.append(buf)
     return paras

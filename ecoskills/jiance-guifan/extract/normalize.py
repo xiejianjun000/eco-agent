@@ -52,7 +52,8 @@ for i, r in enumerate(recs, 1):
     info = parse_code(r['code'])
     method = None
     if r['sub']:
-        if '手工' in r['sub']: method = '手工监测'
+        if '手工' in r['sub']:
+            method = '手工监测'
         elif '自动' in r['sub']:
             method = '自动监测'
         elif '自行监测' in r['sub']:
