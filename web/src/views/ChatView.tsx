@@ -5,6 +5,7 @@ import { renderToolResult } from '../utils/toolResult';
 import TerminalPanel from '../components/Terminal';
 import Icon, { type IconName } from '../components/Icon';
 import DocDrawer from '../components/DocDrawer';
+import ProductPanel, { type ProductItem } from '../components/ProductPanel';
 import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../components/DocViewer';
 import { ChatSearchButton, UserPromptListButton } from '../components/ChatTopbar';
 import CompactDivider, { isCompactContent, inferCompactType } from '../components/CompactDivider';
@@ -1108,6 +1109,16 @@ export default function ChatView({
   const openDoc = React.useCallback((src: DocSource, label: string) => {
     setDocSource(src); setDocTitle(label);
   }, []);
+  // 常驻右栏产物面板（WorkBuddy ProductPanel 对标）：默认展开，可收起
+  const [productOpen, setProductOpen] = useState<boolean>(
+    () => window.localStorage.getItem('eco-product-panel-open') !== '0',
+  );
+  const toggleProductPanel = React.useCallback(() => {
+    setProductOpen((v) => {
+      window.localStorage.setItem('eco-product-panel-open', v ? '0' : '1');
+      return !v;
+    });
+  }, []);
   const logRef = useRef<HTMLDivElement>(null);
 
   // 最新一条带轨迹的 assistant 消息自动选中
@@ -1143,11 +1154,10 @@ export default function ChatView({
     .map((t) => ({ name: t.name!, title: t.title ?? t.name!, size: t.size, path: t.path }));
 
   /** 合并：当前会话轨迹产物 + 磁盘持久化产物（按名去重，刷新/重启后仍在） */
-  const _allMdArtifacts = [
+  const allMdArtifacts: ProductItem[] = [
     ...mdArtifacts,
     ...persistedArtifacts.filter((p) => !mdArtifacts.some((m) => m.name === p.name)),
   ];
-  void _allMdArtifacts; // 产物面板已移除；保留供后续复用
 
   /** 新会话欢迎态：还没有任何用户消息时显示居中的 hero 主页（DSH 对标） */
   const fresh = messages.length === 0;
@@ -1451,6 +1461,15 @@ export default function ChatView({
           ))}
           {/* 右上角功能区（WorkBuddy workbuddy-topbar 对标）：对话内搜索 + 提问跳转 */}
           <div className="topbar-actions">
+            <button
+              className={`tb-btn product-toggle${productOpen ? ' active' : ''}`}
+              title={productOpen ? '收起右栏产物面板' : '展开右栏产物面板'}
+              aria-label={productOpen ? '收起右栏' : '展开右栏'}
+              onClick={toggleProductPanel}
+            >
+              <Icon name="folder" size={15} />
+              <span className="product-toggle-label">产物{allMdArtifacts.length > 0 ? ` ${allMdArtifacts.length}` : ''}</span>
+            </button>
             <UserPromptListButton
               messages={messages}
               onJump={(i) => {
@@ -1847,6 +1866,13 @@ export default function ChatView({
 
       {/* 产物抽屉：absolute 贴在 .chat-wrap 内，宽度 px 过渡 + 全屏两态 */}
       <DocDrawer source={docSource} title={docTitle} onClose={() => setDocSource(null)} />
+
+      {/* 常驻右栏产物面板：flex 子项，占满 chat-wrap 高度 */}
+      <ProductPanel
+        products={allMdArtifacts}
+        open={productOpen}
+        onClose={() => toggleProductPanel()}
+      />
     </div>
   );
 }
