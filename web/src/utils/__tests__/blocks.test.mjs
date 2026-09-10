@@ -96,5 +96,31 @@ console.log('\n=== P1-D 跳过态（skipped）===');
   ok('跳过态动词为「已跳过」', act.status === '已跳过');
 }
 
+console.log('\n=== P3-A 连接器延迟代理（DeferExecuteTool targetToolName 还原）===');
+{
+  const trace = [
+    { type: 'tool_start', name: 'defer_execute_tool',
+      args: { tool_name: 'mcp__tencent_docs__create_space', arguments: { name: '案卷' } } },
+    { type: 'tool', name: 'defer_execute_tool',
+      args: { tool_name: 'mcp__tencent_docs__create_space', arguments: { name: '案卷' } },
+      result_preview: '{"ok":true,"target_tool":"mcp__tencent_docs__create_space","result":{"success":true}}' },
+  ];
+  const b = buildBeats(trace, isErr);
+  const acts = b.filter((x) => x.kind === 'act');
+  ok('延迟调用合并为一行', acts.length === 1);
+  ok('展示真实连接器工具名而非占位名', acts[0].toolName === 'mcp__tencent_docs__create_space');
+  ok('参数解包为目标工具参数', acts[0].toolArgs && acts[0].toolArgs.name === '案卷');
+  ok('透传成功为 ok 态', acts[0].state === 'ok');
+}
+{
+  // tool_search 仍按自身展示，不被误还原
+  const b = buildBeats([
+    { type: 'tool', name: 'tool_search', args: { query: '腾讯文档' },
+      result_preview: '{"ok":true,"count":3}' },
+  ], isErr);
+  const act = b.find((x) => x.kind === 'act');
+  ok('tool_search 不被当成 defer 还原', act.toolName === 'tool_search');
+}
+
 console.log(`\n通过 ${p} · 失败 ${f}`);
 process.exit(f ? 1 : 0);

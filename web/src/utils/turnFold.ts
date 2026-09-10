@@ -373,6 +373,18 @@ export function primaryOf(name: string | undefined, args: unknown): string {
  * act  → 工具块：status(动词) + primary(主体) + secondary(次要) + 耗时
  */
 const SWARM_TOOLS = new Set(['swarm_patrol', 'swarm_law', 'swarm_doc']);
+
+/** 连接器延迟代理（对标 WorkBuddy DeferExecuteTool / targetToolName）：
+ *  defer_execute_tool 是占位名，真实目标在 args.tool_name；
+ *  界面要展示真实连接器工具，而不是「defer_execute_tool」。
+ *  返回 {name,args}（透传参数解包成目标工具参数）。 */
+function unwrapDefer(name: string | undefined, args: unknown): { name?: string; args: unknown } {
+  if (name !== 'defer_execute_tool') return { name, args };
+  const a = (args ?? {}) as Record<string, unknown>;
+  const target = typeof a.tool_name === 'string' ? a.tool_name : name;
+  return { name: target, args: (a.arguments && typeof a.arguments === 'object' ? a.arguments : {}) };
+}
+
 const SWARM_ROLE_LABEL: Record<string, string> = {
   swarm_patrol: '巡查 Agent',
   swarm_law: '法规 Agent',
@@ -516,15 +528,18 @@ export function buildBeats(
       }
     } else if (t.type === 'tool_start') {
       {
+        // 连接器延迟代理：占位名 defer_execute_tool 还原为真实连接器工具名（targetToolName）
+        const dn = unwrapDefer(t.name, t.args);
+        const dName = dn.name || '';
         // 每工具独立视图（见 utils/toolViews.ts 与 docs/RENDER_SPEC.md §3）。
-        const h = resolveToolHead(t.name || '', (t.args || {}) as Record<string, unknown>, 'running');
+        const h = resolveToolHead(dName, (dn.args || {}) as Record<string, unknown>, 'running');
         out.push({
           kind: 'act',
-          status: h.statusText || statusTextOf(t.name, true),
-          text: h.primaryContent || primaryOf(t.name, t.args),
+          status: h.statusText || statusTextOf(dName, true),
+          text: h.primaryContent || primaryOf(dName, dn.args),
           viewId: h.viewId,
-          toolName: t.name,
-          toolArgs: t.args,
+          toolName: dName,
+          toolArgs: dn.args,
           key: keyOf(t),
           running: true,
           state: 'running',
@@ -537,6 +552,10 @@ export function buildBeats(
       // 退出码非 0 即失败（对标 exitCode 校验）；显式 skipped 优先。
       const state: BeatState = skipped ? 'skipped'
         : (failed || (exitCode !== undefined && exitCode !== 0) ? 'error' : 'ok');
+      // 延迟代理还原真实工具名/参数（成功结果包在 {target_tool,result} 里）
+      const dn = unwrapDefer(t.name, t.args);
+      const dName = dn.name || '';
+      const dArgs = (dn.args || {}) as Record<string, unknown>;
       // 从工具结果里取变更行数（对标 WorkBuddy writeFile 的 +N -M）
       let diff: { added?: number; removed?: number } | undefined;
       try {
@@ -548,18 +567,18 @@ export function buildBeats(
         }
       } catch { /* 结果非 JSON 或被截断：不显示行数，不猜 */ }
       const hd = resolveToolHead(
-        t.name || '', (t.args || {}) as Record<string, unknown>,
+        dName, dArgs,
         state === 'error' ? 'error' : 'success', undefined, diff,
       );
       const done: BeatItem = {
         kind: 'act',
-        status: state === 'skipped' ? '已跳过' : (hd.statusText || statusTextOf(t.name, false)),
-        text: hd.primaryContent || primaryOf(t.name, t.args),
+        status: state === 'skipped' ? '已跳过' : (hd.statusText || statusTextOf(dName, false)),
+        text: hd.primaryContent || primaryOf(dName, dn.args),
         viewId: hd.viewId,
         added: hd.added,
         removed: hd.removed,
-        toolName: t.name,
-        toolArgs: t.args,
+        toolName: dName,
+        toolArgs: dn.args,
         resultPreview: t.result_preview,
         key: keyOf(t),
         secondary: summarizeResult(t.result_preview),

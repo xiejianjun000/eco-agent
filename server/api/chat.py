@@ -1731,6 +1731,8 @@ _READONLY_TOOLS = frozenset({
     # 领域只读查询
     "hunan_case_list", "query_air_quality", "detect_data_anomaly",
     "calculate_carbon_emission",
+    # 连接器延迟代理（外壳只读；defer_execute_tool 内部对真实写工具二次拦截）
+    "tool_search", "defer_execute_tool",
 })
 
 # 写入/执行类：只读模式下必须拿不到
@@ -1780,12 +1782,29 @@ def _tool_is_readonly(name: str) -> bool:
     return name in _READONLY_TOOLS
 
 
+def _deferred_tool_defs() -> list[dict]:
+    """连接器延迟代理工具（对标 WorkBuddy ToolSearch / DeferExecuteTool）。
+
+    连接器长尾工具（尤其腾讯文档 200+ 个）不直挂上下文，模型按需 tool_search 发现、
+    defer_execute_tool 透传调用。两个都是 L1 只读外壳（底层写权限由 defer 内闸门把关）。
+    """
+    try:
+        from agent_core import deferred_tools
+        from agent_core.tools_registry import ALL_TOOL_DEFS
+
+        deferred_tools.register_deferred_tools()
+        by_name = {d["function"]["name"]: d for d in ALL_TOOL_DEFS}
+        return [by_name[n] for n in ("tool_search", "defer_execute_tool") if n in by_name]
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def _chat_tool_list(readonly: bool = False) -> list[dict]:
     """聊天通道工具清单（定义已瘦身，控制 prompt 体量）。
 
     readonly=True 时只给只读工具，对标 WorkBuddy 的 ask 模式。
     """
-    defs = _codex_tools() + _mcp_tool_defs()
+    defs = _codex_tools() + _mcp_tool_defs() + _deferred_tool_defs()
     if readonly:
         defs = [d for d in defs if _tool_is_readonly(d.get("function", {}).get("name", ""))]
     return _slim_tool_defs(defs)
@@ -1881,6 +1900,27 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
     """工具分发：statute_* 走本地法典库，kb_* 走 ehs-kb-ops MCP 知识库。
     web_client=True 表示请求来自 Web 聊天界面（X-ECO-CLIENT: web），
     open_url 对 docs.qq.com 链接改走右侧面板预览而非系统浏览器。"""
+    if name == "tool_search":
+        # 连接器工具发现（同步 handler，放线程池）
+        import asyncio as _aio
+
+        from agent_core.deferred_tools import tool_search
+
+        return await _aio.get_event_loop().run_in_executor(
+            None, lambda: tool_search(
+                str(arguments.get("query", "")),
+                str(arguments.get("server", "")),
+                int(arguments.get("limit", 12) or 12),
+            )
+        )
+    if name == "defer_execute_tool":
+        # 连接器延迟工具透传（async；内部对真实目标重跑权限闸门 + 只读拦截）
+        from agent_core.deferred_tools import defer_execute_tool
+
+        return await defer_execute_tool(
+            str(arguments.get("tool_name", "")),
+            arguments.get("arguments") if isinstance(arguments.get("arguments"), dict) else {},
+        )
     if name.startswith("statute_"):
         import subprocess
         import sys
@@ -2964,6 +3004,13 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                        if isinstance(m, dict) and m.get("role") == "user"), "")
     _readonly = bool(force_readonly) or _is_readonly_request(
         _last_user if isinstance(_last_user, str) else "")
+    # 让 defer_execute_tool 透传时也感知只读授权（防代理外壳绕过计划模式写拦截）
+    try:
+        from agent_core.deferred_tools import set_readonly as _set_defer_ro
+
+        _defer_ro_token = _set_defer_ro(_readonly)
+    except Exception:  # noqa: BLE001
+        _defer_ro_token = None
     tools = _chat_tool_list(readonly=_readonly)
     trace: list[dict] = []
     total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
