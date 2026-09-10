@@ -525,16 +525,24 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
  *
  * 头部结构与折叠态完全一致，明细只挂在下方 shell（见 ToolDetailPanel）。
  */
-function BeatRow({ b }: { b: BeatItem }): React.ReactElement {
+export function BeatRow({ b }: { b: BeatItem }): React.ReactElement {
   const [open, setOpen] = React.useState(false);
+  // 思考块可折叠展开（对标 WorkBuddy reasoning block）
+  const isThink = b.kind === 'think';
+  const isTask = b.kind === 'task';
   // 只有 act 且真有结构化内容才可展开；detail 为 null 时不出箭头
   const detail = b.kind === 'act'
     ? resolveToolDetail(b.toolName || '', (b.toolArgs || {}) as Record<string, unknown>, b.resultPreview)
     : null;
-  const canExpand = detail !== null;
+  const state: 'running' | 'ok' | 'error' | 'skipped' = b.state
+    ?? (b.running ? 'running' : b.ok === false ? 'error' : 'ok');
+  const canExpand = detail !== null || (isThink && !!b.body) || isTask;
+  const dotCls = b.kind === 'act'
+    ? (state === 'running' ? ' running' : state === 'error' ? ' err' : state === 'skipped' ? ' skip' : ' ok')
+    : (state === 'running' ? ' running' : ' ok');
   return (
-    <div className={`turn-anchor beat-${b.kind}${b.running ? ' beat-running' : ''}${canExpand ? ' beat-expandable' : ''}${open ? ' beat-open' : ''}`}
-         data-tool-view={b.kind === 'act' ? (b.viewId || 'fallback') : undefined}>
+    <div className={`turn-anchor beat-${b.kind}${state === 'running' ? ' beat-running' : ''}${state === 'skipped' ? ' beat-skip' : ''}${canExpand ? ' beat-expandable' : ''}${open ? ' beat-open' : ''}`}
+         data-tool-view={b.kind === 'act' ? (b.viewId || 'fallback') : b.kind}>
       <div className="turn-anchor-head"
            onClick={canExpand ? () => setOpen((v) => !v) : undefined}
            role={canExpand ? 'button' : undefined}
@@ -542,9 +550,9 @@ function BeatRow({ b }: { b: BeatItem }): React.ReactElement {
            onKeyDown={canExpand ? (e) => {
              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); }
            } : undefined}>
-        <span className={`turn-anchor-dot${
-          b.kind === 'act' ? (b.running ? ' running' : b.ok ? ' ok' : ' err') : ''}`}
-              aria-hidden="true" />
+        <span className={`turn-anchor-dot${dotCls}`} aria-hidden="true" />
+        {isThink && <Icon name="gear" size={12} />}
+        {isTask && <Icon name="clipboard" size={12} />}
         {/* 三段式（对标 WorkBuddy ToolHeader）：动词 · 主体 · 次要信息，互不重复 */}
         <span className="turn-anchor-text">
           {b.status && <span className="beat-status">{b.status}</span>}
@@ -557,11 +565,36 @@ function BeatRow({ b }: { b: BeatItem }): React.ReactElement {
               <span className="beat-diff-del">-{b.removed ?? 0}</span>
             </span>
           )}
+          {/* 退出码校验（对标 tool.executeCommand.exitCode）：非 0 红色 */}
+          {b.exitCode !== undefined && (
+            <span className={`beat-exitcode${b.exitCode === 0 ? ' ok' : ' err'}`}>
+              退出码 {b.exitCode}
+            </span>
+          )}
           {b.secondary && <span className="beat-second">{b.secondary}</span>}
           {b.ms !== undefined && b.ms > 0 && <span className="beat-ms">{fmtMs(b.ms)}</span>}
         </span>
         {canExpand && <span className="beat-arrow" aria-hidden="true">▾</span>}
       </div>
+      {/* 任务块：RoleSwarm 三角色 + 总管合成进度（对标 taskList.status） */}
+      {isTask && open && (
+        <div className="beat-task-body">
+          {(b.steps || []).map((s, i) => (
+            <div key={i} className={`beat-task-step st-${s.state}`}>
+              <span className="beat-task-dot" aria-hidden="true">
+                {s.state === 'running' ? '◐' : s.state === 'error' ? '✕'
+                  : s.state === 'pending' ? '○' : '✓'}
+              </span>
+              <span className="beat-task-label">{s.label}</span>
+              {s.ms !== undefined && s.ms > 0 && <span className="beat-ms">{fmtMs(s.ms)}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      {/* 思考块正文：折叠在头部下（reasoning block） */}
+      {isThink && open && b.body && (
+        <div className="beat-think-body dsh-body-text">{escapeHtml(b.body)}</div>
+      )}
       {detail && <ToolDetailPanel detail={detail} open={open} />}
     </div>
   );

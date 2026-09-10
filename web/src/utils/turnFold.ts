@@ -208,9 +208,18 @@ export function dedupeAdjacent(texts: string[]): string[] {
 // 折中：保留并行，由 UI 把「旁白」与「每个工具」按发生顺序交织成时间线，
 // 每个工具自带动作词与结果摘要，读起来仍是一步一行的节奏。
 
+export type BeatState = 'running' | 'ok' | 'error' | 'skipped';
+
 export interface BeatItem {
-  kind: 'say' | 'act';
-  /** act = 主体（文件名/命令/查询词）；say = 旁白全文 */
+  /**
+   * WorkBuddy block 对齐：
+   *  say   → 旁白（narration，折叠锚点）
+   *  act   → 工具块（tool-call：运行中/成功/失败/跳过）
+   *  think → 思考块（reasoning，可折叠）
+   *  task  → 任务块（taskList：RoleSwarm 三角色协作进度）
+   */
+  kind: 'say' | 'act' | 'think' | 'task';
+  /** act = 主体（文件名/命令/查询词）；say = 旁白全文；think/task = 标题 */
   text: string;
   /** 动词，仅 act：已读取 / 读取中（对标 WorkBuddy statusText） */
   status?: string;
@@ -233,6 +242,14 @@ export interface BeatItem {
   ok?: boolean;
   ms?: number;
   running?: boolean;
+  /** 完整工具状态机（对标 WorkBuddy ToolState；兼容旧布尔 running） */
+  state?: BeatState;
+  /** 命令/代码执行退出码（对标 tool.executeCommand.exitCode） */
+  exitCode?: number;
+  /** 思考块正文（reasoning 完整内容，折叠在头部下） */
+  body?: string;
+  /** 任务块：子步骤（RoleSwarm 巡查/法规/文书 + 总管合成） */
+  steps?: { label: string; state: BeatState | 'pending'; ms?: number }[];
 }
 
 /**
@@ -355,27 +372,151 @@ export function primaryOf(name: string | undefined, args: unknown): string {
  * say  → 旁白行（模型交代下一步）
  * act  → 工具块：status(动词) + primary(主体) + secondary(次要) + 耗时
  */
+const SWARM_TOOLS = new Set(['swarm_patrol', 'swarm_law', 'swarm_doc']);
+const SWARM_ROLE_LABEL: Record<string, string> = {
+  swarm_patrol: '巡查 Agent',
+  swarm_law: '法规 Agent',
+  swarm_doc: '文书 Agent',
+};
+/** RoleSwarm 阶段旁白（这些 think 只服务任务块，不单独渲染成思考行） */
+function swarmMarker(thought?: string): null | 'start' | 'parallel' | 'drafting' | 'synth' {
+  const t = thought || '';
+  if (t.includes('三角色协作 DAG')) return 'start';
+  if (t.includes('并行执行中')) return 'parallel';
+  if (t.includes('文书 Agent 起草中') || t.includes('文书Agent 起草中')) return 'drafting';
+  if (t.includes('总管仲裁合成完成') || t.includes('总管合成')) return 'synth';
+  return null;
+}
+
+/** 从命令/代码执行结果里取退出码（对标 tool.executeCommand.exitCode） */
+export function exitCodeOf(raw: string | undefined): number | undefined {
+  try {
+    const r = JSON.parse(raw || '{}');
+    for (const k of ['exit_code', 'exitCode', 'exit', 'returncode']) {
+      if (typeof r[k] === 'number') return r[k];
+    }
+  } catch { /* 非 JSON/截断：不猜 */ }
+  return undefined;
+}
+
+/** 工具是否被显式跳过（数据驱动，结果里带 skipped/status 才认，不靠文案猜） */
+function skippedOf(raw: string | undefined): boolean {
+  try {
+    const r = JSON.parse(raw || '{}');
+    return r.skipped === true || r.status === 'skipped';
+  } catch { return false; }
+}
+
 export function buildBeats(
-  trace: { type?: string; text?: string; name?: string; args?: unknown;
-           result_preview?: string; cost_ms?: number }[],
+  trace: { type?: string; text?: string; thought?: string; name?: string; args?: unknown;
+           result_preview?: string; cost_ms?: number; round?: number }[],
   isError: (s: string | undefined) => boolean,
 ): BeatItem[] {
   const out: BeatItem[] = [];
   const keyOf = (t: { name?: string; args?: unknown }) =>
     `${t.name ?? ''}|${primaryOf(t.name, t.args)}`;
 
+  // ── RoleSwarm 任务块（对标 WorkBuddy taskList）：把 swarm_* 工具 + 阶段旁白
+  //    聚合成「一个」协作任务块，步骤随进度 running→ok，而不是堆成普通工具行。
+  const hasSwarm = trace.some((t) =>
+    (t.type === 'tool' && SWARM_TOOLS.has(t.name || '')) || swarmMarker(t.thought));
+  const doneRole: Record<string, { ms?: number }> = {};
   for (const t of trace) {
+    if (t.type === 'tool' && SWARM_TOOLS.has(t.name || '')) {
+      doneRole[t.name as string] = { ms: t.cost_ms };
+    }
+  }
+  const markers = new Set(trace.map((t) => swarmMarker(t.thought)).filter(Boolean) as string[]);
+  let taskEmitted = false;
+  const liveThink: Record<number, { text: string; idx: number }> = {};  // round → 累积思考及其行下标
+  let thinkSeq = 0;
+
+  const emitTask = () => {
+    if (taskEmitted) return;
+    taskEmitted = true;
+    const patrol: BeatState = doneRole.swarm_patrol ? 'ok' : 'running';
+    const law: BeatState = doneRole.swarm_law ? 'ok' : patrol;
+    const doc: BeatState | 'pending' = doneRole.swarm_doc ? 'ok'
+      : (markers.has('drafting') ? 'running' : 'pending');
+    const synth: BeatState | 'pending' = markers.has('synth') ? 'ok'
+      : (doneRole.swarm_doc ? 'running' : 'pending');
+    const step = (label: string, st: BeatState | 'pending', ms?: number) =>
+      ({ label, state: st, ...(ms ? { ms } : {}) });
+    out.push({
+      kind: 'task',
+      key: 'swarm-task',
+      text: '三角色协作执法',
+      state: synth === 'ok' ? 'ok' : 'running',
+      running: synth !== 'ok',
+      steps: [
+        step('巡查', patrol, doneRole.swarm_patrol?.ms),
+        step('法规', law, doneRole.swarm_law?.ms),
+        step('文书', doc, doneRole.swarm_doc?.ms),
+        { label: '总管合成', state: synth },
+      ],
+    });
+  };
+
+  for (const t of trace) {
+    // 思考块（reasoning）：think_delta 按轮累积、think 权威覆盖。
+    if (t.type === 'think_delta') {
+      const r = t.round ?? 1;
+      if (!liveThink[r]) {
+        const idx = out.length;
+        out.push({ kind: 'think', key: `think-live-${r}-${thinkSeq++}`, text: '思考中',
+                   state: 'running', running: true, body: '' });
+        liveThink[r] = { text: '', idx };
+      }
+      liveThink[r].text += t.text || '';
+      out[liveThink[r].idx].body = liveThink[r].text;
+      continue;
+    }
+    if (t.type === 'think') {
+      const marker = hasSwarm ? swarmMarker(t.thought) : null;
+      if (hasSwarm && marker) {
+        if (!taskEmitted) emitTask();
+        continue;  // 阶段旁白并入任务块
+      }
+      const r = t.round ?? 1;
+      const thought = t.thought || '';
+      if (!thought) continue;
+      const pending = liveThink[r];
+      if (pending) {  // 权威版覆盖流式累积
+        out[pending.idx] = {
+          kind: 'think', key: `think-${r}`, text: '思考', state: 'ok',
+          body: thought, ms: t.cost_ms,
+        };
+        delete liveThink[r];
+      } else {
+        out.push({ kind: 'think', key: `think-${r}-${thinkSeq++}`, text: '思考',
+                   state: 'ok', body: thought, ms: t.cost_ms });
+      }
+      continue;
+    }
+    if (hasSwarm && t.type === 'tool' && SWARM_TOOLS.has(t.name || '')) {
+      if (!taskEmitted) emitTask();
+      // 更新任务块步骤状态（重新生成 steps）
+      const ti = out.findIndex((b) => b.kind === 'task');
+      if (ti >= 0) {
+        const role = t.name as string;
+        const st: BeatState = isError(t.result_preview) ? 'error' : 'ok';
+        out[ti].steps = (out[ti].steps || []).map((s) =>
+          s.label === SWARM_ROLE_LABEL[role].replace(' Agent', '')
+            ? { ...s, state: st, ms: t.cost_ms } : s);
+      }
+      continue;
+    }
     if (t.type === 'narration') {
       const c = cleanNarration(t.text);
-      if (c && !(out.length && out[out.length - 1].kind === 'say'
-                 && out[out.length - 1].text === c)) {
+      if (c && !(out.length && (out[out.length - 1].kind === 'say'
+                 || out[out.length - 1].kind === 'think')
+                 && (out[out.length - 1].text === c
+                     || normText(out[out.length - 1].body) === normText(c)))) {
         out.push({ kind: 'say', text: c });
       }
     } else if (t.type === 'tool_start') {
       {
         // 每工具独立视图（见 utils/toolViews.ts 与 docs/RENDER_SPEC.md §3）。
-        // 此前所有工具共用 statusTextOf，搜索/读文件/执行命令长得一样，
-        // 这正是「调用工具都混在一起」的根因。
         const h = resolveToolHead(t.name || '', (t.args || {}) as Record<string, unknown>, 'running');
         out.push({
           kind: 'act',
@@ -386,10 +527,16 @@ export function buildBeats(
           toolArgs: t.args,
           key: keyOf(t),
           running: true,
+          state: 'running',
         });
       }
     } else if (t.type === 'tool') {
       const failed = isError(t.result_preview);
+      const exitCode = exitCodeOf(t.result_preview);
+      const skipped = skippedOf(t.result_preview);
+      // 退出码非 0 即失败（对标 exitCode 校验）；显式 skipped 优先。
+      const state: BeatState = skipped ? 'skipped'
+        : (failed || (exitCode !== undefined && exitCode !== 0) ? 'error' : 'ok');
       // 从工具结果里取变更行数（对标 WorkBuddy writeFile 的 +N -M）
       let diff: { added?: number; removed?: number } | undefined;
       try {
@@ -402,11 +549,11 @@ export function buildBeats(
       } catch { /* 结果非 JSON 或被截断：不显示行数，不猜 */ }
       const hd = resolveToolHead(
         t.name || '', (t.args || {}) as Record<string, unknown>,
-        failed ? 'error' : 'success', undefined, diff,
+        state === 'error' ? 'error' : 'success', undefined, diff,
       );
       const done: BeatItem = {
         kind: 'act',
-        status: hd.statusText || statusTextOf(t.name, false),
+        status: state === 'skipped' ? '已跳过' : (hd.statusText || statusTextOf(t.name, false)),
         text: hd.primaryContent || primaryOf(t.name, t.args),
         viewId: hd.viewId,
         added: hd.added,
@@ -416,7 +563,9 @@ export function buildBeats(
         resultPreview: t.result_preview,
         key: keyOf(t),
         secondary: summarizeResult(t.result_preview),
-        ok: !failed,
+        ok: state === 'ok',
+        state,
+        ...(exitCode !== undefined ? { exitCode } : {}),
         ms: t.cost_ms,
       };
       // 有对应 running 行就原地替换，避免同一次调用出现两行
@@ -426,6 +575,10 @@ export function buildBeats(
     }
   }
   return out;
+}
+
+function normText(s: string | undefined): string {
+  return (s || '').replace(/\s+/g, '').trim();
 }
 
 export function summarizeResult(raw: string | undefined): string | undefined {
