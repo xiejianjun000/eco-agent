@@ -71,3 +71,4 @@ output/
 .libs/
 .venv-mcp/
 govmcp/hunan-env-mcp/.env
+.tools/
