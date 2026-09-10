@@ -3215,6 +3215,19 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
             if _am:
                 _emit({"type": "approval", "round": round_idx, "name": name,
                        "request_id": _am.group(1), "status": "pending"})
+            # save_document / analyze_document 成功落盘 → 补发 artifact 事件。
+            # 关键：这类是模型主动写的正式文档（output/ 或 workspace/deliverables/），
+            # 此前只在回答末尾追加「📄 已落盘」文本，**没有 artifact 事件**，
+            # 于是当前会话 trace 里没有结构化条目，右栏只能扫全局磁盘 → 把所有会话的
+            # 产物全堆出来。补上这个事件后，产物随 trace 归属到当前会话，
+            # 右栏只从当前会话消息提取即可（见 ChatView.mdArtifacts）。
+            if name in ("save_document", "analyze_document"):
+                try:
+                    _sd = json.loads(str(result))
+                except (json.JSONDecodeError, TypeError):
+                    _sd = {}
+                if isinstance(_sd, dict) and _sd.get("saved"):
+                    _emit_saved_artifact(_emit, args.get("filename"), _sd)
             # chart_render：工具成功即用同一参数确定性重生成 HTML，直接发 card 事件。
             # 模型不接触 HTML（防截断/手写错误），前端沙箱卡片直接渲染离线 SVG。
             if name == "chart_render" and '"ok": true' in str(result):
@@ -3888,6 +3901,26 @@ def _wants_docx(message: str) -> bool:
     return bool(re.search(r"\bdocx\b|\.doc\b|\bword\b|word\s*文档", m))
 
 
+def _emit_saved_artifact(emit, filename, saved_result: dict) -> None:
+    """save_document 成功后发一个 artifact 事件，让产物随 trace 归属当前会话。
+
+    三处保存路径（工具循环直调 / _enforce_save 模型再试 / 系统兜底）都经此发事件，
+    字段与 _save_answer_artifact 的 artifact 事件对齐（title/name/path/size）。
+    这样右栏只从当前会话消息的 trace 提取产物即可，不必扫全局磁盘——
+    此前 save_document 只在回答末尾追加「📄 已落盘」文本、不发事件，
+    正式文档没有会话归属，右栏只能全局扫描才把所有会话的产物堆到一起。"""
+    try:
+        path = str(saved_result.get("path") or "")
+        if not path:
+            return
+        name = path.rsplit("/", 1)[-1]
+        title = str(filename or name)
+        emit({"type": "artifact", "round": 1, "title": title,
+              "name": name, "path": path, "size": int(saved_result.get("bytes") or 0)})
+    except Exception:  # noqa: BLE001 — 发事件失败绝不影响主回答
+        pass
+
+
 def _save_answer_artifact(full: str, want_docx: bool = False) -> dict | None:
     """回答被要点化截断时，把完整稿落盘为持久 MD 产物（对齐 DSH 文件产物）。
 
@@ -4415,10 +4448,12 @@ async def _enforce_save(user_message, trace, content, messages, model, tools, cl
                     _args = {}
                 _res = await _run_tool("save_document", _args)
                 try:
-                    saved = bool(json.loads(_res).get("saved")) if _res else False
+                    _rj = json.loads(_res) if _res else {}
+                    saved = bool(_rj.get("saved"))
                 except (json.JSONDecodeError, AttributeError):
-                    saved = False
+                    _rj, saved = {}, False
                 if saved:
+                    _emit_saved_artifact(_emit, _args.get("filename"), _rj)
                     suffix = f"\n\n📄 已落盘：{_res}"
                     content = content + suffix
                     if stream_answer:
@@ -4430,10 +4465,12 @@ async def _enforce_save(user_message, trace, content, messages, model, tools, cl
         _filename = _fm.group(0) if _fm else "文书落盘.md"
         _res2 = await _run_tool("save_document", {"filename": _filename, "content": content})
         try:
-            _ok2 = bool(json.loads(_res2).get("saved")) if _res2 else False
+            _rj2 = json.loads(_res2) if _res2 else {}
+            _ok2 = bool(_rj2.get("saved"))
         except (json.JSONDecodeError, AttributeError):
-            _ok2 = False
+            _rj2, _ok2 = {}, False
         if _ok2:
+            _emit_saved_artifact(_emit, _filename, _rj2)
             suffix2 = f"\n\n📄 已落盘：{_res2}"
             content = content + suffix2
             if stream_answer:

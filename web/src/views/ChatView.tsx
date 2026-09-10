@@ -920,8 +920,11 @@ export default function ChatView({
   // 面板渲染代码保留以便后续按抽屉方式复用，故只保留读取端。
   const [_docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
   const [_docTools, setDocTools] = useState<{ name: string; desc: string }[]>([]);
-  /** 磁盘上已持久化的 MD 产物（重启/刷新后仍可点开，对齐 DSH 文件产物持久化） */
-  const [persistedArtifacts, setPersistedArtifacts] = useState<{ name: string; title: string; size: number; path?: string }[]>([]);
+  /** 磁盘上已持久化的 MD 产物（全局扫描）。
+   *  不再作为右栏数据源：右栏按 WorkBuddy 口径只显示**当前会话**产物（trace）。
+   *  保留拉取，供 ArtifactCard 等对话内卡片需要磁盘真实状态时使用；下划线前缀
+   *  标明当前不直接渲染，避免误又合并回右栏导致跨会话堆叠。 */
+  const [, setPersistedArtifacts] = useState<{ name: string; title: string; size: number; path?: string }[]>([]);
   // 右侧预览面板：文档生成/上传后自动内嵌打开 docs.qq.com（不弹系统浏览器）
   const [_previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [_previewTitle, setPreviewTitle] = useState<string>('');
@@ -1153,11 +1156,14 @@ export default function ChatView({
     .flatMap((m) => (m.trace ?? []).filter((t) => t.type === 'artifact' && t.name))
     .map((t) => ({ name: t.name!, title: t.title ?? t.name!, size: t.size, path: t.path }));
 
-  /** 合并：当前会话轨迹产物 + 磁盘持久化产物（按名去重，刷新/重启后仍在） */
-  const allMdArtifacts: ProductItem[] = [
-    ...mdArtifacts,
-    ...persistedArtifacts.filter((p) => !mdArtifacts.some((m) => m.name === p.name)),
-  ];
+  /** 右栏只显示**当前会话**的产物（WorkBuddy 口径：产物属于会话，不是全局文件堆）。
+   *  数据来源是当前会话消息的 trace artifact 事件 —— 后端在 save_document 成功
+   *  和完整稿落盘时都会发该事件，随会话持久化/重放，因此刷新与切会话都正确。
+   *  不再合并磁盘全局扫描结果（persistedArtifacts）：那会把所有会话、甚至调试
+   *  dump 出来的对话切片全堆到右栏。按名去重，同名保留首次出现（对话顺序）。 */
+  const allMdArtifacts: ProductItem[] = mdArtifacts.filter(
+    (a, i) => mdArtifacts.findIndex((x) => x.name === a.name) === i,
+  );
 
   /** 新会话欢迎态：还没有任何用户消息时显示居中的 hero 主页（DSH 对标） */
   const fresh = messages.length === 0;
