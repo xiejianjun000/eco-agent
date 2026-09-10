@@ -9,6 +9,7 @@ server/api/chat.py — 对话 API
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 import logging
 import os as _os_default_model
@@ -280,6 +281,26 @@ def _codex_rules_section() -> str:
         "本轮最后一个工具调用必须是 present_files，把真实文件路径传进去，"
         "界面才会渲染成果卡片让用户下载。只呈现新产出的文件，不要呈现只读过的；"
         "多个文件一次传完。路径必须来自工具真实返回，禁止臆造。\n"
+        "8.3.1 【交付文档≠对话回答，禁止把聊天内容直接存成文档】用 save_document "
+        "产出的文书/报告/简报是给当事人或归档用的正式文件，不是对话气泡的副本。"
+        "调用 save_document 时，content 必须按正式文档重新组织，满足：\n"
+        "  · 规范标题：文档首行是完整标题（如《娄底市空气质量日报（2026-09-10）》"
+        "《现场检查（勘察）笔录》），禁止用半句话、问句或结论截断当标题，"
+        "更禁止出现『上一轮』『待确认一下』『我先查』这类对话措辞；\n"
+        "  · 结构完整：依据文档类型分章节（情况/依据/分析/结论与建议），"
+        "段落成文，不要保留思考过程、调试命令、工具名、『✅』『📄』等界面符号；\n"
+        "  · 要素齐全：编制单位/人员、日期、数据时段、数据来源逐项写明；"
+        "执法文书还需当事人信息、违法事实、法律依据、处理意见、落款与日期位；\n"
+        "  · 边界规范：查不到的内容在正文相应位置标注并说明，不要把 [待确认] "
+        "标记原样留在正式文书里；数值严格照抄工具返回（见 8.10）；\n"
+        "  · 文件名即文档标题：filename 用规范中文全称加日期/文号，"
+        "不要用『文书落盘.md』『报告1.md』这类占位名，也不要用时间戳裸名。\n"
+        "对话里可以口语、可以分点；但一旦落盘成文档，就按上面的书面标准重写。\n"
+        "8.3.2 【交付文档只能走 save_document，禁止用 execute_code/shell 写文件】"
+        "产出给用户的文书/报告/简报，必须调用 save_document（它会落盘到工作区并在"
+        "界面渲染成果卡片）。不要用 execute_code 跑 open()/write()、也不要用 shell "
+        "重定向去写交付文档——那样写出的文件不进产物列表、用户看不到，等于白写。"
+        "execute_code 只用于计算、数据处理、验证，不作为交付物落盘通道。\n"
         # 对标 WorkBuddy：Skill 是按需加载的专业操作手册，不是全量塞提示词。
         "8.4 【专业任务先取手册】遇到执法办案类专项任务，先用 use_skill 取对应手册再动手：\n"
         "  · 违法构成要件拆解 → atom-constitutive\n"
@@ -3121,15 +3142,13 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                     save_full(content, _full_before_cut_early)
                 except Exception:  # noqa: BLE001
                     pass
-                # 完整稿落盘为持久 MD 产物（对齐 DSH），前端渲染可点产物卡片；
-                # 对话提到 DOCX/Word 时额外生成 .docx（WorkBuddy 文档路由对标）
-                _art = _save_answer_artifact(_full_before_cut_early, want_docx=_wants_docx(user_message))
-                if _art:
-                    _emit({"type": "artifact", "round": round_idx,
-                           "title": _art["title"], "name": _art["name"],
-                           "path": _art["path"], "size": _art["size"],
-                           "docx_path": _art.get("docx_path"),
-                           "docx_name": _art.get("docx_name")})
+                # 不再把超长回答自动 dump 成「产物」。
+                # WorkBuddy 穿透结论：产物必须是 Agent 显式写文件（save_document）
+                # 产出的独立文档对象，对话归对话、文档归文档。此前回答一过 500 字
+                # 截断就把原文（含调试命令、半截分析、口语）存成 md，文件名还是正文
+                # 前 24 字截断（如「Loop2第6步第1轮复测完成6PASSED1F」），右栏
+                # 堆满这类对话切片。完整稿仍由 save_full 留存，用户回「详细版」可
+                # 原样取回（见 full_replies），不会丢内容。
                 if stream_answer and content:
                     _push_delta(content, reset=True)
             # 质量门禁（早退路径同样生效）：条号/表格行数不一致 → 自动纠偏重写一次
@@ -3421,12 +3440,8 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
             save_full(content, _full_before_cut)  # 「详细版」承诺：完整稿落盘
         except Exception:  # noqa: BLE001
             pass
-        # 完整稿落盘为持久 MD 产物（对齐 DSH），前端渲染可点产物卡片
-        _art = _save_answer_artifact(_full_before_cut)
-        if _art:
-            _emit({"type": "artifact", "round": round_idx,
-                   "title": _art["title"], "name": _art["name"],
-                   "path": _art["path"], "size": _art["size"]})
+        # 不再自动 dump 成 md 产物（理由同早退路径）：产物只来自显式
+        # save_document；完整稿由 save_full 留存，回「详细版」可取回。
         if stream_answer and content:
             _push_delta(content, reset=True)
     # 质量门禁（对标 DSH guard）：条号/表格行数不一致 → 自动纠偏重写一次
@@ -4460,9 +4475,18 @@ async def _enforce_save(user_message, trace, content, messages, model, tools, cl
                         _push_delta(suffix)
                 break
     if not saved:
-        # 系统级确定性兜底：模型不肯做，直接把最终回答落盘
-        _fm = re.search(r"[\w\u4e00-\u9fff\-]+\.(md|txt)", user_message)
-        _filename = _fm.group(0) if _fm else "文书落盘.md"
+        # 系统级确定性兜底：模型不肯做，直接把最终回答落盘。
+        # 文件名不要再用「文书落盘.md」这种占位名（实测右栏里它毫无信息量）：
+        # 优先取文档首个 # 标题，其次从用户问题提炼，再退到「工作记录+日期」。
+        _fm = re.search(r"[\w一-鿿\-]+\.(md|txt)", user_message)
+        if _fm:
+            _filename = _fm.group(0)
+        else:
+            _h = re.search(r"^\s*#{1,3}\s*(.+?)\s*$", content or "", re.M)
+            _raw = (_h.group(1) if _h else user_message or "工作记录")
+            _raw = re.sub(r"[\\/:*?\"<>|\s]+", "", _raw)[:24] or "工作记录"
+            _date = datetime.datetime.now().strftime("%Y%m%d")
+            _filename = f"{_raw}_{_date}.md"
         _res2 = await _run_tool("save_document", {"filename": _filename, "content": content})
         try:
             _rj2 = json.loads(_res2) if _res2 else {}
