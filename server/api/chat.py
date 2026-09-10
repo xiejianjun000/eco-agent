@@ -519,6 +519,9 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default", wor
         "【政务平台/公开数据工具路由——直接调用】\n"
         "1. 数据图表：chart_render（line/bar/stacked_bar/pie）——趋势曲线/因子对比/占比\n"
         "必须调用它出卡片；函数清单里一定有这个工具，禁止声称'当前会话无 chart_render 工具'。\n"
+        "1.5 内联示意图：需要流程图/结构图/线框图/信息图（chart_render 覆盖不了的自定义布局）时，\n"
+        "先调 read_me 拿设计令牌与画布约束，再用 ```show_widget 围栏输出 SVG 或 HTML 片段，\n"
+        "前端会把围栏内容内联渲染进对话流；禁止手写无围栏的 HTML 贴正文、禁止声称无法绘图。\n"
         "2. 排污许可证公开信息（企业许可证/执行报告/整改公告/排放口）："
         "mcp__eco-pollution-permit-remote__*，工具名前缀 permit_pub_"
         "（如 permit_pub_search_licenses / permit_pub_license_detail）。\n"
@@ -1117,6 +1120,31 @@ def _codex_tools() -> list[dict]:
                                    )},
                     },
                     "required": ["type", "title"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "read_me",
+                "description": (
+                    "读取内联可视化设计令牌与约束（画布尺寸/配色/字号/安全规则），"
+                    "用于需要内联示意图的场景：流程图/结构图/线框图/信息图/自定义布局。"
+                    "拿到约束后用 ```show_widget 围栏输出 SVG 或 HTML 片段（widget_code），"
+                    "前端会内联渲染进对话流（不走文件、不是 chart_render 卡片）。"
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "modules": {
+                            "type": "string",
+                            "enum": ["diagram", "mockup", "interactive", "chart", "art"],
+                            "description": "可视化模块：diagram 流程图·结构图 / mockup 线框图 / "
+                                           "interactive 交互示意 / chart 自定义图表（结构化数据图优先 chart_render）"
+                                           " / art 示意图·信息图",
+                        },
+                    },
+                    "required": ["modules"],
                 },
             },
         },
@@ -1735,6 +1763,8 @@ _READONLY_TOOLS = frozenset({
     "tool_search", "defer_execute_tool",
     # 持久化任务查询（create/update 含 create/update 动词，经 MCP 写动词判定为写）
     "task_get", "task_list",
+    # 内联可视化设计令牌（纯只读，返回约束不产出）
+    "read_me",
 })
 
 # 写入/执行类：只读模式下必须拿不到
@@ -1912,6 +1942,51 @@ def _web_fetch(url: str, max_chars: int = 3000) -> str:
         }, ensure_ascii=False)
     except Exception as e:  # noqa: BLE001
         return json.dumps({"error": f"抓取失败: {e}"}, ensure_ascii=False)
+
+
+def _readme_design_tokens(modules: str) -> str:
+    """返回内联可视化设计令牌与约束（对标 WorkBuddy read_me）。
+
+    只给约束与规则，不生成图——图的产出由模型用 ```show_widget 围栏输出
+    widget_code（SVG/HTML），前端 WidgetView 内联渲染。画布/配色与前端一致。
+    """
+    modules = (modules or "diagram").strip().lower()
+    known = {"diagram", "mockup", "interactive", "chart", "art"}
+    if modules not in known:
+        modules = "diagram"
+    return json.dumps({
+        "ok": True,
+        "render_channel": "show_widget",
+        "usage": (
+            "在正文之外，用 ```show_widget 围栏输出 widget_code（SVG 或 HTML 片段），"
+            "前端会把围栏内容内联渲染进对话流；围栏里只放代码，不要在围栏内写解释文字。"
+        ),
+        "modules_requested": modules,
+        "canvas": {"viewBox": "0 0 680 420", "max_width_px": 680, "height_hint": 200},
+        "palette": {
+            "canvas": "#141414", "panel": "#1a1b1e", "border": "#2a2c31",
+            "brand": "#3dd9b6", "accent": "#4da3e0", "danger": "#f78d8e",
+            "text_primary": "rgba(255,255,255,.92)", "text_secondary": "rgba(255,255,255,.65)",
+            "text_tertiary": "rgba(255,255,255,.45)",
+        },
+        "typography": {"font_size": 13, "title_size": 16, "line_height": 1.5},
+        "module_hints": {
+            "diagram": "流程图/结构图/关系图：SVG 用 rect/path/text/line，层级与箭头清晰，节点文字 ≤ 12 字",
+            "mockup": "界面线框图：HTML + 内联样式，只画布局骨架，不写真实业务数据",
+            "interactive": "交互示意：HTML 静态示意即可（禁止 <script>），用注释标注交互点",
+            "chart": "自定义图表：结构化数据趋势/对比/占比优先用 chart_render；"
+                     "仅当需要 chart_render 覆盖不了的自定义布局时才用 SVG",
+            "art": "示意图/信息图：SVG 或 HTML，突出关键结论而非堆砌细节",
+        },
+        "safety_rules": [
+            "SVG 必须带 viewBox='0 0 680 <h>'，只用基本图形元素（rect/circle/path/text/line/polygon）",
+            "禁止 <script>、事件处理器（onclick 等）、外部资源（<img src=http>、@import、fetch）",
+            "HTML 只用内联样式，禁止 <script>、外部链接资源",
+            "正文用「图示如下」或「📊」轻量提及即可，不要重复图内文字",
+            "一个围栏只放一个 widget；多个图用多个围栏",
+        ],
+        "note": "拿到约束后直接输出 show_widget 围栏，不要再问用户确认。",
+    }, ensure_ascii=False)
 
 
 async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str:
@@ -2261,6 +2336,10 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             return json.dumps({"ok": ok, "error": "" if ok else "任务不存在"}, ensure_ascii=False)
         if name == "cron_run":
             return json.dumps(scheduler.run_job(str(arguments.get("job_id", ""))), ensure_ascii=False)
+    if name == "read_me":
+        # 内联可视化设计令牌（对标 WorkBuddy read_me：返回画布/配色/字号约束，
+        # 引导模型用 ```show_widget 围栏输出内联 SVG/HTML，前端 WidgetView 渲染）
+        return _readme_design_tokens(str(arguments.get("modules", "diagram")))
     if name == "chart_render":
         # 离线图表卡片：此处只校验参数并返回短结果；
         # 完整 HTML 由工具事件发射处（_emit tool 之后）用同一参数确定性重生成，
