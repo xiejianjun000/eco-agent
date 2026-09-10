@@ -2530,7 +2530,21 @@ def _maybe_swarm_reply(message: str, on_event=None):
     except Exception:  # noqa: BLE001 — 协作失败回落单循环
         logger.warning("role swarm run failed", exc_info=True)
         return None
-    reply = result.get("synthesis") or swarm.format_result(result)
+    reply = result.get("synthesis") or ""
+    # 协作整体不可用时必须回落单循环（那里有瞬时重试 + provider failover +
+    # _enforce_save 落盘兜底），不能把失败标记当回复。两种形态都要拦：
+    #   ① synthesis 直接是 "[LLM unavailable...]"/"[eco-server...]" 占位串；
+    #   ② 三角色贡献与合成全空（模型名配错时 role_swarm 把占位串记进 errors、
+    #      贡献置空，format_result 只剩「（无产出）（合成失败）」）。
+    _contrib_blank = all(not (v or "").strip()
+                         for v in (result.get("contributions") or {}).values())
+    _unavailable = _is_llm_unavailable_text(reply) or (
+        not reply and (bool(result.get("errors")) or _contrib_blank))
+    if _unavailable:
+        logger.warning("role swarm unavailable, fallback to codex loop: errors=%s",
+                       result.get("errors"))
+        return None
+    reply = reply or swarm.format_result(result)
     reply = _strip_swarm_jargon(reply)
     if result.get("errors"):
         trace.append({"type": "correction", "round": 1,
@@ -2579,6 +2593,26 @@ def _sys_claim_trigger(content: str) -> bool:
     if len(t) < 8:
         return False
     return bool(_SYS_STATE_RE.search(t) and _SYS_OBJECT_RE.search(t))
+
+
+def _is_llm_unavailable_text(text) -> bool:
+    """识别 LLM 全后端失败时的占位串（complete() 在所有 backend 失败后返回的
+    choices[0].message.content）。这类字符串是**错误标记**，不是有效回答：
+
+        [LLM unavailable: all backends failed]
+        [LLM unavailable: disabled by ECO_LLM_DISABLE]
+        [LLM unavailable: Run: eco setup]
+
+    真实事故：RoleSwarm 三个子 Agent 与总管合成都拿到这个占位串，
+    `result.get("synthesis") or format_result(...)` 把它当 truthy 的正常回复，
+    于是既没有回落单循环（那里有重试/failover/落盘兜底），也没有产出文档，
+    用户要「生成 md 文档并保存」却只收到 38 字错误。必须在各收口点识别并按失败处理。"""
+    if not isinstance(text, str):
+        return False
+    s = text.strip()
+    if not s:
+        return False
+    return s.startswith("[LLM unavailable") or s.startswith("[eco-server]")
 
 
 def _llm_error_reply(err: str) -> str:
@@ -4430,16 +4464,28 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
     return StreamingResponse(gen(), media_type="text/event-stream")
 
 
+_SAVE_REQUEST_RE = re.compile(
+    r"落盘|保存|存(档|文件|成|一下)?|生成.*(文书|清单|报告|简报|文档|材料|docx?)"
+    r"|写(成|一?份)?.*(文书|清单|报告|简报|文档|材料|docx?)"
+    r"|整理成.*(文书|清单|报告|简报|文档|word)|输出.*\.(md|docx?)"
+    r"|save_document|\.md|\.docx?|word\s*文档|word文档")
+
+
 async def _enforce_save(user_message, trace, content, messages, model, tools, client,
                         stream_answer, _emit, _push_delta, _run_tool, time, json, re):
     """落盘纪律强制兜底（DSH 确定性执行）：用户要求落盘但轨迹无 save_document →
     ① 追加一轮让模型补做；② 模型仍不做则系统直接把最终回答落盘。"""
-    save_req_re = re.compile(
-        r"落盘|保存(文件|文书|清单|报告)?|生成(文书|清单|报告)|写(清单|文书)|存(档|文件)"
-        r"|save_document|\.md|\.txt")
+    save_req_re = _SAVE_REQUEST_RE
     if not save_req_re.search(user_message or ""):
         return content
     if any(e.get("type") == "tool" and e.get("name") == "save_document" for e in trace):
+        return content
+    # content 本身是 LLM 失败占位串时绝不落盘——否则会生成一个正文只有
+    # 「[LLM unavailable...]」的假文档，比没有产物更糟（用户以为拿到了文书）。
+    # 此时如实返回，由前端展示失败提示，不制造「成功落盘」的假象。
+    if _is_llm_unavailable_text(content):
+        _emit({"type": "correction", "round": 0,
+               "note": "模型不可用，无法落盘（未生成假文档）"})
         return content
     _emit({"type": "correction", "round": 0, "note": "落盘纪律强制补做"})
     messages.append({"role": "assistant", "content": content})
@@ -4453,7 +4499,13 @@ async def _enforce_save(user_message, trace, content, messages, model, tools, cl
     except Exception as e:  # noqa: BLE001
         msg2, err2 = None, str(e)
     saved = False
-    if err2 is None and msg2 is not None:
+    # 补做轮若拿到 LLM 不可用占位串，则没有有效 tool_calls 可用——
+    # 直接交系统兜底（content 有效时）或如实放弃（content 也是错误串时），
+    # 绝不把占位串当落盘内容。
+    _retry_usable = (
+        err2 is None and msg2 is not None
+        and not _is_llm_unavailable_text(msg2.get("content")))
+    if _retry_usable:
         for _tc in msg2.get("tool_calls") or []:
             fn = _tc.get("function", {})
             if fn.get("name") == "save_document":
@@ -4474,7 +4526,7 @@ async def _enforce_save(user_message, trace, content, messages, model, tools, cl
                     if stream_answer:
                         _push_delta(suffix)
                 break
-    if not saved:
+    if not saved and not _is_llm_unavailable_text(content):
         # 系统级确定性兜底：模型不肯做，直接把最终回答落盘。
         # 文件名不要再用「文书落盘.md」这种占位名（实测右栏里它毫无信息量）：
         # 优先取文档首个 # 标题，其次从用户问题提炼，再退到「工作记录+日期」。

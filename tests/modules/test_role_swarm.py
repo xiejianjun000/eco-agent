@@ -121,3 +121,40 @@ class TestSwarmRun:
         assert r["errors"].get("law") == "boom"
         assert r["contributions"]["law"] == ""
         assert "[合成]" in r["synthesis"]  # 其余角色不受影响
+
+
+class TestUnavailablePlaceholder:
+    """LLM 全后端失败时返回 '[LLM unavailable...]' 占位串，必须被当失败，
+    而不是混进贡献段/合成结果（真实事故：要文档只收到 38 字错误）。"""
+
+    def test_role_placeholder_raises_and_isolated(self, tmp_path):
+        class PlaceholderClient(MockClient):
+            def chat(self, messages, model="", stream=False, temperature=0.7):
+                # 法规角色拿到全后端失败占位串
+                if "法规核验专家" in messages[0]["content"]:
+                    return {"choices": [{"message": {"content":
+                        "[LLM unavailable: all backends failed]"}}]}
+                return super().chat(messages, model=model)
+
+        sw = RoleSwarm(client=PlaceholderClient(),
+                       audit_chain=PromptAuditChain(tmp_path / "a.jsonl"))
+        r = sw.run("对合力砖厂做一次全套大气检查")
+        # 占位串被识别为该角色失败：贡献段为空、errors 有记录
+        assert r["contributions"]["law"] == ""
+        assert "LLM 不可用" in r["errors"].get("law", "")
+        # 其余角色与合成不受影响
+        assert "[合成]" in r["synthesis"]
+
+    def test_synthesis_placeholder_cleared(self, tmp_path):
+        class SynthPlaceholder(MockClient):
+            def chat(self, messages, model="", stream=False, temperature=0.7):
+                if "总管" in messages[0]["content"]:
+                    return {"choices": [{"message": {"content":
+                        "[LLM unavailable: all backends failed]"}}]}
+                return super().chat(messages, model=model)
+
+        sw = RoleSwarm(client=SynthPlaceholder(),
+                       audit_chain=PromptAuditChain(tmp_path / "a.jsonl"))
+        r = sw.run("对合力砖厂做一次全套大气检查")
+        assert r["synthesis"] == ""
+        assert "synthesis" in r["errors"]

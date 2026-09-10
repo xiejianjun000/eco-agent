@@ -152,6 +152,11 @@ class RoleSwarm:
         else:  # 测试 mock client 用 complete
             text = self.client.complete(prompt, system=system, max_tokens=cfg["max_tokens"])
         text = text.strip()
+        # LLM 全后端失败时返回的是占位串而非有效产出（complete() 的
+        # "[LLM unavailable: all backends failed]" 等）。把它识别为失败：
+        # 抛错由上层记 errors，避免占位串混进贡献段、再被 synthesis 当正常内容。
+        if text.startswith("[LLM unavailable") or text.startswith("[eco-server]"):
+            raise RuntimeError(f"{role} LLM 不可用: {text[:80]}")
         self.audit.append(
             source=f"swarm:{role}",
             task_id=task_id,
@@ -252,6 +257,11 @@ class RoleSwarm:
             synthesis = (resp.get("choices", [{}])[0].get("message", {}).get("content", "") or "").strip()
         else:
             synthesis = self.client.complete(f"任务：{task}\n\n{synth_input}", system=SYNTH_BRIEF, max_tokens=1200).strip()
+        # 总管合成也可能只拿到 LLM 不可用占位串：记为失败并清空，
+        # 让上层（_maybe_swarm_reply）据此回落单循环，而不是返回错误标记。
+        if synthesis.startswith("[LLM unavailable") or synthesis.startswith("[eco-server]"):
+            errors["synthesis"] = synthesis[:120]
+            synthesis = ""
         self.audit.append(
             source="swarm:synthesis", task_id=task_id, content=f"总管合成: {synthesis[:700]}", phase="synthesis", accepted=True
         )
