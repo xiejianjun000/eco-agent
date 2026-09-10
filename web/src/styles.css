@@ -78,12 +78,13 @@
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 暗色主题（对齐 DSH body[data-ds-dark-theme] 别名层） */
+/* 暗色主题（表面对齐 WorkBuddy conversation-render 深色：画布 #141414 / 面板 #1a1b1e
+   / 次级 #242629·#242424 / 边框·内嵌 #2a2c31——与对话台 --cr-* 同体系，消除半深半浅） */
 html[data-theme='dark'] {
-  --bg: var(--ds-n-950);
-  --panel: var(--ds-n-875);
-  --line: rgba(255, 255, 255, 0.1);
-  --fill: var(--ds-n-800);
+  --bg: #141414;
+  --panel: #1a1b1e;
+  --line: #2a2c31;
+  --fill: #242629;
   --t-main: #F9FAFB;
   --t-sub: var(--ds-n-400);
   --t-aux: var(--ds-n-700);
@@ -93,20 +94,20 @@ html[data-theme='dark'] {
      两个主题下「极弱」这一层的视觉权重才一致。 */
   --t-faint: #4A4D50;
   --t-invert: var(--ds-n-800);
-  /* 弱底 / 悬停 / 内嵌：暗色用白色低透明度叠加，跟随 panel 深度自适应 */
-  --bg-soft: rgba(255, 255, 255, 0.04);
+  /* 弱底 / 悬停 / 内嵌：对齐 cr-bg-tertiary / cr-bg-input-inset 深度 */
+  --bg-soft: #242424;
   --bg-hover: rgba(255, 255, 255, 0.06);
-  --bg-inset: rgba(255, 255, 255, 0.05);
+  --bg-inset: #2a2c31;
   --terra: var(--ds-brand-450);
   --terra-dark: var(--ds-brand);
   --terra-soft: rgba(86, 150, 254, 0.16);
-  --nav: var(--ds-n-900);
+  --nav: #1a1b1e;
   --nav-text: var(--ds-n-400);
   --nav-text-dim: var(--ds-n-700);
   --nav-hover: rgba(255, 255, 255, 0.06);
   --nav-active-bg: rgba(255, 255, 255, 0.08);
   --nav-active-accent: var(--ds-brand-450);
-  --nav-line: rgba(255, 255, 255, 0.08);
+  --nav-line: #2a2c31;
   --nav-input-bg: rgba(255, 255, 255, 0.06);
   --nav-btn-bg: rgba(255, 255, 255, 0.07);
   --nav-btn-border: rgba(255, 255, 255, 0.12);
