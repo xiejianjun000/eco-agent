@@ -6,7 +6,8 @@
   · 状态机 CREATED → in_progress → COMPLETED / paused / canceled
   · 调度任务另存 scheduled_tasks.json + .lock（本模块只管用户任务，不管调度）
 
-存储：~/.eco/tasks/items/<id>.json，一任务一文件、tmp→rename 原子落盘。
+存储：<eco_dir>/tasks/items/<id>.json（eco_dir 走 eco_paths：~/.eco 可写才用，
+沙箱/受限环境自动回退到 <repo>/.eco），一任务一文件、tmp→rename 原子落盘。
 与既有 task_control.py（mission/commander 运行控制面）分离：那是子进程 steer/stop，
 这是 LLM 可直接调用的工作项 CRUD。
 """
@@ -21,7 +22,11 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-BASE = Path(os.environ.get("ECO_TASK_ITEMS_DIR", "~/.eco/tasks/items")).expanduser()
+from agent_core.eco_paths import eco_dir as _eco_dir
+
+# 显式 ECO_TASK_ITEMS_DIR 优先（测试/隔离环境）；否则走统一可写目录（沙箱回退）
+_BASE_OVERRIDE = os.environ.get("ECO_TASK_ITEMS_DIR")
+BASE = Path(_BASE_OVERRIDE).expanduser() if _BASE_OVERRIDE else (_eco_dir() / "tasks" / "items")
 
 # 合法状态机（对标 TASK_CREATED / in_progress / COMPLETED / paused / canceled）
 STATUS_CREATED = "created"
