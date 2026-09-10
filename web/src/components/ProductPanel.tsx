@@ -48,8 +48,10 @@ const STORAGE_KEY = 'eco-product-panel-w';
 
 function fileIcon(name: string): string {
   const r = rendererFor(name);
-  if (r === 'html') return 'code';
+  if (r === 'html') return 'link';
   if (r === 'image') return 'image';
+  if (r === 'slides') return 'slides';
+  if (r === 'audio' || r === 'video') return 'mic';
   if (r === 'pdf' || r === 'docx') return 'file-text';
   if (r === 'sheet') return 'chart';
   if (r === 'text') return 'file-text';
@@ -58,10 +60,13 @@ function fileIcon(name: string): string {
 
 export default function ProductPanel({
   products,
+  sources,
   open,
   onClose,
 }: {
   products: ProductItem[];
+  /** web 搜索来源聚合（对标 WorkBuddy DetailPanel sources 视图） */
+  sources?: { title: string; url: string; engine?: string; query?: string }[];
   open: boolean;
   onClose: () => void;
 }) {
@@ -213,6 +218,27 @@ export default function ProductPanel({
               )}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* 来源聚合（对标 WorkBuddy DetailPanel sources）：列表态下常驻产物下方 */}
+      {!selected && (sources || []).length > 0 && (
+        <div className="product-sources">
+          <div className="product-sources-title">引用来源 · {sources!.length}</div>
+          {sources!.map((s) => {
+            let host = s.url;
+            try { host = new URL(s.url).hostname.replace(/^www\./, ''); } catch { /* keep */ }
+            return (
+              <a key={s.url} className="product-source-item" href={s.url}
+                 target="_blank" rel="noreferrer" title={s.url}>
+                <span className="product-source-icon"><Icon name="link" size={13} /></span>
+                <span className="product-source-body">
+                  <span className="product-source-title">{s.title}</span>
+                  <span className="product-source-host">{host}</span>
+                </span>
+              </a>
+            );
+          })}
         </div>
       )}
     </aside>

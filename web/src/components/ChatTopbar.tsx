@@ -236,12 +236,83 @@ export function UserPromptListButton({
   );
 }
 
+/** 通道标签（对标 WorkBuddy ClawChannelTags：顶栏实时反映连接器连接状态）。
+ *  轮询 /connectors，绿点=在线数，点开列出每个 MCP 连接器与其工具数/错误。 */
+export function ConnectorTags({ pollMs = 15000 }: { pollMs?: number }) {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<{ count: number; connected: number; connectors: Array<{
+    name: string; connected: boolean; tool_count: number; last_error: string }> } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const load = useCallback(() => {
+    fetch('/api/v1/connectors')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setData(d))
+      .catch(() => { /* 顶栏状态失败不打扰 */ });
+  }, []);
+
+  useEffect(() => {
+    load();
+    const id = window.setInterval(load, pollMs);
+    return () => window.clearInterval(id);
+  }, [load, pollMs]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const total = data?.count ?? 0;
+  const on = data?.connected ?? 0;
+  const allUp = total > 0 && on === total;
+  return (
+    <div className="topbar-item" ref={rootRef}>
+      <button
+        className={`topbar-btn connector-tag${open ? ' active' : ''}`}
+        onClick={() => setOpen((v) => !v)}
+        title={data ? `MCP 连接器 ${on}/${total} 在线（点击查看）` : 'MCP 连接器状态加载中…'}
+        aria-label="MCP 连接器状态"
+      >
+        <span className={`connector-dot${allUp ? ' up' : on > 0 ? ' partial' : ' down'}`} />
+        <span className="connector-label">连接器 {on}/{total}</span>
+      </button>
+      {open && (
+        <div className="connector-pop">
+          <div className="connector-pop-head">MCP 连接器 · {on}/{total} 在线</div>
+          <div className="connector-pop-body">
+            {(data?.connectors || []).map((c) => (
+              <div key={c.name} className={`connector-row${c.connected ? ' on' : ' off'}`}>
+                <span className={`connector-dot ${c.connected ? 'up' : 'down'}`} />
+                <span className="connector-name">{c.name}</span>
+                <span className="connector-meta">
+                  {c.connected ? `${c.tool_count} 工具` : (c.last_error || '未连接').slice(0, 18)}
+                </span>
+              </div>
+            ))}
+            {(!data?.connectors || data.connectors.length === 0) && (
+              <div className="connector-empty">暂无连接器</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const SearchIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
-);
-const ListIcon = () => (
+);const ListIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
     <circle cx="3.5" cy="6" r="1.2" fill="currentColor" /><circle cx="3.5" cy="12" r="1.2" fill="currentColor" /><circle cx="3.5" cy="18" r="1.2" fill="currentColor" />

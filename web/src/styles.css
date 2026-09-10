@@ -1876,3 +1876,43 @@ mark.chat-search-hit-active { background: #FE9D2E; color: #fff; }
 .product-toggle:hover { color: var(--t-main); }
 .product-toggle.active { color: var(--terra); }
 .product-toggle-label { font-variant-numeric: tabular-nums; }
+
+/* P3 右栏：来源聚合 + 音视频预览（对标 WorkBuddy DetailPanel sources / media preview） */
+.product-sources { border-top: 1px solid var(--line); padding: 10px 12px; max-height: 38%; overflow:auto; }
+.product-sources-title { font-size: 11px; color: var(--t-faint); letter-spacing:.04em;
+  text-transform: uppercase; margin-bottom: 7px; }
+.product-source-item { display:flex; gap:8px; align-items:flex-start; padding:6px 8px;
+  border-radius:8px; text-decoration:none; }
+.product-source-item:hover { background:var(--fill); }
+.product-source-icon { color:var(--terra); margin-top:2px; flex:none; }
+.product-source-body { display:flex; flex-direction:column; min-width:0; gap:1px; }
+.product-source-title { font-size:12px; color:var(--t-main); line-height:1.4;
+  overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2;
+  -webkit-box-orient:vertical; }
+.product-source-host { font-size:10.5px; color:var(--t-faint);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.doc-viewer-media { padding:18px 14px; display:flex; flex-direction:column; gap:12px; height:100%; }
+.doc-viewer-media audio, .doc-viewer-media video { border-radius:8px; }
+
+/* P3 顶栏 MCP 通道状态（对标 WorkBuddy ClawChannelTags） */
+.connector-tag { display:inline-flex; align-items:center; gap:6px; }
+.connector-label { font-size:12px; color:var(--t-sub); }
+.connector-dot { width:8px; height:8px; border-radius:50%; flex:none; background:var(--t-faint); }
+.connector-dot.up { background:var(--olive); box-shadow:0 0 0 2px color-mix(in srgb,var(--olive) 18%,transparent); }
+.connector-dot.partial { background:var(--terra); box-shadow:0 0 0 2px color-mix(in srgb,var(--terra) 18%,transparent); }
+.connector-dot.down { background:#D9534F; }
+.connector-pop { position:absolute; top:calc(100% + 8px); right:0; width:300px; z-index:60;
+  background:var(--bg-elev,var(--bg-soft)); border:1px solid var(--line); border-radius:12px;
+  box-shadow:0 8px 28px rgba(0,0,0,.16); overflow:hidden; }
+.connector-pop-head { padding:9px 12px; font-size:12px; font-weight:600; color:var(--t-main);
+  border-bottom:1px solid var(--line); }
+.connector-pop-body { max-height:340px; overflow:auto; padding:4px; }
+.connector-row { display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px;
+  font-size:12px; }
+.connector-row:hover { background:var(--fill); }
+.connector-row.off { opacity:.62; }
+.connector-row .connector-name { flex:1; color:var(--t-main); overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap; }
+.connector-meta { font-size:11px; color:var(--t-faint); flex:none; max-width:120px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.connector-empty { padding:16px; text-align:center; color:var(--t-faint); font-size:12px; }

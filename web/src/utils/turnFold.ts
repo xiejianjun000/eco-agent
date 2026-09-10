@@ -727,3 +727,56 @@ export function fmtSize(n: number): string {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
+
+export interface WebSource {
+  title: string;
+  url: string;
+  engine?: string;
+  query?: string;
+}
+
+/**
+ * 来源聚合（对标 WorkBuddy DetailPanel 的 sources 视图：web 搜索来源聚合）。
+ * 从 web_search 工具结果里抽 {title,url}；result_preview 只有 200 字、常被截断，
+ * 所以既尝试 JSON.parse，也用正则从残片抠 URL，绝不臆造（抠不到就不收录）。
+ */
+export function extractSources(
+  trace: { type?: string; name?: string; args?: unknown; result_preview?: string }[],
+): WebSource[] {
+  const out: WebSource[] = [];
+  const seen = new Set<string>();
+  const push = (title: string | undefined, url: string | undefined, engine?: string, query?: string) => {
+    const u = (url || '').trim();
+    if (!/^https?:\/\//i.test(u) || seen.has(u)) return;
+    seen.add(u);
+    let host = '';
+    try { host = new URL(u).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
+    out.push({ title: (title || '').trim() || host || u, url: u, engine, query });
+  };
+  for (const t of trace) {
+    if (t.type !== 'tool' || t.name !== 'web_search') continue;
+    const raw = t.result_preview || '';
+    const query = (t.args as Record<string, unknown> | undefined)?.query;
+    const q = typeof query === 'string' ? query : undefined;
+    let parsed: Record<string, unknown> | null = null;
+    try { parsed = JSON.parse(raw) as Record<string, unknown>; } catch { parsed = null; }
+    if (parsed && Array.isArray(parsed.results)) {
+      const engine = typeof parsed.engine === 'string' ? parsed.engine : undefined;
+      for (const r of parsed.results as Array<Record<string, unknown>>) {
+        push(typeof r.title === 'string' ? r.title : undefined,
+             typeof r.url === 'string' ? r.url : (typeof r.link === 'string' ? r.link : undefined),
+             engine, q);
+      }
+      continue;
+    }
+    // 截断残片：正则抠 {"title":"...","url":"..."}；URL 可能在闭合引号前被砍断
+    // （result_preview 200 字上限），故允许匹配到串尾。
+    const re = /"title"\s*:\s*"([^"]{1,120})"[\s\S]{0,160}?"(?:url|link)"\s*:\s*"(https?:[^"]*)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(raw))) if (m[2]) push(m[1], m[2], undefined, q);
+    // 只有裸 URL 也收录（标题退化为域名），同样允许无闭合引号的截断尾部
+    const urlRe = /"(?:url|link)"\s*:\s*"(https?:[^"]*)/g;
+    while ((m = urlRe.exec(raw))) if (m[1]) push(undefined, m[1], undefined, q);
+  }
+  return out.slice(0, 12);
+}

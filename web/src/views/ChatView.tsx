@@ -7,10 +7,10 @@ import Icon, { type IconName } from '../components/Icon';
 import DocDrawer from '../components/DocDrawer';
 import ProductPanel, { MAX_PRODUCT_ITEMS, HIDDEN_PRODUCT_PATH_RE, type ProductItem } from '../components/ProductPanel';
 import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../components/DocViewer';
-import { ChatSearchButton, UserPromptListButton } from '../components/ChatTopbar';
+import { ChatSearchButton, ConnectorTags, UserPromptListButton } from '../components/ChatTopbar';
 import CompactDivider, { isCompactContent, inferCompactType } from '../components/CompactDivider';
 import { buildAtom, mcpObject, selectSummary, renderSummary, type AtomStatus } from '../utils/metaFold';
-import { buildBeats, extractPresented, fmtSize, stripToolNames, type BeatItem } from '../utils/turnFold';
+import { buildBeats, extractPresented, extractSources, fmtSize, stripToolNames, type BeatItem, type WebSource } from '../utils/turnFold';
 import { resolveToolDetail } from '../utils/toolViews';
 import { ToolDetailPanel } from '../components/ToolDetailPanel';
 
@@ -1223,6 +1223,14 @@ export default function ChatView({
       .slice(0, MAX_PRODUCT_ITEMS);
   })();
 
+  /** 来源聚合（对标 WorkBuddy DetailPanel sources）：当前会话 web_search 引用的网页。 */
+  const sessionSources: WebSource[] = React.useMemo(() => {
+    const all = messages.filter((m) => m.role === 'assistant')
+      .flatMap((m) => extractSources((m.trace ?? []) as never[]));
+    const seen = new Set<string>();
+    return all.filter((s) => (seen.has(s.url) ? false : (seen.add(s.url), true)));
+  }, [messages]);
+
   /** 新会话欢迎态：还没有任何用户消息时显示居中的 hero 主页（DSH 对标） */
   const fresh = messages.length === 0;
 
@@ -1553,6 +1561,7 @@ export default function ChatView({
           ))}
           {/* 右上角功能区（WorkBuddy workbuddy-topbar 对标）：对话内搜索 + 提问跳转 */}
           <div className="topbar-actions">
+            <ConnectorTags />
             <button
               className={`tb-btn product-toggle${productOpen ? ' active' : ''}`}
               title={productOpen ? '收起右栏产物面板' : '展开右栏产物面板'}
@@ -1981,6 +1990,7 @@ export default function ChatView({
       {/* 常驻右栏产物面板：flex 子项，占满 chat-wrap 高度 */}
       <ProductPanel
         products={allMdArtifacts}
+        sources={sessionSources}
         open={productOpen}
         onClose={() => toggleProductPanel()}
       />

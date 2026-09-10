@@ -53,14 +53,19 @@ export function isFeishuUrl(raw: string): boolean {
   } catch { return false; }
 }
 
-/** 扩展名 → 渲染器（对标 WorkBuddy TENCENT_DOCS_ENGINE_FILE_TYPES 的分类口径） */
-export function rendererFor(name: string): 'docx' | 'pdf' | 'sheet' | 'html' | 'image' | 'text' | 'none' {
+/** 扩展名 → 渲染器（对标 WorkBuddy TENCENT_DOCS_ENGINE_FILE_TYPES 的分类口径 +
+ *  image/audio/video/pdf/docx/sheet/pptx-preview-component） */
+export function rendererFor(name: string):
+  'docx' | 'pdf' | 'sheet' | 'slides' | 'html' | 'image' | 'audio' | 'video' | 'text' | 'none' {
   const ext = (name.match(/\.[^.]+$/)?.[0] ?? '').toLowerCase();
   if (['.docx', '.doc', '.dotx', '.docm'].includes(ext)) return 'docx';
   if (ext === '.pdf') return 'pdf';
   if (['.xlsx', '.xls', '.csv', '.xlsm'].includes(ext)) return 'sheet';
+  if (['.pptx', '.ppt', '.pptm'].includes(ext)) return 'slides';
   if (['.html', '.htm'].includes(ext)) return 'html';
   if (['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'].includes(ext)) return 'image';
+  if (['.mp3', '.wav', '.m4a', '.aac', '.ogg', '.flac'].includes(ext)) return 'audio';
+  if (['.mp4', '.webm', '.mov', '.m4v', '.ogv'].includes(ext)) return 'video';
   if (['.md', '.txt', '.json', '.log', '.py', '.ts', '.js'].includes(ext)) return 'text';
   return 'none';
 }
@@ -110,7 +115,9 @@ export default function DocViewer({ source }: { source: DocSource }) {
     if (source.kind !== 'local') { setStatus('ok'); return; }
 
     const kind = rendererFor(source.name);
-    if (kind === 'none' || kind === 'image' || kind === 'text' || kind === 'html') {
+    // slides/audio/video/image/text/html 走 JSX 原生标签或兜底，无需在此取二进制
+    if (kind === 'none' || kind === 'image' || kind === 'text' || kind === 'html'
+        || kind === 'audio' || kind === 'video' || kind === 'slides') {
       setStatus('ok');
       return;
     }
@@ -235,6 +242,53 @@ export default function DocViewer({ source }: { source: DocSource }) {
 
   if (kind === 'image') {
     return <div className="doc-viewer"><img className="doc-viewer-img" src={fileUrl(source.name)} alt={source.name} /></div>;
+  }
+  // 音频（对标 audio-preview-component）：原生播放器，零依赖
+  if (kind === 'audio') {
+    return (
+      <div className="doc-viewer doc-viewer--media">
+        <div className="doc-viewer-bar">
+          <span className="doc-viewer-src">{source.name}</span>
+          <a className="doc-viewer-open" href={fileUrl(source.name)} download>下载 ↓</a>
+        </div>
+        <div className="doc-viewer-media">
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <audio controls preload="metadata" src={fileUrl(source.name)} style={{ width: '100%' }} />
+        </div>
+      </div>
+    );
+  }
+  // 视频（对标 video-preview-component）
+  if (kind === 'video') {
+    return (
+      <div className="doc-viewer doc-viewer--media">
+        <div className="doc-viewer-bar">
+          <span className="doc-viewer-src">{source.name}</span>
+          <a className="doc-viewer-open" href={fileUrl(source.name)} download>下载 ↓</a>
+        </div>
+        <div className="doc-viewer-media">
+          <video controls preload="metadata" src={fileUrl(source.name)}
+                 style={{ width: '100%', maxHeight: '72vh', background: '#000' }} />
+        </div>
+      </div>
+    );
+  }
+  // PPT：浏览器无可靠纯前端 OOXML 渲染库（对标 pptx-preview-component 是桌面原生控件）。
+  // 不伪装成已渲染，明确给下载 + 提示（诚实兜底，反「假成功」）。
+  if (kind === 'slides') {
+    return (
+      <div className="doc-viewer doc-viewer--unsupported">
+        <div className="empty">
+          演示文稿（{source.name.match(/\.[^.]+$/)?.[0]}）暂不支持网页内直接播放
+          <div style={{ marginTop: 6, fontSize: 12, opacity: .7 }}>
+            eco 已登记该 PPT 产物；桌面端用原生 PPTX 控件渲染，Web 形态请下载查看
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <a className="doc-viewer-open" href={fileUrl(source.name)} download>下载演示文稿 ↓</a>
+          </div>
+        </div>
+      </div>
+    );
   }
   if (kind === 'html') {
     return (
