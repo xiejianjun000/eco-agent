@@ -1733,6 +1733,8 @@ _READONLY_TOOLS = frozenset({
     "calculate_carbon_emission",
     # 连接器延迟代理（外壳只读；defer_execute_tool 内部对真实写工具二次拦截）
     "tool_search", "defer_execute_tool",
+    # 持久化任务查询（create/update 含 create/update 动词，经 MCP 写动词判定为写）
+    "task_get", "task_list",
 })
 
 # 写入/执行类：只读模式下必须拿不到
@@ -1741,6 +1743,7 @@ _MUTATING_TOOLS = frozenset({
     "save_document", "generate_pptx", "chart_render", "tdocs_upload_html",
     "present_files",
     "use_skill",
+    "task_create", "task_update",
 })
 
 
@@ -1799,12 +1802,27 @@ def _deferred_tool_defs() -> list[dict]:
         return []
 
 
+def _task_tool_defs() -> list[dict]:
+    """持久化任务工具（对标 WorkBuddy TaskCreate/Update/Get/List）。task_get/list 只读，
+    create/update 为 L2 写工具，进全能力清单。"""
+    try:
+        from agent_core.task_tools import register_task_tools
+        from agent_core.tools_registry import ALL_TOOL_DEFS
+
+        register_task_tools()
+        want = ("task_create", "task_update", "task_get", "task_list")
+        by_name = {d["function"]["name"]: d for d in ALL_TOOL_DEFS}
+        return [by_name[n] for n in want if n in by_name]
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def _chat_tool_list(readonly: bool = False) -> list[dict]:
     """聊天通道工具清单（定义已瘦身，控制 prompt 体量）。
 
     readonly=True 时只给只读工具，对标 WorkBuddy 的 ask 模式。
     """
-    defs = _codex_tools() + _mcp_tool_defs() + _deferred_tool_defs()
+    defs = _codex_tools() + _mcp_tool_defs() + _deferred_tool_defs() + _task_tool_defs()
     if readonly:
         defs = [d for d in defs if _tool_is_readonly(d.get("function", {}).get("name", ""))]
     return _slim_tool_defs(defs)
@@ -1921,6 +1939,28 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             str(arguments.get("tool_name", "")),
             arguments.get("arguments") if isinstance(arguments.get("arguments"), dict) else {},
         )
+    if name in ("task_create", "task_update", "task_get", "task_list"):
+        # 持久化任务工具（对标 WorkBuddy TaskCreate/Update/Get/List）
+        from agent_core import task_store
+
+        if name == "task_create":
+            result = task_store.create_task(
+                str(arguments.get("title", "")), str(arguments.get("description", "")),
+                str(arguments.get("priority", "normal")), arguments.get("tags"),
+            )
+        elif name == "task_update":
+            result = task_store.update_task(
+                str(arguments.get("task_id", "")),
+                arguments.get("status") if isinstance(arguments.get("status"), str) else None,
+                arguments.get("title"), arguments.get("description"),
+                arguments.get("priority"), arguments.get("tags"),
+            )
+        elif name == "task_get":
+            result = task_store.get_task(str(arguments.get("task_id", "")))
+        else:
+            result = task_store.list_tasks(
+                str(arguments.get("status", "")) or None, int(arguments.get("limit", 50) or 50))
+        return json.dumps(result, ensure_ascii=False)
     if name.startswith("statute_"):
         import subprocess
         import sys

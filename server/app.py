@@ -132,6 +132,7 @@ def create_app() -> FastAPI:
         subagents,
         system,
         tasklog,
+        tasks,
         terminal,
         tools,
         traces,
@@ -221,6 +222,7 @@ def create_app() -> FastAPI:
     app.include_router(system.router, prefix="/api/v1", tags=["system"])
     app.include_router(terminal.router, prefix="/api/v1", tags=["terminal"])
     app.include_router(tasklog.router, prefix="/api/v1", tags=["task-log"])
+    app.include_router(tasks.router, prefix="/api/v1", tags=["tasks"])
     app.include_router(automation.router, prefix="/api/v1", tags=["automation"])
     app.include_router(connectors.router, prefix="/api/v1", tags=["connectors"])
     app.include_router(workspaces.router, prefix="/api/v1", tags=["workspaces"])

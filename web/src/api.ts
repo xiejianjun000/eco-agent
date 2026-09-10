@@ -239,6 +239,28 @@ export interface AutomationJob {
   fail_count: number;
 }
 
+/** 持久化任务（对标 WorkBuddy TaskCreate/Update/Get/List） */
+export interface TaskItem {
+  id: string;
+  title: string;
+  description: string;
+  status: 'created' | 'in_progress' | 'completed' | 'paused' | 'canceled';
+  priority: 'low' | 'normal' | 'high';
+  tags: string[];
+  created_ms: number;
+  updated_ms: number;
+  created_at: string;
+  updated_at: string;
+  history: { status: string; at_ms: number }[];
+}
+export interface TaskSummary {
+  id: string;
+  title: string;
+  status: TaskItem['status'];
+  priority: TaskItem['priority'];
+  updated_ms: number;
+}
+
 /** MCP 连接器 */
 export interface ConnectorInfo {
   name: string;
@@ -333,6 +355,18 @@ export const api = {
   /** 连接器（MCP） */
   connectors: () => get<{ count: number; connected: number; tool_total: number; connectors: ConnectorInfo[] }>('/connectors'),
   connectorsRefresh: () => post<{ ok: boolean; mcp_count: number; connected: number; connectors: ConnectorInfo[] }>('/connectors/refresh', {}),
+
+  // 持久化任务（对标 WorkBuddy TaskCreate/Update/Get/List）
+  taskList: (status?: string) =>
+    get<{ ok: boolean; count: number; status_counts: Record<string, number>; tasks: TaskSummary[] }>(
+      `/tasks${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  taskGet: (id: string) =>
+    get<{ ok: boolean; task: TaskItem }>(`/tasks/${encodeURIComponent(id)}`),
+  taskCreate: (body: { title: string; description?: string; priority?: string; tags?: string[] }) =>
+    post<{ ok: boolean; task: TaskItem }>('/tasks', body),
+  taskUpdate: (id: string, body: Partial<{ status: string; title: string; description: string; priority: string; tags: string[] }>) =>
+    patch<{ ok: boolean; task: TaskItem }>(`/tasks/${encodeURIComponent(id)}`, body),
+
   dynplugins: () => get<{ plugins: { plugin_id: string; running: boolean; size_bytes: number; defined_at: number }[]; stats: Record<string, number> }>('/dynplugins'),
   dynpluginDefine: (body: { code: string; name?: string; plugin_id?: string | null }) =>
     post<{ ok: boolean; plugin_id?: string; name?: string; precheck?: { error?: string } }>('/dynplugins/define', body),

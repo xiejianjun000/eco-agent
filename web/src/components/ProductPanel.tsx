@@ -18,8 +18,9 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import DocViewer, { type DocSource, rendererFor } from './DocViewer';
 import Icon from './Icon';
+import TaskPanel from './TaskPanel';
+import DocViewer, { type DocSource, rendererFor } from './DocViewer';
 
 export interface ProductItem {
   name: string;
@@ -241,6 +242,9 @@ export default function ProductPanel({
           })}
         </div>
       )}
+
+      {/* 持久化任务（对标 WorkBuddy TaskList）：列表态下常驻右栏 */}
+      {!selected && <TaskPanel compact />}
     </aside>
   );
 }
