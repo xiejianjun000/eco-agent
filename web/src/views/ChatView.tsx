@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { streamChat, api, type ChatUsage, type TraceEvent, type SubagentInfo } from '../api';
 import { renderMarkdown, escapeHtml } from '../utils/markdown';
+import { extractWidgets, stripWidgetFences } from '../utils/widget';
+import WidgetView from '../components/WidgetView';
 import { renderToolResult } from '../utils/toolResult';
 import TerminalPanel from '../components/Terminal';
 import Icon, { type IconName } from '../components/Icon';
@@ -1656,11 +1658,14 @@ export default function ChatView({
                 dangerouslySetInnerHTML={{
                   __html: m.content
                     ? m.role === 'assistant'
-                      ? renderMarkdown(m.content)
+                      ? renderMarkdown(stripWidgetFences(m.content))
                       : escapeHtml(m.content).replace(/\n/g, '<br/>')
                     : (busy ? '<span class="thinking">正在思考<span class="dots">…</span></span>' : ''),
                 }}
               />
+              {m.role === 'assistant' && extractWidgets(m.content || '').map((w, wi) => (
+                <WidgetView key={`widget-${wi}`} block={w} index={wi} />
+              ))}
               {m.role === 'assistant' && (() => {
                 const arts = (m.trace ?? []).filter((t) => t.type === 'artifact' && t.name);
                 if (arts.length === 0) return null;

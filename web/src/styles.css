@@ -2125,3 +2125,21 @@ html[data-theme='dark'] .chat-stage {
 .task-history-dot { width:6px; height:6px; border-radius:50%; background:var(--t-faint); }
 .task-history-status { color:var(--t-main); }
 .task-history-time { margin-left:auto; color:var(--t-faint); font-size:11px; }
+
+/* P3-A4 show_widget 内联可视化（对标 WorkBuddy VisualizerShowWidgetView） */
+.widget-view { margin: 8px 0; border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; background: var(--panel); }
+.chat-stage .widget-view { border-color: var(--cr-border); background: var(--cr-elevated); }
+.widget-view-head { display:flex; align-items:center; justify-content:space-between;
+  padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.chat-stage .widget-view-head { border-bottom-color: var(--cr-border); }
+.widget-view-label { font-size: 11px; color: var(--t-faint); letter-spacing:.03em; }
+.chat-stage .widget-view-label { color: var(--cr-text-3); }
+.widget-view-toggle { border:none; background:transparent; color:var(--t-faint);
+  font-size: 11px; cursor:pointer; padding:2px 6px; border-radius:4px; }
+.widget-view-toggle:hover { background: var(--bg-hover); color: var(--t-sub); }
+.widget-view-body { padding: 10px; margin: 0 auto; }
+.widget-view-svg { display:block; }
+.widget-view-html { height: 420px; background: #fff; border-radius: 6px; }
+.widget-view-raw { margin:0; font-family: var(--mono); font-size: 12px; color: var(--t-sub);
+  white-space: pre-wrap; word-break: break-word; }
