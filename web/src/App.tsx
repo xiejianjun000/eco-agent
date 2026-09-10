@@ -112,7 +112,8 @@ export default function App(): React.ReactElement {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = window.localStorage.getItem('eco-theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // 默认深色（WorkBuddy conversation-render 同款深色 IDE 台），可手动切浅色
+    return 'dark';
   });
 
   React.useEffect(() => {

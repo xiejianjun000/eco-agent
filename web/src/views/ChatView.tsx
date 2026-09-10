@@ -1539,7 +1539,7 @@ export default function ChatView({
 
   return (
     <div className="chat-wrap">
-      <div className="chat-box">
+      <div className="chat-box chat-stage">
         <div className="main-tabs">
           <button className={`main-tab${mainTab === 'chat' ? ' active' : ''}`} onClick={() => setMainTab('chat')}>对话</button>
           <button className={`main-tab${mainTab === 'trace' ? ' active' : ''}`} onClick={() => setMainTab('trace')}>轨迹</button>
@@ -1635,7 +1635,6 @@ export default function ChatView({
             ) : (
             <div key={i} className={`msg ${m.role}`}>
               <div className="msg-meta">
-                <span className="msg-role">{m.role === 'user' ? '你' : 'eco Agent'}</span>
                 {m.role === 'user' && m.time && <span className="msg-time">{m.time}</span>}
                 {m.role === 'assistant' && m.durationMs !== undefined && (
                   <span className="msg-stat">{fmtStatRow(m)}</span>
