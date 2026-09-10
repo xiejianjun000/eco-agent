@@ -2100,33 +2100,43 @@ async def _run_tool(name: str, arguments: dict, web_client: bool = False) -> str
             "content": body,
         }, ensure_ascii=False)
     if name == "present_files":
-        # 成果呈现：只校验文件真实存在，不搬运内容（前端按路径拉取）。
-        # 严格校验是为了防止模型臆造路径 —— 实测它编造过文件路径。
+        # 成果呈现：校验文件真实存在 **且属于产物安全区**（对标 WorkBuddy
+        # isFileOwnedBySession——只放行会话工作目录/产物目录内的文件）。
+        # 既防模型臆造路径，也防它把 ~/.ssh、/etc 等系统文件当成果暴露到右栏。
         from pathlib import Path as _P
 
         raw = arguments.get("paths") or []
         if isinstance(raw, str):
             raw = [raw]
-        items, missing = [], []
+        items, missing, denied = [], [], []
         for x in list(raw)[:12]:
             fp = _P(str(x)).expanduser()
-            if fp.exists() and fp.is_file():
-                items.append({
-                    "path": str(fp),
-                    "name": fp.name,
-                    "ext": fp.suffix.lstrip(".").lower(),
-                    "size": fp.stat().st_size,
-                })
-            else:
+            if not (fp.exists() and fp.is_file()):
                 missing.append(str(x))
+                continue
+            if not _artifact_path_allowed(fp):
+                denied.append(str(x))
+                continue
+            st = fp.stat()
+            items.append({
+                "path": str(fp),
+                "name": fp.name,
+                "ext": fp.suffix.lstrip(".").lower(),
+                "size": st.st_size,
+                "mime": _mime_from_name(fp.name),
+                "created_at": int(st.st_mtime * 1000),
+            })
         return json.dumps({
             "ok": bool(items),
             "presented": len(items),
             "files": items,
             "missing": missing,
+            "denied": denied,
             "summary": str(arguments.get("summary") or "")[:80],
-            "note": ("部分路径不存在，已跳过；请用工具真实返回的路径"
-                     if missing else "成果已呈现为卡片"),
+            "note": ("；".join([p for p in [
+                "部分路径不存在，已跳过" if missing else "",
+                "部分路径不在产物安全区，已拒绝" if denied else "",
+            ] if p]) or "成果已呈现为卡片"),
         }, ensure_ascii=False)
     if name in ("save_document", "analyze_document"):
         from agent_core.tools_registry import execute_tool
@@ -3280,7 +3290,23 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                 except (json.JSONDecodeError, TypeError):
                     _sd = {}
                 if isinstance(_sd, dict) and _sd.get("saved"):
-                    _emit_saved_artifact(_emit, args.get("filename"), _sd)
+                    _emit_saved_artifact(_emit, args.get("filename"), _sd,
+                                         source_tool="SaveDocument", round_idx=round_idx)
+            # present_files：WorkBuddy 口径的产物呈现唯一入口。校验通过的真实文件
+            # 逐个补发 artifact 事件进右栏（带 sourceTool=PresentFiles 凭证），
+            # 与 save_document 收敛为同一条结构化产物链。
+            if name == "present_files":
+                try:
+                    _pf = json.loads(str(result))
+                    for _f in (_pf.get("files") or [])[:6]:
+                        _emit_saved_artifact(
+                            _emit, _f.get("name"),
+                            {"path": _f.get("path"), "name": _f.get("name"),
+                             "bytes": _f.get("size"),
+                             "mime": _mime_from_name(str(_f.get("name", "")))},
+                            source_tool="PresentFiles", round_idx=round_idx)
+                except (json.JSONDecodeError, TypeError, AttributeError):
+                    pass
             # chart_render：工具成功即用同一参数确定性重生成 HTML，直接发 card 事件。
             # 模型不接触 HTML（防截断/手写错误），前端沙箱卡片直接渲染离线 SVG。
             if name == "chart_render" and '"ok": true' in str(result):
@@ -3950,23 +3976,102 @@ def _wants_docx(message: str) -> bool:
     return bool(re.search(r"\bdocx\b|\.doc\b|\bword\b|word\s*文档", m))
 
 
-def _emit_saved_artifact(emit, filename, saved_result: dict) -> None:
-    """save_document 成功后发一个 artifact 事件，让产物随 trace 归属当前会话。
+def _artifact_roots() -> list:
+    """产物安全区根目录（对标 WorkBuddy isFileOwnedBySession 的会话工作目录边界）。
 
-    三处保存路径（工具循环直调 / _enforce_save 模型再试 / 系统兜底）都经此发事件，
-    字段与 _save_answer_artifact 的 artifact 事件对齐（title/name/path/size）。
-    这样右栏只从当前会话消息的 trace 提取产物即可，不必扫全局磁盘——
-    此前 save_document 只在回答末尾追加「📄 已落盘」文本、不发事件，
-    正式文档没有会话归属，右栏只能全局扫描才把所有会话的产物堆到一起。"""
+    只允许呈现/右栏暴露这些根内的文件：
+      · 各工作区 deliverables（~/.eco/workspaces/*/deliverables）
+      · 仓库 output/（沙箱不可写工作区时的确定性回退落盘处）
+      · ~/.eco/artifacts（历史完整稿，保留）
+      · 系统临时目录（工具下载/中转产物）
+    之外（~/.ssh、/etc、源码目录等）一律拒绝，防止模型把任意系统文件当成果暴露。"""
+    from pathlib import Path as _P
+
+    roots = []
+    home = _P.home()
+    wsp = home / ".eco" / "workspaces"
+    try:
+        if wsp.is_dir():
+            roots.extend(p.resolve() for p in wsp.glob("*/deliverables"))
+    except OSError:
+        pass
+    roots.append((_P(__file__).resolve().parent.parent.parent / "output").resolve())
+    roots.append((home / ".eco" / "artifacts").resolve())
+    import tempfile
+
+    roots.append(_P(tempfile.gettempdir()).resolve())
+    return roots
+
+
+def _artifact_path_allowed(fp) -> bool:
+    """文件是否落在产物安全区内（resolve 防 ../ 穿越；不存在返回 False）。"""
+    from pathlib import Path as _P
+
+    try:
+        real = _P(fp).expanduser().resolve()
+        if not real.is_file():
+            return False
+        return any(str(real).startswith(str(root) + "/") or real == root
+                   for root in _artifact_roots())
+    except OSError:
+        return False
+
+
+def _mime_from_name(name: str) -> str:
+    """按扩展名推断 MIME（与 tools_registry._mime_for 同口径，前端据其路由预览器）。"""
+    s = ("." + name.rsplit(".", 1)[-1].lower()) if "." in name else ""
+    return {
+        ".md": "text/markdown", ".markdown": "text/markdown", ".txt": "text/plain",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".doc": "application/msword", ".pdf": "application/pdf",
+        ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".csv": "text/csv", ".html": "text/html", ".htm": "text/html",
+        ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+        ".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp",
+    }.get(s, "application/octet-stream")
+
+
+def _is_doc_artifact(name: str, mime: str) -> bool:
+    """是否「文档类」产物（右栏文档视图），对齐 WorkBuddy contentType=document。"""
+    return mime.startswith(("text/", "application/pdf")) or name.lower().endswith(
+        (".md", ".markdown", ".txt", ".pdf", ".docx", ".doc", ".csv"))
+
+
+def _emit_saved_artifact(emit, filename, saved_result: dict, source_tool="SaveDocument",
+                         round_idx=1) -> None:
+    """产物落盘成功后发统一 schema 的 artifact 事件，随 trace 归属当前会话。
+
+    单一真源（对标 WorkBuddy MediaArtifactService）：save_document 与
+    present_files 两条主动产出路径都经此发事件，字段对齐其 artifact 对象——
+    name/title/path/size + mimeType/contentType/createdAt/_meta.sourceTool。
+    右栏只放行带 sourceTool 的主动产物，历史/其它文本一律不混入。
+    失败绝不影响主回答。"""
     try:
         path = str(saved_result.get("path") or "")
         if not path:
             return
-        name = path.rsplit("/", 1)[-1]
+        name = str(saved_result.get("name") or path.rsplit("/", 1)[-1])
         title = str(filename or name)
-        emit({"type": "artifact", "round": 1, "title": title,
-              "name": name, "path": path, "size": int(saved_result.get("bytes") or 0)})
-    except Exception:  # noqa: BLE001 — 发事件失败绝不影响主回答
+        mime = str(saved_result.get("mime") or _mime_from_name(name))
+        import time as _t
+
+        created_ms = int(saved_result.get("created_ms")
+                         or saved_result.get("created_at") or _t.time() * 1000)
+        ev = {
+            "type": "artifact", "round": round_idx,
+            "title": title, "name": name, "path": path,
+            "size": int(saved_result.get("bytes") or 0),
+            "mimeType": mime,
+            "contentType": "document" if _is_doc_artifact(name, mime) else "media",
+            "createdAt": created_ms,
+            "sourceTool": source_tool,
+        }
+        if saved_result.get("docx_path"):
+            ev["docx_path"] = saved_result["docx_path"]
+            ev["docx_name"] = saved_result.get("docx_name")
+        emit(ev)
+    except Exception:  # noqa: BLE001
         pass
 
 
@@ -4193,11 +4298,14 @@ def _ensure_docx_artifact(message: str, reply: str, trace: list) -> None:
     try:
         art = _save_answer_artifact(reply, want_docx=True)
         if art:
-            trace.append({"type": "artifact", "round": 1,
-                          "title": art["title"], "name": art["name"],
-                          "path": art["path"], "size": art["size"],
-                          "docx_path": art.get("docx_path"),
-                          "docx_name": art.get("docx_name")})
+            # 统一走完整 artifact schema（sourceTool/mimeType/createdAt），
+            # 与 save_document/present_files 收敛为同一产物链；docx 双产物带上 docx_*。
+            _emit_saved_artifact(
+                trace.append, art["title"],
+                {"path": art["path"], "name": art["name"], "bytes": art["size"],
+                 "mime": _mime_from_name(art["name"]),
+                 "docx_path": art.get("docx_path"), "docx_name": art.get("docx_name")},
+                source_tool="SaveDocument")
             logger.info("[docx] 双产物落盘: %s + %s", art["name"], art.get("docx_name"))
     except Exception as e:  # noqa: BLE001 — DOCX 落盘失败不阻断对话
         logger.warning("docx artifact failed: %s", e)

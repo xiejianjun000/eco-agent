@@ -77,6 +77,12 @@ export interface TraceEvent {
   /** artifact 事件：完整稿落盘为 MD 产物（点击拉取原文查看） */
   path?: string;
   size?: number;
+  /** artifact 事件：统一产物对象（对标 WorkBuddy MediaArtifactService） */
+  mimeType?: string;
+  contentType?: 'document' | 'media' | string;
+  createdAt?: number;
+  /** 主动产出凭证：SaveDocument | PresentFiles（对标 _meta.sourceTool） */
+  sourceTool?: string;
   /** artifact 事件：对话提到 DOCX/Word 时额外生成的 .docx（WorkBuddy 文档路由对标） */
   docx_path?: string;
   docx_name?: string;

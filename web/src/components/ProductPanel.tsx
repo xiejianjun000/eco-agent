@@ -26,7 +26,21 @@ export interface ProductItem {
   title: string;
   size?: number;
   path?: string;
+  /** 产物 MIME（后端据扩展名给出，右栏据此路由预览器/图标） */
+  mimeType?: string;
+  /** document | media（对标 WorkBuddy artifact.contentType） */
+  contentType?: string;
+  /** 产生时间 ms（按此降序，对标 WorkBuddy updatedAt） */
+  createdAt?: number;
+  /** 主动产出凭证：SaveDocument | PresentFiles（对标 _meta.sourceTool） */
+  sourceTool?: string;
 }
+
+/** 右栏最多展示卡片数（对标 WorkBuddy artifact-slot-panel MAX_DISPLAY_ITEMS） */
+export const MAX_PRODUCT_ITEMS = 6;
+
+/** 不进产物栏的内部路径黑名单（对标 HIDDEN_PATHS：.workbuddy / .memory） */
+export const HIDDEN_PRODUCT_PATH_RE = /(\.eco[\\/]|memory-tree|\.workbuddy|\.memory|decisions\.jsonl|session_log)/i;
 
 const MIN_WIDTH_PX = 280;
 const DEFAULT_WIDTH_PX = 400;
@@ -60,12 +74,17 @@ export default function ProductPanel({
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // 防御性过滤：即便上游传入未收敛的列表，右栏也只显示安全区主动产物、最多 6 条
+  const visibleProducts = products
+    .filter((p) => !HIDDEN_PRODUCT_PATH_RE.test(p.path || p.name))
+    .slice(0, MAX_PRODUCT_ITEMS);
+
   // 产物列表变化时，若当前选中的产物已不在列表，回到列表态
   useEffect(() => {
-    if (selected && !products.some((p) => p.name === selected.name)) {
+    if (selected && !visibleProducts.some((p) => p.name === selected.name)) {
       setSelected(null);
     }
-  }, [products, selected]);
+  }, [visibleProducts, selected]);
 
   // Esc 关闭（先退出详情，再关面板，与 WorkBuddy 分层退出一致）
   useEffect(() => {
@@ -130,7 +149,7 @@ export default function ProductPanel({
 
       <div className="product-panel-head">
         <span className="product-panel-title">产物</span>
-        <span className="product-panel-count">{products.length}</span>
+        <span className="product-panel-count">{visibleProducts.length}</span>
         <button
           className="product-panel-btn"
           title="收起右栏"
@@ -169,7 +188,7 @@ export default function ProductPanel({
             )}
           </div>
         </div>
-      ) : products.length === 0 ? (
+      ) : visibleProducts.length === 0 ? (
         <div className="product-panel-empty">
           <div className="product-panel-empty-icon"><Icon name="folder" size={22} /></div>
           <div className="product-panel-empty-title">请选择一个产物查看详情</div>
@@ -177,7 +196,7 @@ export default function ProductPanel({
         </div>
       ) : (
         <div className="product-panel-list">
-          {products.map((p) => (
+          {visibleProducts.map((p) => (
             <button
               key={p.name}
               className="product-item"

@@ -5,7 +5,7 @@ import { renderToolResult } from '../utils/toolResult';
 import TerminalPanel from '../components/Terminal';
 import Icon, { type IconName } from '../components/Icon';
 import DocDrawer from '../components/DocDrawer';
-import ProductPanel, { type ProductItem } from '../components/ProductPanel';
+import ProductPanel, { MAX_PRODUCT_ITEMS, HIDDEN_PRODUCT_PATH_RE, type ProductItem } from '../components/ProductPanel';
 import { type DocSource, rendererFor, isTencentDocsUrl, isFeishuUrl } from '../components/DocViewer';
 import { ChatSearchButton, UserPromptListButton } from '../components/ChatTopbar';
 import CompactDivider, { isCompactContent, inferCompactType } from '../components/CompactDivider';
@@ -1150,20 +1150,40 @@ export default function ChatView({
     .flatMap((m) => extractArtifacts(m.content));
   void _artifacts; // 产物面板已移除；保留供后续复用
 
-  /** MD 产物（完整稿落盘）：从轨迹 artifact 事件收集，右侧「产物」栏同步展示 */
-  const mdArtifacts = messages
+  /** 当前会话产物：从轨迹 artifact 事件收集（WorkBuddy 单一真源口径）。
+   *  只有带 sourceTool 凭证的主动产物（SaveDocument/PresentFiles）才进右栏；
+   *  兼容历史 trace：无 sourceTool 但有 name/path 的旧事件也保留（回放旧会话）。 */
+  const sessionArtifacts = messages
     .filter((m) => m.role === 'assistant')
     .flatMap((m) => (m.trace ?? []).filter((t) => t.type === 'artifact' && t.name))
-    .map((t) => ({ name: t.name!, title: t.title ?? t.name!, size: t.size, path: t.path }));
+    .map((t) => ({
+      name: t.name!,
+      title: t.title ?? t.name!,
+      size: t.size,
+      path: t.path,
+      mimeType: t.mimeType,
+      contentType: t.contentType,
+      createdAt: typeof t.createdAt === 'number' ? t.createdAt : undefined,
+      sourceTool: t.sourceTool,
+    }));
 
-  /** 右栏只显示**当前会话**的产物（WorkBuddy 口径：产物属于会话，不是全局文件堆）。
-   *  数据来源是当前会话消息的 trace artifact 事件 —— 后端在 save_document 成功
-   *  和完整稿落盘时都会发该事件，随会话持久化/重放，因此刷新与切会话都正确。
-   *  不再合并磁盘全局扫描结果（persistedArtifacts）：那会把所有会话、甚至调试
-   *  dump 出来的对话切片全堆到右栏。按名去重，同名保留首次出现（对话顺序）。 */
-  const allMdArtifacts: ProductItem[] = mdArtifacts.filter(
-    (a, i) => mdArtifacts.findIndex((x) => x.name === a.name) === i,
-  );
+  /** 右栏只显示**当前会话**的主动产物，且对标 WorkBuddy artifact-slot-panel：
+   *  - 黑名单路径不显示（.eco/memory-tree/session_log 等内部文件）；
+   *  - 按名去重（同名保留最新，因 save_document 同名会追加序号、PresentFiles 可能重复）；
+   *  - 按 createdAt 降序（没有时间戳的旧事件退到末尾，保持稳定顺序）；
+   *  - 最多 6 条（MAX_PRODUCT_ITEMS）。 */
+  const allMdArtifacts: ProductItem[] = (() => {
+    const hidden = (a: ProductItem) => HIDDEN_PRODUCT_PATH_RE.test(a.path || a.name);
+    const dedup = new Map<string, ProductItem>();
+    for (const a of sessionArtifacts) {
+      if (hidden(a)) continue;
+      const prev = dedup.get(a.name);
+      if (!prev || (a.createdAt ?? 0) > (prev.createdAt ?? 0)) dedup.set(a.name, a);
+    }
+    return [...dedup.values()]
+      .sort((x, y) => (y.createdAt ?? -1) - (x.createdAt ?? -1))
+      .slice(0, MAX_PRODUCT_ITEMS);
+  })();
 
   /** 新会话欢迎态：还没有任何用户消息时显示居中的 hero 主页（DSH 对标） */
   const fresh = messages.length === 0;

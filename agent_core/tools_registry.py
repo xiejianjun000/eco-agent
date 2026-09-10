@@ -1948,12 +1948,34 @@ def _h_save_document(filename: str, content: str, workspace: str = ""):
         ws.add_event("deliverable", f"save_document -> {target.name} ({target.stat().st_size}B)")
     except Exception:
         pass
+    import time as _time
+
     return {
         "saved": True,
         "path": str(target.resolve()),
         "workspace": ws.meta.get("slug", ws.path.name),
         "bytes": target.stat().st_size,
+        "name": target.name,
+        "mime": _mime_for(target.suffix),
+        "created_at": int(target.stat().st_mtime * 1000),
+        "created_ms": int(_time.time() * 1000),
     }
+
+
+def _mime_for(suffix: str) -> str:
+    """产物 MIME（对齐 WorkBuddy artifact.mimeType），右栏据此路由预览器。"""
+    s = (suffix or "").lower()
+    return {
+        ".md": "text/markdown", ".markdown": "text/markdown",
+        ".txt": "text/plain", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".doc": "application/msword", ".pdf": "application/pdf",
+        ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".csv": "text/csv", ".html": "text/html", ".htm": "text/html",
+        ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+        ".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp",
+        ".json": "application/json",
+    }.get(s, "application/octet-stream")
 
 
 def _gen_docx(md_text: str, target: str) -> None:
