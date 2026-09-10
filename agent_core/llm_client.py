@@ -27,6 +27,7 @@ logger = logging.getLogger("llm_client")
 # SPEC 模块 A：全量 provider 注册表在 agent_core.llm_providers（15 个内置 provider）。
 # 下方 PROVIDERS 为 llm_client 历史公开结构（含 embedding_model 字段），保持向后兼容；
 # 重叠条目（deepseek/kimi/qwen/doubao）取值与注册表一致，由注册表单一事实源生成。
+from agent_core.eco_paths import eco_dir  # noqa: E402 — stats.jsonl 走统一可写目录（沙箱回退到 <repo>/.eco）
 from agent_core.llm_providers import PROVIDERS as REGISTRY_PROVIDERS  # noqa: E402
 
 
@@ -61,7 +62,7 @@ PROVIDERS = {
     "doubao_plan": _legacy_entry("doubao_plan"),  # 火山方舟 Agent Plan（/api/plan/v3）
 }
 
-STATS_FILE = Path.home() / ".eco" / "stats.jsonl"
+STATS_FILE = eco_dir() / "stats.jsonl"
 
 
 def _max_tokens(default: int) -> int:
@@ -909,7 +910,12 @@ class LLMClient:
             if msg is None:
                 if self._is_recoverable_error(self._last_error or {}) and self._try_failover_provider():
                     model = self._provider["default_model"]
-                    logger.warning(f"[chat_with_tools] 主 provider 失败，已降级到 {self._provider_name} 重试")
+                    _err = self._last_error or {}
+                    logger.warning(
+                        "[chat_with_tools] 主 provider 失败（kind=%s status=%s detail=%s），已降级到 %s 重试",
+                        _err.get("kind"), _err.get("status"), str(_err.get("detail", ""))[:200],
+                        self._provider_name,
+                    )
                     if on_chunk:
                         on_chunk(
                             f"\n  [提示] 主模型不可用（{self._friendly_error(self._last_error)}），"

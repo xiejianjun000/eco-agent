@@ -405,3 +405,19 @@ def test_lazy_api_key_refresh_self_heals():
     finally:
         if saved is not None:
             os.environ["DEEPSEEK_API_KEY"] = saved
+
+
+def test_stats_file_follows_eco_dir():
+    """stats.jsonl 必须走 eco_dir() 统一可写目录，而非硬编码 Path.home()/.eco。
+
+    回归：STATS_FILE 曾硬编码 Path.home()/'.eco'，在只允许写仓库的沙箱下
+    ~/.eco 写不进去，stats 静默停更（实测停在 09-07）。改走 eco_dir() 后，
+    ~/.eco 不可写时自动回退到 <repo>/.eco，统计不再丢。
+    """
+    from agent_core import llm_client
+    from agent_core.eco_paths import eco_dir
+
+    # 两者必须在同一进程同一 ECO_DIR 下解析到同一目录（eco_dir 有 lru_cache）
+    assert llm_client.STATS_FILE == eco_dir() / "stats.jsonl"
+    # eco_dir 的核心保证：目录真实可写（沙箱下回退到 repo/.eco）
+    assert llm_client.STATS_FILE.parent.exists()

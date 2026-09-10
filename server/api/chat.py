@@ -2889,7 +2889,11 @@ async def _call_llm_with_span(tree, client, model, messages, tools, round_idx,
                 model_name = client._provider["default_model"]
                 provider = getattr(client, "_provider_name", "unknown")
                 friendly = client._friendly_error(last_err)
-                logger.warning("[web] 主 provider 失败，降级到 %s 重试", provider)
+                logger.warning(
+                    "[web] 主 provider 失败（kind=%s status=%s detail=%s），降级到 %s 重试",
+                    last_err.get("kind"), last_err.get("status"), str(last_err.get("detail", ""))[:200],
+                    provider,
+                )
                 if on_chunk:
                     on_chunk(f"\n  [提示] 主模型不可用（{friendly}），"
                              f"已自动切换到备用模型 {model_name} 重试...\n")
