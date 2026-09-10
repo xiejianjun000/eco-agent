@@ -1975,10 +1975,10 @@ html[data-theme='dark'] .chat-stage {
 /* hero 欢迎态仍居中铺满 */
 .chat-stage .chat-log.hero-mode > * { max-width: none; }
 
-/* 消息行 */
-.chat-stage .msg { margin-bottom: 22px; max-width: 100%; }
+/* 消息行：宽度统一由 .chat-log > * 的 820 居中列约束，这里不再单列 max-width */
+.chat-stage .msg { margin-bottom: 22px; }
 .chat-stage .msg-meta { min-height: 0; margin-bottom: 3px; }
-.chat-stage .msg.user { margin-left: auto; max-width: 76%; }
+.chat-stage .msg.user { display: flex; flex-direction: column; align-items: flex-end; }
 .chat-stage .msg.user .msg-meta { justify-content: flex-end; }
 .chat-stage .msg-time { color: var(--cr-text-3); font-size: 11px; }
 .chat-stage .msg-stat { color: var(--cr-text-3); font-size: 11px; }
@@ -1991,7 +1991,6 @@ html[data-theme='dark'] .chat-stage {
   width: fit-content; max-width: 100%; min-width: 40px;
   white-space: pre-wrap; word-break: break-word;
 }
-.chat-stage .msg.user { display: flex; flex-direction: column; align-items: flex-end; }
 .chat-stage .msg.user .bubble { margin-left: 0; }
 
 /* 助手：无气泡、无头像、全宽、13px（对标 WorkBuddy assistant 裸排版） */
