@@ -378,11 +378,14 @@ export async function streamChat(
   onDelta: (text: string, meta?: { ttft_ms?: number; reset?: boolean }) => void,
   onEvent?: (ev: TraceEvent) => void,
   onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[]; usage?: ChatUsage; ttft_ms?: number }) => void,
+  opts: { signal?: AbortSignal; planMode?: boolean } = {},
 ): Promise<void> {
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-ECO-CLIENT': 'web' },
-    body: JSON.stringify({ message, history, session_id: sessionId, model, workspace }),
+    body: JSON.stringify({ message, history, session_id: sessionId, model, workspace,
+                           plan_mode: !!opts.planMode }),
+    signal: opts.signal,
   });
   // HTTP 错误（服务端 500 等）给出明确信息，而非被误读成"连接失败"
   if (!res.ok) {

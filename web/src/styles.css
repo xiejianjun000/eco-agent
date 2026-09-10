@@ -703,6 +703,21 @@ details[open] > .think-summary .pt-caret, details[open] > .call-summary .pt-care
   color: var(--t-sub); font-size: 12px; padding: 9px 8px; cursor: pointer; max-width: 240px;
 }
 .model-select:hover { background: var(--fill); }
+
+/* P2 输入框：计划模式开关 / 发送-停止 / 字符计数（对标 WorkBuddy Chat Input） */
+.mode-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line);
+  background: transparent; color: var(--t-sub); font-size: 12px; padding: 6px 10px;
+  border-radius: 10px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.mode-chip:hover { background: var(--fill); color: var(--t-main); }
+.mode-chip.active { color: var(--terra); border-color: var(--terra);
+  background: color-mix(in srgb, var(--terra) 10%, transparent); font-weight: 600; }
+.btn-stop { display: inline-flex; align-items: center; gap: 5px;
+  background: color-mix(in srgb, #D9534F 14%, transparent); color: #D9534F;
+  border: 1px solid color-mix(in srgb, #D9534F 40%, transparent); }
+.btn-stop:hover { background: color-mix(in srgb, #D9534F 22%, transparent); }
+.input-charcount { position: absolute; right: 14px; bottom: 54px; font-size: 11px;
+  color: var(--t-faint); font-variant-numeric: tabular-nums; pointer-events: none; }
+.input-charcount.over { color: #D9534F; }
 .btn {
   border: none; border-radius: 10px; padding: 0 20px; font: inherit; font-weight: 600;
   background: var(--terra); color: #fff; cursor: pointer; transition: background 150ms;

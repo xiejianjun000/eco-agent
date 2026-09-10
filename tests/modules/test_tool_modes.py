@@ -114,3 +114,24 @@ def test_tool_is_readonly_unit():
     assert _tool_is_readonly("") is False
     # 未登记的内置工具默认不给（保守）
     assert _tool_is_readonly("some_unknown_tool") is False
+
+
+def test_plan_mode_request_field_defaults_off():
+    """P2：计划/只读模式是显式 opt-in，默认关闭（避免静默剥夺写能力）。"""
+    from server.api.chat import ChatRequest
+    req = ChatRequest(message="生成执法方案并保存文档")
+    assert req.plan_mode is False
+    req2 = ChatRequest(message="先调研", plan_mode=True)
+    assert req2.plan_mode is True
+
+
+def test_force_readonly_overlaps_with_auto_readonly():
+    """force_readonly（用户计划模式）与自动只读判定取或：
+    即便消息含「生成/保存」等写动词，强制只读仍排除全部写工具。"""
+    from server.api.chat import _is_readonly_request
+    write_msg = "生成一份专项检查方案并保存为文档"
+    # 自动判定：含写动词 → 不自动降权
+    assert _is_readonly_request(write_msg) is False
+    # 但工具清单本身在 readonly=True 时确定无写工具（force_readonly 走同一过滤）
+    leaked = _names(readonly=True) & _MUTATING_TOOLS
+    assert not leaked

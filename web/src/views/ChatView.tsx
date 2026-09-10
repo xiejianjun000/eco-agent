@@ -935,6 +935,11 @@ export default function ChatView({
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [model, setModel] = useState('');
+  // 计划/只读模式（对标 WorkBuddy input.planMode）：本轮只给只读工具，不写不执行。
+  const [planMode, setPlanMode] = useState<boolean>(
+    () => window.localStorage.getItem('eco-plan-mode') === '1');
+  // 发送中可中止（对标 input.sendButton.stop）
+  const abortRef = React.useRef<AbortController | null>(null);
   const [branchTag, setBranchTag] = useState<string | null>(null);
   const [showTerminal, setShowTerminal] = useState(false);
   type SideTab = 'trace' | 'context' | 'artifact' | 'doc' | 'task' | 'slot' | 'preview' | 'tasklog';
@@ -1323,6 +1328,8 @@ export default function ChatView({
     // 新一轮对话：重置文档事件标记与流式内容累积
     sawDocEventRef.current = false;
     contentRef.current = '';
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
       await streamChat(withAttach, history, sessionId, model, wsName, (delta, meta) => {
         contentRef.current = meta?.reset ? delta : contentRef.current + delta;
@@ -1380,25 +1387,51 @@ export default function ChatView({
         });
         // 一轮对话完成 → 通知侧栏刷新会话列表（计数/时间/排序）
         onActivity?.();
-      });
+      }, { signal: ctrl.signal, planMode });
     } catch (e) {
+      const aborted = (e instanceof DOMException && e.name === 'AbortError')
+        || ctrl.signal.aborted;
       const em = (e as Error).message || '';
-      const isServerErr = /^服务端 HTTP|^HTTP /.test(em);
-      setMessages((prev) => {
-        const next = [...prev];
-        next[next.length - 1] = {
-          ...next[next.length - 1],
-          content: isServerErr
-            ? `[服务端错误] ${em}`
-            : `[连接中断] ${em}\n服务可能仍在运行（长思考期间连接易被掐断）——请重发这条消息，或刷新页面后重试。`,
-          time: fmtClock(),
-        };
-        return next;
-      });
+      if (aborted) {
+        // 用户主动停止：不报错，把已生成内容保留并标注已停止
+        setMessages((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          next[next.length - 1] = {
+            ...last,
+            content: last.content
+              ? `${last.content}\n\n_（已停止，以上为已生成部分）_`
+              : '_（已停止）_',
+            time: fmtClock(),
+          };
+          return next;
+        });
+      } else {
+        const isServerErr = /^服务端 HTTP|^HTTP /.test(em);
+        setMessages((prev) => {
+          const next = [...prev];
+          next[next.length - 1] = {
+            ...next[next.length - 1],
+            content: isServerErr
+              ? `[服务端错误] ${em}`
+              : `[连接中断] ${em}\n服务可能仍在运行（长思考期间连接易被掐断）——请重发这条消息，或刷新页面后重试。`,
+            time: fmtClock(),
+          };
+          return next;
+        });
+      }
     } finally {
       setBusy(false);
+      abortRef.current = null;
     }
   };
+
+  // 停止当前生成（对标 input.sendButton.stop：只断前端流，不假装后端已取消）
+  const stop = () => { abortRef.current?.abort(); };
+
+  React.useEffect(() => {
+    window.localStorage.setItem('eco-plan-mode', planMode ? '1' : '0');
+  }, [planMode]);
 
   // 输入法（IME）合成态：中文/日文输入时按 Enter 是「选词上屏」，绝不能当发送。
   // 对标 DSH InputBar 的三重判定——单靠 isComposing 在部分引擎
@@ -1828,6 +1861,12 @@ export default function ChatView({
             placeholder="今天监测什么？输入问题直接提问，或点上方快捷入口填入模板"
             rows={2}
           />
+          {input.length > 0 && (
+            <div className={`input-charcount${input.length > 8000 ? ' over' : ''}`}>
+              {input.length.toLocaleString('en-US')}
+              {input.length > 8000 && ' · 已超建议长度'}
+            </div>
+          )}
           <div className="input-footer">
             <div className="input-tools">
               <input
@@ -1859,6 +1898,13 @@ export default function ChatView({
               ><Icon name="terminal" size={17} /></button>
             </div>
             <div className="input-modes">
+              <button
+                type="button"
+                className={`mode-chip${planMode ? ' active' : ''}`}
+                title="计划/只读模式：本轮只授予只读检索工具（不写文件、不执行命令、不触发三角色起草）。适合先让它调研、给方案"
+                aria-pressed={planMode}
+                onClick={() => setPlanMode((v) => !v)}
+              ><Icon name="branch" size={13} /> 计划模式</button>
               <label className="meta-select" title="选择工作空间——决定可用工具集、记忆上下文、权限等级">
                 <span className="meta-icon"><Icon name="folder" size={14} /></span>
                 <select
@@ -1904,13 +1950,19 @@ export default function ChatView({
                 );
               })()}
             </div>
-            <button
-              className="btn"
-              onClick={() => void send()}
-              disabled={busy || (!input.trim() && attachments.length === 0)}
-            >
-              {busy ? '生成中' : '发送'}
-            </button>
+            {busy ? (
+              <button
+                className="btn btn-stop"
+                onClick={stop}
+                title="停止生成（断开当前流式输出；已生成部分会保留）"
+              ><Icon name="stop" size={14} /> 停止</button>
+            ) : (
+              <button
+                className="btn"
+                onClick={() => void send()}
+                disabled={!input.trim() && attachments.length === 0}
+              >发送</button>
+            )}
           </div>
         </div>
         {voice === 'recording' && (

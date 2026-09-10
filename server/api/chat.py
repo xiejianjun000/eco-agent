@@ -64,6 +64,8 @@ class ChatRequest(BaseModel):
         description="保留字段，当前不生效；温度由服务端统一收口（工具决策用低温）")
     session_id: str = Field(default="", description="会话 id，留空用 default（消息落盘/恢复用）")
     workspace: str = Field(default="", description="当前工作空间名（前端工作空间选择器，注入上下文）")
+    plan_mode: bool = Field(default=False, description="计划/只读模式：本轮只授予只读工具，"
+                                                       "不写文件不执行命令（对标 WorkBuddy plan/ask）")
 
 
 def _durable_guard(session_id: str, event_type: str) -> None:
@@ -2677,8 +2679,9 @@ async def chat(req: ChatRequest) -> ChatResponse:
     messages = _build_messages(req.message, req.history, req.session_id or "default", req.workspace)
     t0 = time.monotonic()
     # 三角色协作（内置三智能体）：复杂执法任务走 RoleSwarm DAG
-    # （巡查 ∥ 法规 → 文书 → 总管合成），简单问答回落单循环
-    swarm_out = await asyncio.get_running_loop().run_in_executor(
+    # （巡查 ∥ 法规 → 文书 → 总管合成），简单问答回落单循环。
+    # 计划/只读模式下不走 swarm（其文书角色会起草/落盘文档，违背只读语义）。
+    swarm_out = None if req.plan_mode else await asyncio.get_running_loop().run_in_executor(
         None, lambda: _maybe_swarm_reply(req.message))
     if swarm_out:
         reply = swarm_out["reply"]
@@ -2696,7 +2699,8 @@ async def chat(req: ChatRequest) -> ChatResponse:
                             duration_ms=duration_ms, ttft_ms=0, trace=trace)
     try:
         reply, trace, usage, first_llm_ms, first_token_ms = await _chat_with_codex_loop(
-            client, messages, _eff_model, session_id=req.session_id, user_message=req.message)
+            client, messages, _eff_model, session_id=req.session_id, user_message=req.message,
+            force_readonly=req.plan_mode)
     except Exception as e:  # noqa: BLE001 — API 边界兜底
         logger.exception("chat failed")
         _persist_turn(req.session_id, req.message, "", ok=False)
@@ -2914,7 +2918,8 @@ _TURN_BUDGET_S = float(_os_default_model.environ.get("ECO_TURN_BUDGET_S", "900")
 async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
                                 max_rounds: int = 8, on_event=None,
                                 stream_answer: bool = False, session_id: str = "",
-                                web_client: bool = False, user_message: str = "") -> tuple:
+                                web_client: bool = False, user_message: str = "",
+                                force_readonly: bool = False) -> tuple:
     """法典工具循环：LLM 决定查条 → 执行检索 → 结果回填 → 综合回答。
 
     返回 (reply, trace, usage, first_llm_ms, first_token_ms)：
@@ -2935,14 +2940,15 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
     try:
         return await _chat_with_codex_loop_impl(
             client, messages, model, max_rounds, on_event, stream_answer, tree,
-            web_client=web_client)
+            web_client=web_client, force_readonly=force_readonly)
     finally:
         _save_span_tree(tree)
 
 
 async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                                      on_event, stream_answer, tree,
-                                     web_client: bool = False) -> tuple:
+                                     web_client: bool = False,
+                                     force_readonly: bool = False) -> tuple:
     """_chat_with_codex_loop 的核心实现（原循环体，仅 LLM/工具调用外包 span）。"""
     import asyncio
     import json
@@ -2952,11 +2958,12 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
     from agent_core.trace_audit import get_trace_audit
 
     audit = _svc("trace_audit", get_trace_audit)
-    # 模式级授权（对标 WorkBuddy ask vs craft）：纯查询问答不给写入/执行工具。
-    # 本函数没有 message 参数，用户输入要从 messages 里取最后一条 user 消息。
+    # 模式级授权（对标 WorkBuddy ask vs craft）：纯查询问答不给写入/执行工具；
+    # 用户在输入框手动开启「计划/只读」时，强制只读（force_readonly 与自动判定取或）。
     _last_user = next((m.get("content", "") for m in reversed(messages)
                        if isinstance(m, dict) and m.get("role") == "user"), "")
-    _readonly = _is_readonly_request(_last_user if isinstance(_last_user, str) else "")
+    _readonly = bool(force_readonly) or _is_readonly_request(
+        _last_user if isinstance(_last_user, str) else "")
     tools = _chat_tool_list(readonly=_readonly)
     trace: list[dict] = []
     total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
@@ -4468,9 +4475,14 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
             yield "data: [DONE]\n\n"
             return
         # 三角色协作（内置三智能体）：复杂任务走 RoleSwarm，阶段事件边跑边推
-        # （非阻塞 future + 事件队列：DAG 运行期间 gen 持续消费阶段事件，避免干等）
-        swarm_fut = asyncio.get_running_loop().run_in_executor(
-            None, lambda: _maybe_swarm_reply(req.message, on_event=on_event))
+        # （非阻塞 future + 事件队列：DAG 运行期间 gen 持续消费阶段事件，避免干等）。
+        # 计划/只读模式跳过 swarm（文书角色会起草/落盘，违背只读语义）。
+        if req.plan_mode:
+            swarm_fut = asyncio.get_running_loop().create_future()
+            swarm_fut.set_result(None)
+        else:
+            swarm_fut = asyncio.get_running_loop().run_in_executor(
+                None, lambda: _maybe_swarm_reply(req.message, on_event=on_event))
         last_emit = time.monotonic()  # SSE 保活计时（长思考期间防连接被掐断）
         while not swarm_fut.done() or not ev_q.empty():
             try:
@@ -4511,7 +4523,8 @@ async def chat_stream(req: ChatRequest, request: Request) -> StreamingResponse:
                                   on_event=on_event, stream_answer=True,
                                   session_id=req.session_id,
                                   web_client=(request.headers.get("x-eco-client", "") == "web"),
-                                  user_message=req.message))
+                                  user_message=req.message,
+                                  force_readonly=req.plan_mode))
         streamed = False
         first_delta_ms: int | None = None  # 首个可见输出距请求开始（DSH 首 token 语义）
         last_emit = time.monotonic()  # SSE 保活计时（长 LLM 思考期间防连接被掐断）
