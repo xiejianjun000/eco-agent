@@ -60,10 +60,24 @@ async def list_documents() -> dict:
                     }
                 )
     # 回答产物（MD）并入文档列表：持久落盘，重启仍在
+    #
+    # 两个来源都要收，否则产物会掉进黑洞（实测踩到）：
+    #   · ~/.eco/artifacts/*.md —— _save_answer_artifact 落的「完整稿」
+    #   · output/*.md           —— save_document 工具落的文档
+    # 此前只收前者，而 save_document 的真实落点是 output/（返回
+    # path=.../eco-agent/output/xxx.md）；上面的 files 又只收
+    # .docx/.pptx/.xlsx/.pdf 把 .md 排除了。结果模型正常存了文档，
+    # 右栏产物面板和 /documents 两边都看不到 —— 实测 30 个 .md 一直不可见。
     art_dir = _artifacts_dir()
     artifacts = []
-    if art_dir.is_dir():
-        for f in sorted(art_dir.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True):
+    seen: set[str] = set()
+    for root in (art_dir, OUTPUT_DIR):
+        if not root.is_dir():
+            continue
+        for f in sorted(root.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True):
+            if f.name in seen:  # 同名以先遍历到的 artifacts 为准
+                continue
+            seen.add(f.name)
             st = f.stat()
             artifacts.append(
                 {
@@ -74,6 +88,8 @@ async def list_documents() -> dict:
                     "kind": "artifact",
                 }
             )
+    # 合并后整体重排：两个目录各自有序，拼接后未必有序
+    artifacts.sort(key=lambda a: a["modified"], reverse=True)
     return {"count": len(files) + len(artifacts), "files": files, "artifacts": artifacts}
 
 
@@ -111,27 +127,41 @@ async def download_presented(path: str) -> FileResponse:
                         media_type="application/octet-stream")
 
 
+def _find_artifact(name: str) -> Path | None:
+    """在产物目录里定位一个产物文件。
+
+    两个落点都要查，与 list_documents 的收集范围保持一致：
+      · ~/.eco/artifacts/ —— _save_answer_artifact 的完整稿
+      · output/           —— save_document 工具的落点
+    只取 basename，绝不接受路径穿越（入参来自前端/模型）。
+    """
+    safe = Path(name).name
+    for root in (_artifacts_dir(), OUTPUT_DIR):
+        target = root / safe
+        if target.is_file():
+            return target
+    return None
+
+
 @router.get("/documents/artifact/{name}")
 async def read_artifact(name: str) -> dict:
     """返回回答产物的 Markdown 原文（前端点开产物卡片时拉取渲染）。"""
-    art_dir = _artifacts_dir()
-    safe = Path(name).name  # 防路径穿越：只取 basename
-    target = art_dir / safe
-    if not target.is_file():
+    target = _find_artifact(name)
+    if target is None:
         raise HTTPException(status_code=404, detail="artifact not found")
     try:
         content = target.read_text(encoding="utf-8", errors="replace")
     except OSError as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"read failed: {e}") from e
-    return {"name": safe, "path": str(target), "content": content, "size": target.stat().st_size}
+    return {"name": target.name, "path": str(target), "content": content,
+            "size": target.stat().st_size}
 
 
 @router.get("/documents/artifact/{name}/download")
 async def download_artifact(name: str) -> FileResponse:
     """下载回答产物文件（Content-Disposition attachment，浏览器触发下载）。"""
-    art_dir = _artifacts_dir()
-    target = art_dir / Path(name).name
-    if not target.is_file():
+    target = _find_artifact(name)
+    if target is None:
         raise HTTPException(status_code=404, detail="artifact not found")
     media_type = (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"

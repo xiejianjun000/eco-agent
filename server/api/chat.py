@@ -2664,6 +2664,37 @@ async def chat(req: ChatRequest) -> ChatResponse:
                         trace=trace)
 
 
+# 系统以 role="user" 注入的提示前缀。本文件共 6 处这类注入，与真实用户提问
+# 结构完全同形（都是 {"role": "user", "content": ...}），无法靠位置区分。
+# 这些字符串都是本文件写死的常量，不会与用户真实输入碰撞。
+_SYS_USER_INJECTIONS = (
+    "注意：上一轮部分工具返回了失败或空结果。",
+    "已达本轮时间预算，工具检索到此为止。",
+    "工具检索已结束。",
+    "你上一条回答存在质量问题：",
+    "禁止输出 tool_calls、invoke 等任何工具调用格式",
+    "你尚未调用 save_document。",
+)
+
+
+def _pick_user_intent(messages) -> str:
+    """从 messages 里取出本轮真实用户提问，跳过系统注入的伪 user 消息。
+
+    留痕的 user_intent 要能按提问反查，所以必须是用户真说的那句话。
+    取「最后一条非注入的 user 消息」：多轮工具调用时 messages 是持续追加的，
+    真实提问在系统注入之前；有历史时更早的 user 是上一轮的旧提问，
+    因此取最后一条而非第一条。
+    """
+    for m in reversed(messages or []):
+        if not isinstance(m, dict) or m.get("role") != "user":
+            continue
+        content = str(m.get("content") or "")
+        if content.startswith(_SYS_USER_INJECTIONS):
+            continue
+        return content
+    return ""
+
+
 async def _call_llm_with_span(tree, client, model, messages, tools, round_idx,
                               stream=False, on_chunk=None, on_reasoning=None):
     """单次 LLM 调用（可选流式），外包一层 llm_call span，返回 (msg, err)。
@@ -2732,14 +2763,23 @@ async def _call_llm_with_span(tree, client, model, messages, tools, round_idx,
             model=model_name,
             provider=provider,
             round_idx=round_idx,
-            # 从 messages 里取**首条**用户消息做摘要，便于按提问反查留痕。
-            # 曾取「最后一条 role=user」，结果抓错了对象：反思回路会以
-            # role="user" 注入「注意：上一轮部分工具返回了失败或空结果…」，
-            # 多轮后它排在末尾，被误当成用户提问，留痕里就出现这种系统提示。
-            # 首条才是本轮真正的用户问题 —— 系统注入永远排在它后面。
-            user_intent=next(
-                (str(m.get("content") or "") for m in (messages or [])
-                 if isinstance(m, dict) and m.get("role") == "user"), ""),
+            # 取本轮真实用户提问做摘要，便于按提问反查留痕。
+            #
+            # 踩过两次坑，都是「从 messages 里猜」导致的：
+            #   1) 取最后一条 role=user → 抓到反思回路注入的
+            #      「注意：上一轮部分工具返回了失败或空结果…」
+            #   2) 改取首条 role=user → 首轮对了，但有历史时首条是**上一轮**的
+            #      旧提问；且 r4/r5 实测仍抓到注入（本轮 messages 已是追加态）。
+            #
+            # 根因：本文件有 5 处 messages.append({"role": "user"})，只有一处是
+            # 真实提问，另外 4 处是系统注入（反思回路 / 质量返修 / 禁止工具格式 /
+            # 催 save_document）。它们和真实提问在结构上完全同形，无法靠位置区分。
+            #
+            # 不给 message dict 加自定义键作标记：messages 数组是原样进 API
+            # payload 的（llm_client 无白名单过滤），多余键会直接发给模型服务。
+            # 因此改为按已知注入措辞排除 —— 这些前缀都是本文件写死的常量，
+            # 与用户输入不会碰撞。取排除后的**最后一条**，即本轮真实提问。
+            user_intent=_pick_user_intent(messages),
         )
     except Exception:  # noqa: BLE001 — 留痕失败不影响主流程
         pass

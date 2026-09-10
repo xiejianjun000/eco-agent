@@ -30,6 +30,7 @@ from __future__ import annotations
 import json
 
 from agent_core.decisions import record_decision
+from server.api.chat import _pick_user_intent
 
 
 def _last_payload(path) -> dict:
@@ -103,3 +104,71 @@ def test_chain_integrity_still_holds(tmp_path):
     recs = [json.loads(x) for x in p.read_text(encoding="utf-8").strip().splitlines()]
     for prev, cur in zip(recs, recs[1:]):
         assert cur["prev_hash"] == prev["hash"], "SM3 链断裂"
+
+
+# ── 提取逻辑：必须跳过系统以 role="user" 注入的伪提问 ──────────────────
+#
+# 两次翻车都在这里，值得把反例锁死：
+#   v1 取「最后一条 role=user」→ 抓到反思回路的「注意：上一轮部分工具…」
+#   v2 改取「首条 role=user」  → 首轮对，但有历史时抓到上一轮旧提问；
+#                                 实测 r4/r5 仍抓到注入
+# 根因：chat.py 有 6 处 messages.append({"role": "user"}) 是系统注入，
+# 与真实提问结构完全同形，只能按已知措辞排除。
+
+def test_skips_reflection_injection():
+    """反思回路注入排在真实提问之后，不得被当成提问。"""
+    msgs = [
+        {"role": "system", "content": "你是 eco Agent"},
+        {"role": "user", "content": "娄底今天空气质量怎么样"},
+        {"role": "assistant", "content": ""},
+        {"role": "tool", "content": "{}"},
+        {"role": "user", "content": "注意：上一轮部分工具返回了失败或空结果。请先判断原因"},
+    ]
+    assert _pick_user_intent(msgs) == "娄底今天空气质量怎么样"
+
+
+def test_skips_all_six_injection_kinds():
+    """6 种系统注入全部要跳过——逐一锁死，新增注入时这里会失败提醒。"""
+    injections = [
+        "注意：上一轮部分工具返回了失败或空结果。请先判断原因",
+        "已达本轮时间预算，工具检索到此为止。请基于上面工具返回的真实结果",
+        "工具检索已结束。请基于上面工具返回的真实结果直接给出最终回答。",
+        "你上一条回答存在质量问题：坐标与工具返回不一致。请修正",
+        "禁止输出 tool_calls、invoke 等任何工具调用格式（含全角符号），",
+        "你尚未调用 save_document。请立即调用 save_document ",
+    ]
+    for inj in injections:
+        msgs = [
+            {"role": "user", "content": "真实提问"},
+            {"role": "user", "content": inj},
+        ]
+        assert _pick_user_intent(msgs) == "真实提问", f"未跳过：{inj[:20]}"
+
+
+def test_takes_latest_real_question_not_first():
+    """有历史时取最后一条真实提问——首条是上一轮的旧问题。"""
+    msgs = [
+        {"role": "user", "content": "上一轮的旧提问"},
+        {"role": "assistant", "content": "旧回答"},
+        {"role": "user", "content": "本轮的新提问"},
+    ]
+    assert _pick_user_intent(msgs) == "本轮的新提问"
+
+
+def test_real_question_resembling_injection_is_kept():
+    """用户真问「工具检索是怎么结束的」不能被误杀——只排除完整前缀。"""
+    msgs = [{"role": "user", "content": "工具检索是怎么结束的？给我讲讲机制"}]
+    assert _pick_user_intent(msgs) == "工具检索是怎么结束的？给我讲讲机制"
+
+
+def test_all_injections_returns_empty_not_crash():
+    """全是注入时返回空串，绝不抛异常——留痕是旁路。"""
+    msgs = [{"role": "user", "content": "工具检索已结束。请基于上面"}]
+    assert _pick_user_intent(msgs) == ""
+
+
+def test_empty_and_malformed_input():
+    """空/None/脏数据不得抛异常。"""
+    assert _pick_user_intent([]) == ""
+    assert _pick_user_intent(None) == ""
+    assert _pick_user_intent([None, "str", 42, {"role": "user"}]) == ""
