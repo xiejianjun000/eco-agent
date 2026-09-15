@@ -1984,6 +1984,42 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                                    level=_tool_level(name), decision="allow")
             messages.append({"role": "tool", "tool_call_id": tool_call_id,
                              "content": result})
+        # ── 上下文用量可视化 + 压缩（对标 WorkBuddy P0：把不可见变可见）──
+        try:
+            from agent_core.compaction import (
+                estimate_tokens, should_compact, compact as _do_compact)
+            _used = estimate_tokens(messages)
+            _max = 8000
+            # 五类近似拆分（conv 对话 / tool 工具 / sp 系统提示 / mcp / skill 从工具事件细分）
+            _role_tokens: dict[str, int] = {}
+            for _m in messages:
+                _r = _m.get("role", "user")
+                _role_tokens[_r] = _role_tokens.get(_r, 0) + estimate_tokens([_m])
+            _conv = _role_tokens.get("user", 0) + _role_tokens.get("assistant", 0)
+            _sp = _role_tokens.get("system", 0)
+            _tool = _role_tokens.get("tool", 0)
+            _mcp = _skill = 0
+            for _e in trace:
+                if _e.get("type") == "tool":
+                    _n = _e.get("name", "")
+                    _tk = estimate_tokens(
+                        [{"content": json.dumps(_e.get("args") or {}, ensure_ascii=False)}])
+                    if _n.startswith("mcp") or "govmcp" in _n:
+                        _mcp += _tk
+                    elif "skill" in _n:
+                        _skill += _tk
+            _emit({"type": "context_usage", "used": _used, "max": _max,
+                   "conv": _conv, "tool": _tool, "sp": _sp, "mcp": _mcp, "skill": _skill})
+            if should_compact(messages, _max):
+                _emit({"type": "compaction", "state": "compacting"})
+                _res = _do_compact(messages, session_id=session_id, max_tokens=_max)
+                messages[:] = _res["messages"]
+                _emit({"type": "compaction", "state": "compacted",
+                       "tokens_before": _res["tokens_before"],
+                       "tokens_after": _res["tokens_after"],
+                       "method": _res["method"]})
+        except Exception:  # noqa: BLE001 — 用量/压缩失败不阻断主流程
+            pass
     # 循环耗尽：追加总结指令，强制基于已检索结果直接回答
     messages.append({
         "role": "user",

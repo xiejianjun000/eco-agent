@@ -824,6 +824,56 @@ details[open] > .think-summary .pt-caret, details[open] > .call-summary .pt-care
 }
 @keyframes caret-blink { 50% { opacity: 0; } }
 
+/* ── metaFold 语义折叠（对标 WorkBuddy metaFold 元折叠）──
+ * 把「工具名 + JSON 参数」收拢为一行「动词 + 主题」任务视角摘要；
+ * 已完成回合默认折叠，运行中回合默认展开（实时看过程）。 */
+.meta-fold { border-top: 1px solid var(--line); margin-top: 4px; }
+.meta-fold > .fold-summary {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 4px 4px; cursor: pointer; list-style: none;
+  font-size: 12.5px; color: var(--t-sub); border-radius: 6px; user-select: none;
+}
+.meta-fold > .fold-summary::-webkit-details-marker { display: none; }
+.meta-fold > .fold-summary:hover { background: var(--fill); }
+.meta-fold > .fold-summary .pt-caret { color: var(--t-aux); font-size: 10px; transition: transform .12s; }
+.meta-fold[open] > .fold-summary .pt-caret { transform: rotate(90deg); }
+.fold-text { font-weight: 500; color: var(--t-sub); }
+.fold-count { color: var(--ds-brand); font-size: 11px; background: var(--ds-brand-soft); padding: 0 6px; border-radius: 10px; }
+.fold-err { color: var(--ds-red); font-size: 11px; background: var(--ds-red-soft); padding: 0 6px; border-radius: 10px; }
+.fold-state { color: var(--t-aux); font-size: 11px; margin-left: auto; font-variant-numeric: tabular-nums; }
+.meta-fold.completed > .fold-summary .fold-state { color: var(--ds-green); }
+.meta-fold.running > .fold-summary .fold-state { color: var(--ds-brand); }
+.fold-body { margin: 2px 0 4px 16px; padding-left: 4px; border-left: 2px solid var(--ds-n-100); }
+/* 工具名本地化（P1）：中文名 + 英文原名副标 */
+.call-name-en { color: var(--t-aux); font-size: 11px; font-weight: 400; }
+
+/* ── 上下文用量可视化（对标 WorkBuddy 上下文用量环）── */
+.ctx-usage {
+  display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 2px;
+  padding: 3px 8px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--ds-n-60); font-size: 11px; color: var(--t-sub); cursor: help;
+}
+.ctx-ring { flex: none; }
+.ctx-pct { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ds-brand); }
+.ctx-label { color: var(--t-aux); }
+
+/* ── 压缩条（对标 WorkBuddy compactDivider 四态）── */
+.compact-stack { margin: 4px 0 2px; display: flex; flex-direction: column; gap: 3px; }
+.compact-bar {
+  display: flex; align-items: center; gap: 7px; padding: 3px 8px;
+  border-radius: 6px; font-size: 12px; border: 1px solid var(--line);
+}
+.compact-bar .compact-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.compact-bar.compacting { background: var(--ds-brand-soft); color: var(--ds-brand-strong); }
+.compact-bar.compacting .compact-dot { background: var(--ds-brand); animation: eco-pulse 1s ease-in-out infinite; }
+.compact-bar.compacted { background: var(--ds-green-soft); color: var(--ds-green); }
+.compact-bar.compacted .compact-dot { background: var(--ds-green); }
+.compact-bar.cancelled { background: var(--ds-n-60); color: var(--t-aux); }
+.compact-bar.cancelled .compact-dot { background: var(--ds-n-400); }
+.compact-bar.limit_reached { background: var(--ds-red-soft); color: var(--ds-red); }
+.compact-bar.limit_reached .compact-dot { background: var(--ds-red); }
+.compact-label { font-weight: 500; }
+
 /* 侧栏品牌：横版字标按自然比例（DSH 顶部 logo 同款布局），副标题整行在下面 */
 .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .brand-row { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }

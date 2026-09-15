@@ -53,7 +53,7 @@ export interface ChatUsage {
 }
 
 export interface TraceEvent {
-  type: 'think' | 'think_delta' | 'tool_start' | 'tool' | 'answer' | 'correction' | 'document' | 'card';
+  type: 'think' | 'think_delta' | 'tool_start' | 'tool' | 'answer' | 'correction' | 'document' | 'card' | 'compaction' | 'context_usage';
   round?: number;
   name?: string;
   category?: 'read' | 'write' | 'exec';
@@ -74,6 +74,19 @@ export interface TraceEvent {
   title?: string;
   /** answer 事件：本回答被要点版截断（前端显示「详细版」按钮） */
   truncated?: boolean;
+  /** compaction 事件（对标 WorkBuddy compactDivider 四态）：正在压缩/已压缩/压缩已取消/已达上限 */
+  state?: 'compacting' | 'compacted' | 'cancelled' | 'limit_reached';
+  tokens_before?: number;
+  tokens_after?: number;
+  method?: string;
+  /** context_usage 事件（对标 WorkBuddy 上下文用量环）：used/max 为估算 token，五类近似拆分 */
+  used?: number;
+  max?: number;
+  conv?: number;
+  tool?: number;
+  sp?: number;
+  mcp?: number;
+  skill?: number;
 }
 
 export interface Skill {

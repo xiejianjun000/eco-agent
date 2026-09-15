@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { streamChat, api, type ChatUsage, type TraceEvent, type SubagentInfo } from '../api';
 import { renderMarkdown, escapeHtml } from '../utils/markdown';
 import { renderToolResult } from '../utils/toolResult';
+import { foldTrace, foldSummaryText, turnStateText, type TurnState, humanizeToolName } from '../utils/metaFold';
 
 interface Msg {
   role: 'user' | 'assistant';
@@ -89,6 +90,86 @@ function fmtArgs(args?: Record<string, unknown>): string {
 /** 交互图表卡片（DSH visualize 对标）：沙箱 iframe 渲染 ECharts HTML。
  *  sandbox="allow-scripts"（不带 allow-same-origin）：卡片脚本可运行但不具备同源权限，
  *  无法访问父页面/localStorage——模型生成的 HTML 在隔离沙箱内执行。 */
+/* ── 上下文用量可视化（对标 WorkBuddy 上下文用量环）──
+ * 后端每轮推送 context_usage 事件（used/max + conv/tool/mcp/skill/sp 五类近似拆分），
+ * 这里渲染成环形进度 + 百分比 + 悬停详情（popover 用 title 实现，零依赖）。 */
+function renderContextUsage(trace: TraceEvent[]): React.ReactElement | null {
+  const evs = (trace ?? []).filter((t) => t.type === 'context_usage');
+  if (evs.length === 0) return null;
+  const u = evs[evs.length - 1];
+  const used = u.used ?? 0;
+  const max = u.max ?? 8000;
+  const pct = max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
+  const segs: [string, number, string][] = [
+    ['对话', u.conv ?? 0, 'var(--ds-brand)'],
+    ['工具', u.tool ?? 0, 'var(--ds-green)'],
+    ['MCP', u.mcp ?? 0, 'var(--ds-purple)'],
+    ['技能', u.skill ?? 0, 'var(--ds-amber)'],
+    ['系统', u.sp ?? 0, 'var(--ds-n-400)'],
+  ];
+  const C = 2 * Math.PI * 9; // 半径 9 的环周长
+  let acc = 0;
+  return (
+    <div
+      className="ctx-usage"
+      title={`上下文用量 ${pct}% · ${used}/${max} token\n对话 ${u.conv ?? 0} · 工具 ${u.tool ?? 0} · MCP ${u.mcp ?? 0} · 技能 ${u.skill ?? 0} · 系统 ${u.sp ?? 0}`}
+    >
+      <svg className="ctx-ring" viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+        <circle cx="12" cy="12" r="9" fill="none" stroke="var(--ds-n-100)" strokeWidth="3" />
+        {segs.filter((s) => s[1] > 0).map((s) => {
+          const len = Math.min(1, s[1] / max) * C;
+          const el = (
+            <circle
+              key={s[0]}
+              cx="12"
+              cy="12"
+              r="9"
+              fill="none"
+              stroke={s[2]}
+              strokeWidth="3"
+              strokeDasharray={`${len} ${C - len}`}
+              strokeDashoffset={-acc}
+              transform="rotate(-90 12 12)"
+            />
+          );
+          acc += len;
+          return el;
+        })}
+      </svg>
+      <span className="ctx-pct">{pct}%</span>
+      <span className="ctx-label">上下文</span>
+    </div>
+  );
+}
+
+/* ── 压缩条（对标 WorkBuddy compactDivider 四态）── */
+function renderCompaction(trace: TraceEvent[]): React.ReactElement | null {
+  const evs = (trace ?? []).filter((t) => t.type === 'compaction');
+  if (evs.length === 0) return null;
+  const LABEL: Record<string, string> = {
+    compacting: '正在压缩上下文…',
+    compacted: '上下文已压缩',
+    cancelled: '压缩已取消',
+    limit_reached: '上下文已达上限',
+  };
+  return (
+    <div className="compact-stack">
+      {evs.map((e, i) => {
+        const st = e.state ?? 'compacted';
+        const tail = st === 'compacted' && e.tokens_before && e.tokens_after
+          ? `（${e.tokens_before}→${e.tokens_after} token${e.method === 'truncate' ? ' · 降级截断' : ''}）`
+          : '';
+        return (
+          <div key={i} className={`compact-bar ${st}`}>
+            <span className="compact-dot" />
+            <span className="compact-label">{LABEL[st] ?? '上下文已压缩'}{tail}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function renderCards(trace: TraceEvent[]): React.ReactElement | null {
   const cards = (trace ?? []).filter((t) => t.type === 'card' && t.html);
   if (cards.length === 0) return null;
@@ -97,7 +178,7 @@ function renderCards(trace: TraceEvent[]): React.ReactElement | null {
       {cards.map((c, i) => (
         <details key={i} className="card-item" open>
           <summary className="card-summary">
-            <span className="card-title">📊 {c.title || '图表'}</span>
+            <span className="card-title">{c.title || '图表'}</span>
             <span className="card-hint">可交互 · 沙箱隔离渲染</span>
           </summary>
           <iframe
@@ -112,13 +193,20 @@ function renderCards(trace: TraceEvent[]): React.ReactElement | null {
   );
 }
 
-function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
+interface FoldOpts {
+  /** 该消息是否仍在流式执行中（决定 Turn 状态机） */
+  running?: boolean;
+}
+
+function renderProcessBlock(trace: TraceEvent[], opts: FoldOpts = {}): React.ReactElement | null {
   if (!trace || trace.length === 0) return null;
   const turns = groupTraceByRound(trace);
+  // metaFold 语义折叠：每轮生成「动词+主题」摘要（对标 WorkBuddy metaFold）
+  const foldMap = new Map(foldTrace(trace).map((f) => [f.round, f]));
 
   return (
     <div className="process-block">
-      {turns.map((turn) => {
+      {turns.map((turn, ti) => {
         // 实时思考流（DSH Think 流）：think_delta 分片按序累积；
         // think 事件（服务端清洗后的权威版）覆盖累积值
         const rounds: number[] = [];
@@ -131,9 +219,28 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
           if (ev.type === 'think_delta' && ev.text) live[r] = (live[r] ?? '') + ev.text;
           if (ev.type === 'think') { thinkEv[r] = ev; if (ev.thought) live[r] = ev.thought; }
         }
+
+        // Turn 状态机：仅最后一个回合处于运行态，其余视为已完成
+        const fold = foldMap.get(turn.round);
+        const running = !!opts.running && ti === turns.length - 1;
+        const state: TurnState = running ? 'running' : 'completed';
+
         return (
-          <div key={turn.round} className="process-turn">
-            {rounds.map((r) => {
+          <details key={turn.round} className={`meta-fold${running ? ' running' : ' completed'}`} open={running}>
+            <summary className="fold-summary">
+              <span className="pt-caret">▸</span>
+              {running && <span className="live-dot" title="正在执行" />}
+              <span className="fold-text">{fold ? foldSummaryText(fold) : '继续处理任务过程'}</span>
+              {fold && fold.toolCount > 0 && (
+                <span className="fold-count">{fold.toolCount} 个工具调用</span>
+              )}
+              {fold && fold.errorCount > 0 && (
+                <span className="fold-err">{fold.errorCount} 个错误</span>
+              )}
+              <span className="fold-state">{turnStateText(state, turn.totalMs)}</span>
+            </summary>
+            <div className="fold-body">
+              {rounds.map((r) => {
               const te = thinkEv[r];
               const toolStarts = turn.events.filter(
                 (t) => t.type === 'tool_start' && (t.round ?? turn.round) === r);
@@ -156,16 +263,21 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
                       </div>
                     </details>
                   )}
-                  {toolStarts.map((ts, ti) => {
+                  {toolStarts.map((ts, idx) => {
                     const done = toolEvts.find((t) => t.name === ts.name);
-                    const running = !done;
+                    const isRunning = !done;
+                    const cnName = humanizeToolName(ts.name ?? '');
+                    const showCn = cnName && cnName !== ts.name;
                     return (
-                      <details key={ti} className={`call-item${running ? ' running' : ''}`}>
+                      <details key={idx} className={`call-item${isRunning ? ' running' : ''}`}>
                         <summary className="call-summary">
                           <span className="pt-caret">▸</span>
-                          <span className="call-name">{ts.name}</span>
+                          <span className="call-name" title={ts.name}>
+                            {showCn ? cnName : ts.name}
+                            {showCn && <span className="call-name-en"> · {ts.name}</span>}
+                          </span>
                           <span className="call-args">{fmtArgs(ts.args)}</span>
-                          {running && <span className="live-dot" title="执行中" />}
+                          {isRunning && <span className="live-dot" title="执行中" />}
                           {done && <span className="trace-cost">{fmtMs(done.cost_ms)}</span>}
                         </summary>
                         {done && done.result_preview && (
@@ -179,6 +291,7 @@ function renderProcessBlock(trace: TraceEvent[]): React.ReactElement | null {
               );
             })}
           </div>
+          </details>
         );
       })}
     </div>
@@ -609,14 +722,16 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
                   <span className="msg-stat">{fmtStatRow(m)}</span>
                 )}
               </div>
-              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderProcessBlock(m.trace!)}
+              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderContextUsage(m.trace!)}
+              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderCompaction(m.trace!)}
+              {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderProcessBlock(m.trace!, { running: busy && i === messages.length - 1 })}
               {m.role === 'assistant' && (m.trace?.length ?? 0) > 0 && renderCards(m.trace!)}
               {m.role === 'assistant' && (m.trace ?? []).some((t) => t.type === 'answer' && t.truncated) && !busy && (
                 <button
                   className="tb-btn detail-btn"
                   title="此回答为要点版，点击取完整版（原稿兑现，不重新生成）"
                   onClick={() => void send('详细版')}
-                >📄 详细版</button>
+                >详细版</button>
               )}
               <div
                 className={`bubble${m.role === 'assistant' && !m.content ? ' streaming' : ''}`}
