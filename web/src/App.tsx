@@ -1,41 +1,26 @@
 import React, { useState } from 'react';
-import RightPanel from './components/RightPanel';
-import ChatView from './views/ChatView';
-import MemoryView from './views/MemoryView';
-import SkillsView from './views/SkillsView';
-import SystemView from './views/SystemView';
-import AgentsView from './views/AgentsView';
-import GoalsView from './views/GoalsView';
-import PluginsView from './views/PluginsView';
-import WorkflowView from './views/WorkflowView';
+import SidePanel from './components/SidePanel';
+import { getNavItems, getNavById, type AppCtx } from './plugins/registry';
+import { registerBuiltinPlugins } from './plugins/builtin';
+import { IconSun, IconMoon } from './plugins/icons';
 import { api, type SessionOut } from './api';
 
-type PageId = 'chat' | 'memory' | 'skills' | 'agents' | 'goals' | 'workflow' | 'plugins' | 'system' | 'starmap';
+// 模块加载即把内置页面/面板登记进前端插件注册表（对标 DSH 一切皆插件）
+registerBuiltinPlugins();
+const NAV_ITEMS = getNavItems();
 
-const NAV: { id: PageId; label: string; desc: string }[] = [
-  { id: 'memory', label: '生态空间', desc: '生态环境空间数据与长期记忆检索' },
-  { id: 'skills', label: '生态技能', desc: '生态环境技能库与智能体孵化' },
-  { id: 'agents', label: '生态助手', desc: '后台生态助手目录与任务输出' },
-  { id: 'goals', label: '生态目标', desc: '跨轮生态目标与自动推进' },
-  { id: 'workflow', label: '生态编排', desc: '生态环境工作流编排与计划' },
-  { id: 'plugins', label: '生态插件', desc: '生态环境插件清单与MCP连接器' },
-  { id: 'starmap', label: '旅行地图', desc: 'StarMap 3D 旅行足迹地图（独立应用内嵌）' },
-  { id: 'system', label: '系统', desc: '组件状态与生态指标' },
-];
+/** localStorage 持久化的布尔开关（DSH 式：折叠态/当前 tab 等全局记住，刷新保留） */
+function readBool(key: string, fallback: boolean): boolean {
+  const v = window.localStorage.getItem(key);
+  if (v === null) return fallback;
+  return v === '1';
+}
+function writeBool(key: string, val: boolean): void {
+  window.localStorage.setItem(key, val ? '1' : '0');
+}
 
-const TITLES: Record<PageId, string> = {
-  chat: '生态助手',
-  memory: '生态空间',
-  skills: '生态技能库',
-  agents: '生态助手',
-  goals: '生态目标',
-  workflow: '生态编排',
-  plugins: '生态插件',
-  starmap: '旅行地图',
-  system: '系统状态',
-};
+type PageId = string;
 
-/** 会话展示名：去掉 web_ 平台前缀 */
 function sessionLabel(s: SessionOut): string {
   if (s.name) return s.name;
   const uid = (s.user_id || s.session_id || '').replace(/^web_/, '');
@@ -57,8 +42,8 @@ function relTime(iso: string): string {
 export default function App(): React.ReactElement {
   const [page, setPage] = useState<PageId>('chat');
   const [version, setVersion] = useState<string>('');
-  const [collapsed, setCollapsed] = useState(false);
-  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => readBool('eco-nav-collapsed', false));
+  const [dockOpen, setDockOpen] = useState(() => readBool('eco-dock-open', false));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionOut[]>([]);
   const [query, setQuery] = useState('');
@@ -85,6 +70,10 @@ export default function App(): React.ReactElement {
     window.addEventListener('eco-theme-changed', onThemeChanged);
     return () => window.removeEventListener('eco-theme-changed', onThemeChanged);
   }, []);
+
+  // 折叠 / dock 开关 —— 全局持久化（DSH 式）
+  React.useEffect(() => { writeBool('eco-nav-collapsed', collapsed); }, [collapsed]);
+  React.useEffect(() => { writeBool('eco-dock-open', dockOpen); }, [dockOpen]);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
@@ -201,6 +190,9 @@ export default function App(): React.ReactElement {
     </svg>
   );
 
+  const activeNav = getNavById(page) ?? NAV_ITEMS[0];
+  const ctx: AppCtx = { sessionId: activeSessionId, chatNonce, onActivity: refreshSessions, rightPanelOpen: dockOpen };
+
   return (
     <div className="app">
       <aside className={`nav${collapsed ? ' collapsed' : ''}`}>
@@ -242,35 +234,35 @@ export default function App(): React.ReactElement {
           {!collapsed && <span>新建生态任务</span>}
         </button>
 
-        {/* WorkBuddy 风格主导航 — 直接展示，不折叠 */}
+        {/* 导航栏由前端插件注册表驱动（DSH 式：插件贡献导航项，外壳只组合） */}
         <nav className="nav-menu">
-          {NAV.map((n) => (
+          {NAV_ITEMS.map((n) => (
             <div
               key={n.id}
               className={`nav-item${page === n.id ? ' active' : ''}`}
               title={n.desc}
               onClick={() => setPage(n.id)}
             >
-              <span className="nav-icon">{n.id === 'chat' ? '🌿' : n.id === 'memory' ? '🗺️' : n.id === 'skills' ? '🛠️' : n.id === 'agents' ? '🤖' : n.id === 'goals' ? '🎯' : n.id === 'workflow' ? '⚡' : n.id === 'plugins' ? '🔌' : n.id === 'starmap' ? '🌍' : '⚙️'}</span>
+              <span className="nav-icon">{n.icon}</span>
               {!collapsed && <span className="nav-label">{n.label}</span>}
             </div>
           ))}
         </nav>
 
-        {/* 底部区域 — WorkBuddy 风格 */}
+        {/* 底部区域 —— 纯文字 + SVG，符合专家团 P0-1（禁止 emoji 功能图标） */}
         {!collapsed && (
           <div className="nav-bottom">
             <div className="nb-section">
-              <span className="nb-item">📝 生态任务 ({sessions.length})</span>
-              <span className="nb-item">🗺️ 生态空间 (14)</span>
+              <span className="nb-item">生态任务 ({sessions.length})</span>
+              <span className="nb-item">生态空间 (14)</span>
             </div>
             <div className="nb-section">
-              <span className="nb-item">🟢 社区互动</span>
-              <span className="nb-item">🔔 通知</span>
+              <span className="nb-item">社区互动</span>
+              <span className="nb-item">通知</span>
             </div>
             <div className="nb-foot">
               <span className="foot-btn" title="切换主题" onClick={toggleTheme}>
-                {theme === 'dark' ? '☀' : '🌙'}
+                {theme === 'dark' ? <IconSun /> : <IconMoon />}
               </span>
               <span>v{version || '…'}</span>
             </div>
@@ -279,41 +271,17 @@ export default function App(): React.ReactElement {
       </aside>
       <div className="main">
         <div className="topbar">
-          <h1>{TITLES[page]}</h1>
-          <span className="meta">{NAV.find((n) => n.id === page)?.desc ?? '与 eco Agent 对话'}</span>
+          <h1>{activeNav?.label ?? 'eco Agent'}</h1>
+          <span className="meta">{activeNav?.desc ?? '与 eco Agent 对话'}</span>
         </div>
         <div className="content-area">
           <div className="content">
-            {page === 'chat' && (
-              <ChatView
-                key={`${activeSessionId}:${chatNonce}`}
-                sessionId={activeSessionId}
-                onActivity={refreshSessions}
-              />
-            )}
-            {page === 'memory' && <MemoryView />}
-            {page === 'skills' && <SkillsView />}
-            {page === 'agents' && <AgentsView />}
-            {page === 'goals' && <GoalsView />}
-            {page === 'workflow' && <WorkflowView />}
-            {page === 'plugins' && <PluginsView />}
-            {page === 'starmap' && (
-              <div className="starmap-frame">
-                <iframe
-                  src="http://127.0.0.1:5175/"
-                  title="StarMap 旅行足迹地图"
-                  style={{ width: '100%', height: '100%', border: 0 }}
-                  allow="geolocation; clipboard-write"
-                />
-              </div>
-            )}
-            {page === 'system' && <SystemView />}
+            {/* 中栏由当前导航插件的 mount 渲染（会话态通过 ctx 注入） */}
+            {activeNav?.mount(ctx)}
           </div>
-          <RightPanel
-            open={rightPanelOpen}
-            onToggle={() => setRightPanelOpen((v) => !v)}
-            sessionName={activeSessionId}
-            tags={["大气", "信访", "数据"]}
+          <SidePanel
+            open={dockOpen}
+            onToggle={() => setDockOpen((v) => !v)}
           />
         </div>
       </div>

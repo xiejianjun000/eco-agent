@@ -298,7 +298,7 @@ function renderProcessBlock(trace: TraceEvent[], opts: FoldOpts = {}): React.Rea
   );
 }
 
-export default function ChatView({ sessionId = 'default', onActivity }: { sessionId?: string; onActivity?: () => void }): React.ReactElement {
+export default function ChatView({ sessionId = 'default', onActivity, rightPanelOpen = false }: { sessionId?: string; onActivity?: () => void; rightPanelOpen?: boolean }): React.ReactElement {
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: 'assistant',
@@ -877,8 +877,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
         {voiceError && <div className="voice-status error">{voiceError}</div>}
       </div>
 
-      {/* 右侧「输出产物」面板（DSH Details 栏对标）：可收缩 + 拖拽调宽 */}
-      {!panelOpen ? (
+      {!rightPanelOpen && (!panelOpen ? (
         <div className="side-collapsed" title="展开输出产物栏">
           <button className="side-collapsed-btn" onClick={() => setPanelOpen(true)}>◀</button>
           <span className="side-collapsed-label">产物</span>
@@ -1299,7 +1298,7 @@ export default function ChatView({ sessionId = 'default', onActivity }: { sessio
         )}
       </aside>
         </>
-      )}
+      ))}
     </div>
   );
 }

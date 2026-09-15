@@ -1034,10 +1034,20 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
   font-weight: 600;
 }
 .nav-icon {
-  font-size: 16px;
   width: 22px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  color: var(--t-sub);
+}
+.nav-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.nav-item.active .nav-icon {
+  color: var(--accent);
 }
 .nav-label {
   white-space: nowrap;
@@ -1081,86 +1091,80 @@ html[data-theme='dark'] .hero-logo { filter: brightness(1.5) drop-shadow(0 2px 1
   position: relative;
 }
 
-/* ── 右侧栏 ── */
-.right-panel-toggle {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  z-index: 10;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--t-sub);
-  cursor: pointer;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ── 右侧 ContextPanel（WorkBuddy context-panel 同构）── */
+.context-panel {
+  width: 300px; flex-shrink: 0; display: flex; flex-direction: column;
+  border-left: 1px solid var(--line); background: var(--panel);
+  overflow-y: auto; align-self: stretch;
 }
-.right-panel-toggle:hover {
-  background: var(--fill);
+.context-panel__header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; border-bottom: 1px solid var(--line);
+}
+.context-panel__title { flex: 1; font-size: 15px; font-weight: 600; color: var(--t-main); }
+.context-panel__collapse {
+  width: 28px; height: 28px; flex-shrink: 0; border: none;
+  background: transparent; color: var(--t-aux); border-radius: 6px;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+}
+.context-panel__collapse:hover { background: var(--fill); color: var(--t-main); }
+.context-panel__cards { display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+
+/* 上下文用量环摘要段（对标 WorkBuddy cr-context-usage 五类分段） */
+.ctx-usage-card {
+  display: flex; flex-direction: column; gap: 10px;
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--bg);
+}
+.ctx-usage-head { display: flex; align-items: center; gap: 12px; }
+.ctx-ring-svg { flex: none; }
+.ctx-ring-progress { transition: stroke-dashoffset 0.3s ease; }
+.ctx-usage-meta { display: flex; flex-direction: column; }
+.ctx-usage-pct { font-size: 18px; font-weight: 700; color: var(--t-main); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ctx-usage-sub { font-size: 11px; color: var(--t-aux); font-variant-numeric: tabular-nums; }
+.ctx-usage-cats { display: flex; flex-wrap: wrap; gap: 6px; }
+.ctx-cat {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+  color: var(--t-sub); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px;
+}
+.ctx-cat-v { font-weight: 600; color: var(--t-main); font-variant-numeric: tabular-nums; }
+
+/* 配置卡片（对标 WorkBuddy wb-config-card：filled / empty 双态） */
+.wb-config-card {
+  display: flex; align-items: stretch; gap: 10px;
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+  background: var(--bg); cursor: pointer; text-align: left;
+  transition: border-color 120ms, background 120ms, box-shadow 120ms;
+}
+.wb-config-card:hover { border-color: var(--terra); background: var(--panel); }
+.wb-config-card:focus-visible { outline: 2px solid var(--terra); outline-offset: 1px; }
+.wb-config-card__content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.wb-config-card__title {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--t-main);
+}
+.wb-config-card__icon { color: var(--terra); display: inline-flex; }
+.wb-config-card__icon svg { width: 18px; height: 18px; }
+.wb-config-card__body { font-size: 12px; color: var(--t-sub); }
+.wb-config-card__desc { font-size: 12px; line-height: 1.5; color: var(--t-aux); }
+.wb-config-card__plus {
+  flex-shrink: 0; align-self: flex-start; width: 28px; height: 28px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+  color: var(--t-sub); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.wb-config-card__plus:hover { border-color: var(--terra); color: var(--terra-dark); background: var(--terra-soft); }
+
+/* 专家团 filled 态 chips */
+.sc-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.sc-chip {
+  font-size: 11px; padding: 2px 10px; border-radius: 999px;
+  background: var(--terra-soft); color: var(--terra-dark);
 }
 
-.right-panel {
-  width: 260px;
-  border-left: 1px solid var(--border);
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
+/* 折叠态轨道按钮（贴中栏右侧，展开 ContextPanel） */
+.side-rail-btn {
+  flex-shrink: 0; align-self: stretch; width: 30px; border: none;
+  border-left: 1px solid var(--line); background: var(--panel);
+  color: var(--t-aux); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-
-.rp-header {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--t-main);
-}
-
-.rp-section {
-  border-bottom: 1px solid var(--border);
-}
-.rp-summary {
-  padding: 10px 14px;
-  font-size: 12px;
-  color: var(--t-sub);
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.rp-summary::-webkit-details-marker { display: none; }
-.rp-summary:hover { background: var(--fill); }
-.rp-caret { font-size: 10px; width: 12px; }
-
-.rp-body {
-  padding: 8px 14px 12px;
-  font-size: 12px;
-}
-.rp-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
-  border-bottom: 1px dashed var(--border);
-}
-.rp-key { color: var(--t-sub); }
-.rp-val { color: var(--t-main); font-weight: 500; }
-.rp-empty {
-  color: var(--t-sub);
-  font-size: 12px;
-  padding: 8px 0;
-  text-align: center;
-}
-
-.rp-footer {
-  margin-top: auto;
-  padding: 10px 14px;
-  font-size: 11px;
-  color: var(--t-sub);
-  text-align: center;
-  border-top: 1px solid var(--border);
-}
+.side-rail-btn:hover { background: var(--fill); color: var(--t-main); }
