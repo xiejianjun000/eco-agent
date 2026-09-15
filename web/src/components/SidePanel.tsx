@@ -19,45 +19,67 @@ import { IconChevronRight, IconChevronLeft, IconPlus } from '../plugins/icons';
  *   - empty ：仅标题 + 描述 + 右上角 PlusIcon
  */
 
-/** SVG 用量环（对标 WorkBuddy RingProgress：双 circle、round 端点、rotate(-90) 起顶） */
-function RingProgress({ percent, size = 44, strokeWidth = 4 }: { percent: number; size?: number; strokeWidth?: number }) {
+/** 上下文用量五类（对标 WorkBuddy cr-context-usage 五分色环） */
+const CTX_CATS: { key: keyof ContextUsageData; label: string; color: string }[] = [
+  { key: 'conv', label: '对话', color: 'var(--cat-conv)' },
+  { key: 'tool', label: '工具', color: 'var(--cat-tool)' },
+  { key: 'sp', label: '系统', color: 'var(--cat-sp)' },
+  { key: 'mcp', label: 'MCP', color: 'var(--cat-mcp)' },
+  { key: 'skill', label: '技能', color: 'var(--cat-skill)' },
+];
+
+/** SVG 用量环（对标 WorkBuddy RingProgress：五类分段、rotate(-90) 起顶、顺时针堆叠） */
+function RingProgress({ data, size = 44, strokeWidth = 4 }: { data: ContextUsageData; size?: number; strokeWidth?: number }) {
   const radius = (size - strokeWidth) / 2;
   const c = 2 * Math.PI * radius;
-  const offset = c - (Math.min(100, Math.max(0, percent)) / 100) * c;
+  const max = Math.max(1, data.max);
+  let acc = 0;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="ctx-ring-svg" aria-hidden>
       <circle cx={size / 2} cy={size / 2} r={radius} fill="none"
         stroke="var(--ring-track, rgba(128,128,128,0.2))" strokeWidth={strokeWidth} />
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none"
-        stroke="var(--ring-progress, var(--ds-brand))" strokeWidth={strokeWidth}
-        strokeLinecap="round" strokeDasharray={c} strokeDashoffset={offset}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`} className="ctx-ring-progress" />
+      {CTX_CATS.map((seg) => {
+        const val = (data[seg.key] as number) || 0;
+        const frac = Math.min(1, Math.max(0, val / max));
+        const len = frac * c;
+        const node = (
+          <circle key={seg.key} cx={size / 2} cy={size / 2} r={radius} fill="none"
+            stroke={seg.color} strokeWidth={strokeWidth} strokeLinecap="butt"
+            strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-acc}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`} className="ctx-ring-seg">
+            <title>{`${seg.label}：${val} token`}</title>
+          </circle>
+        );
+        acc += len;
+        return node;
+      })}
     </svg>
   );
 }
 
 /** 上下文用量摘要段（对标 WorkBuddy cr-context-usage-popover 的 byCategory 信息） */
 function UsageSummary({ data }: { data: ContextUsageData }) {
-  const cats: [string, number][] = [
-    ['对话', data.conv], ['工具', data.tool], ['系统', data.sp],
-    ['MCP', data.mcp], ['技能', data.skill],
-  ];
+  const total = CTX_CATS.reduce((a, s) => a + ((data[s.key] as number) || 0), 0) || 1;
   return (
     <div className="ctx-usage-card">
       <div className="ctx-usage-head">
-        <RingProgress percent={data.percent} />
+        <RingProgress data={data} />
         <div className="ctx-usage-meta">
           <div className="ctx-usage-pct">{data.percent}%</div>
           <div className="ctx-usage-sub">{data.used} / {data.max} token</div>
         </div>
       </div>
       <div className="ctx-usage-cats">
-        {cats.map(([k, v]) => (
-          <div className="ctx-cat" key={k}>
-            <span className="ctx-cat-k">{k}</span>
-            <span className="ctx-cat-v">{v}</span>
-          </div>
-        ))}
+        {CTX_CATS.map((s) => {
+          const v = (data[s.key] as number) || 0;
+          return (
+            <div className="ctx-cat" key={s.key}>
+              <span className="ctx-cat-dot" style={{ background: s.color }} />
+              <span className="ctx-cat-k">{s.label}</span>
+              <span className="ctx-cat-v">{v} · {Math.round((v / total) * 100)}%</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

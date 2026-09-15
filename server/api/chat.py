@@ -1990,24 +1990,30 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                 estimate_tokens, should_compact, compact as _do_compact)
             _used = estimate_tokens(messages)
             _max = 8000
-            # 五类近似拆分（conv 对话 / tool 工具 / sp 系统提示 / mcp / skill 从工具事件细分）
-            _role_tokens: dict[str, int] = {}
+            # 五类互斥拆分（conv 对话 / tool 工具 / sp 系统提示 / mcp / skill）
+            # 通过 tool_call_id → 工具名 把每条 tool 消息归属到具体工具，再按名分类，
+            # 保证 conv+sp+tool+mcp+skill == used（不重复计数，环段可精确堆叠）。
+            _call_name: dict[str, str] = {}
+            for _m in messages:
+                if _m.get("role") == "assistant":
+                    for _tc in (_m.get("tool_calls") or []):
+                        _call_name[_tc.get("id")] = (_tc.get("function") or {}).get("name", "")
+            _conv = _sp = _tool = _mcp = _skill = 0
             for _m in messages:
                 _r = _m.get("role", "user")
-                _role_tokens[_r] = _role_tokens.get(_r, 0) + estimate_tokens([_m])
-            _conv = _role_tokens.get("user", 0) + _role_tokens.get("assistant", 0)
-            _sp = _role_tokens.get("system", 0)
-            _tool = _role_tokens.get("tool", 0)
-            _mcp = _skill = 0
-            for _e in trace:
-                if _e.get("type") == "tool":
-                    _n = _e.get("name", "")
-                    _tk = estimate_tokens(
-                        [{"content": json.dumps(_e.get("args") or {}, ensure_ascii=False)}])
+                _tk = estimate_tokens([_m])
+                if _r == "system":
+                    _sp += _tk
+                elif _r in ("user", "assistant"):
+                    _conv += _tk
+                elif _r == "tool":
+                    _n = _call_name.get(_m.get("tool_call_id"), "")
                     if _n.startswith("mcp") or "govmcp" in _n:
                         _mcp += _tk
                     elif "skill" in _n:
                         _skill += _tk
+                    else:
+                        _tool += _tk
             _emit({"type": "context_usage", "used": _used, "max": _max,
                    "conv": _conv, "tool": _tool, "sp": _sp, "mcp": _mcp, "skill": _skill})
             if should_compact(messages, _max):
