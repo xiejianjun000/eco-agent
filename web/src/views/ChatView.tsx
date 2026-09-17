@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { streamChat, api, type ChatUsage, type TraceEvent, type SubagentInfo } from '../api';
+import { setContextUsage } from '../plugins/contextUsageStore';
 import { renderMarkdown, escapeHtml } from '../utils/markdown';
 import { renderToolResult } from '../utils/toolResult';
+import { maskSensitiveInto, hasSensitive } from '../utils/sensitive';
 import { foldTrace, foldSummaryText, turnStateText, type TurnState, humanizeToolName } from '../utils/metaFold';
 
 interface Msg {
@@ -156,7 +158,7 @@ function renderCompaction(trace: TraceEvent[]): React.ReactElement | null {
     <div className="compact-stack">
       {evs.map((e, i) => {
         const st = e.state ?? 'compacted';
-        const tail = st === 'compacted' && e.tokens_before && e.tokens_after
+        const tail = (st === 'compacted' || st === 'limit_reached') && e.tokens_before && e.tokens_after
           ? `（${e.tokens_before}→${e.tokens_after} token${e.method === 'truncate' ? ' · 降级截断' : ''}）`
           : '';
         return (
@@ -196,6 +198,111 @@ function renderCards(trace: TraceEvent[]): React.ReactElement | null {
 interface FoldOpts {
   /** 该消息是否仍在流式执行中（决定 Turn 状态机） */
   running?: boolean;
+}
+
+// 工具调用卡片：敏感信息脱敏显隐 + 文件变更条（查看变更·保留·撤销），对标 WorkBuddy
+function ToolCallCard({ ts, done, isRunning, isErr, cat, cnName, showCn }: {
+  ts: TraceEvent; done?: TraceEvent; isRunning: boolean; isErr: boolean;
+  cat: string; cnName: string; showCn: boolean;
+}): React.ReactElement {
+  const [revealed, setRevealed] = useState(false);
+  const [kept, setKept] = useState(false);
+  const [reverted, setReverted] = useState(false);
+  const [reverting, setReverting] = useState(false);
+  const [diffOpen, setDiffOpen] = useState(false);
+  const [diffData, setDiffData] = useState<{ before: string; after: string; path: string; verb?: string } | null>(null);
+
+  const fc = done?.file_change;
+  const argsObj = ts.args && Object.keys(ts.args).length > 0 ? ts.args : null;
+  const rawDetect = (argsObj ? JSON.stringify(argsObj) : '') + '\n' + (done?.result_preview ?? '');
+  const sens = hasSensitive(rawDetect);
+  const state = isRunning ? 'running' : isErr ? 'error' : 'done';
+  const verbLabel = fc ? ({ write: '写入', edit: '编辑', save: '保存' }[fc.verb] ?? fc.verb) : '';
+
+  async function onViewDiff() {
+    if (!fc) return;
+    if (diffOpen) { setDiffOpen(false); return; }
+    try {
+      const r = await api.fileChangeDiff(fc.change_id);
+      if (r.ok) { setDiffData({ before: r.before || '', after: r.after || '', path: r.path || '', verb: r.verb }); setDiffOpen(true); }
+    } catch { /* 忽略网络异常 */ }
+  }
+  async function onRevert() {
+    if (!fc || reverted) return;
+    setReverting(true);
+    try {
+      const r = await api.fileChangeRevert(fc.change_id);
+      if (r.ok) setReverted(true);
+    } catch { /* 忽略网络异常 */ }
+    setReverting(false);
+  }
+
+  return (
+    <details className={`tool-call tool-call--${state}${revealed ? ' revealed' : ''}`} open={isRunning}>
+      <summary className="tool-call__head">
+        <span className="pt-caret">▸</span>
+        <span className={`tool-call__badge badge-${cat}`}>
+          {cat === 'read' ? '读' : cat === 'write' ? '写' : '执行'}
+        </span>
+        <span className="tool-call__name" title={ts.name}>
+          {showCn ? cnName : ts.name}
+          {showCn && <span className="tool-call__name-en">{ts.name}</span>}
+        </span>
+        {isRunning && <span className="live-dot" title="执行中" />}
+        {!isRunning && <span className="tool-call__state">{isErr ? '失败' : '完成'}</span>}
+        {sens && (
+          <button className="tool-call__sens" type="button" title="本工具含敏感凭据，点击显隐"
+            onClick={(e) => { e.preventDefault(); setRevealed((v) => !v); }}>
+            敏感信息{revealed ? '·已显示' : '·已隐藏'}
+          </button>
+        )}
+        {done && <span className="tool-call__cost">{fmtMs(done.cost_ms)}</span>}
+      </summary>
+      <div className="tool-call__body">
+        {argsObj && (
+          <div className="tool-call__sec">
+            <div className="tool-call__sec-title">参数</div>
+            <pre className="tool-call__params" dangerouslySetInnerHTML={{ __html: maskSensitiveInto(JSON.stringify(argsObj, null, 2)) }} />
+          </div>
+        )}
+        {done && done.result_preview && (
+          <div className="tool-call__sec">
+            <div className="tool-call__sec-title">结果</div>
+            <pre className="tool-call__result" dangerouslySetInnerHTML={{ __html: renderToolResult(done.result_preview, true) }} />
+          </div>
+        )}
+        {fc && (
+          <div className="file-change-bar">
+            <span className="fcb-tag">变更</span>
+            <span className="fcb-path" title={fc.path}>{fc.path}</span>
+            <span className="fcb-verb">{verbLabel}</span>
+            <span className="fcb-actions">
+              <button type="button" className="fcb-btn" onClick={onViewDiff}>{diffOpen ? '收起' : '查看变更'}</button>
+              <button type="button" className="fcb-btn" onClick={onRevert} disabled={reverted || reverting}>{reverted ? '已撤销' : reverting ? '撤销中…' : '撤销'}</button>
+              <button type="button" className="fcb-btn" onClick={() => setKept(true)} disabled={kept}>{kept ? '已保留' : '保留'}</button>
+            </span>
+            {diffOpen && diffData && (
+              <div className="fcb-diff">
+                <div className="fcb-diff-col">
+                  <div className="fcb-diff-h">变更前</div>
+                  <pre>{diffData.before ? escapeHtml(diffData.before) : '（文件此前不存在 / 空）'}</pre>
+                </div>
+                <div className="fcb-diff-col">
+                  <div className="fcb-diff-h">变更后</div>
+                  <pre>{diffData.after ? escapeHtml(diffData.after) : '（读取失败）'}</pre>
+                </div>
+              </div>
+            )}
+            {reverted && (
+              <div className="fcb-note">
+                已于服务端还原{fc.verb === 'save' ? '前的状态（删除新建文件）' : '前的状态'}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </details>
+  );
 }
 
 function renderProcessBlock(trace: TraceEvent[], opts: FoldOpts = {}): React.ReactElement | null {
@@ -267,24 +374,12 @@ function renderProcessBlock(trace: TraceEvent[], opts: FoldOpts = {}): React.Rea
                     const done = toolEvts.find((t) => t.name === ts.name);
                     const isRunning = !done;
                     const cnName = humanizeToolName(ts.name ?? '');
-                    const showCn = cnName && cnName !== ts.name;
+                    const showCn = !!(cnName && cnName !== ts.name);
+                    const cat = done?.category ?? 'exec';
+                    const isErr = !!(done && (done as { error?: boolean }).error);
                     return (
-                      <details key={idx} className={`call-item${isRunning ? ' running' : ''}`}>
-                        <summary className="call-summary">
-                          <span className="pt-caret">▸</span>
-                          <span className="call-name" title={ts.name}>
-                            {showCn ? cnName : ts.name}
-                            {showCn && <span className="call-name-en"> · {ts.name}</span>}
-                          </span>
-                          <span className="call-args">{fmtArgs(ts.args)}</span>
-                          {isRunning && <span className="live-dot" title="执行中" />}
-                          {done && <span className="trace-cost">{fmtMs(done.cost_ms)}</span>}
-                        </summary>
-                        {done && done.result_preview && (
-                          <pre className="call-result"
-                               dangerouslySetInnerHTML={{ __html: renderToolResult(done.result_preview) }} />
-                        )}
-                      </details>
+                      <ToolCallCard key={idx} ts={ts} done={done} isRunning={isRunning}
+                        isErr={isErr} cat={cat} cnName={cnName} showCn={showCn} />
                     );
                   })}
                 </div>
@@ -309,6 +404,11 @@ export default function ChatView({ sessionId = 'default', onActivity, rightPanel
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [model, setModel] = useState('');
+  // 思考力度 6 档（对标 WorkBuddy model.effort.*：极低/低/中/高/超高/极致），localStorage 持久化
+  const [thinkingLevel, setThinkingLevel] = useState<number>(() => {
+    const v = Number(localStorage.getItem('eco_thinking_level'));
+    return v >= 1 && v <= 6 ? v : 3;
+  });
   const [branchTag, setBranchTag] = useState<string | null>(null);
   const [sideTab, setSideTab] = useState<'trace' | 'artifact' | 'doc' | 'task' | 'slot' | 'preview'>('trace');
   const [docFiles, setDocFiles] = useState<{ name: string; path: string; size_kb: number }[]>([]);
@@ -567,7 +667,7 @@ export default function ChatView({ sessionId = 'default', onActivity, rightPanel
     sawDocEventRef.current = false;
     contentRef.current = '';
     try {
-      await streamChat(withAttach, history, sessionId, model, (delta, meta) => {
+      await streamChat(withAttach, history, sessionId, model, thinkingLevel, (delta, meta) => {
         contentRef.current = meta?.reset ? delta : contentRef.current + delta;
         setMessages((prev) => {
           const next = [...prev];
@@ -587,6 +687,18 @@ export default function ChatView({ sessionId = 'default', onActivity, rightPanel
           next[next.length - 1] = { ...last, trace: [...(last.trace ?? []), ev] };
           return next;
         });
+        // 上下文用量事件 → 写入共享 store，驱动右栏（SidePanel）用量环实时刷新
+        // （后端事件只带 used/max + 五类拆分，percent 由前端按 used/max 推导）
+        if (ev.type === 'context_usage') {
+          const u = ev.used ?? 0;
+          const m = ev.max ?? 8000;
+          setContextUsage({
+            used: u, max: m,
+            percent: m > 0 ? Math.min(100, Math.round((u / m) * 100)) : 0,
+            conv: ev.conv ?? 0, tool: ev.tool ?? 0, sp: ev.sp ?? 0,
+            mcp: ev.mcp ?? 0, skill: ev.skill ?? 0,
+          });
+        }
         // document 事件：文档生成/上传完成 → 自动在右侧预览面板打开
         if (ev.type === 'document' && ev.url) {
           sawDocEventRef.current = true;
@@ -733,16 +845,22 @@ export default function ChatView({ sessionId = 'default', onActivity, rightPanel
                   onClick={() => void send('详细版')}
                 >详细版</button>
               )}
-              <div
-                className={`bubble${m.role === 'assistant' && !m.content ? ' streaming' : ''}`}
-                dangerouslySetInnerHTML={{
-                  __html: m.content
-                    ? m.role === 'assistant'
-                      ? renderMarkdown(m.content)
-                      : escapeHtml(m.content).replace(/\n/g, '<br/>')
-                    : (busy ? '<span class="thinking">正在思考<span class="dots">…</span></span>' : ''),
-                }}
-              />
+              {m.role === 'assistant' ? (
+                m.content ? (
+                  <div className="assistant-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} />
+                ) : (
+                  busy && (
+                    <div className="assistant-md">
+                      <span className="thinking">正在思考<span className="dots">…</span></span>
+                    </div>
+                  )
+                )
+              ) : (
+                <div
+                  className="bubble user-bubble"
+                  dangerouslySetInnerHTML={{ __html: escapeHtml(m.content).replace(/\n/g, '<br/>') }}
+                />
+              )}
               {m.role === 'user' && (m.attachments?.length ?? 0) > 0 && (
                 <div className="attach-chips">
                   {m.attachments!.map((a, ai) => (
@@ -859,6 +977,23 @@ export default function ChatView({ sessionId = 'default', onActivity, rightPanel
             <option value="deepseek-v4-flash">deepseek-v4-flash</option>
             <option value="qwen-max">qwen-max</option>
             <option value="claude-sonnet-4-20260514">claude-sonnet-4</option>
+          </select>
+          <select
+            className="model-select"
+            title="思考力度（对标 WorkBuddy 思考档位 6 档：极低/低/中/高/超高/极致）"
+            value={thinkingLevel}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setThinkingLevel(v);
+              localStorage.setItem('eco_thinking_level', String(v));
+            }}
+          >
+            <option value={1}>思考·极低</option>
+            <option value={2}>思考·低</option>
+            <option value={3}>思考·中（默认）</option>
+            <option value={4}>思考·高</option>
+            <option value={5}>思考·超高</option>
+            <option value={6}>思考·极致</option>
           </select>
           <button
             className="btn"
@@ -1061,7 +1196,7 @@ export default function ChatView({ sessionId = 'default', onActivity, rightPanel
                                           <span className={`trace-badge badge-${t.category ?? 'exec'}`}>
                                             {t.category === 'read' ? '读' : t.category === 'write' ? '写' : '执行'}
                                           </span>
-                                          <span className="trace-detail">{t.name}({JSON.stringify(t.args ?? {}).slice(0, 70)})</span>
+                                          <span className="trace-detail" dangerouslySetInnerHTML={{ __html: maskSensitiveInto(`${t.name}(${JSON.stringify(t.args ?? {}).slice(0, 70)})`) }} />
                                           <span className="trace-cost">{t.cost_ms}ms</span>
                                         </div>
                                         {t.result_preview && (
@@ -1070,7 +1205,7 @@ export default function ChatView({ sessionId = 'default', onActivity, rightPanel
                                               {t.result_preview.slice(0, 150)}
                                               {t.result_preview.length > 150 ? ' …(展开全文)' : ''}
                                             </summary>
-                                            <pre className="trace-result-full">{escapeHtml(t.result_preview)}</pre>
+                                            <pre className="trace-result-full" dangerouslySetInnerHTML={{ __html: maskSensitiveInto(t.result_preview ?? '') }} />
                                           </details>
                                         )}
                                       </div>

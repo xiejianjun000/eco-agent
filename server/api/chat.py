@@ -12,6 +12,8 @@ import asyncio
 import json
 import logging
 import re
+import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -24,6 +26,17 @@ import os as _os_default_model
 DEFAULT_CHAT_MODEL = _os_default_model.environ.get("ECO_DEFAULT_MODEL", "deepseek-v4-pro")
 
 router = APIRouter()
+
+# 文件变更登记（查看变更·保留·撤销，对标 WorkBuddy）：write/edit/save 工具成功后
+# 登记 change_id 与执行前快照（before），前端据此拉取 diff / 触发服务端还原撤销。
+# 进程内内存存储（演示/单实例足够），超限按插入顺序裁剪。
+_FILE_CHANGES: dict[str, dict] = {}
+
+
+def _prune_file_changes(max_keep: int = 300) -> None:
+    if len(_FILE_CHANGES) > max_keep:
+        for _k in list(_FILE_CHANGES)[: len(_FILE_CHANGES) - max_keep]:
+            _FILE_CHANGES.pop(_k, None)
 
 
 class ChatRequest(BaseModel):
@@ -1649,10 +1662,11 @@ async def _call_llm_with_span(tree, client, model, messages, tools, round_idx,
             msg, err = await loop.run_in_executor(
                 None, lambda: client._call_chat_with_tools_stream(
                     model_name, messages, tools, on_chunk=on_chunk,
-                    on_reasoning=on_reasoning))
+                    on_reasoning=on_reasoning, temperature=temperature))
         else:
             msg, err = await loop.run_in_executor(
-                None, lambda: client._call_chat_with_tools(model_name, messages, tools))
+                None, lambda: client._call_chat_with_tools(
+                    model_name, messages, tools, temperature=temperature))
     except Exception as e:  # noqa: BLE001 — 观测不应改变调用语义
         msg, err = None, str(e)
     tree.end(span_id, finish_reason="ok" if (err is None and msg is not None) else "error")
@@ -1698,12 +1712,16 @@ async def _chat_with_codex_loop(client, messages: list[dict], model: str = "",
 
 async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                                      on_event, stream_answer, tree,
+                                     thinking_level: int = 3,
                                      web_client: bool = False) -> tuple:
     """_chat_with_codex_loop 的核心实现（原循环体，仅 LLM/工具调用外包 span）。"""
     import asyncio
     import json
     import re
     import time
+
+    from agent_core.llm_client import thinking_temp
+    _think_temp = thinking_temp(thinking_level)
 
     from agent_core.trace_audit import get_trace_audit
 
@@ -1741,6 +1759,72 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                 on_event(ev)
             except Exception:  # noqa: BLE001
                 pass
+
+    def _emit_context_usage() -> None:
+        """上下文用量可视化 + 压缩（对标 WorkBuddy P0：把不可见变可见）。
+
+        每个回合（含纯文本直答）结束都下发一次 context_usage，使右栏环随上下文
+        持续增长，而非仅在触发工具时才刷新。五类互斥拆分保证
+        conv+sp+tool+mcp+skill == used，环段可精确堆叠。压缩在同一次计算内完成，
+        失败不阻断主流程。
+        """
+        try:
+            from agent_core.compaction import (
+                estimate_tokens, should_compact, compact as _do_compact)
+            _used = estimate_tokens(messages)
+            _max = 8000
+            # 五类互斥拆分（conv 对话 / tool 工具 / sp 系统提示 / mcp / skill）
+            # 通过 tool_call_id → 工具名 把每条 tool 消息归属到具体工具，再按名分类，
+            # 保证 conv+sp+tool+mcp+skill == used（不重复计数，环段可精确堆叠）。
+            _call_name: dict[str, str] = {}
+            for _m in messages:
+                if _m.get("role") == "assistant":
+                    for _tc in (_m.get("tool_calls") or []):
+                        _call_name[_tc.get("id")] = (_tc.get("function") or {}).get("name", "")
+            _conv = _sp = _tool = _mcp = _skill = 0
+            for _m in messages:
+                _r = _m.get("role", "user")
+                _tk = estimate_tokens([_m])
+                if _r == "system":
+                    _sp += _tk
+                elif _r in ("user", "assistant"):
+                    _conv += _tk
+                elif _r == "tool":
+                    _n = _call_name.get(_m.get("tool_call_id"), "")
+                    if _n.startswith("mcp") or "govmcp" in _n:
+                        _mcp += _tk
+                    elif "skill" in _n:
+                        _skill += _tk
+                    else:
+                        _tool += _tk
+            _emit({"type": "context_usage", "used": _used, "max": _max,
+                   "conv": _conv, "tool": _tool, "sp": _sp, "mcp": _mcp, "skill": _skill})
+            if should_compact(messages, _max):
+                _emit({"type": "compaction", "state": "compacting"})
+                _res = _do_compact(messages, session_id=session_id, max_tokens=_max)
+                messages[:] = _res["messages"]
+                # 四态闭环（对标 WorkBuddy compactDivider）：
+                #   compacted     — 压缩成功且已回落到上限内；
+                #   limit_reached — 压缩后仍触顶（模型在上下文极限边缘运行）；
+                #   cancelled     — 无可精简内容（no-op，压缩被取消）。
+                _before = _res["tokens_before"]
+                _after = _res["tokens_after"]
+                if _after < _before:
+                    if _after >= _max:
+                        _emit({"type": "compaction", "state": "limit_reached",
+                               "tokens_before": _before, "tokens_after": _after,
+                               "method": _res["method"]})
+                    else:
+                        _emit({"type": "compaction", "state": "compacted",
+                               "tokens_before": _before, "tokens_after": _after,
+                               "method": _res["method"]})
+                else:
+                    _emit({"type": "compaction", "state": "cancelled",
+                           "tokens_before": _before, "tokens_after": _after,
+                           "method": _res["method"]})
+        except Exception:  # noqa: BLE001 — 用量/压缩失败不阻断主流程
+            pass
+
     round_idx = 0
     for _ in range(max_rounds):
         round_idx += 1
@@ -1776,14 +1860,16 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                     tree, client, model, messages, tools, round_idx)
         else:
             msg, err = await _call_llm_with_span(
-                tree, client, model, messages, tools, round_idx)
+                tree, client, model, messages, tools, round_idx,
+                temperature=_think_temp)
         if err or msg is None:
             # 瞬时故障（read timeout 等）先重试一次（非流式）
             _emit({"type": "correction", "round": round_idx, "note": f"LLM瞬时故障重试: {err}"})
             await asyncio.sleep(1.5)
             t_llm = time.monotonic()
             msg, err = await _call_llm_with_span(
-                tree, client, model, messages, tools, round_idx)
+                tree, client, model, messages, tools, round_idx,
+                temperature=_think_temp)
         llm_ms = int((time.monotonic() - t_llm) * 1000)
         if err or msg is None:
             return _llm_error_reply(err), trace, total_usage, first_llm_ms, first_token_ms
@@ -1905,6 +1991,8 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                 pass
             _emit({"type": "answer", "round": round_idx, "chars": len(content),
                    "truncated": _was_cut_early})
+            messages.append({"role": "assistant", "content": content})
+            _emit_context_usage()
             return content, trace, total_usage, first_llm_ms, first_token_ms
         _emit({"type": "think", "round": round_idx, "cost_ms": llm_ms,
                "tools": [tc["function"]["name"] for tc in tool_calls],
@@ -1920,6 +2008,17 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                 args = json.loads(raw_args) if isinstance(raw_args, str) else (raw_args or {})
             except json.JSONDecodeError:
                 args = {}
+            # 文件变更快照（撤销用）：file_write/file_edit 执行前读取原内容
+            _before = None
+            if name in ("file_write", "file_edit"):
+                _p = args.get("path") if isinstance(args, dict) else None
+                if isinstance(_p, str) and _p:
+                    try:
+                        _pp = Path(_p)
+                        if _pp.is_file():
+                            _before = _pp.read_text(encoding="utf-8", errors="replace")
+                    except Exception:
+                        _before = None
             # 工具开始事件（DSH 式分段节奏：前端先显示 running 行，完成后收缩）
             _emit({"type": "tool_start", "round": round_idx, "name": name,
                    "args": args})
@@ -1930,7 +2029,7 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                 logger.warning("tool %s failed: %s", name, e)
                 result = f"工具执行失败: {e}"
             tool_ms = int((time.monotonic() - t_tool) * 1000)
-            return tc.get("id", ""), name, args, result, tool_ms
+            return tc.get("id", ""), name, args, result, tool_ms, _before
 
         # tool_call span：并行执行前统一 start（顺序执行避免共享栈交错），执行后按 LIFO end
         tool_span_ids: list[str] = []
@@ -1948,12 +2047,33 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
         for i in range(len(tool_span_ids) - 1, -1, -1):
             tree.end(tool_span_ids[i], result=str(results[i][3])[:200])
 
-        for tool_call_id, name, args, result, tool_ms in results:
+        for tool_call_id, name, args, result, tool_ms, before in results:
+            # 文件变更记录（查看变更·保留·撤销，对标 WorkBuddy）：write/edit/save
+            # 成功后登记 change_id 与执行前快照，前端可拉取 diff / 触发撤销还原。
+            _file_change = None
+            if name in ("file_write", "file_edit", "save_document"):
+                try:
+                    _rj = json.loads(result)
+                    _fp = _rj.get("path")
+                except Exception:
+                    _fp = None
+                if _fp and ('"ok": true' in result.lower() or '"saved": true' in result.lower()):
+                    _cid = uuid.uuid4().hex
+                    _FILE_CHANGES[_cid] = {"session_id": session_id, "path": _fp,
+                                           "before": before, "verb": name}
+                    _prune_file_changes()
+                    _file_change = {"change_id": _cid, "path": _fp,
+                                    "verb": {"file_write": "write",
+                                             "file_edit": "edit",
+                                             "save_document": "save"}[name]}
             # 轨迹事件（UI 展示，stream 模式下实时推送）
-            _emit({"type": "tool", "round": round_idx, "name": name,
+            _ev = {"type": "tool", "round": round_idx, "name": name,
                    "category": _tool_category(name),
                    "args": args, "result_preview": _smart_preview(result),
-                   "cost_ms": tool_ms})
+                   "cost_ms": tool_ms}
+            if _file_change:
+                _ev["file_change"] = _file_change
+            _emit(_ev)
             # chart_render：工具成功即用同一参数确定性重生成 HTML，直接发 card 事件。
             # 模型不接触 HTML（防截断/手写错误），前端沙箱卡片直接渲染离线 SVG。
             if name == "chart_render" and '"ok": true' in str(result):
@@ -1984,48 +2104,7 @@ async def _chat_with_codex_loop_impl(client, messages, model, max_rounds,
                                    level=_tool_level(name), decision="allow")
             messages.append({"role": "tool", "tool_call_id": tool_call_id,
                              "content": result})
-        # ── 上下文用量可视化 + 压缩（对标 WorkBuddy P0：把不可见变可见）──
-        try:
-            from agent_core.compaction import (
-                estimate_tokens, should_compact, compact as _do_compact)
-            _used = estimate_tokens(messages)
-            _max = 8000
-            # 五类互斥拆分（conv 对话 / tool 工具 / sp 系统提示 / mcp / skill）
-            # 通过 tool_call_id → 工具名 把每条 tool 消息归属到具体工具，再按名分类，
-            # 保证 conv+sp+tool+mcp+skill == used（不重复计数，环段可精确堆叠）。
-            _call_name: dict[str, str] = {}
-            for _m in messages:
-                if _m.get("role") == "assistant":
-                    for _tc in (_m.get("tool_calls") or []):
-                        _call_name[_tc.get("id")] = (_tc.get("function") or {}).get("name", "")
-            _conv = _sp = _tool = _mcp = _skill = 0
-            for _m in messages:
-                _r = _m.get("role", "user")
-                _tk = estimate_tokens([_m])
-                if _r == "system":
-                    _sp += _tk
-                elif _r in ("user", "assistant"):
-                    _conv += _tk
-                elif _r == "tool":
-                    _n = _call_name.get(_m.get("tool_call_id"), "")
-                    if _n.startswith("mcp") or "govmcp" in _n:
-                        _mcp += _tk
-                    elif "skill" in _n:
-                        _skill += _tk
-                    else:
-                        _tool += _tk
-            _emit({"type": "context_usage", "used": _used, "max": _max,
-                   "conv": _conv, "tool": _tool, "sp": _sp, "mcp": _mcp, "skill": _skill})
-            if should_compact(messages, _max):
-                _emit({"type": "compaction", "state": "compacting"})
-                _res = _do_compact(messages, session_id=session_id, max_tokens=_max)
-                messages[:] = _res["messages"]
-                _emit({"type": "compaction", "state": "compacted",
-                       "tokens_before": _res["tokens_before"],
-                       "tokens_after": _res["tokens_after"],
-                       "method": _res["method"]})
-        except Exception:  # noqa: BLE001 — 用量/压缩失败不阻断主流程
-            pass
+        _emit_context_usage()
     # 循环耗尽：追加总结指令，强制基于已检索结果直接回答
     messages.append({
         "role": "user",
@@ -2590,6 +2669,44 @@ def _tool_category(name: str) -> str:
     if name in write_tools:
         return "write"
     return "exec"
+
+
+# ── 文件变更：查看变更 / 撤销还原（对标 WorkBuddy 文件变更条）──────────────
+@router.get("/file-change/diff/{change_id}")
+async def file_change_diff(change_id: str):
+    """返回某次文件变更的「变更前 / 变更后」全文，供前端 diff 视图展示。"""
+    rec = _FILE_CHANGES.get(change_id)
+    if not rec:
+        return {"ok": False, "error": "变更记录不存在或已过期"}
+    before = rec.get("before") or ""
+    after = ""
+    try:
+        _p = Path(rec["path"])
+        if _p.is_file():
+            after = _p.read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        after = ""
+    return {"ok": True, "path": rec["path"], "verb": rec.get("verb"),
+            "before": before, "after": after}
+
+
+@router.post("/file-change/revert")
+async def file_change_revert(req: dict):
+    """撤销某次文件变更：write/edit 还原执行前快照；save（新建）删除所建文件。"""
+    change_id = (req or {}).get("change_id")
+    rec = _FILE_CHANGES.get(change_id) if change_id else None
+    if not rec:
+        return {"ok": False, "error": "变更记录不存在或已过期"}
+    try:
+        _p = Path(rec["path"])
+        if rec.get("before") is not None:
+            _p.parent.mkdir(parents=True, exist_ok=True)
+            _p.write_text(rec["before"], encoding="utf-8")
+        elif _p.exists():
+            _p.unlink()
+        return {"ok": True, "path": rec["path"], "verb": rec.get("verb")}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": str(e)}
 
 
 def _maybe_return_full(message: str) -> str | None:

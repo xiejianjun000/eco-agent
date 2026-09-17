@@ -87,6 +87,8 @@ export interface TraceEvent {
   sp?: number;
   mcp?: number;
   skill?: number;
+  /** file_change 事件（对标 WorkBuddy 文件变更条）：write/edit/save 工具成功后的变更登记 */
+  file_change?: { change_id: string; path: string; verb: string };
 }
 
 export interface Skill {
@@ -210,6 +212,14 @@ export const api = {
   workflowRun: (script: string, args?: Record<string, unknown>, timeout?: number) =>
     post<{ ok: boolean; result?: unknown; log?: { type: string; title?: string; message?: string; label?: string; chars?: number; error?: string }[]; duration_ms?: number; error?: string }>('/workflow', { script, args: args ?? {}, timeout: timeout ?? 600 }),
 
+  /** 文件变更：查看变更前后全文（diff 视图） */
+  fileChangeDiff: (changeId: string) =>
+    get<{ ok: boolean; path?: string; verb?: string; before?: string; after?: string; error?: string }>(
+      `/file-change/diff/${encodeURIComponent(changeId)}`),
+  /** 文件变更：撤销还原（write/edit 还原执行前快照；save 删除所建文件） */
+  fileChangeRevert: (changeId: string) =>
+    post<{ ok: boolean; path?: string; verb?: string; error?: string }>('/file-change/revert', { change_id: changeId }),
+
   /** 附件上传（multipart）→ 工作区 uploads/，返回模型可读的服务器路径 */
   uploadFile: async (f: File) => {
     const fd = new FormData();
@@ -240,6 +250,7 @@ export async function streamChat(
   history: { role: string; content: string }[],
   sessionId: string,
   model: string,
+  thinkingLevel: number = 3,
   onDelta: (text: string, meta?: { ttft_ms?: number; reset?: boolean }) => void,
   onEvent?: (ev: TraceEvent) => void,
   onDone?: (meta: { duration_ms?: number; trace?: TraceEvent[]; usage?: ChatUsage; ttft_ms?: number; suggestions?: string[] }) => void,
@@ -247,7 +258,7 @@ export async function streamChat(
   const res = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-ECO-CLIENT': 'web' },
-    body: JSON.stringify({ message, history, session_id: sessionId, model }),
+    body: JSON.stringify({ message, history, session_id: sessionId, model, thinking_level: thinkingLevel }),
   });
   if (!res.body) throw new Error('stream body unavailable');
   const reader = res.body.getReader();

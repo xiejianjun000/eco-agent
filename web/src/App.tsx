@@ -4,6 +4,7 @@ import { getNavItems, getNavById, type AppCtx } from './plugins/registry';
 import { registerBuiltinPlugins } from './plugins/builtin';
 import { IconSun, IconMoon } from './plugins/icons';
 import { api, type SessionOut } from './api';
+import { setContextUsage, type ContextUsageData } from './plugins/contextUsageStore';
 
 // 模块加载即把内置页面/面板登记进前端插件注册表（对标 DSH 一切皆插件）
 registerBuiltinPlugins();
@@ -43,7 +44,7 @@ export default function App(): React.ReactElement {
   const [page, setPage] = useState<PageId>('chat');
   const [version, setVersion] = useState<string>('');
   const [collapsed, setCollapsed] = useState(() => readBool('eco-nav-collapsed', false));
-  const [dockOpen, setDockOpen] = useState(() => readBool('eco-dock-open', false));
+  const [dockOpen, setDockOpen] = useState(() => readBool('eco-dock-open', true));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionOut[]>([]);
   const [query, setQuery] = useState('');
@@ -86,6 +87,18 @@ export default function App(): React.ReactElement {
         if (list.length > 0) setActiveSessionId(list[0].session_id);
       }).catch(() => {});
     });
+  }, []);
+
+  // 演示模式（?demo=1）：无后端时也能直观看到五分色分段环——
+  // 强制展开右栏并用示例五类数据填满用量环（仅预览用，不影响真实会话）。
+  React.useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('demo')) return;
+    setDockOpen(true);
+    const sample: ContextUsageData = {
+      used: 6240, max: 8000, percent: 78,
+      conv: 2620, tool: 1810, sp: 920, mcp: 560, skill: 330,
+    };
+    setContextUsage(sample);
   }, []);
 
   const refreshSessions = () => {

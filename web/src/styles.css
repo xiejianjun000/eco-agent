@@ -657,6 +657,137 @@ details[open] > .think-summary .pt-caret, details[open] > .call-summary .pt-care
   white-space: pre-wrap; word-break: break-word;
   max-height: 120px; overflow-y: auto;
 }
+
+/* ── 工具调用卡：对标 WorkBuddy cb-chat-ui（toolCallContent/Header/Body/Section） ──
+ * 取值对齐 lib-chat-ui CSS：卡片 radius 4px、margin 12px 0、头部 8px 12px 双色块、
+ * 参数区 radius 4px / padding 8px / 字号 13px。 */
+.tool-call {
+  border: 1px solid var(--line); border-radius: 4px; margin: 12px 0;
+  background: var(--ds-n-100); overflow: hidden;
+}
+.tool-call--error { border-color: var(--ds-red); }
+.tool-call__head {
+  display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--t-main);
+  background: var(--panel); line-height: 16px; user-select: none;
+}
+.tool-call__head:hover { background: var(--fill); }
+.tool-call__caret { color: var(--t-aux); font-size: 10px; transition: transform .12s; }
+details[open] > .tool-call__head .tool-call__caret { transform: rotate(90deg); }
+.tool-call__badge {
+  font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0;
+}
+.badge-read { color: var(--ds-brand); background: var(--ds-brand-soft); }
+.badge-write { color: var(--ds-green); background: var(--ds-green-soft); }
+.badge-exec { color: var(--ds-purple); background: var(--ds-n-200); }
+.tool-call__name {
+  font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace);
+  font-weight: 600; color: var(--t-main); font-size: 13px;
+}
+.tool-call__name-en { color: var(--t-aux); font-size: 11px; margin-left: 6px; font-weight: 400; }
+.tool-call__state { font-size: 11px; color: var(--t-aux); margin-left: 2px; }
+.tool-call--done .tool-call__state { color: var(--ds-green); }
+.tool-call--error .tool-call__state { color: var(--ds-red); }
+.tool-call--running .tool-call__state { color: var(--ds-brand); }
+.tool-call__cost { font-size: 11px; color: var(--t-aux); margin-left: auto; font-variant-numeric: tabular-nums; }
+.tool-call__body { padding: 8px 12px; }
+.tool-call__sec { margin-bottom: 8px; }
+.tool-call__sec:last-child { margin-bottom: 0; }
+.tool-call__sec-title {
+  font-size: 12px; color: var(--t-aux); font-weight: 600; margin-bottom: 4px;
+}
+.tool-call__params, .tool-call__result {
+  font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 13px; line-height: 1.55; color: var(--t-sub);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
+  padding: 8px; margin: 0; white-space: pre-wrap; word-break: break-word;
+  max-height: 240px; overflow: auto;
+}
+/* 敏感信息脱敏（对标 WorkBuddy 敏感信息标签）：默认隐藏，卡片显隐后显示原文 */
+.tool-call__sens {
+  margin-left: 6px; font-size: 11px; font-weight: 600; cursor: pointer;
+  color: var(--ds-red); background: var(--ds-red-soft, #fdeaea);
+  border: 1px solid var(--ds-red, #e9a0a0); border-radius: 4px; padding: 1px 6px;
+}
+.tool-call__sens:hover { filter: brightness(0.97); }
+.sensitive { background: var(--ds-n-200); border-radius: 3px; padding: 0 2px; }
+.sensitive__full { display: none; }
+.tool-call.revealed .sensitive__full { display: inline; }
+.tool-call.revealed .sensitive__mask { display: none; }
+.sensitive__mask { color: var(--ds-red); }
+
+/* 文件变更条（对标 WorkBuddy 文件变更条：查看变更·保留·撤销） */
+.file-change-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  margin-top: 8px; padding: 7px 10px; background: var(--fill);
+  border: 1px solid var(--line); border-radius: 6px; font-size: 12px;
+}
+.fcb-tag {
+  font-size: 11px; font-weight: 600; color: var(--ds-brand); background: var(--ds-brand-soft);
+  border-radius: 4px; padding: 1px 6px; flex-shrink: 0;
+}
+.fcb-path {
+  font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace);
+  color: var(--t-main); word-break: break-all; flex: 1 1 200px; min-width: 0;
+}
+.fcb-verb {
+  font-size: 11px; color: var(--t-aux); background: var(--ds-green-soft);
+  color: var(--ds-green); border-radius: 4px; padding: 1px 6px; flex-shrink: 0;
+}
+.fcb-actions { display: inline-flex; gap: 4px; flex-shrink: 0; }
+.fcb-btn {
+  font-size: 11px; cursor: pointer; color: var(--t-sub);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px;
+}
+.fcb-btn:hover:not(:disabled) { background: var(--fill); border-color: var(--ds-brand); color: var(--ds-brand); }
+.fcb-btn:disabled { opacity: .55; cursor: default; }
+.fcb-diff {
+  flex-basis: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;
+}
+.fcb-diff-col { min-width: 0; }
+.fcb-diff-h { font-size: 11px; color: var(--t-aux); font-weight: 600; margin-bottom: 3px; }
+.fcb-diff pre {
+  margin: 0; max-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace); font-size: 12px;
+  line-height: 1.5; color: var(--t-sub); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px;
+}
+.fcb-note { flex-basis: 100%; font-size: 11px; color: var(--ds-green); }
+
+/* ── 助手消息：对标 WorkBuddy assistantTextContent（全宽 markdown，无气泡） ── */
+.msg.assistant { max-width: 100%; }
+.assistant-md {
+  padding: 2px 0; font-size: 15px; line-height: 1.7; color: var(--t-main);
+  word-break: break-word;
+}
+.assistant-md > :first-child { margin-top: 0; }
+.assistant-md > :last-child { margin-bottom: 0; }
+
+/* ── 上下文用量环 hover 悬浮明细（对标 WorkBuddy cr-context-usage-popover） ── */
+.ctx-ring-wrap { position: relative; display: inline-flex; cursor: default; outline: none; }
+.ctx-ring-pop {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 50;
+  min-width: 184px; padding: 10px 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  opacity: 0; visibility: hidden; transform: translateY(-4px);
+  transition: opacity .12s, transform .12s, visibility .12s;
+}
+.ctx-ring-wrap:hover .ctx-ring-pop,
+.ctx-ring-wrap:focus-within .ctx-ring-pop {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.ctx-ring-pop__title { font-size: 12px; font-weight: 600; color: var(--t-sub); margin-bottom: 6px; }
+.ctx-ring-pop__row {
+  display: flex; align-items: center; gap: 6px; font-size: 12px;
+  color: var(--t-sub); padding: 2px 0;
+}
+.ctx-ring-pop__k { flex: 1; }
+.ctx-ring-pop__v { color: var(--t-aux); font-variant-numeric: tabular-nums; }
+.ctx-ring-pop__foot {
+  margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--t-aux); font-variant-numeric: tabular-nums;
+}
 /* 实时思考流（DSH Think 流）：思考中状态呼吸提示 */
 @keyframes eco-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 .msg.user .msg-toolbar { justify-content: flex-end; }

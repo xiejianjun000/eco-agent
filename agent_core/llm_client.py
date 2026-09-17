@@ -347,6 +347,24 @@ class LLMClient:
         """kimi-k2.x 系列只接受 temperature=1，其余模型透传（前缀匹配，大小写不敏感）"""
         return 1 if (model or "").lower().startswith("kimi-k2") else temp
 
+    # ── 思考力度 6 档（对标 WorkBuddy model.effort.*：低/低/中/高/超高/极致）──
+    # 通用 knob 为采样温度（对所有 OpenAI 兼容模型安全）；reasoner 模型专用
+    # reasoning_effort 因各 provider 参数名/接受度不一，默认不下发（见 _call_* 注释）。
+    THINKING_LEVELS = (
+        {"level": 1, "label": "极低", "temp": 0.2},
+        {"level": 2, "label": "低",   "temp": 0.4},
+        {"level": 3, "label": "中",   "temp": 0.7},   # 默认档，与原 0.7 一致，无回归
+        {"level": 4, "label": "高",   "temp": 0.9},
+        {"level": 5, "label": "超高", "temp": 1.1},
+        {"level": 6, "label": "极致", "temp": 1.3},
+    )
+
+    @classmethod
+    def thinking_temp(cls, level: int) -> float:
+        """思考档位 1-6 → 采样温度（越高级越发散/越详尽）。"""
+        lv = max(1, min(6, int(level or 3)))
+        return cls.THINKING_LEVELS[lv - 1]["temp"]
+
     def chat(self, messages: list, model: str = "", stream: bool = False, temperature: float = 0.7) -> dict:
         """OpenAI-compatible chat completions。
         后端链：GOVMCP 网关（若配置）→ provider 直连 → Kimi 直连兜底（非 kimi provider 时）。
@@ -505,7 +523,7 @@ class LLMClient:
         body = {
             "model": model,
             "messages": messages,
-            "temperature": self._resolve_temperature(model, 0.7),
+            "temperature": self._resolve_temperature(model, temperature),
             "stream": False,
         }
         if tools:
@@ -567,7 +585,7 @@ class LLMClient:
         body = {
             "model": model,
             "messages": messages,
-            "temperature": self._resolve_temperature(model, 0.7),
+            "temperature": self._resolve_temperature(model, temperature),
             "stream": True,
         }
         if tools:

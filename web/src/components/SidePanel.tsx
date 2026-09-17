@@ -63,7 +63,23 @@ function UsageSummary({ data }: { data: ContextUsageData }) {
   return (
     <div className="ctx-usage-card">
       <div className="ctx-usage-head">
-        <RingProgress data={data} />
+        <div className="ctx-ring-wrap" tabIndex={0} role="button" aria-label="上下文用量明细">
+          <RingProgress data={data} />
+          <div className="ctx-ring-pop" role="tooltip">
+            <div className="ctx-ring-pop__title">上下文用量明细</div>
+            {CTX_CATS.map((s) => {
+              const v = (data[s.key] as number) || 0;
+              return (
+                <div className="ctx-ring-pop__row" key={s.key}>
+                  <span className="ctx-cat-dot" style={{ background: s.color }} />
+                  <span className="ctx-ring-pop__k">{s.label}</span>
+                  <span className="ctx-ring-pop__v">{v} · {Math.round((v / total) * 100)}%</span>
+                </div>
+              );
+            })}
+            <div className="ctx-ring-pop__foot">{data.used} / {data.max} token · {data.percent}%</div>
+          </div>
+        </div>
         <div className="ctx-usage-meta">
           <div className="ctx-usage-pct">{data.percent}%</div>
           <div className="ctx-usage-sub">{data.used} / {data.max} token</div>
