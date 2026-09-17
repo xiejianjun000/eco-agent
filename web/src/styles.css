@@ -1018,6 +1018,30 @@ details[open] > .tool-call__head .tool-call__caret { transform: rotate(90deg); }
 .compact-bar.limit_reached .compact-dot { background: var(--ds-red); }
 .compact-label { font-weight: 500; }
 
+/* 压缩条 hover 悬浮明细（对标 WorkBuddy compactDivider popover） */
+.compact-bar-wrap { position: relative; outline: none; }
+.compact-pop {
+  position: absolute; left: 0; top: calc(100% + 6px); z-index: 40;
+  min-width: 224px; max-width: 300px; padding: 9px 11px;
+  background: var(--panel); color: var(--t-main);
+  border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  font-size: 12px; line-height: 1.55; white-space: pre-line;
+  opacity: 0; visibility: hidden; transform: translateY(4px);
+  transition: opacity .12s ease, transform .12s ease, visibility .12s;
+  pointer-events: none;
+}
+.compact-bar-wrap:hover .compact-pop,
+.compact-bar-wrap:focus-within .compact-pop {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.compact-pop__title { font-weight: 600; margin-bottom: 4px; color: var(--t-main); }
+.compact-pop__body { color: var(--t-sub); }
+.compact-bar-wrap.compacting .compact-pop { border-left: 3px solid var(--ds-brand); }
+.compact-bar-wrap.compacted .compact-pop { border-left: 3px solid var(--ds-green); }
+.compact-bar-wrap.cancelled .compact-pop { border-left: 3px solid var(--ds-n-400); }
+.compact-bar-wrap.limit_reached .compact-pop { border-left: 3px solid var(--ds-red); }
+
 /* 侧栏品牌：横版字标按自然比例（DSH 顶部 logo 同款布局），副标题整行在下面 */
 .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .brand-row { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }

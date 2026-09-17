@@ -154,17 +154,39 @@ function renderCompaction(trace: TraceEvent[]): React.ReactElement | null {
     cancelled: '压缩已取消',
     limit_reached: '上下文已达上限',
   };
+  const METHOD_LABEL: Record<string, { name: string; note: string }> = {
+    llm: { name: '智能摘要', note: '由模型将较早历史重写为精简摘要' },
+    truncate: { name: '截断保留', note: '超出部分直接截断（降级策略）' },
+    noop: { name: '无操作', note: '未执行压缩' },
+  };
   return (
     <div className="compact-stack">
       {evs.map((e, i) => {
         const st = e.state ?? 'compacted';
-        const tail = (st === 'compacted' || st === 'limit_reached') && e.tokens_before && e.tokens_after
-          ? `（${e.tokens_before}→${e.tokens_after} token${e.method === 'truncate' ? ' · 降级截断' : ''}）`
+        const title = LABEL[st] ?? '上下文已压缩';
+        const before = e.tokens_before ?? 0;
+        const after = e.tokens_after ?? 0;
+        const saved = before > after ? before - after : 0;
+        const pct = before > 0 ? Math.round((saved / before) * 100) : 0;
+        const m = METHOD_LABEL[e.method ?? ''] ?? { name: e.method || '—', note: '' };
+        const tail = (st === 'compacted' || st === 'limit_reached') && before && after
+          ? `（${before}→${after} token${e.method === 'truncate' ? ' · 降级截断' : ''}）`
           : '';
+        let body = '';
+        if (st === 'compacting') body = '正在将较早的历史对话压缩为摘要，以释放上下文 token 占用；压缩期间新消息仍正常处理。';
+        else if (st === 'compacted') body = `压缩完成：${before} → ${after} token（节省 ${saved} token，约 ${pct}%）。\n方式：${m.name}——${m.note}`;
+        else if (st === 'cancelled') body = '本次未触发有效压缩：压缩后与压缩前 token 持平或增加（上下文尚未超出阈值），保持原样。';
+        else if (st === 'limit_reached') body = `上下文已达上限：压缩后仍为 ${after} token（≥ 上限），自动摘要无法进一步压缩。\n建议：开启新会话 / 新建上下文分支，或精简历史输入。`;
         return (
-          <div key={i} className={`compact-bar ${st}`}>
-            <span className="compact-dot" />
-            <span className="compact-label">{LABEL[st] ?? '上下文已压缩'}{tail}</span>
+          <div key={i} className={`compact-bar-wrap ${st}`} tabIndex={0}>
+            <div className={`compact-bar ${st}`}>
+              <span className="compact-dot" />
+              <span className="compact-label">{title}{tail}</span>
+            </div>
+            <div className="compact-pop" role="tooltip">
+              <div className="compact-pop__title">{title}</div>
+              <div className="compact-pop__body">{body}</div>
+            </div>
           </div>
         );
       })}
