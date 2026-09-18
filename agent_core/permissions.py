@@ -355,11 +355,15 @@ _READONLY_MCP_SERVERS = (
     "eia-law-keyword", "eia-law-semantic", "eia-qa", "eia-emission",
     "eco-pollution-permit", "eco-pollution-permit-remote",
     "epxz-mcp", "eco-epxz-mcp", "eco-cepc", "eco-cepc-remote",
+    # 生态环境专业知识库（eco-matrix-remote）：检索/角色/画像只读类 L1，
+    # 写/导出/知识管理类（export/download/refresh/apply 等）走 _WRITE_TOKENS 判 L3。
+    "eco-matrix-remote",
 )
 _WRITE_TOKENS = ("write", "delete", "upload", "assign", "finish", "save", "submit",
                  "create", "update", "remove", "insert", "edit", "send", "reply",
                  "import", "export", "approve", "reject", "batch_", "call", "exec",
-                 "run_", "push", "sign", "ocr", "make", "generate", "post")
+                 "run_", "push", "sign", "ocr", "make", "generate", "post",
+                 "download", "clean", "refresh", "reflect", "apply")
 
 
 def _readonly_mcp_level(tool_name: str) -> str | None:

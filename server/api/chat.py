@@ -517,6 +517,14 @@ def _dynamic_prompt_sections(message: str, eng, session_id: str = "default", wor
     add(
         "tool_guidance.platform", "工具指南·政务平台与公开数据",
         "【政务平台/公开数据工具路由——直接调用】\n"
+        "0. 生态环境专业知识库（知识库大脑，最高优先）：mcp__eco-matrix-remote__*——\n"
+        "覆盖水/大气/土壤/固废与化学品/核与辐射/环评/排污许可与执法/监测/自然生态/海洋/\n"
+        "气候变化/督察共 12 要素的政策文件、技术标准与法规，按部级体系四层组织。\n"
+        "涉及领域政策/标准/法规/术语/执法依据时：先 list_elements 定位要素 →\n"
+        "search_knowledge 检索 → get_document 读全文；执法/督察/审批视角用 list_roles +\n"
+        "search_for_role + build_answer 出结构化答复；回答前用 deai_guide 取写作规范、\n"
+        "deai_check 自检 AI 腔。这是最权威的领域知识源，优先于 web_search/web_fetch；\n"
+        "禁止凭记忆编造标准号/法规条文，一律先查这里再作答。\n"
         "1. 数据图表：chart_render（line/bar/stacked_bar/pie）——趋势曲线/因子对比/占比\n"
         "必须调用它出卡片；函数清单里一定有这个工具，禁止声称'当前会话无 chart_render 工具'。\n"
         "1.5 内联示意图：需要流程图/结构图/线框图/信息图（chart_render 覆盖不了的自定义布局）时，\n"
@@ -1678,6 +1686,21 @@ _CHAT_MCP_TOOLS = (
     "mcp__eco-hnkqzl-mcp__hunan_county_rank",
     "mcp__eco-hnkqzl-mcp__hunan_history_24h",
     "mcp__eco-hnkqzl-mcp__hunan_history_7day",
+    # eco-matrix-remote（生态环境专业知识库大脑：12 要素政策/标准/法规，核心检索只读类直挂；
+    # 导出/去AI清洗/知识管理写类走 tool_search + defer_execute_tool 延迟代理）
+    "mcp__eco-matrix-remote__list_elements",
+    "mcp__eco-matrix-remote__search_knowledge",
+    "mcp__eco-matrix-remote__get_document",
+    "mcp__eco-matrix-remote__library_stats",
+    "mcp__eco-matrix-remote__list_roles",
+    "mcp__eco-matrix-remote__search_for_role",
+    "mcp__eco-matrix-remote__build_answer",
+    "mcp__eco-matrix-remote__role_guide",
+    "mcp__eco-matrix-remote__list_industries",
+    "mcp__eco-matrix-remote__industry_profile",
+    "mcp__eco-matrix-remote__list_permit_industries",
+    "mcp__eco-matrix-remote__deai_guide",
+    "mcp__eco-matrix-remote__deai_check",
 
 )
 
