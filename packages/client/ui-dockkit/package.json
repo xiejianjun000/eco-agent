@@ -28,8 +28,8 @@
     "@deepseek-ai/dsh-client-ui-primitives": "workspace:^",
     "@testing-library/react": "^16.1.0",
     "@types/react": "~18.3.1",
-    "@types/react-dom": "~18.3.0",
-    "react-dom": "^18.2.0",
+    "@types/react-dom": "~19.2.4",
+    "react-dom": "^19.2.8",
     "react": "^18.2.0",
     "clsx": "^2.0.0"
   },
