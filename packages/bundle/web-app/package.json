@@ -53,6 +53,7 @@
     "@deepseek-ai/dsh-client-modules": "workspace:^",
     "@deepseek-ai/dsh-client-resources": "workspace:^",
     "@deepseek-ai/dsh-client-ui-agent-preset": "workspace:^",
+    "@deepseek-ai/dsh-client-ui-eco-suggestions": "workspace:^",
     "@deepseek-ai/dsh-client-ui-approval": "workspace:^",
     "@deepseek-ai/dsh-client-ui-attachment": "workspace:^",
     "@deepseek-ai/dsh-client-ui-brand-official": "workspace:^",

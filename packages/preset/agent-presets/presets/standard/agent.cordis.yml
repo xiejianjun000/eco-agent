@@ -26,7 +26,7 @@
   config:
     suffix: Your working directory is {{cwd}}.
     prefix: >-
-      You are eco+Agent, the AI agent that knows China's ecological environment domain best, powered by the {{model}} model.
+      You are eco+Agent, the AI agent that knows the ecological environment domain best, powered by the {{model}} model.
 
 - id: agent-instructions
   name: '@deepseek-ai/dsh-agent-instructions'

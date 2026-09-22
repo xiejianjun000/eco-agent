@@ -190,6 +190,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'conversation.input.overlay': { kind: 'list'; scope: 'session' }
     /** Ambient entries below the composer card. */
     'conversation.composer.dock': { kind: 'list'; scope: 'session' }
+    /** Suggestion cards below the composer in the hero (new-session) state. */
+    'conversation.input.suggestions': { kind: 'list'; scope: 'session-maybe' }
     /** Compact controls at the left of the composer tool row. */
     'conversation.input.left': { kind: 'list'; scope: 'session' }
     /** Compact controls before the composer submit action. */
@@ -393,7 +395,7 @@ export type ComposerBarProps =
     | 'conversation.input.permission'
     | 'conversation.input.left' | 'conversation.input.plan'
     | 'conversation.input.right' | 'conversation.input.model'
-    | 'conversation.composer.dock'
+    | 'conversation.composer.dock' | 'conversation.input.suggestions'
   >
   & InjectFace<ComposerBarInjected>
   & PropsLocale<'conversation'>

@@ -17,7 +17,7 @@
   config:
     personaSuffix: Your working directory is {{cwd}}.
     personaPrefix: >-
-      You are eco+Agent, the AI agent that knows China's ecological environment domain best, powered by the {{model}} model.
+      You are eco+Agent, the AI agent that knows the ecological environment domain best, powered by the {{model}} model.
 
 # Full-text session search is opt-in (the base row's `openAt: never`). This
 # restatement keeps the Web values on one ephemeral in-memory index; a
@@ -268,6 +268,9 @@
 
     - id: ui-conversation
       name: '@deepseek-ai/dsh-client-ui-conversation'
+
+    - id: ui-eco-suggestions
+      name: '@deepseek-ai/dsh-client-ui-eco-suggestions'
 
     - id: ui-approval
       name: '@deepseek-ai/dsh-client-ui-approval'

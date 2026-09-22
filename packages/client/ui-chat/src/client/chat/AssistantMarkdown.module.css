@@ -20,6 +20,15 @@
   gap: 16px;
 }
 
+/* eco brand: the agent name above each assistant reply, in brand green. */
+.agentName {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #0f766e;
+  margin-bottom: 8px;
+}
+
 /* Wide markdown tables (the renderer's ≥4-column md-table-wide hook) span
    the whole transcript width instead of clipping at the 748px message
    column, while the table content keeps starting at its normal x (the lead

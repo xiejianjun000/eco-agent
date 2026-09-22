@@ -1,0 +1,62 @@
+/* eco suggestion cards below the hero composer. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: var(--dsh-composer-card-max-width);
+  padding: 4px 8px 0;
+}
+
+/* Six role cards wrap on narrow viewports; each stays glass with a brand
+   gradient glyph on hover. */
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.card {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 16px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 300ms ease,
+    box-shadow 300ms ease,
+    background-color 300ms ease,
+    transform 300ms ease;
+}
+
+.card:hover {
+  border-color: #96d562;
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+  box-shadow: 0 0 0 1px #96d562, 0 0 12px rgba(15, 118, 110, 0.35);
+}
+
+.card:active {
+  transform: scale(0.985);
+}
+
+/* Twelve-element coverage line, caption-tier and centered. */
+.elements {
+  max-width: 100%;
+  padding: 0 8px;
+  color: var(--dsw-alias-label-caption);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
