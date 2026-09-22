@@ -88,7 +88,12 @@ jobs:
       # Guard against a false green on trusted events. For this white-label
       # fork the external DeepSeek key is optional: without it, skip cleanly
       # (the e2e suite self-skips anyway) instead of hard-failing a main push.
+      # The output gates Build/E2E so the whole suite is skipped, not just
+      # the real-API tests — keyless built-bin tests can still fail on their
+      # own (e.g. the invalid-provider best-effort probe) and must not gate a
+      # keyless fork's main branch.
       - name: Preflight (skip when DEEPSEEK_API_KEY absent)
+        id: preflight
         env:
           # Repo secret DEEPSEEK_API_KEY_EXTERNAL holds the external-API key;
           # the tests read process.env.DEEPSEEK_API_KEY, so map it across here.
@@ -96,15 +101,18 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${DEEPSEEK_API_KEY:-}" ]; then
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
             echo "DEEPSEEK_API_KEY not configured — skipping real-API e2e."
-            exit 0
+          else
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+            echo "DEEPSEEK_API_KEY present."
           fi
-          echo "DEEPSEEK_API_KEY present."
 
       # The e2e suites boot the example bins in `lib` mode (DSH_EXAMPLE_MODE=lib):
       # the built artifact under plain Node, resolving plugins through real package
       # exports — the shape a real consumer runs. That requires a prior build.
       - name: Build (lib for the e2e example bins)
+        if: steps.preflight.outputs.has_key == 'true'
         run: pnpm run build:official
 
       # Real-API end-to-end tests only. The keyless gates (lint/typecheck/
@@ -113,6 +121,7 @@ jobs:
       # DEEPSEEK_BASE_URL is pinned to the external API; the secret is scoped to
       # this step (and preflight) only — never exposed to checkout/setup/install.
       - name: E2E tests (real DeepSeek API)
+        if: steps.preflight.outputs.has_key == 'true'
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY_EXTERNAL }}
           DEEPSEEK_BASE_URL: https://api.deepseek.com/anthropic
