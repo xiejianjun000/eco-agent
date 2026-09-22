@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "eco Agent",
+  "short_name": "eco",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

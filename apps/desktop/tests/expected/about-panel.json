@@ -1,0 +1,28 @@
+{
+  "en-US": {
+    "menu": [
+      { "label": "About eco Agent", "role": "about" },
+      { "type": "separator" }
+    ],
+    "options": {
+      "applicationName": "eco Agent",
+      "applicationVersion": "1.0.0",
+      "version": "",
+      "copyright": "",
+      "iconPath": "<app icon>"
+    }
+  },
+  "zh-CN": {
+    "menu": [
+      { "label": "关于 eco Agent", "role": "about" },
+      { "type": "separator" }
+    ],
+    "options": {
+      "applicationName": "eco Agent",
+      "applicationVersion": "1.0.0",
+      "version": "",
+      "copyright": "",
+      "iconPath": "<app icon>"
+    }
+  }
+}
