@@ -372,7 +372,6 @@ export const InputBar = memo(function InputBar({
         {sessionId !== undefined && (
           <div className={css.overlayAnchor}>{renderSlot('conversation.input.overlay', {})}</div>
         )}
-        {accessory !== undefined && <div className={css.accessory}>{accessory}</div>}
         {renderSlot('conversation.input.attachments', {
           attachments,
           canAcceptDrop,
@@ -407,6 +406,7 @@ export const InputBar = memo(function InputBar({
         />
         <div className={css.row}>
           <div className={css.tools}>
+            {accessory !== undefined && accessory}
             <Tooltip label={t('input.commands')} side="top" delayMs={500}>
               <button
                 type="button"
