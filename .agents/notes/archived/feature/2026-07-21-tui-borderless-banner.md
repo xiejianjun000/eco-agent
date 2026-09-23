@@ -12,7 +12,7 @@ An intermediate no-banner design removed the boxed startup banner: it deleted `H
 ## Decision
 
 - `HeaderComponent` and its left-to-right sweep return, but render **borderless**: no `╭─╮`/`╰─╯` corners and no `│` side bars. Each line is a single leading space plus `truncateToWidth`-clipped content, so the sweep's width clip can never tear an escape sequence and no fixed frame is drawn. The reveal advances through about 24 frames at 15 ms each.
-- The header carries the title (`DEEPSEEK HARNESS`), a `<model>  •  <session-id>` detail line, and — when `welcome` is set — a muted subtitle. With `welcome` unset the header is title + detail only: there is no fixed or random slogan.
+- The header carries the title (`eco Agent`), a `<model>  •  <session-id>` detail line, and — when `welcome` is set — a muted subtitle. With `welcome` unset the header is title + detail only: there is no fixed or random slogan.
 - The model **also** stays in the footer's left segment, so the driving model remains glanceable after the transient banner scrolls out of view.
 - `welcome` reverts to a banner subtitle; the transcript-first-line notice is removed from `rebuildTranscript`.
 - The sweep animates only when `welcome` is unset. A configured `welcome` renders the whole banner immediately, keeping fixtures and snapshots frame-deterministic. The sweep starts after `ui.start()` succeeds and is cleared through the same `detachListeners` path via `stopBannerReveal`, which also resets the clip so a header disposed mid-sweep re-renders whole.

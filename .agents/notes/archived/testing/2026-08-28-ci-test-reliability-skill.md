@@ -7,7 +7,7 @@ English | [中文](2026-08-28-ci-test-reliability-skill.zh.md)
 
 ## Problem
 
-DeepSeek Harness runs tests across concurrent Vitest files, worker processes, repository gates, and Actions jobs. Process isolation does not isolate host ports, predictable paths, external namespaces, or inherited children, while process-global mutations and incomplete teardown can contaminate later tests. A test can select the correct tier and still pass only when it runs alone.
+eco Agent runs tests across concurrent Vitest files, worker processes, repository gates, and Actions jobs. Process isolation does not isolate host ports, predictable paths, external namespaces, or inherited children, while process-global mutations and incomplete teardown can contaminate later tests. A test can select the correct tier and still pass only when it runs alone.
 
 The testing policy owns test tiers, defensive patterns own runtime lifecycle rules, pre-push guidance selects commands, and code review evaluates completed diffs. None of them gives an agent a focused workflow for designing resource-owning tests against the real CI topology or classifying an existing probabilistic failure before changing code.
 

@@ -13,7 +13,7 @@ The duplicate path also exposed less configuration than a bundle. Its `repositor
 
 ## Decision
 
-DeepSeek Harness has one standalone external-Plugin distribution path: installable profile bundles. `dsh plugin --profile <name> add <package-or-git-spec>` records the dependency in the profile package, and the installed package declares `dsh.bundle.patch` to contribute its patch layer. The package manager owns source acquisition, versions, dependencies, build lifecycles, and its lockfile. The bundle patch owns Cordis Plugin selection and complete Plugin config.
+eco Agent has one standalone external-Plugin distribution path: installable profile bundles. `dsh plugin --profile <name> add <package-or-git-spec>` records the dependency in the profile package, and the installed package declares `dsh.bundle.patch` to contribute its patch layer. The package manager owns source acquisition, versions, dependencies, build lifecycles, and its lockfile. The bundle patch owns Cordis Plugin selection and complete Plugin config.
 
 The `@deepseek-ai/dsh-repository-plugin` package, `.dsh-plugin` authoring format, `dsh-plugin-prepare` executable, generated wrapper, immutable repository cache, base `repository-plugins` row, and dedicated GitHub acceptance lane are removed. The unused vendored `@cordisjs/plugin-loader/repository` subpath and its bundled pnpm dependency are removed with their only consumer. Existing repository cache directories are inert user data; DSH neither reads nor deletes them.
 

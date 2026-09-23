@@ -35,6 +35,6 @@ Archived: 2026-09-04
 
 ## 后果
 
-DeepSeek Harness 不再提供终端 UI 包。现有 import 和依赖该包的 `cordis.yml` 条目会直接失败，不会得到兼容转换。Web 仍是已交付的交互界面；ACP、JSON-RPC 与一次性 CLI 仍是 Web 之外的入口。
+eco Agent 不再提供终端 UI 包。现有 import 和依赖该包的 `cordis.yml` 条目会直接失败，不会得到兼容转换。Web 仍是已交付的交互界面；ACP、JSON-RPC 与一次性 CLI 仍是 Web 之外的入口。
 
 提供方无关的命令、用户交互、审批、工具呈现、PTY 与会话投影能力仍可供其他宿主使用。重新引入终端前端时，必须为其提供具名产品或部署、显式包边界、具体交互提供方，以及组装后的生命周期与 transcript（文本记录）验收。

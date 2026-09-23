@@ -15,7 +15,7 @@ The interactive channel must remain a Cordis plugin over the same agent, session
 
 ## Decision
 
-DeepSeek Harness ships [`@deepseek-ai/dsh-tui`](../../../../packages/ui/tui/README.md) as a dedicated Cordis plugin. It owns terminal input and presentation only; agent lifecycle, session persistence, tool execution, and the model-facing question tool remain separate composition entries. The plugin requires both stdin and stdout to be TTYs and fails instead of silently changing to line-oriented behavior.
+eco Agent ships [`@deepseek-ai/dsh-tui`](../../../../packages/ui/tui/README.md) as a dedicated Cordis plugin. It owns terminal input and presentation only; agent lifecycle, session persistence, tool execution, and the model-facing question tool remain separate composition entries. The plugin requires both stdin and stdout to be TTYs and fails instead of silently changing to line-oriented behavior.
 
 The package is a terminal front door, not a complete application. A host mounts `@deepseek-ai/dsh-tui` before its configured agent and composes the backends, tools, and policies around it. The product CLI currently ships no terminal composition; non-interactive tasks use headless mode, Web owns the installed human surface, and ACP remains a separate automation protocol.
 

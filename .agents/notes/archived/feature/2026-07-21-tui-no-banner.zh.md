@@ -9,7 +9,7 @@ Archived: 2026-07-26
 
 ## Problem
 
-TUI 启动时展示一个带框的产品横幅（"DEEPSEEK HARNESS" + 模型/会话详情），最近一版还带扫入动画（[横幅扫入 Agent Note](2026-07-21-tui-banner-sweep.md)）。用户的裁决：删掉它。每次启动都被重读的产品标题是装饰，盒子在任何内容之前先占掉四行，而它承载的识别信息（模型、会话）有更好的去处。
+TUI 启动时展示一个带框的产品横幅（"eco Agent" + 模型/会话详情），最近一版还带扫入动画（[横幅扫入 Agent Note](2026-07-21-tui-banner-sweep.md)）。用户的裁决：删掉它。每次启动都被重读的产品标题是装饰，盒子在任何内容之前先占掉四行，而它承载的识别信息（模型、会话）有更好的去处。
 
 ## Decision
 
@@ -37,4 +37,4 @@ TUI 启动时展示一个带框的产品横幅（"DEEPSEEK HARNESS" + 模型/会
 
 ## Testing
 
-`packages/ui/tui/tests/tui.spec.ts` 固定：`welcome` 未设置时无盒子角/产品标题、transcript 为空、模型在页脚；配置的欢迎语作为 transcript 第一行且无横幅；欢迎语在调色板切换的 transcript 重建后保留。PTY 冒烟测试以页脚模型名为启动标记并断言 `DEEPSEEK HARNESS` 不出现。快照验证完整帧。
+`packages/ui/tui/tests/tui.spec.ts` 固定：`welcome` 未设置时无盒子角/产品标题、transcript 为空、模型在页脚；配置的欢迎语作为 transcript 第一行且无横幅；欢迎语在调色板切换的 transcript 重建后保留。PTY 冒烟测试以页脚模型名为启动标记并断言 `eco Agent` 不出现。快照验证完整帧。

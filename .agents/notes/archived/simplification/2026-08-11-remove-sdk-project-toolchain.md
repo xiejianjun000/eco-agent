@@ -33,10 +33,10 @@ The workspace contains none of the four deleted package names or either removed 
 
 **Delete the runtime SDK stack too.** Rejected because the Python SDK, the out-of-process Harness subagent provider, and the JSON-RPC example are current consumers of the protocol, client, and server.
 
-**Leave the runtime stack under `packages/scaffold/`.** Rejected because nothing left in that group scaffolds a project. `packages/sdk/` states the surviving role directly because `SDK` has one repository meaning: the JSON-RPC client/server protocol used by the supported Python and TypeScript SDKs. DeepSeek Harness itself is not an SDK project.
+**Leave the runtime stack under `packages/scaffold/`.** Rejected because nothing left in that group scaffolds a project. `packages/sdk/` states the surviving role directly because `SDK` has one repository meaning: the JSON-RPC client/server protocol used by the supported Python and TypeScript SDKs. eco Agent itself is not an SDK project.
 
 ## Consequences
 
-DeepSeek Harness no longer creates or manages standalone developer SDK projects. Automatic project generation, feature-tree configuration, local-plugin scaffolding, project-local development/build/start commands, and developer-cycle launcher telemetry are intentionally unavailable; ordinary applications and runtime distributions continue to compose plugins through their owning packages and `cordis.yml` files.
+eco Agent no longer creates or manages standalone developer SDK projects. Automatic project generation, feature-tree configuration, local-plugin scaffolding, project-local development/build/start commands, and developer-cycle launcher telemetry are intentionally unavailable; ordinary applications and runtime distributions continue to compose plugins through their owning packages and `cordis.yml` files.
 
 The repository loses the complete support graph rather than carrying dormant abstractions. Reintroducing a project toolchain requires a real consumer and a new proposal grounded in that consumer's workflow; it does not revive these packages or their deleted compatibility-free formats by default.

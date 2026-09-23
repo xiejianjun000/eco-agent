@@ -11,7 +11,7 @@ Archived: 2026-09-04
 
 这些名称并非无关紧要。名称会告诉贡献者一项职责从哪里开始、到哪里结束。`Store` 表示数据访问。`Registry` 表示注册与查找。`Runtime` 表示实时执行和生命周期。如果同一个词同时表示这三者，调用方就必须阅读实现，才能判断哪个对象拥有策略、工作或状态。
 
-仓库还曾在两种含义下使用 `SDK`。受支持的 Python 和 TypeScript 客户端使用 JSON-RPC SDK 协议。项目整体是 DeepSeek Harness，而不是 SDK 项目。已移除的 SDK 项目工具链使宽泛的含义失去依据，但文案和名称仍保留了部分旧用法。
+仓库还曾在两种含义下使用 `SDK`。受支持的 Python 和 TypeScript 客户端使用 JSON-RPC SDK 协议。项目整体是 eco Agent，而不是 SDK 项目。已移除的 SDK 项目工具链使宽泛的含义失去依据，但文案和名称仍保留了部分旧用法。
 
 首次发布带标签版本之前的最后一个窗口，使仓库级重命名仍可低成本完成。若继续保留含义不清的名称，偶然形成的词汇就会变成兼容性约定。
 
@@ -25,7 +25,7 @@ Archived: 2026-09-04
 
 ### `SDK` 只表示一件事
 
-`SDK` 表示受支持的 Python 和 TypeScript SDK 所使用、基于 JSON-RPC 的客户端／服务器协议。仓库保留 `@deepseek-ai/dsh-sdk-client`、`@deepseek-ai/dsh-sdk-protocol` 和协议身份 `deepseek-harness-sdk-runtime`；JSON-RPC 服务器属于同一系列。DeepSeek Harness 本身不是 SDK，已移除的项目生成器、启动器、辅助工具和启动器遥测包继续保持不存在。
+`SDK` 表示受支持的 Python 和 TypeScript SDK 所使用、基于 JSON-RPC 的客户端／服务器协议。仓库保留 `@deepseek-ai/dsh-sdk-client`、`@deepseek-ai/dsh-sdk-protocol` 和协议身份 `deepseek-harness-sdk-runtime`；JSON-RPC 服务器属于同一系列。eco Agent 本身不是 SDK，已移除的项目生成器、启动器、辅助工具和启动器遥测包继续保持不存在。
 
 本决策部分取代三项现行决策。它替换[包重新分组决策](2026-07-29-package-regrouping.zh.md)中保留的 `bash/`、`pty/` 和 `self-modification/` 组名，以及两项暂定包名。它只替换[移除 SDK 项目工具链](../simplification/2026-08-11-remove-sdk-project-toolchain.zh.md)中将整个仓库称为 SDK 的说法；后者仍负责说明删除范围和保留的运行时 SDK。它只替换[工具调用超时策略](2026-07-07-tool-call-timeout-policy.zh.md)中的包名理由；超时机制及其 `guard/timeout-policy/` 归属保持不变。
 
@@ -73,7 +73,7 @@ Archived: 2026-09-04
 
 PascalCase 标识符中的首字母缩略词使用首字母大写格式：`Ui`、`Llm`、`JsonRpc` 和 `ApiProxy`。在文案和适用的包名中使用惯例规定的全大写形式：UI、LLM、JSON-RPC 和 API。`Typert` 是标识符和文案中的唯一准确产品拼写；不得写成 `TypeRT`、`TypeRt`，也不得对 `Typert` 作其他内部拆分。
 
-不得为了避免重复而删除有意保留的供应商限定词。`dsh-subagent-dsh-sdk` 表示 DeepSeek Harness SDK 提供方，可避免与其他 SDK 混淆。其私有类改名为 `SdkSubagentProvider`，因为类名还需要说明它提供什么。
+不得为了避免重复而删除有意保留的供应商限定词。`dsh-subagent-dsh-sdk` 表示 eco Agent SDK 提供方，可避免与其他 SDK 混淆。其私有类改名为 `SdkSubagentProvider`，因为类名还需要说明它提供什么。
 
 ### 将规则写入项目文档
 
@@ -376,7 +376,7 @@ PascalCase 标识符内部使用 `Ui`，不要使用 `UI`。除非清单明确�
 - 运行时行为、包边界、默认值、策略、持久化语义和模型行为保持等价，只有标识符本身可见时除外。
 - 包目录、NPM 名称、导入、manifest（元数据清单）、TypeScript 引用和路径、Cordis 配置、插件 id、服务键、事件、工具、RPC 名称、清单点名的持久化名称、fixture、快照、示例、生成的目录和当前文案都使用已实现词汇。
 - 当前处于 implemented 状态的 Agent Note 使用事实名称和路径。包重新分组说明记录分组清单和包名目标，SDK 移除说明将 `SDK` 限定为运行时协议，超时策略说明记录包名理由。
-- 配对的包创建指南包含职责词约定，`packages/AGENTS.md` 链接到该约定，术语表记录选定用词和 `Typert` 拼写，根项目文案将产品称为 DeepSeek Harness，而不是 DeepSeek Harness SDK。
+- 配对的包创建指南包含职责词约定，`packages/AGENTS.md` 链接到该约定，术语表记录选定用词和 `Typert` 拼写，根项目文案将产品称为 eco Agent，而不是 eco Agent SDK。
 - 已移除的 SDK 项目工具链继续保持不存在。
 - `pnpm run check:ci` 覆盖源代码平面的类型检查、构建、包卫生检查、生成参考资料检查、受影响的快照、翻译配对、`doc-sync` 和 lint。发布形态的 Python 运行时冒烟测试和必需 CI 覆盖打包运行时与平台路径。
 

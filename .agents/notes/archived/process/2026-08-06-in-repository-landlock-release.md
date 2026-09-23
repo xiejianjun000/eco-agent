@@ -7,13 +7,13 @@ English | [中文](2026-08-06-in-repository-landlock-release.zh.md)
 
 ## Problem
 
-The `@deepseek-ai/node-addon-landlock-run` source already lives beside its DeepSeek Harness consumers under `native/landlock-run`, but it previously kept a separate pnpm workspace and lockfile and depended on a standalone repository for npm publication. Harness packages consumed a fixed registry version, so one pull request could change the launcher contract and its consumer without testing those changes together. The source repository's native workflow could rehearse the package, but it did not publish the artifact it tested.
+The `@deepseek-ai/node-addon-landlock-run` source already lives beside its eco Agent consumers under `native/landlock-run`, but it previously kept a separate pnpm workspace and lockfile and depended on a standalone repository for npm publication. Harness packages consumed a fixed registry version, so one pull request could change the launcher contract and its consumer without testing those changes together. The source repository's native workflow could rehearse the package, but it did not publish the artifact it tested.
 
 The mirror also duplicated release coordination: export the source, update another lockfile, run another release workflow, publish the native family, then return to this repository to bump registry dependencies. That split made it harder to match each binary to its source commit, roll back releases, and coordinate security fixes without changing what npm users actually needed.
 
 The existing unscoped npm names are owned by the standalone publisher account rather than the `@deepseek-ai` organization. Moving only the workflow would therefore leave publication dependent on a personal credential outside the repository's release ownership.
 
-The consolidation must preserve platform selection. The public distribution is deliberately one JavaScript entry package plus separate Linux x64 and arm64 binary packages; merging repository ownership does not imply putting every binary into one tarball or publishing every DeepSeek Harness package at the launcher version.
+The consolidation must preserve platform selection. The public distribution is deliberately one JavaScript entry package plus separate Linux x64 and arm64 binary packages; merging repository ownership does not imply putting every binary into one tarball or publishing every eco Agent package at the launcher version.
 
 ## Decision
 
@@ -29,7 +29,7 @@ The sandbox packed-install rehearsal does not permit the npm registry to supply 
 
 - **Keep the standalone repository as a release mirror** — rejected because it preserves the split lockfiles, source export, stale-registry test window, and cross-repository release sequence after the source of record has already moved here.
 - **Publish one npm package containing every platform binary** — rejected because users would download binaries they cannot run and npm could no longer use package-level `os`/`cpu` filtering. Repository ownership and npm package layout are separate choices.
-- **Give the launcher the root DeepSeek Harness version and publish the complete monorepo recursively** — rejected because this change owns one three-package public family, not the independent `@deepseek-ai/dsh-*` baseline. The [artifact-first npm baseline proposal](../../proposed/process/2026-08-04-artifact-first-npm-baseline-publication.md) explicitly keeps native workspaces outside its target set.
+- **Give the launcher the root eco Agent version and publish the complete monorepo recursively** — rejected because this change owns one three-package public family, not the independent `@deepseek-ai/dsh-*` baseline. The [artifact-first npm baseline proposal](../../proposed/process/2026-08-04-artifact-first-npm-baseline-publication.md) explicitly keeps native workspaces outside its target set.
 - **Cross-compile both binaries in one release job** — rejected because the checked-in package matrix already assigns each architecture a native GitHub runner and avoids adding a cross-toolchain trust surface.
 
 ## Consequences
@@ -38,7 +38,7 @@ Launcher protocol, TypeScript entry code, native source, harness consumption, an
 
 npm consumers install `@deepseek-ai/node-addon-landlock-run`; the old unscoped package names are not silently redirected. A supported Linux host downloads the scoped entry package and its matching architecture package; the other architecture package is skipped. An unsupported host receives no platform binary and follows the existing deterministic fail-closed probe path.
 
-The implementation touches more files than a dependency-line edit because the repository must also own workspace constraints, TypeScript build order, cleanup, CI triggers, release tags, lockfile generation, comparison of installed binaries with workspace builds, release documentation, and generated notices. The behavioral boundary stays narrow: it changes only the Landlock package family and its three direct workspace consumers, not the version or publication state of other DeepSeek Harness packages.
+The implementation touches more files than a dependency-line edit because the repository must also own workspace constraints, TypeScript build order, cleanup, CI triggers, release tags, lockfile generation, comparison of installed binaries with workspace builds, release documentation, and generated notices. The behavioral boundary stays narrow: it changes only the Landlock package family and its three direct workspace consumers, not the version or publication state of other eco Agent packages.
 
 The first scoped release must use an `@deepseek-ai` organization token through the `npm-publish` environment's `NPM_TOKEN`, because npm cannot configure trusted publishing until a package exists. After bootstrap, all three packages must authorize this repository's release workflow before the fallback token can be removed. npm still publishes packages sequentially and offers no cross-package transaction, so a failed publish can leave a partial version. Because npm rejects an already-published name and version, an operator must inspect the registry and publish only the missing tarballs rather than rerunning the workflow unchanged. Linux x64 and arm64 runners remain the authoritative binary and real-kernel checks; a macOS checkout can verify the entry package and unsupported-platform behavior but cannot replace those jobs.
 

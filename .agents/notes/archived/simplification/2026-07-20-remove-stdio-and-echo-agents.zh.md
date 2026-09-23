@@ -7,7 +7,7 @@ Archived: 2026-09-04
 
 ## 问题
 
-DeepSeek Harness 在 TUI 和 Headless coding agent 之外，还提供了两个重复的产品 agent（智能体）。面向行的 stdio agent 使用混合的提示符/输出协议，同时重复实现终端交互与非交互执行。Echo 则以无需联网的 mock 模型加一个教学工具重复实现 Headless，把测试 fixture（测试前置数据）变成面向用户的 agent 和默认快速上手路径。
+eco Agent 在 TUI 和 Headless coding agent 之外，还提供了两个重复的产品 agent（智能体）。面向行的 stdio agent 使用混合的提示符/输出协议，同时重复实现终端交互与非交互执行。Echo 则以无需联网的 mock 模型加一个教学工具重复实现 Headless，把测试 fixture（测试前置数据）变成面向用户的 agent 和默认快速上手路径。
 
 两个 agent 的配套实现都不止叶节点配置。stdio 拥有 UI 插件、app 包（package）、SDK 接口、REPL 叶节点、提示符协议和 Loader 测试。Echo 拥有可运行命令、mock 适配器、工具、CI 演示门禁、图谱条目、教学引用和共享测试 fixture。保留其中任何产品路径，都会间接保留这个重复的 agent。
 

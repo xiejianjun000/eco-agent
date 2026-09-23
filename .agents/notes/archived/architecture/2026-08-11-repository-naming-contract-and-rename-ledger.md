@@ -11,7 +11,7 @@ The repository had grown faster than some names. Several package names described
 
 These names are not harmless. A name tells a contributor where a responsibility starts and stops. `Store` suggests data access. `Registry` suggests registrations and lookup. `Runtime` suggests live execution and lifecycle. When one word is used for all three, callers cannot tell which object owns policy, work, or state without reading the implementation.
 
-The repository also used `SDK` in two meanings. The supported Python and TypeScript clients use the JSON-RPC SDK protocol. The project as a whole is DeepSeek Harness, not an SDK project. The removed SDK project toolchain made the broad meaning obsolete, but prose and names preserved parts of it.
+The repository also used `SDK` in two meanings. The supported Python and TypeScript clients use the JSON-RPC SDK protocol. The project as a whole is eco Agent, not an SDK project. The removed SDK project toolchain made the broad meaning obsolete, but prose and names preserved parts of it.
 
 The last pre-release window made repository-wide renames cheap. Keeping weak names would have turned accidental vocabulary into a compatibility contract.
 
@@ -25,7 +25,7 @@ No family exposes two public vocabularies.
 
 ### Use `SDK` for one thing
 
-`SDK` means the JSON-RPC-based client/server protocol used by the supported Python and TypeScript SDKs. The repository keeps `@deepseek-ai/dsh-sdk-client`, `@deepseek-ai/dsh-sdk-protocol`, and the wire identity `deepseek-harness-sdk-runtime`; the JSON-RPC server belongs to the same family. DeepSeek Harness itself is not an SDK, and the removed project generator, launcher, helper, and launcher telemetry packages stay absent.
+`SDK` means the JSON-RPC-based client/server protocol used by the supported Python and TypeScript SDKs. The repository keeps `@deepseek-ai/dsh-sdk-client`, `@deepseek-ai/dsh-sdk-protocol`, and the wire identity `deepseek-harness-sdk-runtime`; the JSON-RPC server belongs to the same family. eco Agent itself is not an SDK, and the removed project generator, launcher, helper, and launcher telemetry packages stay absent.
 
 This decision partially supersedes three active decisions. It replaces the retained `bash/`, `pty/`, and `self-modification/` group names and both deferred package targets in the [package-regrouping decision](2026-07-29-package-regrouping.md). It replaces only the repository-wide SDK claim in the [SDK project toolchain removal](../simplification/2026-08-11-remove-sdk-project-toolchain.md), which remains the owner of the deletion and the surviving runtime SDK. It replaces only the package-name rationale in the [tool-call timeout policy](2026-07-07-tool-call-timeout-policy.md); the timeout mechanism and its `guard/timeout-policy/` home remain unchanged.
 
@@ -73,7 +73,7 @@ Do not invent a `process sandbox` concept. The current `sandbox` family already 
 
 Use title case for initialisms inside PascalCase identifiers: `Ui`, `Llm`, `JsonRpc`, and `ApiProxy`. Use the conventional uppercase form in prose and package names where applicable: UI, LLM, JSON-RPC, and API. `Typert` is the exact product spelling in identifiers and prose; do not write `TypeRT`, `TypeRt`, or `Typert` with another internal split.
 
-Do not remove an intentional vendor qualifier to avoid repetition. `dsh-subagent-dsh-sdk` names the DeepSeek Harness SDK provider and avoids confusion with another SDK. Its private class becomes `SdkSubagentProvider` because the class also needs to say what it provides.
+Do not remove an intentional vendor qualifier to avoid repetition. `dsh-subagent-dsh-sdk` names the eco Agent SDK provider and avoids confusion with another SDK. Its private class becomes `SdkSubagentProvider` because the class also needs to say what it provides.
 
 ### Put the rule in project documentation
 
@@ -376,7 +376,7 @@ The following debated names stay unchanged because the current scope is accurate
 - Runtime behavior, package boundaries, defaults, policy, durable semantics, and model behavior remain equivalent except where an identifier is itself visible.
 - Package directories, npm names, imports, manifests, TypeScript references and paths, Cordis config, plugin ids, service keys, events, tools, RPC names, persisted names named by the ledger, fixtures, snapshots, examples, generated catalogs, and current prose use the current vocabulary.
 - Current implemented Agent Notes carry the factual name and path changes. The package-regrouping note records the group inventory and package targets, the SDK removal note reserves `SDK` for the runtime protocol, and the timeout-policy note records the package-name rationale.
-- The paired package-creation guide contains the role-word contract, `packages/AGENTS.md` links to it, the terminology table records the chosen words and `Typert` spelling, and root project prose calls the product DeepSeek Harness rather than DeepSeek Harness SDK.
+- The paired package-creation guide contains the role-word contract, `packages/AGENTS.md` links to it, the terminology table records the chosen words and `Typert` spelling, and root project prose calls the product eco Agent rather than eco Agent SDK.
 - The removed SDK project toolchain stays absent.
 - `pnpm run check:ci` covers source-plane typecheck, build, package hygiene, generated-reference checks, affected snapshots, translation pairing, `doc-sync`, and lint. Release-shaped Python runtime smokes and required CI cover packaged-runtime and platform paths.
 

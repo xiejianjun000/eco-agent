@@ -15,7 +15,7 @@ Archived: 2026-08-04
 
 ## 决策
 
-DeepSeek Harness 将 [`@deepseek-ai/dsh-tui`](../../../../packages/ui/tui/README.md) 作为独立的 Cordis 插件交付。该插件只负责终端输入与呈现；agent 生命周期、会话持久化、工具执行以及模型可见的提问工具仍由不同组合项负责。插件要求 stdin 和 stdout 均为 TTY；条件不满足时会失败，不会静默切换为逐行输出。
+eco Agent 将 [`@deepseek-ai/dsh-tui`](../../../../packages/ui/tui/README.md) 作为独立的 Cordis 插件交付。该插件只负责终端输入与呈现；agent 生命周期、会话持久化、工具执行以及模型可见的提问工具仍由不同组合项负责。插件要求 stdin 和 stdout 均为 TTY；条件不满足时会失败，不会静默切换为逐行输出。
 
 该包是终端入口，而不是完整应用。宿主在已配置 agent 之前挂载 `@deepseek-ai/dsh-tui`，并围绕它组合后端、工具和策略。产品 CLI 目前不交付终端组合；非交互任务使用 headless 模式，Web 是已安装产品中面向人的界面，而 ACP 仍是独立的自动化协议。
 

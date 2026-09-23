@@ -13,7 +13,7 @@ repository 插件路径与 profile 组合包路径重复实现了第三方包的
 
 ## 决策
 
-DeepSeek Harness 只保留一种独立的外部插件分发路径：可安装的 profile 组合包。`dsh plugin --profile <name> add <package-or-git-spec>` 将依赖记录到 profile 包中，安装的包通过声明 `dsh.bundle.patch` 提供自己的 patch 层。包管理器负责获取源、管理版本和依赖、运行构建生命周期，并维护锁文件。组合包 patch 负责选择 Cordis 插件并提供完整的插件配置。
+eco Agent 只保留一种独立的外部插件分发路径：可安装的 profile 组合包。`dsh plugin --profile <name> add <package-or-git-spec>` 将依赖记录到 profile 包中，安装的包通过声明 `dsh.bundle.patch` 提供自己的 patch 层。包管理器负责获取源、管理版本和依赖、运行构建生命周期，并维护锁文件。组合包 patch 负责选择 Cordis 插件并提供完整的插件配置。
 
 移除 `@deepseek-ai/dsh-repository-plugin` 包、`.dsh-plugin` 编写格式、`dsh-plugin-prepare` 可执行文件、生成的包装层、不可变 repository 缓存、base 中的 `repository-plugins` 配置项，以及专用 GitHub 验收流水线。vendor 中未再使用的 `@cordisjs/plugin-loader/repository` 子路径及其随附的 pnpm 依赖，也随唯一消费方一并移除。现有 repository 缓存目录只是不会再产生作用的用户数据；DSH 既不会读取，也不会删除这些目录。
 

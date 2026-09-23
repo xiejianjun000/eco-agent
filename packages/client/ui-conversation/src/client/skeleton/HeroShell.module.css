@@ -94,7 +94,7 @@
 }
 
 /* Hover swim: a slow continuous sway about the body center — the head
-   (left) lifts as the whale rises, then settles back with a small
+   (left) lifts as the eco mark rises, then settles back with a small
    counter-tilt, like treading water. Negative rotation = head up (the head
    is the left half; origin 50% 60%). */
 @keyframes hero-fish-swim {

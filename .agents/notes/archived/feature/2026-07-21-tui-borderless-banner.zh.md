@@ -12,7 +12,7 @@ Archived: 2026-07-26
 ## Decision
 
 - `HeaderComponent` 及其从左到右的扫入动画回归，但以**无边框**方式渲染：没有 `╭─╮`/`╰─╯` 边角，也没有 `│` 侧边。每一行都是一个前导空格加上经 `truncateToWidth` 裁剪的内容，因此扫入的宽度裁剪永远不会撕裂转义序列，也不绘制任何固定边框。扫入大约经过 24 帧完成，每帧间隔 15 ms。
-- 头部承载标题（`DEEPSEEK HARNESS`）、一条 `<model>  •  <session-id>` 详情行，以及——当设置了 `welcome` 时——一条弱化的副标题。`welcome` 未设置时头部只有标题加详情：不含固定或随机标语。
+- 头部承载标题（`eco Agent`）、一条 `<model>  •  <session-id>` 详情行，以及——当设置了 `welcome` 时——一条弱化的副标题。`welcome` 未设置时头部只有标题加详情：不含固定或随机标语。
 - 模型**同时**保留在页脚的左段，因此在短暂的横幅滚出视野后，会话使用的模型仍可一瞥可见。
 - `welcome` 恢复为横幅副标题；transcript 第一行的通知从 `rebuildTranscript` 中移除。
 - 仅当 `welcome` 未设置时才播放扫入动画。配置了 `welcome` 会立即渲染整个横幅，使 fixture 和快照保持帧确定性。扫入在 `ui.start()` 成功后启动，并经与之前相同的 `detachListeners` 路径通过 `stopBannerReveal` 清理；后者还会重置裁剪，使扫入中途被销毁的头部重新完整渲染。

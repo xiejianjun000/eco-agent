@@ -9,7 +9,7 @@ English | [中文](2026-07-21-tui-no-banner.zh.md)
 
 ## Problem
 
-The TUI opened with a boxed product banner ("DEEPSEEK HARNESS" + model/session detail), most recently with a sweep-in animation ([banner sweep Agent Note](2026-07-21-tui-banner-sweep.md)). The user's verdict: remove it. A product title re-read on every boot is chrome, the box spends four rows before any content, and the identifying facts it carried (model, session) have better homes.
+The TUI opened with a boxed product banner ("eco Agent" + model/session detail), most recently with a sweep-in animation ([banner sweep Agent Note](2026-07-21-tui-banner-sweep.md)). The user's verdict: remove it. A product title re-read on every boot is chrome, the box spends four rows before any content, and the identifying facts it carried (model, session) have better homes.
 
 ## Decision
 
@@ -37,4 +37,4 @@ This supersedes the [banner sweep Agent Note](2026-07-21-tui-banner-sweep.md) en
 
 ## Testing
 
-`packages/ui/tui/tests/tui.spec.ts` pins: no box corners/product title and an empty transcript when `welcome` is unset, with the model in the footer; a configured welcome as the first transcript line without a banner; and the welcome surviving a palette-swap transcript rebuild. The PTY smoke boots on the footer model name and asserts `DEEPSEEK HARNESS` is absent. Snapshots verify the full frames.
+`packages/ui/tui/tests/tui.spec.ts` pins: no box corners/product title and an empty transcript when `welcome` is unset, with the model in the footer; a configured welcome as the first transcript line without a banner; and the welcome surviving a palette-swap transcript rebuild. The PTY smoke boots on the footer model name and asserts `eco Agent` is absent. Snapshots verify the full frames.

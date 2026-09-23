@@ -21,7 +21,7 @@ Archived: 2026-09-04
 | `write` | `write(file_path, content)` | `Write(file_path, content)` | `write(content, filePath)` | 创建或覆盖 UTF-8 文本。在默认 fs-observation-policy 下，更新现有文件前必须先观测；创建新文件则不需要。 |
 | `edit` | `edit(file_path, old_string, new_string, replace_all?)` | `Edit(file_path, old_string, new_string, replace_all?)` | `edit(filePath, oldString, newString, replaceAll?)` | 字面字符串替换；默认要求唯一匹配；在默认 fs-observation-policy 下必须先观测（任意窗口读取均算作观测）。 |
 
-schema 使用 snake_case 字段名（`file_path`、`old_string`、`new_string`、`replace_all`），与 Claude Code 及现有 DeepSeek Harness 工具 schema 示例保持一致。消费方包将这些面向模型的名称转换为 `ctx.fs` 调用和 `fs/*` 事件分发。
+schema 使用 snake_case 字段名（`file_path`、`old_string`、`new_string`、`replace_all`），与 Claude Code 及现有 eco Agent 工具 schema 示例保持一致。消费方包将这些面向模型的名称转换为 `ctx.fs` 调用和 `fs/*` 事件分发。
 
 ## 工具 schema
 

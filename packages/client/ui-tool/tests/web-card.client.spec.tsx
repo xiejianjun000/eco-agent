@@ -17,7 +17,7 @@ afterEach(cleanup)
 
 const t = makeTranslate(zh, commonZh)
 
-const SEARCH_ARGS = '{"queries":["deepseek harness"]}'
+const SEARCH_ARGS = '{"queries":["eco Agent"]}'
 const FETCH_ARGS = '{"url":"https://example.com/page"}'
 
 interface SearchMeta {

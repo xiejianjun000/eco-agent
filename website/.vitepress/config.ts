@@ -176,7 +176,7 @@ const base = process.env.DOCS_BASE ?? '/'
 
 /** Site identity shared by the VitePress configuration and the llms.txt index. */
 const siteIdentity = {
-  title: 'DeepSeek Harness',
+  title: 'eco Agent',
   description: '用于构建 Agent Harness 的插件化 SDK',
 }
 
@@ -252,7 +252,7 @@ const scrollbarScript = `
 `
 
 /**
- * Navigation-bar title: the DeepSeek wordmark and the release-stage tag.
+ * Navigation-bar title: the eco Agent wordmark and the release-stage tag.
  * VitePress renders `siteTitle` as HTML.
  *
  * @param previewTag - Localized release-stage label.

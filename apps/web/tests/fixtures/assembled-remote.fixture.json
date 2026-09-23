@@ -4794,7 +4794,7 @@
                   "type": "tool-call",
                   "id": "fx-call-70",
                   "name": "web_search",
-                  "arguments": "{\"queries\":[\"deepseek harness architecture\"]}"
+                  "arguments": "{\"queries\":[\"eco Agent architecture\"]}"
                 }
               ],
               "source": {
@@ -4830,7 +4830,7 @@
                     "type": "tool-call",
                     "id": "fx-call-70",
                     "name": "web_search",
-                    "arguments": "{\"queries\":[\"deepseek harness architecture\"]}"
+                    "arguments": "{\"queries\":[\"eco Agent architecture\"]}"
                   }
                 }
               },
@@ -4872,7 +4872,7 @@
             "step": 0,
             "callId": "fx-call-70",
             "name": "web_search",
-            "arguments": "{\"queries\":[\"deepseek harness architecture\"]}"
+            "arguments": "{\"queries\":[\"eco Agent architecture\"]}"
           }
         }
       },
@@ -4898,7 +4898,7 @@
                   "content": [
                     {
                       "type": "text",
-                      "text": "Search results for deepseek harness architecture."
+                      "text": "Search results for eco Agent architecture."
                     }
                   ],
                   "isError": false

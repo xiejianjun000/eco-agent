@@ -153,7 +153,7 @@ export function SidebarRoot({
   }, [pointerInside])
 
   const darwinDesktop = isDarwinDesktop()
-  // Rail resting state is the whale mark; hovering swaps in the panel icon
+  // Rail resting state is the eco mark; hovering swaps in the panel icon
   // (the expand affordance, figma sidebar-hover flow). Expanded it is a plain
   // panel icon.
   const toggle = (

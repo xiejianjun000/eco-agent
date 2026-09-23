@@ -7,7 +7,7 @@ English | [中文](2026-08-10-telemetry-default-off.zh.md)
 
 ## Problem
 
-DeepSeek Harness has two outbound telemetry feeds. During internal testing, the shared base mounted telemetry with a baked-in production endpoint, and both feeds reported by default to help diagnose reported problems: the session OTel backend could export complete session content, tool data, prompts, and workspace paths when its mode was omitted, while the dsh-sdk launcher feed did so unconditionally. A fresh installation therefore permitted outbound reporting without a positive deployment choice.
+eco Agent has two outbound telemetry feeds. During internal testing, the shared base mounted telemetry with a baked-in production endpoint, and both feeds reported by default to help diagnose reported problems: the session OTel backend could export complete session content, tool data, prompts, and workspace paths when its mode was omitted, while the dsh-sdk launcher feed did so unconditionally. A fresh installation therefore permitted outbound reporting without a positive deployment choice.
 
 ## Decision
 

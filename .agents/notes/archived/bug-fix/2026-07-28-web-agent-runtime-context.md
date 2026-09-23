@@ -7,13 +7,13 @@ English | [中文](2026-07-28-web-agent-runtime-context.zh.md)
 
 ## Problem
 
-The shared CLI base configured an empty deployment persona, the Web overlay did not replace it, and the Web launcher added no source or interaction-surface section. A session header recorded its working directory for tools and persistence, but the model prompt did not state that directory or identify the DeepSeek Harness Web GUI. A request such as “change this page's theme” therefore made the agent search the selected project for an unspecified page, even when the user meant the GUI running the session.
+The shared CLI base configured an empty deployment persona, the Web overlay did not replace it, and the Web launcher added no source or interaction-surface section. A session header recorded its working directory for tools and persistence, but the model prompt did not state that directory or identify the eco Agent Web GUI. A request such as “change this page's theme” therefore made the agent search the selected project for an unspecified page, even when the user meant the GUI running the session.
 
 ## Decision
 
 The Web profile composes the `dsh-base` and `dsh-web-app` bundles. The Web bundle supplies a concise coding-agent persona containing the resolved `{{model}}` and session `{{cwd}}`; its `web-runtime` plugin adds the `app:web-surface` section when `surfaceContext` is true. Before mounting the profile tree, the `dsh web` alias reads that same composed setting and installs the existing `harness:source` section only when the surface context is enabled. The headless bundle and a profile that owns its complete prompt set `surfaceContext: false`, suppressing the Web prompt and managed shell facts; the Web alias also suppresses the source section without checking an overlay path. Every mounted prompt contribution still activates before consumers such as the agent loop can emit a request header. The [source-checkout/workdir decision](2026-07-30-source-checkout-workdir-distinction.md) owns the source section's wording and its warning not to infer one path from the other.
 
-The Web section treats unqualified references to “this page,” “this GUI,” or “this app” as references to the DeepSeek Harness Web GUI. It also states that the browser provides no implicit DOM, route, or screenshot context, so the model can identify the product without claiming visual state it did not receive. The assembled text is logged in `request/header`, preserving the model-visible/logged invariant.
+The Web section treats unqualified references to “this page,” “this GUI,” or “this app” as references to the eco Agent Web GUI. It also states that the browser provides no implicit DOM, route, or screenshot context, so the model can identify the product without claiming visual state it did not receive. The assembled text is logged in `request/header`, preserving the model-visible/logged invariant.
 
 ## Verification
 

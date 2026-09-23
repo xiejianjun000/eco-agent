@@ -9,7 +9,7 @@ English | [中文](2026-07-05-skill-system.zh.md)
 
 Agent products have converged on a skill pattern: keep the request prompt small by listing only available instruction bundles, then load the full body when the model decides a task matches. Codex, Claude Code, OpenCode, and Kimi Code differ in details, but all separate discovery metadata from complete instructions so a workspace can carry reusable behavior without paying the full prompt cost on every turn.
 
-DeepSeek Harness uses the same primitive so project-specific review, plugin-authoring, and tool-usage guidance lives next to the workspace or the user's agent configuration instead of being hard-coded into the loop.
+eco Agent uses the same primitive so project-specific review, plugin-authoring, and tool-usage guidance lives next to the workspace or the user's agent configuration instead of being hard-coded into the loop.
 
 ## Decision
 

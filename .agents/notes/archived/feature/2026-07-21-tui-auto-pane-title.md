@@ -11,7 +11,7 @@ English | [中文](2026-07-21-tui-auto-pane-title.zh.md)
 
 ## Problem
 
-The TUI's terminal title is a single static string (`title`, default `DeepSeek Harness`) shared by every session. A user who runs one agent per tmux pane or terminal tab sees the same label on all of them, so panes are indistinguishable at a glance and the tab bar carries no signal about what each session is doing.
+The TUI's terminal title is a single static string (`title`, default `eco Agent`) shared by every session. A user who runs one agent per tmux pane or terminal tab sees the same label on all of them, so panes are indistinguishable at a glance and the tab bar carries no signal about what each session is doing.
 
 ## Decision
 

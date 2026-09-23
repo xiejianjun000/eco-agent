@@ -7,7 +7,7 @@ English | [中文](2026-07-20-remove-stdio-and-echo-agents.zh.md)
 
 ## Problem
 
-DeepSeek Harness exposed two redundant product agents beside the TUI and Headless coding agents. The line-oriented stdio agent duplicated terminal interaction and non-interactive execution with a mixed prompt/output protocol. Echo duplicated Headless as a network-free mock model plus one teaching tool, making a test fixture into a user-facing agent and the default quick-start path.
+eco Agent exposed two redundant product agents beside the TUI and Headless coding agents. The line-oriented stdio agent duplicated terminal interaction and non-interactive execution with a mixed prompt/output protocol. Echo duplicated Headless as a network-free mock model plus one teaching tool, making a test fixture into a user-facing agent and the default quick-start path.
 
 Both agents carried support surfaces beyond their leaf configurations. Stdio owned a UI plugin, app package, SDK interface, REPL leaf, prompt protocol, and Loader tests. Echo owned a runnable command, mock adapter, tool, CI demo gate, graph entry, teaching references, and a shared test fixture. Keeping any of those product paths would preserve the redundant agent indirectly.
 

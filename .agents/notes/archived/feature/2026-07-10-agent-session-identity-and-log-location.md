@@ -18,7 +18,7 @@ The model-facing bash package owns a `ctx.shellEnv` registry. A contributor decl
 The registry rebuilds a trusted overlay for every foreground and background bash `ToolExecution`:
 
 - `DSH_HOME` is always the absolute configured Harness home. The standalone [`@deepseek-ai/dsh-home-paths`](../../../../packages/util/home-paths/README.md) utility owns its precedence: explicit `dshHome`, then ambient `$DSH_HOME`, then `~/.dsh`.
-- `DSH_SHELL=1` is always present and identifies a model bash child managed by DeepSeek Harness.
+- `DSH_SHELL=1` is always present and identifies a model bash child managed by eco Agent.
 - `DSH_SESSION_ID` is present when the execution has an agent and equals `agent.session.header.id`.
 
 A transcript-location fact is deliberately absent. An earlier form of this decision also extended the persistence seam with a `locate()` path query feeding a `DSH_SESSION_JSONL` variable and the hook bridges' `transcript_path`; the [persistence export and pre-release trims](../simplification/2026-08-27-persistence-export-and-pre-release-trims.md) note owns removing that half — the paths were only readable with compression disabled, and the seam no longer exposes artifact locations.

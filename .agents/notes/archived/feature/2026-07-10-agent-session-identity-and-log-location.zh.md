@@ -18,7 +18,7 @@ agent（智能体）可以通过 `session.header.cwd` 识别其工作区，但�
 注册表会为每次前台和后台 bash `ToolExecution` 重新构建受信任的覆盖层：
 
 - `DSH_HOME` 始终是配置的 Harness home 绝对路径。独立的 [`@deepseek-ai/dsh-home-paths`](../../../../packages/util/home-paths/README.zh.md) 工具库规定其优先级：显式 `dshHome`，其次是环境中的 `$DSH_HOME`，最后是 `~/.dsh`。
-- `DSH_SHELL=1` 始终存在，用于标识由 DeepSeek Harness 管理、面向模型的 bash 子进程。
+- `DSH_SHELL=1` 始终存在，用于标识由 eco Agent 管理、面向模型的 bash 子进程。
 - 执行具有关联 agent 时，`DSH_SESSION_ID` 存在并等于 `agent.session.header.id`。
 
 transcript（文本记录）位置事实被有意省略。本决策的早期形式还在持久化 seam 上增加了 `locate()` 路径查询，为 `DSH_SESSION_JSONL` 变量和钩子桥接层的 `transcript_path` 提供来源；[持久化导出与预发布精简](../simplification/2026-08-27-persistence-export-and-pre-release-trims.zh.md) Note 负责移除这一半——这些路径只有在禁用压缩时才可读，该 seam 也不再公开产物位置。
