@@ -47,3 +47,14 @@ worktrees/
 .agents/worktrees/
 .typert-*/
 native/system/test/bin/
+
+# In-source TypeScript artifacts (2026-09-26): a stray `tsc` run without
+# `outDir` drops .js / .d.ts / .map next to every source file. Upstream keeps
+# build output under lib/ (already ignored above), so anything under src/ that
+# looks emitted is noise. Hand-written declarations are whitelisted back in.
+packages/**/src/**/*.js
+packages/**/src/**/*.js.map
+packages/**/src/**/*.d.ts
+packages/**/src/**/*.d.ts.map
+!packages/**/src/**/css-modules.d.ts
+!packages/im/im-eco-wechat/src/shims.d.ts
