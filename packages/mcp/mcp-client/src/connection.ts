@@ -293,11 +293,17 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
       }
       return !attached || hasClosed() || await waitForClose(closed.promise)
     }
+    const sessionAwareOpts: ToolBridgeOptions = {
+      ...(startup ? startupOpts : opts),
+      onSessionLost: () => {
+        if (isCurrent(generation)) generationDown(generation)
+      },
+    }
     async function refreshTools(): Promise<void> {
       if (!isCurrent(generation)) return
       ctx.logger.info(`${label}: tool list changed, re-syncing`)
       try {
-        await enqueueSync(generation)
+        await enqueueSync(generation, sessionAwareOpts)
       } catch (error) {
         if (!disposed) ctx.logger.error(`${label}: tool re-sync failed: ${String(error)}`)
       }
@@ -320,7 +326,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
       if (Buffer.byteLength(instructions) > maxInstructionBytes) {
         throw new Error(`${label}: server instructions exceed maxInstructionBytes (${maxInstructionBytes})`)
       }
-      await enqueueSync(generation, startup ? startupOpts : opts)
+      await enqueueSync(generation, sessionAwareOpts)
     } catch (error) {
       if (firstAttemptError === undefined) firstAttemptError = error
       // Disposal clears current ownership before it closes the generation, so

@@ -30,6 +30,24 @@ export interface ToolBridgeOptions {
   registrationFailure: 'contain' | 'throw'
   serverName: string
   toolCallTimeoutMs: number
+  /**
+   * Invoked when a tool call fails because the server dropped its MCP session
+   * (e.g. "Session not found" after a server restart). The connection
+   * supervisor uses this to re-establish the session instead of leaving every
+   * tool call broken until a manual reload.
+   */
+  onSessionLost?: () => void
+}
+
+/** JSON-RPC error code the SDK surfaces for a server-rejected request, including an expired session. */
+const SESSION_NOT_FOUND_CODE = -32600
+
+/** Detect a dropped MCP session ("Session not found") independently of the SDK's error class identity. */
+function isSessionNotFound(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  const candidate = error as { code?: unknown; message?: unknown }
+  if (candidate.code !== SESSION_NOT_FOUND_CODE) return false
+  return typeof candidate.message === 'string' && /session\s+not\s+found/i.test(candidate.message)
 }
 
 /** State for one sync generation: the current set of disposers keyed by public name. */
@@ -135,10 +153,17 @@ export async function syncTools(
       inputSchema: tool.inputSchema,
       outputSchema: tool.outputSchema,
       taskRequired: tool.execution?.taskSupport === 'required',
-      call: (args, execution) => client.callTool(
-        { name: tool.name, arguments: args },
-        { signal: execution.signal, timeout: opts.toolCallTimeoutMs, toolDefinition: tool },
-      ),
+      call: async (args, execution) => {
+        try {
+          return await client.callTool(
+            { name: tool.name, arguments: args },
+            { signal: execution.signal, timeout: opts.toolCallTimeoutMs, toolDefinition: tool },
+          )
+        } catch (error) {
+          if (opts.onSessionLost !== undefined && isSessionNotFound(error)) opts.onSessionLost()
+          throw error
+        }
+      },
     }))
   }
 

@@ -210,6 +210,31 @@ describe('reconnect supervisor', () => {
     expect(instances).toHaveLength(2)
   })
 
+  it('reconnects when a tool call fails with "Session not found"', async () => {
+    const { warns, infos } = captureLogs(ctx)
+    await apply(ctx, stdioConfig({ initialDelayMs: 5, maxDelayMs: 40, maxAttempts: 5 }))
+    await vi.waitFor(() => { expect(ctx.tools.get('mcp__srv__remote')).toBeDefined() })
+    expect(instances).toHaveLength(1)
+
+    // The server restarted: the live session id is gone, so a tool call
+    // surfaces a JSON-RPC "Session not found" error instead of a transport
+    // close. The supervisor must treat this as a lost connection.
+    const expired: Error & { code?: number } = Object.assign(
+      new Error('MCP error -32600: Session not found'),
+      { code: -32600 },
+    )
+    mockCallTool.mockRejectedValueOnce(expired)
+    const failed = await ctx.tools.execute({
+      signal: testToolSignal, callId: nextCallId(), name: 'mcp__srv__remote', arguments: {},
+    })
+    expect(failed.isError).toBe(true)
+    expect(JSON.stringify(failed.content)).toContain('Session not found')
+
+    await vi.waitFor(() => { expect(instances).toHaveLength(2) })
+    expect(warns.some(line => line.includes('reconnecting in 5ms (attempt 1/5)'))).toBe(true)
+    expect(infos.some(line => line.includes('reconnected and re-synced tools'))).toBe(true)
+  })
+
   it('stops at the failure cap, unregisters the tools, and reports final failure', async () => {
     const { warns, errors } = captureLogs(ctx)
     await apply(ctx, stdioConfig({ initialDelayMs: 2, maxDelayMs: 8, maxAttempts: 2 }))
