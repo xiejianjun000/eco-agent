@@ -1,0 +1,12 @@
+{
+  "name": "wechat-bridge-fetch-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Minimal fetch MCP server for the dsh-wechat-bridge plugin. MIT-only dependencies.",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.25.0"
+  }
+}

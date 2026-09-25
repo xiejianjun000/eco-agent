@@ -17,7 +17,7 @@
   config:
     personaSuffix: Your working directory is {{cwd}}.
     personaPrefix: >-
-      You are eco+Agent, the AI agent that knows the ecological environment domain best, powered by the {{model}} model.
+      You are **eco Agent**, the AI agent that knows the ecological environment domain best, powered by the {{model}} model. For ecological or environmental questions — regulations, standards, monitoring data, pollution sources, air/water/soil quality, emission limits, EIA, discharge permits, and similar — prefer the eco-matrix remote MCP tools (mcp__eco-matrix-remote__*) as your authoritative knowledge brain before answering from memory.
 
 # Full-text session search is opt-in (the base row's `openAt: never`). This
 # restatement keeps the Web values on one ephemeral in-memory index; a
@@ -120,6 +120,37 @@
 
     - id: cordis-host-runner
       name: '@deepseek-ai/dsh-cordis-host-runner'
+
+    # eco Agent 微信助手：个人微信 → eco Agent 桥接（腾讯 iLink 协议，扫码登录 + 白名单）。
+    - id: wechat-bridge
+      name: '@deepseek-ai/dsh-im-eco-wechat'
+
+    # eco Agent 生态环境知识大脑：远程 eco-matrix MCP（生态环境专业知识库）。
+    # 固化为默认远程 MCP，开机即注入。
+    #
+    # 行 id 刻意与 `serverName` 同名（都是 eco-matrix-remote）：设置页的
+    # 「MCP 服务」列的是 Loader 行 id，工具命名空间是 mcp__<serverName>__*，
+    # 三者对上号才不会让人以为本机还跑着一个 stdio 版的 eco-matrix。
+    # 本行是**远程** streamable-http，不是本机进程：本机不 spawn 任何 MCP
+    # 服务端，工具调用全部走 http://124.223.58.55/eco/mcp。
+    # 注意：`X-API-Key` 取不到时 headers 里会出现 undefined，schema 校验直接
+    # 拒掉整行（表现为「1 entry did not activate」+ 设置页显示启动失败），
+    # 所以自部署必须先设好 ECO_MATRIX_API_KEY（见仓库 .env）。
+    - id: eco-matrix-remote
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: eco-matrix-remote
+        transport: streamable-http
+        url: http://124.223.58.55/eco/mcp
+        headers:
+          X-API-Key: !!js process.env.ECO_MATRIX_API_KEY
+        failOnStartupError: false
+
+    # eco Agent 飞书助手：飞书长连接 → eco Agent 桥接（持久会话 + 流式卡片 + 主动推送）。
+    # TODO(飞书适配): 社区插件基于旧版 dsh API（settingsNamespace/ctx.agent/事件名已变），适配前暂不加载。
+    - id: feishu-gateway
+      name: '@deepseek-ai/dsh-im-eco-feishu'
+      disabled: true
 
     # Ordinary provider for the parsed Web flags. Its plugin-level injection
     # waits for cmdlineArgs; no launcher metadata or special row kind is needed.
@@ -233,6 +264,16 @@
     - id: ui-sidebar-documentpreview
       name: '@deepseek-ai/dsh-client-ui-sidebar-documentpreview'
 
+    # eco 媒体预览：视频 / 音频文件在文档预览器里直接播放（注册为扩展名
+    # 渲染器，拔掉这一行就退回纯文本视图）。
+    - id: ui-sidebar-eco-media
+      name: '@deepseek-ai/dsh-client-ui-sidebar-eco-media'
+
+    # eco tab 内容动作：右侧栏 tab 菜单里补「复制文件路径 / 复制文件名 /
+    # 在文件管理器中显示」，只对工作区文件 tab 出现。
+    - id: ui-sidebar-eco-tabactions
+      name: '@deepseek-ai/dsh-client-ui-sidebar-eco-tabactions'
+
     # Sandboxed HTTP(S) Browser tabs, including loopback targets.
     - id: ui-sidebar-browser
       name: '@deepseek-ai/dsh-client-ui-sidebar-browser'
@@ -251,6 +292,48 @@
 
     - id: ui-settings-models
       name: '@deepseek-ai/dsh-client-ui-settings-models'
+
+    # ── eco Agent 设置分区：一个分区 = 一个独立插件包，可插可拔 ───────────
+    # 拔掉某个分区 = 给它的行加 `disabled: true`（或整行删掉）；插上 = 去掉。
+    # 顺序由各包注入时声明的 order 决定：
+    #   0 通用 · 10 模型 · 12 记忆                      ← agent 的"脑"
+    #   15 内置插件 · 20 Agent 预设                      ← 能力组装
+    #   22 MCP 服务 · 23 渠道接入                        ← 外部接入
+    #   24 权限与审批 · 25 已归档会话                    ← 安全与数据
+    #   40 数据与诊断 · 45 帮助与关于 · 50 账号与身份（默认关闭）
+    # 排序只由各包注入时声明的 order 决定，这里的文件顺序无关。上游占位
+    # 0/10/15/20/25 是固定的，eco 包一律取中间值（12/22/23/24），避免同值
+    # 撞车 —— 同 order 的相对次序由装载顺序决定，重启可能变。
+
+    # MCP 服务：远程 MCP 的真实连通状态（读宿主 pluginInventory，不画假绿点）。
+    - id: ui-settings-eco-mcp
+      name: '@deepseek-ai/dsh-client-ui-settings-eco-mcp'
+
+    # 权限与审批：新会话默认权限预设（宿主 permission namespace）。
+    - id: ui-settings-eco-permission
+      name: '@deepseek-ai/dsh-client-ui-settings-eco-permission'
+
+    # 记忆：宿主没有 memory namespace 时明说「没接入」，不摆假开关。
+    - id: ui-settings-eco-memory
+      name: '@deepseek-ai/dsh-client-ui-settings-eco-memory'
+
+    # 渠道接入：微信 / 飞书助手的配置入口。
+    - id: ui-settings-eco-assistants
+      name: '@deepseek-ai/dsh-client-ui-settings-eco-assistants'
+
+    # 数据与诊断：插件健康统计 + 浏览器模块加载结果 + 日志导出入口说明。
+    - id: ui-settings-eco-diagnostics
+      name: '@deepseek-ai/dsh-client-ui-settings-eco-diagnostics'
+
+    # 帮助与关于：开源版必备 —— 是什么、源码在哪、问题往哪提。
+    - id: ui-settings-eco-about
+      name: '@deepseek-ai/dsh-client-ui-settings-eco-about'
+
+    # 账号与身份（预留）：开源自部署版没有账号体系，默认关闭。
+    # 正式应用版启用 = 删掉下面的 `disabled: true`，其余代码一行不用改。
+    - id: ui-settings-eco-account
+      name: '@deepseek-ai/dsh-client-ui-settings-eco-account'
+      disabled: true
 
     # Plugin management: the sidebar Plugins page installs, enables, disables,
     # and removes the profile's bundles through the `pluginManager` Remote.
@@ -271,6 +354,11 @@
 
     - id: ui-eco-suggestions
       name: '@deepseek-ai/dsh-client-ui-eco-suggestions'
+
+    # eco 引用到输入框：选中页面任意文本浮出「引用」按钮，点击以引用块写入
+    # 当前会话草稿。拔掉这一行即失去该能力，输入区其余行为不变。
+    - id: ui-eco-quote
+      name: '@deepseek-ai/dsh-client-ui-eco-quote'
 
     - id: ui-approval
       name: '@deepseek-ai/dsh-client-ui-approval'

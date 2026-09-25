@@ -7,6 +7,7 @@ export type SuggestionKey =
   | 'role.approval' | 'role.research' | 'role.training'
   | 'prompt.enterprise' | 'prompt.enforcement' | 'prompt.inspection'
   | 'prompt.approval' | 'prompt.research' | 'prompt.training'
+  | 'copy.label' | 'copy.done' | 'copy.failed'
 
 /** Namespace the dictionaries register under. */
 export const NS = 'eco.suggestions'
@@ -27,6 +28,9 @@ export const en: Record<SuggestionKey, string> = {
   'prompt.approval': '以许可审批身份，帮我审核许可申请、核查技术要件。',
   'prompt.research': '以科研分析身份，帮我做数据建模、趋势研判和报告撰写。',
   'prompt.training': '以学习培训身份，帮我解读法规、讲解标准、学习案例。',
+  'copy.label': 'Copy this sample question',
+  'copy.done': 'Copied',
+  'copy.failed': 'Copy failed — select the text manually',
 }
 
 /** Simplified Chinese copy. */
@@ -45,4 +49,7 @@ export const zh: Record<SuggestionKey, string> = {
   'prompt.approval': '以许可审批身份，帮我审核许可申请、核查技术要件。',
   'prompt.research': '以科研分析身份，帮我做数据建模、趋势研判和报告撰写。',
   'prompt.training': '以学习培训身份，帮我解读法规、讲解标准、学习案例。',
+  'copy.label': '复制这条示例问题',
+  'copy.done': '已复制',
+  'copy.failed': '复制失败，请手动选择文本',
 }

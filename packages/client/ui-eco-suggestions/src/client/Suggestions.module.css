@@ -23,9 +23,9 @@
 .card {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   min-height: 32px;
-  padding: 0 14px;
+  padding: 0 4px 0 14px;
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 16px;
   background: var(--dsw-alias-interactive-bg-hover);
@@ -33,12 +33,10 @@
   font-size: 13px;
   line-height: 20px;
   font-weight: 500;
-  cursor: pointer;
   transition:
     border-color 300ms ease,
     box-shadow 300ms ease,
-    background-color 300ms ease,
-    transform 300ms ease;
+    background-color 300ms ease;
 }
 
 .card:hover {
@@ -47,8 +45,59 @@
   box-shadow: 0 0 0 1px #96d562, 0 0 12px rgba(15, 118, 110, 0.35);
 }
 
-.card:active {
+/* The send target: the role name itself. Keeping it a separate button keeps
+   the copy control beside it reachable by keyboard and by pointer. */
+.label {
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.label:active {
   transform: scale(0.985);
+}
+
+/* Copy control: quiet until the card or the control itself is hovered, always
+   visible enough to be discoverable and to be tappable on touch. */
+.copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--dsw-alias-label-caption);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 200ms ease, color 200ms ease, background-color 200ms ease;
+}
+
+.card:hover .copy,
+.copy:hover,
+.copy:focus-visible {
+  opacity: 1;
+}
+
+.copy:hover {
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+  color: var(--dsw-alias-label-primary);
+}
+
+/* Success reads green, refusal reads as a warning — never a fake tick. */
+.copy[data-copy-state='done'] {
+  opacity: 1;
+  color: #1f9d55;
+}
+
+.copy[data-copy-state='failed'] {
+  opacity: 1;
+  color: #d97706;
 }
 
 /* Twelve-element coverage line, caption-tier and centered. */

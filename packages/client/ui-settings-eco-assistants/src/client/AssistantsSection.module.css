@@ -1,0 +1,62 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--dsw-alias-border, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  background: var(--dsw-specific-surface, transparent);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+/* 运行状态徽标：与标题同一行，右对齐，不抢标题的层级。 */
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-secondary, rgba(0, 0, 0, 0.6));
+}
+
+.desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary, rgba(0, 0, 0, 0.6));
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-secondary, rgba(0, 0, 0, 0.55));
+}
+
+.todo {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary, rgba(0, 0, 0, 0.55));
+}

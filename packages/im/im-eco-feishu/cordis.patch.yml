@@ -1,0 +1,5 @@
+# dsh-im-eco-feishu bundle patch — 挂载 eco Agent 飞书助手。
+# 如需覆盖配置，在 profile 的 cordis.patch.yml 中按 id 覆写。
+- insert:
+    - id: feishu-gateway
+      name: '@deepseek-ai/dsh-im-eco-feishu'

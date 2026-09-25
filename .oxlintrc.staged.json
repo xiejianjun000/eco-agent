@@ -17,6 +17,10 @@
     "**/*.js",
     "**/*.mjs",
     "**/*.config.ts",
-    "packages/client/tsdown.client.ts"
+    "packages/client/tsdown.client.ts",
+    // Same exemption as .oxlintrc.json: this list replaces rather than extends
+    // the base ignorePatterns, so the ported community IM sources stay exempt
+    // here too (adaptation keeps upstream style until a later lint pass).
+    "packages/im/**"
   ]
 }
