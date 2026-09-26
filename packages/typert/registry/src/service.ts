@@ -613,7 +613,7 @@ export class TypertRegistry extends Service implements TypertRegistryContract {
     const batch = new Set<string>()
     for (const schema of contribution.schemas) {
       validateSegment('schema name', schema.name)
-      if (typeof schema.create !== 'function') {
+      if (!normalizeCodec(schema as unknown as Record<string, unknown>)) {
         throw new Error(`typert: schema "${schema.name}" has no create() factory`)
       }
       const key = typertKey(contribution.package, schema.name)
@@ -717,10 +717,38 @@ function validateInvocation(descriptor: InvocationDescriptor): void {
   }
 }
 
+/**
+ * Reconcile the two codec shapes Typert generators have emitted.
+ *
+ * Current generators emit `create: () => ZodType`, a lazy factory; earlier ones
+ * emitted `schema: ZodType`, the already-built schema. Both name the same
+ * runtime value, so a descriptor carrying the legacy key is upgraded in place
+ * before validation and every consumer downstream only sees the factory form.
+ * This is the shared-registry twin of the same reconciliation in
+ * `@deepseek-ai/dsh-typert-loader`: one covers Host manifests, this one covers
+ * the contributions mounted from either face.
+ * @param codec - one codec lifted from a descriptor.
+ * @returns whether the codec now carries a usable schema factory.
+ */
+function normalizeCodec(codec: Record<string, unknown>): boolean {
+  if (typeof codec.create === 'function') return true
+  const legacy = codec.schema
+  if (typeof legacy !== 'object' || legacy === null) return false
+  if (typeof (legacy as { parse?: unknown }).parse !== 'function') return false
+  const schema = legacy as object
+  Object.defineProperty(codec, 'create', {
+    value: () => schema,
+    enumerable: false,
+    configurable: true,
+    writable: true,
+  })
+  return true
+}
+
 function validateCodec(codec: InvocationDescriptor['result'], subject: string): void {
   if (codec.mode === 'src-json') return
   validateNonempty(`${subject} type symbol`, codec.typeSymbol)
-  if (typeof codec.create !== 'function') {
+  if (!normalizeCodec(codec as unknown as Record<string, unknown>)) {
     throw new Error(`typert: ${subject} strict codec has no create() factory`)
   }
 }

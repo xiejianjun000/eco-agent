@@ -35,6 +35,7 @@ export function apply(ctx: ClientContext): void {
     key: 'tool-call',
     locale: NS,
     children: {
+      'tool.call.takeover': { kind: 'chain', scope: 'session' },
       'tool.call.toolview': { kind: 'keyed', scope: 'session' },
     },
     inject: toolInject,

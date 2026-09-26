@@ -108,7 +108,7 @@ export function validateTypertManifest(pkgName: string, exported: unknown): Type
     }
     const schema = value as Record<string, unknown>
     requireString(pkgName, schema, 'name', 'schema')
-    if (typeof schema.create !== 'function') {
+    if (!normalizeCodec(schema)) {
       throw new Error(`typert-loader: ${pkgName} TYPERT schema "${schema.name as string}" has no create() factory`)
     }
   }
@@ -267,13 +267,45 @@ function requireInvocation(pkgName: string, value: unknown): void {
   }
 }
 
+/**
+ * Reconcile the two codec shapes Typert generators have emitted.
+ *
+ * Current generators emit `create: () => ZodType`, a lazy factory so a manifest
+ * import pays no schema-construction cost for endpoints nobody calls. Earlier
+ * generators emitted `schema: ZodType` — the already-built schema. Both name the
+ * same runtime value, so a manifest carrying the legacy key is upgraded in place
+ * before validation; every downstream consumer (the Gateway's codec decode in
+ * particular) only ever sees the factory form.
+ *
+ * Without this, a third-party package built with an older generator is rejected
+ * outright — `typert-loader: … has no create() factory` — and, because the
+ * loader aggregates activation failures into one throw, that takes the whole
+ * boot down.
+ * @param codec - one codec object lifted from a manifest.
+ * @returns whether the codec now carries a usable schema factory.
+ */
+function normalizeCodec(codec: Record<string, unknown>): boolean {
+  if (typeof codec.create === 'function') return true
+  const legacy = codec.schema
+  if (typeof legacy !== 'object' || legacy === null) return false
+  if (typeof (legacy as { parse?: unknown }).parse !== 'function') return false
+  const schema = legacy as object
+  Object.defineProperty(codec, 'create', {
+    value: () => schema,
+    enumerable: false,
+    configurable: true,
+    writable: true,
+  })
+  return true
+}
+
 function requireStrictCodec(pkgName: string, value: unknown, subject: string): void {
   const codec = requireObject(pkgName, value, subject)
   if (codec.mode !== 'strict') {
     throw new Error(`typert-loader: ${pkgName} ${subject} must use a strict codec`)
   }
   requireString(pkgName, codec, 'typeSymbol', subject)
-  if (typeof codec.create !== 'function') {
+  if (!normalizeCodec(codec)) {
     throw new Error(`typert-loader: ${pkgName} ${subject} has no create() factory`)
   }
 }

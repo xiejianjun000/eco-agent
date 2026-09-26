@@ -38,6 +38,19 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * slot.
      */
     'tool.call.images': { kind: 'single'; scope: 'session'; owner: ToolImagesOwnerProps }
+    /**
+     * Takeover chain in front of the atomic Tool view: every contribution's
+     * selector runs in chain order over one call, and the first non-null match
+     * renders instead of the keyed toolview (and instead of the generic card).
+     *
+     * This is how an external renderer claims a call whose result carries its
+     * own presentation — an MCP App's `ui://` resource, for example — without
+     * owning a wire tool name up front and without the Tool layer knowing what
+     * the claiming package renders. With nothing registered the chain resolves
+     * to its fallback, which is exactly the dispatch this file's keyed slot
+     * already performed, so declaring it changes no shipped behavior.
+     */
+    'tool.call.takeover': { kind: 'chain'; scope: 'session'; owner: ToolCallOwnerProps }
   }
 }
 
@@ -57,8 +70,17 @@ export interface ToolCallOwnerProps {
   callId: string
   /** Wire Tool name and keyed dispatch value. */
   toolName: string
-  /** Frozen running call or settled result node. */
-  block: ToolCallBlock
+  /**
+   * Frozen running call or settled result node.
+   *
+   * `resultView` is the takeover-facing alias of a settled result's `meta`: the
+   * producing tool owns that payload's shape (the core treats it as opaque),
+   * and a takeover renderer reads from it the descriptor it understands — an
+   * MCP App card, for example. It is `undefined` while the call is still
+   * running and for a result whose tool projected no presentation payload, so
+   * a selector that needs it simply declines.
+   */
+  block: ToolCallBlock & { resultView?: unknown }
   /** Session workspace root for relative summaries. */
   cwd?: string | undefined
   /** Host account home; POSIX home-rooted summaries display as `~`. */
@@ -98,6 +120,6 @@ export type ToolHostInfoInjected = {
 
 /** Full props of the Tool call-tree renderer registered as a `tool-call` Chat Node. */
 export type ToolTreeProps = PropsRuntime<'conversation.chat.node', 'tool-call'>
-  & PropsRenderSlots<'tool.call.toolview'>
+  & PropsRenderSlots<'tool.call.takeover' | 'tool.call.toolview'>
   & PropsLocale<'conversation'>
   & InjectFace<ToolHostInfoInjected>

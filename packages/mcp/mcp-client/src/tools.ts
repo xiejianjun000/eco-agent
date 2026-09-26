@@ -141,6 +141,7 @@ export async function syncTools(
     : await client.listTools(undefined, { cacheMode: 'refresh' })
   for (const tool of response.tools) {
     const publicName = publicToolName(opts.serverName, tool.name)
+    const app = appBinding(opts.serverName, tool.name, tool._meta)
     if (definitions.has(publicName)) {
       throw new Error(
         `mcp-client(${opts.serverName}): server listed tool "${tool.name}" more than once — invalid tool list`,
@@ -153,6 +154,28 @@ export async function syncTools(
       inputSchema: tool.inputSchema,
       outputSchema: tool.outputSchema,
       taskRequired: tool.execution?.taskSupport === 'required',
+      // `_meta.ui.resourceUri` is the MCP App declaration; most tools have none.
+      ...app === undefined ? {} : { app },
+      listResources: async () => {
+        try {
+          return await client.listResources() as JsonValue
+        } catch (error) {
+          if (opts.onSessionLost !== undefined && isSessionNotFound(error)) opts.onSessionLost()
+          throw error
+        }
+      },
+      readResource: async (uri, execution) => {
+        try {
+          const response = await client.readResource(
+            { uri },
+            { signal: execution.signal, timeout: opts.toolCallTimeoutMs },
+          )
+          return response as JsonValue
+        } catch (error) {
+          if (opts.onSessionLost !== undefined && isSessionNotFound(error)) opts.onSessionLost()
+          throw error
+        }
+      },
       call: async (args, execution) => {
         try {
           return await client.callTool(
@@ -206,6 +229,100 @@ interface PreparedProjection {
   content: ContentBlock[]
 }
 
+/**
+ * The MCP App UI resource a tool declares through `_meta.ui.resourceUri`.
+ *
+ * A server that ships an interactive result publishes the App's HTML as a
+ * `ui://` resource and points the tool at it; the tool call itself still
+ * returns the compact textual summary the model reads. Only a tool carrying
+ * this binding projects an App descriptor into its result meta, so ordinary
+ * MCP tools pay nothing.
+ */
+export interface McpAppBinding {
+  /** Configured server namespace the App's resource is read through. */
+  serverName: string
+  /** Upstream tool name, replayed when the App calls back into the server. */
+  rawName: string
+  /** `ui://` URI of the App resource. */
+  uri: string
+}
+
+/** One App resource read back from the server, before MIME qualification. */
+interface McpAppResource {
+  uri: string
+  mimeType?: string
+  text?: string
+  _meta?: JsonValue
+}
+
+/**
+ * Read a tool's declared App resource URI out of its upstream `_meta`.
+ *
+ * Anything that is not a `ui://` string yields `undefined`: the App
+ * vocabulary is opt-in, and a malformed declaration must not change how the
+ * tool is registered or called.
+ *
+ * @param serverName - configured server namespace owning the resource.
+ * @param rawName - upstream tool name.
+ * @param toolMeta - the tool's advertised `_meta`, if any.
+ * @returns the App binding, or `undefined` when the tool declares none.
+ */
+export function appBinding(serverName: string, rawName: string, toolMeta: unknown): McpAppBinding | undefined {
+  if (typeof toolMeta !== 'object' || toolMeta === null) return undefined
+  const ui = (toolMeta as { ui?: unknown }).ui
+  if (typeof ui !== 'object' || ui === null) return undefined
+  const uri = (ui as { resourceUri?: unknown }).resourceUri
+  if (typeof uri !== 'string' || !uri.startsWith('ui://')) return undefined
+  return { serverName, rawName, uri }
+}
+
+/** Normalize a `resources/read` response's first content entry. */
+function appResourceFrom(response: JsonValue, uri: string): McpAppResource | undefined {
+  if (!isRecord(response)) return undefined
+  const contents = response['contents']
+  if (!Array.isArray(contents)) return undefined
+  const first: unknown = contents[0]
+  if (!isRecord(first)) return undefined
+  return {
+    uri: typeof first['uri'] === 'string' ? first['uri'] : uri,
+    ...typeof first['mimeType'] === 'string' ? { mimeType: first['mimeType'] } : {},
+    ...typeof first['text'] === 'string' ? { text: first['text'] } : {},
+    ...first['_meta'] !== undefined ? { _meta: first['_meta'] as JsonValue } : {},
+  }
+}
+
+/**
+ * Find one resource's declared `_meta` in `resources/list`.
+ *
+ * The CSP an App needs to run lives on the resource declaration, not on the
+ * bytes `resources/read` returns, so a read response alone cannot tell the
+ * sandbox what to allow. Best-effort: a server that will not list resources
+ * simply contributes no declaration, and the sandbox keeps its secure default.
+ *
+ * @param list - list reader bound to the live connection.
+ * @param uri - App resource URI to look up.
+ * @returns the declaration, or `undefined` when the server serves none.
+ */
+async function declaredResourceMeta(
+  list: () => Promise<JsonValue | undefined>,
+  uri: string,
+): Promise<JsonValue | undefined> {
+  let page: JsonValue | undefined
+  try {
+    page = await list()
+  } catch {
+    // An unlistable server must not cost the App its already-read body.
+    return undefined
+  }
+  if (!isRecord(page) || !Array.isArray(page['resources'])) return undefined
+  for (const entry of page['resources'] as unknown[]) {
+    if (isRecord(entry) && entry['uri'] === uri && entry['_meta'] !== undefined) {
+      return entry['_meta'] as JsonValue
+    }
+  }
+  return undefined
+}
+
 /** Keep a supported advertised schema; unsupported MCP vocabulary falls back to JsonValue. */
 function supportedOutputSchema(candidate: unknown): JsonSchemaNode | undefined {
   if (candidate === undefined) return undefined
@@ -232,6 +349,25 @@ export interface McpToolDefinitionOptions {
   /** Whether the upstream tool requires the unsupported task execution extension. */
   taskRequired?: boolean
   /**
+   * Declared MCP App resource, when the tool advertises one. It carries the
+   * server namespace and raw tool name an App-initiated call replays.
+   */
+  app?: McpAppBinding
+  /**
+   * Read one `ui://` resource through the live connection. Best-effort: a
+   * failure degrades to an App-less result and never fails the tool call.
+   * @param uri - App resource URI.
+   * @param execution - exact ToolRuntime invocation, for cancellation.
+   * @returns the raw `resources/read` result, or `undefined` when unreadable.
+   */
+  readResource?: (uri: string, execution: ToolExecution) => Promise<JsonValue | undefined>
+  /**
+   * List the server's resources, for the App resource's declared `_meta`
+   * (CSP and border hints). Best-effort, same as {@link readResource}.
+   * @returns the raw `resources/list` result, or `undefined` when unavailable.
+   */
+  listResources?: () => Promise<JsonValue | undefined>
+  /**
    * Obtain one raw MCP result from the provider.
    * @param args - model arguments admitted by the ToolRuntime.
    * @param execution - exact ToolRuntime invocation, including its Agent and cancellation.
@@ -257,7 +393,7 @@ export function createMcpToolDefinition(
     name,
     description,
     parameters: inputSchema,
-    output: createOutput(rawName, supportedOutputSchema(options.outputSchema)),
+    output: createOutput(rawName, supportedOutputSchema(options.outputSchema), options.app),
     execute: createExecutor(ctx, options, projections),
     finalizeContent(exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>) {
       const projection = projections.get(exec)
@@ -271,14 +407,30 @@ export function createMcpToolDefinition(
   }
 }
 
-/** Build the canonical result schema and existing Native text projection. */
-function createOutput(rawName: string, structuredSchema: JsonSchemaNode | undefined): ToolDefinition['output'] {
+/**
+ * Build the canonical result schema, the text projection, and — for an App
+ * tool — the App descriptor the UI renders.
+ *
+ * The descriptor is projected from `presentationMeta`, whose only inputs are
+ * the arguments and the canonical value, so the resource the App needs is
+ * carried inside the value by `createExecutor` under a key this schema
+ * declares. The model still sees only the extracted text: nothing about the
+ * App widens what the tool returns to the conversation.
+ */
+function createOutput(
+  rawName: string,
+  structuredSchema: JsonSchemaNode | undefined,
+  app: McpAppBinding | undefined,
+): ToolDefinition['output'] {
   return {
     schema: {
       type: 'object',
       properties: {
         content: { type: 'array', items: {} },
         structuredContent: structuredSchema ?? {},
+        // Declared only for App tools: the read `ui://` resource, staged here
+        // because `presentationMeta` is a pure projection of args and value.
+        ...app === undefined ? {} : { appResource: { type: 'object' } },
       },
       required: structuredSchema === undefined ? ['content'] : ['content', 'structuredContent'],
       additionalProperties: false,
@@ -287,6 +439,69 @@ function createOutput(rawName: string, structuredSchema: JsonSchemaNode | undefi
       const result = value as unknown as McpResult
       return [{ type: 'text', text: extractText(result.content, rawName) }]
     },
+    ...app === undefined ? {} : {
+      presentationMeta(_args: unknown, value: JsonValue): JsonValue {
+        const result = value as unknown as McpResult & { appResource?: McpAppResource }
+        const resource = result.appResource
+        // Declared but unread (read failed, or the server returned no text):
+        // decline instead of projecting a card with nothing to render.
+        if (resource === undefined || typeof resource.text !== 'string') return null
+        return {
+          card: 'mcp-app',
+          serverName: app.serverName,
+          toolName: app.rawName,
+          resource: {
+            uri: resource.uri,
+            ...resource.mimeType === undefined ? {} : { mimeType: resource.mimeType },
+            text: resource.text,
+            ...resource._meta === undefined ? {} : { _meta: resource._meta },
+          },
+          result: {
+            content: result.content,
+            ...result.structuredContent === undefined
+              ? {}
+              : { structuredContent: result.structuredContent },
+          },
+        }
+      },
+    },
+  }
+}
+
+/**
+ * Read the App resource behind a tool's declared `ui://` URI.
+ *
+ * Strictly best-effort: the tool call itself already succeeded, and a resource
+ * the server will not serve must not turn a working call into a failure. A
+ * refusal degrades to an App-less result — the model still sees the tool's
+ * own text, and no UI card is projected.
+ *
+ * @param ctx - plugin context, for the refusal diagnostic.
+ * @param options - tool options carrying the App binding and resource reader.
+ * @param exec - exact ToolRuntime invocation, for cancellation.
+ * @returns the normalized resource, or `undefined` when it cannot be read.
+ */
+async function stageAppResource(
+  ctx: Context,
+  options: McpToolDefinitionOptions,
+  exec: ToolExecution,
+): Promise<McpAppResource | undefined> {
+  const { app, readResource, listResources } = options
+  if (app === undefined || readResource === undefined) return undefined
+  try {
+    const response = await readResource(app.uri, exec)
+    if (response === undefined) return undefined
+    const resource = appResourceFrom(response, app.uri)
+    if (resource === undefined || resource._meta !== undefined || listResources === undefined) {
+      return resource
+    }
+    const declared = await declaredResourceMeta(listResources, app.uri)
+    return declared === undefined ? resource : { ...resource, _meta: declared }
+  } catch (error: unknown) {
+    ctx.logger.warn(
+      `mcp-client(${app.serverName}): App resource "${app.uri}" is unreadable, rendering without the App: ${String(error)}`,
+    )
+    return undefined
   }
 }
 
@@ -323,12 +538,16 @@ function createExecutor(
       throw new Error(text)
     }
 
-    const value: McpResult = {
+    const value: McpResult & { appResource?: McpAppResource } = {
       content,
       ...result.structuredContent !== undefined
         ? { structuredContent: result.structuredContent as JsonValue }
         : {},
     }
+    // An App tool's resource is read after the call succeeds and staged on the
+    // value, where the pure `presentationMeta` projection can reach it.
+    const staged = await stageAppResource(ctx, options, exec)
+    if (staged !== undefined) value.appResource = staged
     if (containsImage(content)) {
       const fallback: ContentBlock[] = [{ type: 'text', text: extractText(content, rawName) }]
       const projected = await prepareImageProjection(ctx, exec, content, rawName)
@@ -343,8 +562,8 @@ function containsImage(content: JsonValue[]): boolean {
   return content.some(value => isRecord(value) && value.type === 'image')
 }
 
-/** Narrow one JSON value to a string-keyed object. */
-function isRecord(value: JsonValue): value is { [key: string]: JsonValue } {
+/** Narrow an untyped value to a string-keyed object. */
+function isRecord(value: unknown): value is { [key: string]: JsonValue } {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 

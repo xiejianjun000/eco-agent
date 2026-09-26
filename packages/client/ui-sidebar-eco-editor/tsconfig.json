@@ -1,0 +1,19 @@
+{
+  "extends": "../../../tsconfig.base.client.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "lib/types" },
+  "include": [ "src" ],
+  "references": [
+    { "path": "../../../vendor/cordis" },
+    { "path": "../locale" },
+    { "path": "../ui-primitives" },
+    { "path": "../ui-slots" },
+    { "path": "../ui-renderer" },
+    { "path": "../store" },
+    { "path": "../ui-sidebar-documentpreview/tsconfig.client.json" },
+    { "path": "../../api/eco-workspace-write/tsconfig.client.json" },
+    { "path": "../../api/workspace-files/tsconfig.client.json" },
+    { "path": "../../api/gateway/tsconfig.client.json" },
+    { "path": "../../core/session" },
+    { "path": "../../util/workspace-path" }
+  ]
+}

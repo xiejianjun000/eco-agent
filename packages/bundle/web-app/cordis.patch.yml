@@ -109,6 +109,13 @@
     - id: workspace-files
       name: '@deepseek-ai/dsh-api-workspace-files'
 
+    # 工作区写通道：右侧栏文档编辑器靠它保存。`workspaceFiles` 明说不提供任何
+    # 写操作，所以编辑能力单独成包——每次写入都把路径限制在会话工作区内，拒绝
+    # 目录/符号链接，传了 expectedVersion 就拒绝覆盖被别人改过的文件。
+    # 拔掉这一行：右侧栏退回只读预览，保存按钮如实报告"未接入写通道"。
+    - id: eco-workspace-write
+      name: '@deepseek-ai/dsh-api-eco-workspace-write'
+
     # Configuration-surface reads and writes over Typert Remote. Each method
     # reports an actionable error when its settings-domain provider is absent.
     - id: settings-controller
@@ -273,6 +280,31 @@
     # 在文件管理器中显示」，只对工作区文件 tab 出现。
     - id: ui-sidebar-eco-tabactions
       name: '@deepseek-ai/dsh-client-ui-sidebar-eco-tabactions'
+
+    # MCP Apps 渲染器（@openma/dsh-mcp-apps）：把工具结果里的 `ui://` 资源渲染成
+    # 双重 iframe 沙箱里的 App，支持内联 / fullscreen（宿主把它移到右侧面板）/
+    # 画中画三种展示形态，同一个 App 会话跨形态迁移不重建。
+    # 对应的 Host 服务由同一 bundle 的 kernel 行挂载（`ctx.mcpApps`），mcp-client
+    # 自动把已连的 MCP 连接贡献给它——不需要为 UI 再开一条 MCP 连接。
+    # 拔掉这一行：MCP App 结果退回普通的工具结果文本视图。
+    # Host 服务：`ctx.mcpApps` 注册表 + Typert Host/Remote 契约。必须先于渲染器，
+    # web 包的 client 注入里要点 `remote.mcpApps`。mcp-client 探测到该服务后会把
+    # 已建立的 MCP 连接自动贡献进来——工具、资源、UI 复用同一条连接。
+    # 兼容性说明：这两个包是用旧版 Typert generator 构建的，契约里的 codec 是
+    # `schema:` 而不是新版 generator 的 `create:` 工厂，typert-loader 原本会直接
+    # 拒绝并把整个 web boot 拖崩。已在 loader 侧做了向后兼容归一化（见
+    # packages/typert/loader/src/index.ts 的 normalizeCodec），两种形状都能吃。
+    - id: mcp-apps-host
+      name: '@openma/dsh-mcp-apps-host'
+
+    - id: mcp-apps-web
+      name: '@openma/dsh-mcp-apps-web'
+
+    # 右侧栏文档编辑器：在预览器里直接改文本并保存（走 eco-workspace-write 写通道）。
+    # 注册在 builtin 档位，所以不抢产品自带预览器的默认位——它只是查看器列表里
+    # 多出来的一个「编辑」选项。拔掉这一行：编辑能力消失，其余预览器原样不动。
+    - id: ui-sidebar-eco-editor
+      name: '@deepseek-ai/dsh-client-ui-sidebar-eco-editor'
 
     # Sandboxed HTTP(S) Browser tabs, including loopback targets.
     - id: ui-sidebar-browser

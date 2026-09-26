@@ -45,6 +45,7 @@
     "@deepseek-ai/dsh-api-settings-controller": "workspace:^",
     "@deepseek-ai/dsh-api-terminal-controller": "workspace:^",
     "@deepseek-ai/dsh-api-workspace-controller": "workspace:^",
+    "@deepseek-ai/dsh-api-eco-workspace-write": "workspace:^",
     "@deepseek-ai/dsh-api-workspace-files": "workspace:^",
     "@deepseek-ai/dsh-app-boot": "workspace:^",
     "@deepseek-ai/dsh-client-connection": "workspace:^",
@@ -96,6 +97,7 @@
     "@deepseek-ai/dsh-client-ui-sidebar": "workspace:^",
     "@deepseek-ai/dsh-client-ui-sidebar-browser": "workspace:^",
     "@deepseek-ai/dsh-client-ui-sidebar-documentpreview": "workspace:^",
+    "@deepseek-ai/dsh-client-ui-sidebar-eco-editor": "workspace:^",
     "@deepseek-ai/dsh-client-ui-sidebar-eco-media": "workspace:^",
     "@deepseek-ai/dsh-client-ui-sidebar-eco-tabactions": "workspace:^",
     "@deepseek-ai/dsh-client-ui-sidebar-files": "workspace:^",
@@ -158,6 +160,8 @@
     "@deepseek-ai/dsh-shell-env": "workspace:^",
     "@deepseek-ai/dsh-system-prompt": "workspace:^",
     "@deepseek-ai/dsh-typert-registry": "workspace:^",
-    "@deepseek-ai/libreoffice-kit": "0.0.1"
+    "@deepseek-ai/libreoffice-kit": "0.0.1",
+    "@openma/dsh-mcp-apps": "^0.1.1",
+    "@openma/dsh-mcp-apps-web": "^0.1.1"
   }
 }
