@@ -900,6 +900,37 @@ importers:
         specifier: workspace:^
         version: link:../../interaction/user-approval
 
+  packages/api/eco-workspace-write:
+    dependencies:
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:^
+        version: link:../../typert/protocol
+      '@deepseek-ai/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-gateway':
+        specifier: workspace:^
+        version: link:../gateway
+      '@deepseek-ai/dsh-fs':
+        specifier: workspace:^
+        version: link:../../fs/fs
+      '@deepseek-ai/dsh-sandbox-policy':
+        specifier: workspace:^
+        version: link:../../sandbox/sandbox-policy
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@deepseek-ai/dsh-session-persistence':
+        specifier: workspace:^
+        version: link:../../session/session-persistence
+
   packages/api/gateway:
     dependencies:
       '@deepseek-ai/dsh-deque':
@@ -1332,36 +1363,6 @@ importers:
         specifier: workspace:^
         version: link:../../workspace/workspace
 
-  packages/api/eco-workspace-write:
-    dependencies:
-      '@deepseek-ai/dsh-typert-protocol':
-        specifier: workspace:^
-        version: link:../../typert/protocol
-      '@deepseek-ai/schemastery':
-        specifier: link:../../../vendor/schemastery
-        version: link:../../../vendor/schemastery
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@deepseek-ai/dsh-api-gateway':
-        specifier: workspace:^
-        version: link:../gateway
-      '@deepseek-ai/dsh-fs':
-        specifier: workspace:^
-        version: link:../../fs/fs
-      '@deepseek-ai/dsh-sandbox-policy':
-        specifier: workspace:^
-        version: link:../../sandbox/sandbox-policy
-      '@deepseek-ai/dsh-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@deepseek-ai/dsh-session-persistence':
-        specifier: workspace:^
-        version: link:../../session/session-persistence
   packages/api/workspace-files:
     dependencies:
       '@deepseek-ai/dsh-deque':
@@ -2082,6 +2083,9 @@ importers:
       '@deepseek-ai/dsh-agent-presets':
         specifier: workspace:^
         version: link:../../preset/agent-presets
+      '@deepseek-ai/dsh-api-eco-workspace-write':
+        specifier: workspace:^
+        version: link:../../api/eco-workspace-write
       '@deepseek-ai/dsh-api-remotes':
         specifier: workspace:^
         version: link:../../api/remotes
@@ -2097,9 +2101,6 @@ importers:
       '@deepseek-ai/dsh-api-workspace-controller':
         specifier: workspace:^
         version: link:../../api/workspace-controller
-      '@deepseek-ai/dsh-api-eco-workspace-write':
-        specifier: workspace:^
-        version: link:../../api/eco-workspace-write
       '@deepseek-ai/dsh-api-workspace-files':
         specifier: workspace:^
         version: link:../../api/workspace-files
@@ -2255,7 +2256,7 @@ importers:
         version: link:../../client/ui-sidebar-documentpreview
       '@deepseek-ai/dsh-client-ui-sidebar-eco-editor':
         specifier: workspace:^
-        version: link:../../../client/ui-sidebar-eco-editor
+        version: link:../../client/ui-sidebar-eco-editor
       '@deepseek-ai/dsh-client-ui-sidebar-eco-media':
         specifier: workspace:^
         version: link:../../client/ui-sidebar-eco-media
@@ -4864,9 +4865,6 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: workspace:^
         version: link:../ui-primitives
-      '@deepseek-ai/dsh-client-ui-renderer':
-        specifier: workspace:^
-        version: link:../ui-renderer
       '@deepseek-ai/dsh-client-ui-sidebar-documentpreview':
         specifier: workspace:^
         version: link:../ui-sidebar-documentpreview
@@ -4884,10 +4882,11 @@ importers:
         version: link:../../util/workspace-path
       '@types/react':
         specifier: ~18.3.1
-        version: 18.3.12
+        version: 18.3.31
       react:
         specifier: ^18.2.0
         version: 18.3.1
+
   packages/client/ui-sidebar-eco-media:
     devDependencies:
       '@deepseek-ai/cordis':
