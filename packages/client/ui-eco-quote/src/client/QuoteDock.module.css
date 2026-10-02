@@ -1,0 +1,28 @@
+/* The floating quote control: anchored above the selection it would quote. */
+
+.action {
+  position: fixed;
+  z-index: 9000;
+  transform: translate(-50%, calc(-100% - 6px));
+  /* Above the selection by default; a selection near the top edge flips it
+     below, so the control never leaves the viewport. */
+  padding: 4px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 14px;
+  background: var(--dsw-alias-bg-elevated, #ffffff);
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.action[data-placement='below'] {
+  transform: translate(-50%, 6px);
+}
+
+.action:hover {
+  border-color: #96d562;
+  box-shadow: 0 0 0 1px #96d562, 0 4px 14px rgba(0, 0, 0, 0.18);
+}

@@ -1,0 +1,7 @@
+# dsh-im-eco-wechat bundle patch — 挂载 eco Agent 微信助手。
+# 本文件由 bundle 自动应用；如需覆盖配置，在 profile 的 cordis.patch.yml
+# 中按 id 覆写（每个 id 最后一次写入生效）。
+# 注意：name 必须是 workspace 内的包全名（scoped）。
+- insert:
+    - id: wechat-bridge
+      name: '@deepseek-ai/dsh-im-eco-wechat'

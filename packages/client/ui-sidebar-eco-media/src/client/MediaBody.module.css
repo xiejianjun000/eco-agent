@@ -1,0 +1,49 @@
+/* Media renderer body: one player over the file bytes the owner delivered. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+/* The player scales down to the pane; audio keeps its own compact chrome. */
+.player {
+  width: 100%;
+  max-height: 60vh;
+  border-radius: 8px;
+  background: #000;
+}
+
+.audio {
+  width: 100%;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.name {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  word-break: break-all;
+}
+
+.hint {
+  color: var(--dsw-alias-label-caption);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Refusal copy: an undecodable file says so instead of showing a dead player. */
+.notice {
+  margin: 0;
+  padding: 12px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
