@@ -28,7 +28,7 @@
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
     "zustand": "~4.4.7",
-    "immer": "^10.1.1"
+    "immer": "^11.1.18"
   },
   "files": [
     "lib/index.js",
