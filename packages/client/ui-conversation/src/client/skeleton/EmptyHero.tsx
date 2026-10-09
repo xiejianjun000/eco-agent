@@ -3,9 +3,9 @@
 
 import type { ReactNode, RefObject } from 'react'
 import {
-  EcoLogo, IconChevronDownOutline14, IconFolderClose16, IconFolderOpen16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import { workspaceTitleOf } from '@deepseek-ai/dsh-util-workspace-path'
+  EcoLogo, IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
+} from '@eco-agent/dsh-client-ui-primitives'
+import { workspaceTitleOf } from '@eco-agent/dsh-util-workspace-path'
 import type { ConversationContentProps } from '../contract/slots.ts'
 import css from './HeroShell.module.css'
 
@@ -52,10 +52,10 @@ export function WorkspaceChip({ buttonRef, label, menuOpen = false, onClick, t }
       onClick={onClick}
     >
       {label === undefined
-        ? <IconFolderClose16 className={css.folder} size={16} />
-        : <IconFolderOpen16 className={css.folder} size={16} />}
+        ? <IconFolderCloseRegular className={css.folder} size={16} />
+        : <IconFolderOpenRegular className={css.folder} size={16} />}
       <span className={css.workspaceLabel}>{label ?? t('hero.chooseWorkspace')}</span>
-      <IconChevronDownOutline14 className={css.chevron} size={12} />
+      <IconChevronDownOutlineRegular className={css.chevron} size={12} />
     </button>
   )
 }
