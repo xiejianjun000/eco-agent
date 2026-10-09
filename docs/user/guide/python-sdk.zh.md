@@ -22,7 +22,7 @@
 ::: code-group
 
 ```sh [Linux/macOS]
-git clone https://github.com/deepseek-ai/deepseek-harness.git
+git clone https://github.com/xiejianjun000/eco-agent.git
 cd deepseek-harness
 python -m venv .venv
 . .venv/bin/activate
@@ -30,7 +30,7 @@ python -m pip install deepseek-harness-sdk
 ```
 
 ```powershell [Windows PowerShell]
-git clone https://github.com/deepseek-ai/deepseek-harness.git
+git clone https://github.com/xiejianjun000/eco-agent.git
 Set-Location deepseek-harness
 py -3.10 -m venv .venv
 .venv\Scripts\Activate.ps1

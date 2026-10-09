@@ -11,7 +11,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/xiejianjun000/eco-agent.git",
     "directory": "packages/document/office-to-pdf"
   },
   "exports": {

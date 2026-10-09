@@ -4,7 +4,7 @@
   "version": "0.2.0-rc.2",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/xiejianjun000/eco-agent.git",
     "directory": "packages/experimental/ptc-runtime-python"
   },
   "type": "module",

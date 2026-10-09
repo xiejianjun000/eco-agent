@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
-const publicRepository = 'git+https://github.com/deepseek-ai/deepseek-harness.git';
+const publicRepository = 'git+https://github.com/xiejianjun000/eco-agent.git';
 const workspaceLicense = 'Fixture workspace license.\n';
 
 /** Real packing uses the repository's nested workspace layout and isolated, format-valid payloads. */

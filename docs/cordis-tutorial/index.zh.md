@@ -17,7 +17,7 @@ Cordis 是 DeepSeek Harness 底层的插件框架：它是一个小型运行时�
 你需要克隆本仓库并安装依赖；[开发指南](../development.zh.md#setup-tutorial)列出了前置条件。本教程不需要 API 密钥；所有示例均可在无密钥环境中运行。
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
+git clone https://github.com/xiejianjun000/eco-agent.git
 cd deepseek-harness
 pnpm install
 ```
