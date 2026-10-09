@@ -1,4 +1,4 @@
-/** Official DeepSeek Harness occupants for the generic browser-brand slots. */
+/** Official eco Agent occupants for the generic browser-brand slots. */
 import type { Context as ClientContext } from '@eco-agent/cordis'
 import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 import type {} from '@eco-agent/dsh-client-ui-sidebar/client'
