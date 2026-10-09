@@ -23,8 +23,8 @@
   overflow: visible;
 }
 
-/* WorkBuddy-template greeting: one bold text line, no brand mark above —
-   the brand name lives in the headline copy itself. 34/44 wt700 centered. */
+/* WorkBuddy-template greeting: the eco logo (same mark as the sidebar brand
+   row) beside one bold text line. 34/44 wt700 centered. */
 .headline {
   display: flex;
   flex-direction: column;
@@ -38,13 +38,19 @@
   color: var(--dsw-alias-label-primary);
 }
 
-/* Title text as one centered wrap unit. */
+/* Title row: logo + text as one centered wrap unit. */
 .titleGroup {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
+  gap: 14px;
   min-width: 0;
+}
+
+/* The hero rides the sidebar's brand mark, sized to the headline cap. */
+.heroMark {
+  flex: none;
 }
 
 /* Workspace row sits 12px above the input card (figma y80 → y112). */

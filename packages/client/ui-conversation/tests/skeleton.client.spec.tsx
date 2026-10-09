@@ -379,12 +379,12 @@ function mount(
 }
 
 describe('Hero chrome', () => {
-  it('renders the WorkBuddy-style text greeting through the hero locale seat', () => {
+  it('renders the WorkBuddy-style greeting: eco logo beside the headline text', () => {
     const view = render(<HeroShell t={makeTranslate(en, commonEn)} />)
     expect(view.getByText('eco Agent, how can I help?')).toBeTruthy()
-    // The brand mark and the preview badge are gone: the greeting is one bold
-    // text line and nothing else rides the headline.
-    expect(view.container.querySelector('svg')).toBeNull()
+    // The preview badge is gone; the headline pairs the sidebar's eco logo
+    // with the bold text line.
+    expect(view.container.querySelector('svg')).not.toBeNull()
   })
 })
 

@@ -87,6 +87,8 @@ const OVERRIDES: Record<string, { license?: string; repo?: string }> = {
   '@modelcontextprotocol/server-filesystem': { license: 'MIT / Apache-2.0', repo: 'https://github.com/modelcontextprotocol/servers' },
   // No repository field in the published manifest.
   'node-addon-require-builtin': { repo: 'https://www.npmjs.com/package/node-addon-require-builtin' },
+  // No repository field in the published manifest (WeChat iLink bot protocol client).
+  'wechat-ilink-client': { repo: 'https://www.npmjs.com/package/wechat-ilink-client' },
   // No `license` field in the published manifest; the tarball's LICENSE.txt is the MIT text.
 }
 

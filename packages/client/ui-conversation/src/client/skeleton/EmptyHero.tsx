@@ -3,7 +3,7 @@
 
 import type { ReactNode, RefObject } from 'react'
 import {
-  IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
+  EcoLogo, IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
 } from '@eco-agent/dsh-client-ui-primitives'
 import { workspaceTitleOf } from '@eco-agent/dsh-util-workspace-path'
 import type { ConversationContentProps } from '../contract/slots.ts'
@@ -69,9 +69,9 @@ export interface HeroShellProps {
 }
 
 /**
- * Render the hero chrome (WorkBuddy-style text-only greeting; no brand mark,
- * no composer, no workspace row — the brand name lives in the headline text
- * itself, and the suggestion chips render as their own slot beside the stack).
+ * Render the hero chrome (WorkBuddy-style greeting: the eco logo beside the
+ * bold headline text, no composer, no workspace row — the suggestion chips
+ * render as their own slot beside the stack).
  * @param props - see {@link HeroShellProps}.
  * @returns the centered hero element tree.
  */
@@ -81,6 +81,7 @@ export function HeroShell({ t, children }: HeroShellProps) {
       <div className={css.stack}>
         <div className={css.headline}>
           <span className={css.titleGroup}>
+            <EcoLogo className={css.heroMark} size={34} />
             <span>{t('hero.headline')}</span>
           </span>
         </div>
