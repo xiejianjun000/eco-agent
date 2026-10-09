@@ -631,7 +631,11 @@ function clientInputIsolation(id: string): {
   plugin: TsdownPlugin
   sourcePath: (source: string, mapPath: string) => string
 } {
+  // An experimental bundle owns its own filesystem: it may inline its own
+  // sources and its siblings' generated /remote contributions. The bypass
+  // matches both pre- and post-white-label scopes.
   const experimental = id.startsWith('@deepseek-ai/dsh-experimental-')
+    || id.startsWith('@eco-agent/dsh-experimental-')
   const inputs = new BundleInputIsolation(REPOSITORY_ROOT, `client bundle isolation (${id})`)
   return {
     plugin: {

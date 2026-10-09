@@ -31,6 +31,21 @@
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
+  "dsh": {
+    "client": {
+      "external": [
+        "@eco-agent/dsh-api-gateway/client"
+      ],
+      "inject": [
+        "@eco-agent/dsh-api-remotes",
+        "@eco-agent/dsh-api-gateway",
+        "@eco-agent/dsh-client-locale",
+        "@eco-agent/dsh-client-ui-conversation",
+        "@eco-agent/dsh-client-ui-plugin-manager"
+      ],
+      "platform": "web"
+    }
+  },
   "dependencies": {},
   "peerDependencies": {
     "@eco-agent/cordis": "workspace:~",
