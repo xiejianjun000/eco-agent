@@ -247,6 +247,7 @@
       "@eco-agent/dsh-api-remotes/client": ["./packages/api/remotes/src/client/index.ts"],
       "@eco-agent/dsh-client-hmr": ["./packages/client/hmr/src"],
       "@eco-agent/dsh-client-modules": ["./packages/client/modules/src"],
+      "@eco-agent/dsh-client-modules/client": ["./packages/client/modules/src/client"],
       "@eco-agent/dsh-cordis-client-runner": ["./packages/extensions/cordis-client-runner/src"],
       "@eco-agent/dsh-cordis-client-runner/client": ["./packages/extensions/cordis-client-runner/src/client"],
       "@eco-agent/dsh-client-ui-cordis": ["./packages/extensions/ui-cordis/src"],
