@@ -277,6 +277,7 @@
     { "path": "./packages/typert/protocol" },
     { "path": "./packages/typert/registry" },
     { "path": "./packages/api/gateway/tsconfig.host.json" },
+    { "path": "./packages/api/eco-workspace-write/tsconfig.host.json" },
     { "path": "./packages/api/remotes/tsconfig.host.json" },
     { "path": "./packages/api/job-controller/tsconfig.host.json" },
     { "path": "./packages/api/session-controller/tsconfig.host.json" },
