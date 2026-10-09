@@ -3,7 +3,7 @@ description: "Configure experimental local computer use with an installed Cua Dr
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-computer-use-cua-driver-mcp
+# @eco-agent/dsh-experimental-computer-use-cua-driver-mcp
 
 English | [中文](README.zh.md)
 
@@ -32,8 +32,8 @@ Choose this provider when Cua Driver is already installed and configured on the 
 Add these rows to a composition that already provides tools and system-prompt services. Screenshots also require an attachment store and a model route declaring image input.
 
 ```yaml
-- name: '@deepseek-ai/dsh-computer-use'
-- name: '@deepseek-ai/dsh-experimental-computer-use-cua-driver-mcp'
+- name: '@eco-agent/dsh-computer-use'
+- name: '@eco-agent/dsh-experimental-computer-use-cua-driver-mcp'
   config:
     command: cua-driver
     args: [mcp]

@@ -1,7 +1,7 @@
 /** Client-face process fixture used by Host-side protocol integration tests. */
 
 import { parentPort, workerData } from 'node:worker_threads'
-import { Context, type Fiber } from '@deepseek-ai/cordis'
+import { Context, type Fiber } from '@eco-agent/cordis'
 import WebSocket from 'ws'
 import { ClientInspectorSource } from '../../src/client/bridge/transport.ts'
 import { ClientSourceCatalog } from '../../src/client/cdp/sources.ts'

@@ -23,7 +23,7 @@
 
 - insert:
     - id: llm-replay
-      name: '@deepseek-ai/dsh-llm-replay'
+      name: '@eco-agent/dsh-llm-replay'
 
 - id: session-log-deepseek
   config:

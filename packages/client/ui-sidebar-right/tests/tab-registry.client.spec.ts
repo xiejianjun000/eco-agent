@@ -8,7 +8,7 @@
  * another package relies on each one. So each is asserted, not assumed.
  */
 import { describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { SidebarRightTabRegistry } from '../src/client/tab-registry.ts'
 import type { SidebarRightTabDefinition } from '../src/client/tab-registry.ts'
 import { defaultSeed } from '../src/client/contract/seed.ts'

@@ -1,15 +1,15 @@
-# Agent preset minimal: one `@deepseek-ai/dsh-agent-preset` declaration inserted
+# Agent preset minimal: one `@eco-agent/dsh-agent-preset` declaration inserted
 # after the web patch. Edits saved from the Web editor override this row's
 # `config.plugins` by id from the profile patch.
 - insert:
     - id: preset-minimal
-      name: '@deepseek-ai/dsh-agent-preset'
+      name: '@eco-agent/dsh-agent-preset'
       config:
         id: minimal
         order: 3
         plugins:
           - id: persona
-            name: '@deepseek-ai/dsh-persona'
+            name: '@eco-agent/dsh-persona'
             config:
               prefix: You are a helpful software engineer assistant.
               complete: true
@@ -21,14 +21,14 @@
               terminals: true
             config:
               - id: pty
-                name: '@deepseek-ai/dsh-terminal'
+                name: '@eco-agent/dsh-terminal'
               - id: terminal-bash
-                name: '@deepseek-ai/dsh-terminal-bash'
+                name: '@eco-agent/dsh-terminal-bash'
                 disabled: !!js process.platform === 'win32'
                 config:
                   timeoutMs: 300000
               - id: persistent-bash
-                name: '@deepseek-ai/dsh-tool-bash-persistent'
+                name: '@eco-agent/dsh-tool-bash-persistent'
                 disabled: !!js process.platform === 'win32'
                 config:
                   timeoutMs: 300000
@@ -41,13 +41,13 @@
                     * Please avoid commands that may produce a very large amount of output.
                     * Please run long lived commands in the background, e.g. 'sleep 10 &' or start a server in the background.
               - id: terminal-pwsh
-                name: '@deepseek-ai/dsh-terminal-bash'
+                name: '@eco-agent/dsh-terminal-bash'
                 disabled: !!js process.platform !== 'win32'
                 config:
                   shellDialect: pwsh
                   timeoutMs: 300000
               - id: persistent-pwsh
-                name: '@deepseek-ai/dsh-tool-pwsh-persistent'
+                name: '@eco-agent/dsh-tool-pwsh-persistent'
                 disabled: !!js process.platform !== 'win32'
                 config:
                   timeoutMs: 300000

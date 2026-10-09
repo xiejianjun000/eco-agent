@@ -8,20 +8,20 @@
  * unregistering this plugin takes it away again, and the plain-text viewer the
  * product ships becomes the only choice for those files.
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls ctx.locale / ctx.slots / ctx.documentPreviews merges.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
-import type { DocumentPreviewDefinition } from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-sidebar-documentpreview/client'
+import type { DocumentPreviewDefinition } from '@eco-agent/dsh-client-ui-sidebar-documentpreview/client'
 import { MediaBody } from './MediaBody.tsx'
 import { MEDIA_BINARY_EXTENSIONS, MEDIA_EXTENSIONS } from './MediaBody.tsx'
 import { en, NS, zh, type MediaKey } from './locales.ts'
 
 /** This renderer's identity, shared by metadata and the keyed document body. */
-export const MEDIA_BODY_ID = '@deepseek-ai/dsh-client-ui-sidebar-eco-media'
+export const MEDIA_BODY_ID = '@eco-agent/dsh-client-ui-sidebar-eco-media'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** eco media renderer copy. */
     sidebarEcoMedia: MediaKey

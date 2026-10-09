@@ -6,7 +6,7 @@ export const inject = ['typertGateway', 'connection', 'webServer']
 
 /**
  * Provide the test-only dependency after startup has been released.
- * @param {import('@deepseek-ai/cordis').Context} ctx - Host plugin context.
+ * @param {import('@eco-agent/cordis').Context} ctx - Host plugin context.
  * @returns {Promise<void>} Once the barrier is released or the plugin is disposed.
  */
 export async function apply(ctx) {

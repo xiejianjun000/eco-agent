@@ -3,7 +3,7 @@
 
 - insert:
     - id: llm-replay
-      name: '@deepseek-ai/dsh-llm-replay'
+      name: '@eco-agent/dsh-llm-replay'
       config:
         providers:
           - id: deepseek-official
@@ -17,7 +17,7 @@
 
 - insert:
     - id: office-skills
-      name: '@deepseek-ai/dsh-skill-office'
+      name: '@eco-agent/dsh-skill-office'
       config:
         assetRoot: !!js process.cwd() + '/office-skills'
         cli: false

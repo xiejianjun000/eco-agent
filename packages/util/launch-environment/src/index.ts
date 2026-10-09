@@ -3,10 +3,10 @@
  * supplied each value. Harness consumers resolve through it instead of a flattened
  * `process.env`; launchers may still materialize accepted values for config
  * expressions and third-party libraries.
- * @module @deepseek-ai/dsh-launch-environment
+ * @module @eco-agent/dsh-launch-environment
  */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 
 /**
  * Which layer supplied a value, from most to least trusted: the environment
@@ -129,7 +129,7 @@ export function launchedThroughSsh(environment: LaunchEnvironmentSnapshot): bool
   })
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Launcher-owned snapshot of this run's environment; absent in compositions the product CLI did not boot. */
     launchEnvironment?: LaunchEnvironmentSnapshot

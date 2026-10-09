@@ -10,12 +10,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import Include from '@deepseek-ai/cordis-plugin-include'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import * as SessionStatsPlugin from '@deepseek-ai/dsh-session-stats'
+import { Context } from '@eco-agent/cordis'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import Include from '@eco-agent/cordis-plugin-include'
+import SessionStore, { SessionId } from '@eco-agent/dsh-session'
+import SessionProjectionRegistry from '@eco-agent/dsh-session-projection'
+import * as SessionStatsPlugin from '@eco-agent/dsh-session-stats'
 
 let root: string | undefined
 let context: Context | undefined
@@ -37,9 +37,9 @@ async function loadYaml(lines: readonly string[]): Promise<Context> {
   await context.plugin(Loader)
   context.loader.builtins.include = Include
   const modules = new Map<string, unknown>([
-    ['@deepseek-ai/dsh-session', SessionStore],
-    ['@deepseek-ai/dsh-session-projection', SessionProjectionRegistry],
-    ['@deepseek-ai/dsh-session-stats', SessionStatsPlugin],
+    ['@eco-agent/dsh-session', SessionStore],
+    ['@eco-agent/dsh-session-projection', SessionProjectionRegistry],
+    ['@eco-agent/dsh-session-stats', SessionStatsPlugin],
   ])
   context.loader.internal = {
     version: 'v2',
@@ -59,9 +59,9 @@ async function loadYaml(lines: readonly string[]): Promise<Context> {
 describe('real Loader composition', () => {
   it('loads the shipped session-stats YAML shape and serves whole-log counts', async () => {
     const loaded = await loadYaml([
-      "- name: '@deepseek-ai/dsh-session'",
-      "- name: '@deepseek-ai/dsh-session-projection'",
-      "- name: '@deepseek-ai/dsh-session-stats'",
+      "- name: '@eco-agent/dsh-session'",
+      "- name: '@eco-agent/dsh-session-projection'",
+      "- name: '@eco-agent/dsh-session-stats'",
     ])
 
     const unloaded = [...loaded.loader.entries()]

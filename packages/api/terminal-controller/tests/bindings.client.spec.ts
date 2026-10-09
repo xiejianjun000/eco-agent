@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /** Content identity isolates terminal bindings across browser windows and Session scopes. */
 import { afterEach, expect, it, vi } from 'vitest'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import type { WebTerminalId } from '../src/types.ts'
 import { TerminalBindings } from '../src/client/bindings.ts'
 

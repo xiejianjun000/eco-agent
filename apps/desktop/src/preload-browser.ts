@@ -1,6 +1,6 @@
 /** Lease-scoped browser operations and one main-process event subscription per window. */
 import { ipcRenderer } from 'electron'
-import type { DesktopBrowserBridge, DesktopBrowserLeaseId } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
+import type { DesktopBrowserBridge, DesktopBrowserLeaseId } from '@eco-agent/dsh-client-ui-sidebar-browser/types'
 import { DESKTOP_IPC } from './ipc.ts'
 
 /** @returns browser operations that expose neither IPC nor Electron objects. */

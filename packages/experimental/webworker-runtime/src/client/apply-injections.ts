@@ -1,2 +1,2 @@
 /** Shared page-side interpreter for asynchronous Host startup. */
-export { applyIndexInjections } from '@deepseek-ai/dsh-client-web/injections'
+export { applyIndexInjections } from '@eco-agent/dsh-client-web/injections'

@@ -19,13 +19,13 @@ function lockfile() {
   const lock = {
     lockfileVersion: 3,
     packages: {
-      '': { dependencies: { '@deepseek-ai/dsh': 'latest' } },
-      'node_modules/@deepseek-ai/dsh': {
+      '': { dependencies: { '@eco-agent/dsh': 'latest' } },
+      'node_modules/@eco-agent/dsh': {
         version: '1.0.0', dependencies: { library: '^2.0.0', alias: 'npm:original@1.0.0' },
         optionalDependencies: { unavailable: '1.0.0' },
       },
       'node_modules/library': { version: '1.0.0' },
-      'node_modules/@deepseek-ai/dsh/node_modules/library': { version: '2.0.0', dependencies: { plugin: '*' } },
+      'node_modules/@eco-agent/dsh/node_modules/library': { version: '2.0.0', dependencies: { plugin: '*' } },
       'node_modules/alias': { name: 'original', version: '1.0.0' },
       'node_modules/plugin': {
         version: '1.0.0', dependencies: { library: '^1.0.0' }, peerDependencies: { peer: '*' },
@@ -76,8 +76,8 @@ describe('published npm dependency catalog', () => {
     expect(() => collectDependencies({ lockfileVersion: 2 })).toThrow('lockfileVersion 3')
     expect(() => collectDependencies({ lockfileVersion: 3, packages: {} })).toThrow('consumer must be an object')
     const input = lockfile()
-    input.packages[''].dependencies['@deepseek-ai/dsh'] = 'next'
-    expect(() => collectDependencies(input)).toThrow('must request only @deepseek-ai/dsh@latest')
+    input.packages[''].dependencies['@eco-agent/dsh'] = 'next'
+    expect(() => collectDependencies(input)).toThrow('must request only @eco-agent/dsh@latest')
     const missing = lockfile()
     Reflect.deleteProperty(missing.packages, 'node_modules/alias')
     expect(() => collectDependencies(missing)).toThrow('missing direct dependency alias')
@@ -150,7 +150,7 @@ describe('published npm dependency catalog', () => {
     const root = fixture()
     const userConfig = join(root, 'user.npmrc')
     const globalConfig = join(root, 'global.npmrc')
-    writeFileSync(userConfig, '@deepseek-ai:registry=https://user-override.invalid/\nstrict-peer-deps=true\n')
+    writeFileSync(userConfig, '@eco-agent:registry=https://user-override.invalid/\nstrict-peer-deps=true\n')
     writeFileSync(globalConfig, '@other:registry=https://global-override.invalid/\nprefer-dedupe=true\n')
     const inherited: NodeJS.ProcessEnv = {
       ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toLowerCase().startsWith('npm_config_'))),
@@ -166,14 +166,14 @@ describe('published npm dependency catalog', () => {
     const before = await runCommandWithTimeout(npm, args, { cwd: root, env: inherited, timeoutMs: 30_000 })
     expect(before).toMatchObject({ status: 0, signal: null, timedOut: false })
     expect(JSON.parse(before.output)).toMatchObject({
-      '@deepseek-ai:registry': 'https://user-override.invalid/', 'install-strategy': 'nested',
+      '@eco-agent:registry': 'https://user-override.invalid/', 'install-strategy': 'nested',
     })
     const isolated = createNpmResolutionEnvironment(root, inherited)
     const after = await runCommandWithTimeout(npm, args, { cwd: root, env: isolated, timeoutMs: 30_000 })
     expect(after).toMatchObject({ status: 0, signal: null, timedOut: false })
     const settings = JSON.parse(after.output) as Record<string, unknown>
     expect(settings).toMatchObject({
-      registry: 'https://registry.npmjs.org/', '@deepseek-ai:registry': 'https://registry.npmjs.org/',
+      registry: 'https://registry.npmjs.org/', '@eco-agent:registry': 'https://registry.npmjs.org/',
       'install-strategy': 'hoisted', 'strict-peer-deps': false, 'prefer-dedupe': false, offline: false,
       cache: join(root, '.npm-cache'), userconfig: join(root, '.npmrc-user'), globalconfig: join(root, '.npmrc-global'),
     })

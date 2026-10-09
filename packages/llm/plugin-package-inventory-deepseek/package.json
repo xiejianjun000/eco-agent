@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
+  "name": "@eco-agent/dsh-plugin-package-inventory-deepseek",
   "description": "Active Loader-backed plugin package inventory for official DeepSeek LLM API requests",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -32,32 +32,32 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:*",
-    "@deepseek-ai/schemastery": "workspace:~"
+    "@eco-agent/dsh-brand": "workspace:*",
+    "@eco-agent/schemastery": "workspace:~"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-agent-preset-registry": "workspace:*",
-    "@deepseek-ai/dsh-deepseek-llm-api-extensions": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/cordis-plugin-loader": "workspace:~",
+    "@eco-agent/dsh-agent": "workspace:*",
+    "@eco-agent/dsh-agent-preset-registry": "workspace:*",
+    "@eco-agent/dsh-deepseek-llm-api-extensions": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@deepseek-ai/dsh-agent-preset-registry": {
+    "@eco-agent/dsh-agent-preset-registry": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-app-boot": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/cordis-plugin-include": "workspace:~",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-agent-preset-registry": "workspace:*",
-    "@deepseek-ai/dsh-deepseek-llm-api-extensions": "workspace:*",
-    "@deepseek-ai/dsh-scope": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*"
+    "@eco-agent/dsh-app-boot": "workspace:*",
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/cordis-plugin-include": "workspace:~",
+    "@eco-agent/cordis-plugin-loader": "workspace:~",
+    "@eco-agent/dsh-agent": "workspace:*",
+    "@eco-agent/dsh-agent-preset-registry": "workspace:*",
+    "@eco-agent/dsh-deepseek-llm-api-extensions": "workspace:*",
+    "@eco-agent/dsh-scope": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-session-projection": "workspace:*"
   }
 }

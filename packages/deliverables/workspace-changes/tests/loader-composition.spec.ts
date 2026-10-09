@@ -8,12 +8,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import Include from '@deepseek-ai/cordis-plugin-include'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import * as WorkspaceChangesPlugin from '@deepseek-ai/dsh-workspace-changes'
+import { Context } from '@eco-agent/cordis'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import Include from '@eco-agent/cordis-plugin-include'
+import SessionStore, { SessionId } from '@eco-agent/dsh-session'
+import LocalSubprocessRuntime from '@eco-agent/dsh-subprocess-local'
+import * as WorkspaceChangesPlugin from '@eco-agent/dsh-workspace-changes'
 import { changes, endTurn, git, startTurn, toolCall } from './support.ts'
 
 let root: string | undefined
@@ -31,9 +31,9 @@ describe('real Loader composition', () => {
     root = await mkdtemp(join(tmpdir(), 'dsh-workspace-changes-loader-'))
     const cwd = join(root, 'ws')
     await writeFile(join(root, 'cordis.yml'), [
-      "- name: '@deepseek-ai/dsh-session'",
-      "- name: '@deepseek-ai/dsh-subprocess-local'",
-      "- name: '@deepseek-ai/dsh-workspace-changes'",
+      "- name: '@eco-agent/dsh-session'",
+      "- name: '@eco-agent/dsh-subprocess-local'",
+      "- name: '@eco-agent/dsh-workspace-changes'",
       '',
     ].join('\n'))
     context = new Context()
@@ -41,9 +41,9 @@ describe('real Loader composition', () => {
     await context.plugin(Loader)
     context.loader.builtins.include = Include
     const modules = new Map<string, unknown>([
-      ['@deepseek-ai/dsh-session', SessionStore],
-      ['@deepseek-ai/dsh-subprocess-local', LocalSubprocessRuntime],
-      ['@deepseek-ai/dsh-workspace-changes', WorkspaceChangesPlugin],
+      ['@eco-agent/dsh-session', SessionStore],
+      ['@eco-agent/dsh-subprocess-local', LocalSubprocessRuntime],
+      ['@eco-agent/dsh-workspace-changes', WorkspaceChangesPlugin],
     ])
     context.loader.internal = {
       version: 'v2',

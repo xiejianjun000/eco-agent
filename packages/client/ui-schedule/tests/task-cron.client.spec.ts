@@ -1,6 +1,6 @@
 /** Client-side cron parsing and the localized sentence the Run time card derives from it. */
 import { describe, expect, it } from 'vitest'
-import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
+import { makeTranslate } from '@eco-agent/dsh-client-test-runtime'
 import { cronPreview, cronShapeExpression, parseCronExpression, recognizeCronShape } from '../src/client/task-cron.ts'
 import type { CronBuilderState } from '../src/client/task-cron.ts'
 import { en, zh } from '../src/client/task-manager-locales.ts'

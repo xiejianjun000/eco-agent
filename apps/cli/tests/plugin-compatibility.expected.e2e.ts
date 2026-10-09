@@ -22,7 +22,7 @@ it('refuses incompatible installation and startup until an exact risk exemption 
   writeFileSync(join(profile, 'pnpm-workspace.yaml'), 'packages:\n  - .\nnodeLinker: hoisted\nautoInstallPeers: false\n')
   writeFileSync(join(source, 'package.json'), JSON.stringify({
     name: 'compatibility-fixture', version: '1.0.0', type: 'module',
-    peerDependencies: { '@deepseek-ai/dsh': '999.0.0' }, dsh: { bundle: { patch: './cordis.patch.yml' } },
+    peerDependencies: { '@eco-agent/dsh': '999.0.0' }, dsh: { bundle: { patch: './cordis.patch.yml' } },
   }))
   writeFileSync(join(source, 'cordis.patch.yml'), '- insert:\n    - id: compatibility-fixture\n      name: ./index.mjs\n')
   writeFileSync(join(source, 'index.mjs'), 'process.stdout.write("PLUGIN_IMPORTED\\n"); export function apply() { process.stdout.write("PLUGIN_STARTED\\n") }\n')

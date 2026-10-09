@@ -1,5 +1,5 @@
 /** Target-indexed business grouping registrations with the existing effect lifecycle. */
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import type { ConversationViewNode } from '../contract/conversation.ts'
 import type {
   ConversationGroupData, ConversationGroupDefinition,

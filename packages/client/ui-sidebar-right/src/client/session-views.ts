@@ -1,7 +1,7 @@
 /** Selection and retention policy for independently owned Sidebar Session views. */
-import type { ISessions, SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { ISessions, SessionReference } from '@eco-agent/dsh-api-session-controller/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
 import { SidebarSessionView } from './session-view.ts'
 
 /** The reference is exclusively a framework SessionProvider target, not a business-component service. */

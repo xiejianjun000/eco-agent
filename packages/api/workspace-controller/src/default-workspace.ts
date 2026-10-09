@@ -3,7 +3,7 @@
  * directory and by browser consumers that label the resulting row. A pure fold
  * with no imports, so client bundles inline it instead of requesting a
  * module-table row this package does not publish.
- * @module @deepseek-ai/dsh-api-workspace-controller/default-workspace
+ * @module @eco-agent/dsh-api-workspace-controller/default-workspace
  */
 
 /**

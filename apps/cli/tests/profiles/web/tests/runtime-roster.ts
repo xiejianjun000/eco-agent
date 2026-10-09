@@ -4,10 +4,10 @@ import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import type { Context, Plugin } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/cordis-plugin-loader'
-import type { WebBootGraph } from '@deepseek-ai/dsh-client-modules/client'
-import type {} from '@deepseek-ai/dsh-client-modules'
+import type { Context, Plugin } from '@eco-agent/cordis'
+import type {} from '@eco-agent/cordis-plugin-loader'
+import type { WebBootGraph } from '@eco-agent/dsh-client-modules/client'
+import type {} from '@eco-agent/dsh-client-modules'
 
 /** Observed Loader entries, registered plugin instances, loaded modules, and delivered Client entries. */
 export interface RuntimeRoster {

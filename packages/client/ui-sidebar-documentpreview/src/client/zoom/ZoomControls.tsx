@@ -1,7 +1,7 @@
 /** Floating controls shared by every zoomable document renderer. */
 import { forwardRef, useEffect, useImperativeHandle, useState, type ReactNode } from 'react'
 import { Button, IconChevronDownOutlineRegular, IconPlusOutlineRegular, Menu, Tooltip,
-  type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
+  type MenuEntry } from '@eco-agent/dsh-client-ui-primitives'
 import { MAX_FIXED_ZOOM, MIN_FIXED_ZOOM, ZOOM_OPTIONS, ZOOM_STEP, type ZoomLabels } from './types.ts'
 import css from './ZoomControls.module.css'
 

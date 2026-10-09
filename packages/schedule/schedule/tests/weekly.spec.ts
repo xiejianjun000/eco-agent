@@ -7,8 +7,8 @@ import {
 } from '../src/domain.ts'
 import { resolveScheduleUpdate } from '../src/update.ts'
 import type { ScheduleRecord, ScheduleTimingChange, WeeklyInput, WeeklyScheduleRecord } from '../src/types.ts'
-import { SessionSeq } from '@deepseek-ai/dsh-session'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { SessionSeq } from '@eco-agent/dsh-session'
+import type { SessionEvent } from '@eco-agent/dsh-session'
 
 function weekly(now: string, weekdays: number[], time = '09:00:00', timeZone = 'UTC'): WeeklyScheduleRecord {
   return createWeeklyScheduleRecord(

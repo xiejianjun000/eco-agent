@@ -24,13 +24,13 @@ A resource address is a `dsh-resource://<type>/…` URL. The host names the prot
 The owner of a protocol declares its value type on `ResourceProtocolMap` and registers one provider inside its own `ctx.effect`, so the protocol lives exactly as long as the plugin ([provide a protocol](../../packages/client/resources/README.md#provide-a-protocol)). `open(address, { signal })` returns a stream of `RemoteResult` frames — the current state first, then one frame per change — and must stop when `signal` aborts. A failure is an `ok: false` frame carrying a `RemoteFailure`; a throw inside the stream is a programming error and is not caught.
 
 ```ts ignore-check
-import type { Context } from '@deepseek-ai/cordis'
-import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
-import type {} from '@deepseek-ai/dsh-client-resources/client'
+import type { Context } from '@eco-agent/cordis'
+import type { RemoteResult } from '@eco-agent/dsh-typert-protocol'
+import type {} from '@eco-agent/dsh-client-resources/client'
 
 interface NoteView { readonly title: string; readonly updatedAt: string }
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface ResourceProtocolMap { note: NoteView }
 }
 
@@ -62,8 +62,8 @@ Every slot component receives `useResource` in its props, whatever its scope ([S
 | `failed` | The latest frame reported a failure | the last `ok` value, kept | the frame's `RemoteFailure` |
 
 ```tsx ignore-check
-import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type {} from '@deepseek-ai/dsh-api-workspace-files/client'
+import type { PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-api-workspace-files/client'
 
 type Props = PropsRuntime<'sidebar.right.pane.tab'>
 

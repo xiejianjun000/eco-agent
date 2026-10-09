@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-client-file-upload",
+  "name": "@eco-agent/dsh-client-file-upload",
   "description": "Agent-scoped browser file upload, streaming intake, and staged receipt service",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -40,7 +40,7 @@
   "dsh": {
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-api-remotes"
+        "@eco-agent/dsh-api-remotes"
       ],
       "platform": "web",
       "immediately": true
@@ -63,22 +63,22 @@
   ],
   "dependencies": {
     "zod": "^4.4.3",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*",
-    "@deepseek-ai/dsh-brand": "workspace:*"
+    "@eco-agent/dsh-typert-protocol": "workspace:*",
+    "@eco-agent/dsh-brand": "workspace:*"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-scope": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-scope": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-client-connection": "workspace:*",
-    "@deepseek-ai/dsh-commands": "workspace:*",
-    "@deepseek-ai/dsh-scope": "workspace:*",
-    "@deepseek-ai/dsh-util-crypto": "workspace:*",
-    "@deepseek-ai/dsh-api-remotes": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-attachment": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-agent": "workspace:*",
+    "@eco-agent/dsh-client-connection": "workspace:*",
+    "@eco-agent/dsh-commands": "workspace:*",
+    "@eco-agent/dsh-scope": "workspace:*",
+    "@eco-agent/dsh-util-crypto": "workspace:*",
+    "@eco-agent/dsh-api-remotes": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-attachment": "workspace:*"
   }
 }

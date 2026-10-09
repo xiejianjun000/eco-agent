@@ -7,12 +7,12 @@
  * path through the same workspace confinement the read side uses — a write can
  * never land outside the Session's workspace root, which is a stricter rule
  * than reads follow (reads may reach outside on purpose).
- * @module @deepseek-ai/dsh-api-eco-workspace-write/types
+ * @module @eco-agent/dsh-api-eco-workspace-write/types
  */
 
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 
-declare module '@deepseek-ai/dsh-typert-protocol' {
+declare module '@eco-agent/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     /** The path resolves outside the Session's workspace root; nothing was written. */
     'eco-write/outside-workspace': { readonly path: string }

@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-fs-observation-policy",
+  "name": "@eco-agent/dsh-fs-observation-policy",
   "description": "File-context policy plugin for the DeepSeek Harness — observed-state, read-before-edit, and version-guarded write/edit added over the ctx.fs provider seam through the fs/* event gate (no service API)",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -27,12 +27,12 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-fs": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/dsh-fs": "workspace:*",
+    "@eco-agent/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-fs": "workspace:*",
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/dsh-fs": "workspace:*",
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/cordis": "workspace:~"
   }
 }

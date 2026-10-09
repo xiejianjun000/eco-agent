@@ -1,7 +1,7 @@
 /** Authenticated loopback transport for one serial native recognizer. */
 import { createServer, type Server } from 'node:http'
 import { timingSafeEqual } from 'node:crypto'
-import type { Transcript } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
+import type { Transcript } from '@eco-agent/dsh-experimental-speech-to-text/types'
 import { SpeechInputError } from './input.ts'
 
 /**

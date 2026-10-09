@@ -1,5 +1,5 @@
 /** Session-log records in an independent byte-bounded OTLP queue. */
-import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
+import type { SessionEvent, SessionId } from '@eco-agent/dsh-session'
 import type { Attributes } from '@opentelemetry/api'
 import { SeverityNumber } from '@opentelemetry/api-logs'
 import { ExportResultCode } from '@opentelemetry/core'

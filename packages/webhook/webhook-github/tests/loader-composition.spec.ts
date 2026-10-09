@@ -3,10 +3,10 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { Context } from '@deepseek-ai/cordis'
-import Include from '@deepseek-ai/cordis-plugin-include'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import WebServer from '@deepseek-ai/dsh-host-webserver'
+import { Context } from '@eco-agent/cordis'
+import Include from '@eco-agent/cordis-plugin-include'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import WebServer from '@eco-agent/dsh-host-webserver'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as GitHubAdapter from '../src/index.ts'
 
@@ -26,11 +26,11 @@ describe('real Loader composition', () => {
     const configPath = join(root, 'cordis.yml')
     await writeFile(configPath, [
       '- name: fixture-dependencies',
-      "- name: '@deepseek-ai/dsh-host-webserver'",
+      "- name: '@eco-agent/dsh-host-webserver'",
       '  config:',
       "    host: '127.0.0.1'",
       '    port: 0',
-      "- name: '@deepseek-ai/dsh-webhook-github'",
+      "- name: '@eco-agent/dsh-webhook-github'",
       '  config:',
       '    source: loader',
       '    path: /github',
@@ -55,8 +55,8 @@ describe('real Loader composition', () => {
     context.loader.builtins.include = Include
     const modules = new Map<string, unknown>([
       ['fixture-dependencies', dependencies],
-      ['@deepseek-ai/dsh-host-webserver', WebServer],
-      ['@deepseek-ai/dsh-webhook-github', GitHubAdapter],
+      ['@eco-agent/dsh-host-webserver', WebServer],
+      ['@eco-agent/dsh-webhook-github', GitHubAdapter],
     ])
     context.loader.internal = {
       version: 'v2',

@@ -3,7 +3,7 @@ description: "受管 DSH_* shell 环境，供选择、配置或扩展每次模�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-shell-env
+# @eco-agent/dsh-shell-env
 
 [English](README.md) | 中文
 
@@ -36,8 +36,8 @@ kind: "package-reference"
 其他插件通过注册一个 contributor 来贡献事实，需要提供稳定名称、它可能返回的完整 `DSH_*` 键集合、每个键的描述，以及为一次执行计算取值的 resolver：
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-shell-env'
+import type { Context } from '@eco-agent/cordis'
+import type {} from '@eco-agent/dsh-shell-env'
 
 export const inject = ['shellEnv']
 

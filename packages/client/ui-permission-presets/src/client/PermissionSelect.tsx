@@ -4,15 +4,15 @@ import clsx from 'clsx'
 import {
   IconChevronDownOutlineRegular, Menu, PermissionIconFullAccessRegular,
   PermissionIconReadOnlyRegular, PermissionIconWorkspaceWriteRegular, RiskConfirmation,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@eco-agent/dsh-client-ui-primitives'
+import type { MenuEntry } from '@eco-agent/dsh-client-ui-primitives'
 import type {
   HostObservable, InjectFace, PropsLocale, PropsRuntime,
-} from '@deepseek-ai/dsh-client-ui-slots'
-import type { PresetOption } from '@deepseek-ai/dsh-permission-presets/client'
+} from '@eco-agent/dsh-client-ui-slots'
+import type { PresetOption } from '@eco-agent/dsh-permission-presets/client'
 // Type-only: pulls the conversation-owned permission slot declaration and
 // the standard session projection hook into this package's Client face.
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@eco-agent/dsh-client-ui-conversation/client'
 import type { PermissionCatalogState } from './catalog.ts'
 import { PERMISSION_ACCESS_NS } from './locales.ts'
 import {

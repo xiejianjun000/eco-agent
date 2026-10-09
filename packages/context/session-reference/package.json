@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-session-reference",
+  "name": "@eco-agent/dsh-session-reference",
   "description": "Cross-session snapshot references and durable untrusted model context (ctx.sessionReferenceResolver)",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -44,56 +44,56 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:*",
-    "@deepseek-ai/dsh-util-values": "workspace:*",
-    "@deepseek-ai/schemastery": "workspace:~",
+    "@eco-agent/dsh-brand": "workspace:*",
+    "@eco-agent/dsh-util-values": "workspace:*",
+    "@eco-agent/schemastery": "workspace:~",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-compaction": "workspace:*",
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-output-retention": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-session-projection-cache": "workspace:*",
-    "@deepseek-ai/dsh-session-query": "workspace:*",
-    "@deepseek-ai/dsh-session-title": "workspace:*",
-    "@deepseek-ai/dsh-spill": "workspace:*",
-    "@deepseek-ai/dsh-subagent": "workspace:*",
-    "@deepseek-ai/dsh-system-prompt": "workspace:*",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-agent": "workspace:*",
+    "@eco-agent/dsh-compaction": "workspace:*",
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/dsh-output-retention": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-session-projection": "workspace:*",
+    "@eco-agent/dsh-session-projection-cache": "workspace:*",
+    "@eco-agent/dsh-session-query": "workspace:*",
+    "@eco-agent/dsh-session-title": "workspace:*",
+    "@eco-agent/dsh-spill": "workspace:*",
+    "@eco-agent/dsh-subagent": "workspace:*",
+    "@eco-agent/dsh-system-prompt": "workspace:*",
+    "@eco-agent/dsh-typert-protocol": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@deepseek-ai/dsh-spill": {
+    "@eco-agent/dsh-spill": {
       "optional": true
     },
-    "@deepseek-ai/dsh-session-projection-cache": {
+    "@eco-agent/dsh-session-projection-cache": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/cordis-plugin-include": "workspace:~",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-compaction": "workspace:*",
-    "@deepseek-ai/dsh-fs-local": "workspace:*",
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-output-retention": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-session-projection-cache": "workspace:*",
-    "@deepseek-ai/dsh-session-query": "workspace:*",
-    "@deepseek-ai/dsh-session-query-sqlite": "workspace:*",
-    "@deepseek-ai/dsh-session-title": "workspace:*",
-    "@deepseek-ai/dsh-spill": "workspace:*",
-    "@deepseek-ai/dsh-subagent": "workspace:*",
-    "@deepseek-ai/dsh-spill-local": "workspace:*",
-    "@deepseek-ai/dsh-system-prompt": "workspace:*",
-    "@deepseek-ai/dsh-tool-fs": "workspace:*",
-    "@deepseek-ai/dsh-tools": "workspace:*",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/cordis-plugin-include": "workspace:~",
+    "@eco-agent/cordis-plugin-loader": "workspace:~",
+    "@eco-agent/dsh-agent": "workspace:*",
+    "@eco-agent/dsh-compaction": "workspace:*",
+    "@eco-agent/dsh-fs-local": "workspace:*",
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/dsh-output-retention": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-session-projection": "workspace:*",
+    "@eco-agent/dsh-session-projection-cache": "workspace:*",
+    "@eco-agent/dsh-session-query": "workspace:*",
+    "@eco-agent/dsh-session-query-sqlite": "workspace:*",
+    "@eco-agent/dsh-session-title": "workspace:*",
+    "@eco-agent/dsh-spill": "workspace:*",
+    "@eco-agent/dsh-subagent": "workspace:*",
+    "@eco-agent/dsh-spill-local": "workspace:*",
+    "@eco-agent/dsh-system-prompt": "workspace:*",
+    "@eco-agent/dsh-tool-fs": "workspace:*",
+    "@eco-agent/dsh-tools": "workspace:*",
+    "@eco-agent/dsh-typert-protocol": "workspace:*"
   }
 }

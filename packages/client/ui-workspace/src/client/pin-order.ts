@@ -3,9 +3,9 @@
  * derived from the same Host snapshots the browser orders by, so the
  * UiWorkspace service can complete the write without the browser in the loop.
  */
-import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionListState } from '@eco-agent/dsh-api-session-controller/client'
+import type { WorkspaceView } from '@eco-agent/dsh-api-workspace-controller/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import { FLAT_SESSION_ORDER_KEY } from './stores.ts'
 import { owningGroupKey, sessionMemberIds, type SessionRowState, UNGROUPED_KEY } from './tree.ts'
 

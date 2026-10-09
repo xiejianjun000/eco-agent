@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Context, type Fiber } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createUserMessage, ToolCallId, HarnessError , createMessage } from '@deepseek-ai/dsh-llm'
-import type { ContextFormed } from '@deepseek-ai/dsh-llm'
-import { MAX_TIMER_DELAY_MS, TimeoutReason } from '@deepseek-ai/dsh-timeout'
-import * as TimeoutPolicy from '@deepseek-ai/dsh-tool-call-timeout-policy'
+import { Context, type Fiber } from '@eco-agent/cordis'
+import type { Agent } from '@eco-agent/dsh-agent'
+import { createUserMessage, ToolCallId, HarnessError , createMessage } from '@eco-agent/dsh-llm'
+import type { ContextFormed } from '@eco-agent/dsh-llm'
+import { MAX_TIMER_DELAY_MS, TimeoutReason } from '@eco-agent/dsh-timeout'
+import * as TimeoutPolicy from '@eco-agent/dsh-tool-call-timeout-policy'
 import SessionStore, {
   SESSION_FORMAT_VERSION,
   SessionId,
@@ -13,9 +13,9 @@ import SessionStore, {
   type SessionEvent,
   type SessionHeader,
   type SessionId as SessionIdValue,
-} from '@deepseek-ai/dsh-session'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import { turnBoundaryProjectionDefinition } from '@deepseek-ai/dsh-agent-loop'
+} from '@eco-agent/dsh-session'
+import SessionProjectionRegistry from '@eco-agent/dsh-session-projection'
+import { turnBoundaryProjectionDefinition } from '@eco-agent/dsh-agent-loop'
 import SessionQueryEngine, {
   SessionQueryError,
   SessionSearchCursor,
@@ -28,12 +28,12 @@ import SessionQueryEngine, {
   type SessionSearchPage,
   type SessionSearchRequest,
   type SessionTitleObservationResult,
-} from '@deepseek-ai/dsh-session-query'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { type ToolExecutionResult } from '@deepseek-ai/dsh-tools'
-import * as ToolSessionQuery from '@deepseek-ai/dsh-tool-session-query'
+} from '@eco-agent/dsh-session-query'
+import SystemPrompt from '@eco-agent/dsh-system-prompt'
+import ToolRuntime, { type ToolExecutionResult } from '@eco-agent/dsh-tools'
+import * as ToolSessionQuery from '@eco-agent/dsh-tool-session-query'
 
-declare module '@deepseek-ai/dsh-llm' {
+declare module '@eco-agent/dsh-llm' {
   interface MessageSourceMap {
     'test': { kind: 'test' } & ContextFormed
   }

@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-ptc-runtime-node",
+  "name": "@eco-agent/dsh-ptc-runtime-node",
   "description": "Sandboxed Node process implementation of the DeepSeek Harness PTC execution capability",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -31,31 +31,31 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-ptc-runtime": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-timeout": "workspace:*",
-    "@deepseek-ai/dsh-fs": "workspace:*",
-    "@deepseek-ai/dsh-subprocess": "workspace:*",
-    "@deepseek-ai/dsh-sandbox": "workspace:*",
-    "@deepseek-ai/dsh-sandbox-policy": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-ptc-runtime": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-timeout": "workspace:*",
+    "@eco-agent/dsh-fs": "workspace:*",
+    "@eco-agent/dsh-subprocess": "workspace:*",
+    "@eco-agent/dsh-sandbox": "workspace:*",
+    "@eco-agent/dsh-sandbox-policy": "workspace:*"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-util-values": "workspace:*",
-    "@deepseek-ai/schemastery": "workspace:~"
+    "@eco-agent/dsh-util-values": "workspace:*",
+    "@eco-agent/schemastery": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-ptc-runtime": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-timeout": "workspace:*",
-    "@deepseek-ai/dsh-fs": "workspace:*",
-    "@deepseek-ai/dsh-subprocess": "workspace:*",
-    "@deepseek-ai/dsh-sandbox": "workspace:*",
-    "@deepseek-ai/dsh-sandbox-policy": "workspace:*",
-    "@deepseek-ai/dsh-fs-local": "workspace:*",
-    "@deepseek-ai/dsh-subprocess-local": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-sandbox-local": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-ptc-runtime": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-timeout": "workspace:*",
+    "@eco-agent/dsh-fs": "workspace:*",
+    "@eco-agent/dsh-subprocess": "workspace:*",
+    "@eco-agent/dsh-sandbox": "workspace:*",
+    "@eco-agent/dsh-sandbox-policy": "workspace:*",
+    "@eco-agent/dsh-fs-local": "workspace:*",
+    "@eco-agent/dsh-subprocess-local": "workspace:*",
+    "@eco-agent/dsh-session-projection": "workspace:*",
+    "@eco-agent/dsh-sandbox-local": "workspace:*"
   }
 }

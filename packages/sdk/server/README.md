@@ -3,7 +3,7 @@ description: "The stdio JSON-RPC serving plugin for deployments that let out-of-
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-sdk-jsonrpc-server
+# @eco-agent/dsh-sdk-jsonrpc-server
 
 English | [中文](README.zh.md)
 

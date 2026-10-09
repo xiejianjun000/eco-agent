@@ -6,21 +6,21 @@
  * — a tab that is not a workspace file — leaves the menu exactly as it was.
  * Removing this plugin removes the items and nothing else.
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls ctx.locale / ctx.slots / ctx.remote merges.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
-import type {} from '@deepseek-ai/dsh-api-session-controller/client'
-import { writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
+import type {} from '@eco-agent/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-sidebar-right/client'
+import type {} from '@eco-agent/dsh-api-session-controller/client'
+import { writeClipboard } from '@eco-agent/dsh-client-ui-primitives'
 import { setTabActions } from './actions-store.ts'
 import { TabActions, type TabActionsInjected } from './TabActions.tsx'
 import { en, NS, zh, type TabActionsKey } from './locales.ts'
 
 /** This plugin's identity in the menu-item list. */
-export const TAB_ACTIONS_ID = '@deepseek-ai/dsh-client-ui-sidebar-eco-tabactions'
+export const TAB_ACTIONS_ID = '@eco-agent/dsh-client-ui-sidebar-eco-tabactions'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** eco tab content-action copy. */
     sidebarEcoTabActions: TabActionsKey

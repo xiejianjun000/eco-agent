@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-subagent",
+  "name": "@eco-agent/dsh-subagent",
   "description": "Abstract subagent seam (ctx.subagents): named-provider registry for delegating to child agents",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -53,95 +53,95 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:*",
-    "@deepseek-ai/dsh-chunked-list": "workspace:*",
-    "@deepseek-ai/dsh-util-values": "workspace:*",
-    "@deepseek-ai/schemastery": "workspace:~",
+    "@eco-agent/dsh-brand": "workspace:*",
+    "@eco-agent/dsh-chunked-list": "workspace:*",
+    "@eco-agent/dsh-util-values": "workspace:*",
+    "@eco-agent/schemastery": "workspace:~",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-agent-preset-registry": "workspace:*",
-    "@deepseek-ai/dsh-attachment": "workspace:*",
-    "@deepseek-ai/dsh-invariants": "workspace:*",
-    "@deepseek-ai/dsh-jobs": "workspace:*",
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-sandbox": "workspace:*",
-    "@deepseek-ai/dsh-sandbox-policy": "workspace:*",
-    "@deepseek-ai/dsh-scope": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-persistence": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-session-query": "workspace:*",
-    "@deepseek-ai/dsh-system-prompt": "workspace:*",
-    "@deepseek-ai/dsh-tools": "workspace:*",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*",
-    "@deepseek-ai/dsh-user-approval": "workspace:*",
-    "@deepseek-ai/dsh-util-time": "workspace:*",
-    "@deepseek-ai/dsh-permission-presets": "workspace:*",
-    "@deepseek-ai/dsh-workspace": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-agent": "workspace:*",
+    "@eco-agent/dsh-agent-preset-registry": "workspace:*",
+    "@eco-agent/dsh-attachment": "workspace:*",
+    "@eco-agent/dsh-invariants": "workspace:*",
+    "@eco-agent/dsh-jobs": "workspace:*",
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/dsh-sandbox": "workspace:*",
+    "@eco-agent/dsh-sandbox-policy": "workspace:*",
+    "@eco-agent/dsh-scope": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-session-persistence": "workspace:*",
+    "@eco-agent/dsh-session-projection": "workspace:*",
+    "@eco-agent/dsh-session-query": "workspace:*",
+    "@eco-agent/dsh-system-prompt": "workspace:*",
+    "@eco-agent/dsh-tools": "workspace:*",
+    "@eco-agent/dsh-typert-protocol": "workspace:*",
+    "@eco-agent/dsh-user-approval": "workspace:*",
+    "@eco-agent/dsh-util-time": "workspace:*",
+    "@eco-agent/dsh-permission-presets": "workspace:*",
+    "@eco-agent/dsh-workspace": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@deepseek-ai/dsh-agent-preset-registry": {
+    "@eco-agent/dsh-agent-preset-registry": {
       "optional": true
     },
-    "@deepseek-ai/dsh-permission-presets": {
+    "@eco-agent/dsh-permission-presets": {
       "optional": true
     },
-    "@deepseek-ai/dsh-sandbox": {
+    "@eco-agent/dsh-sandbox": {
       "optional": true
     },
-    "@deepseek-ai/dsh-sandbox-policy": {
+    "@eco-agent/dsh-sandbox-policy": {
       "optional": true
     },
-    "@deepseek-ai/dsh-session-persistence": {
+    "@eco-agent/dsh-session-persistence": {
       "optional": true
     },
-    "@deepseek-ai/dsh-session-projection": {
+    "@eco-agent/dsh-session-projection": {
       "optional": true
     },
-    "@deepseek-ai/dsh-session-query": {
+    "@eco-agent/dsh-session-query": {
       "optional": true
     },
-    "@deepseek-ai/dsh-workspace": {
+    "@eco-agent/dsh-workspace": {
       "optional": true
     },
-    "@deepseek-ai/dsh-jobs": {
+    "@eco-agent/dsh-jobs": {
       "optional": true
     },
-    "@deepseek-ai/dsh-user-approval": {
+    "@eco-agent/dsh-user-approval": {
       "optional": true
     },
-    "@deepseek-ai/dsh-settings": {
+    "@eco-agent/dsh-settings": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-agent-preset-registry": "workspace:*",
-    "@deepseek-ai/dsh-attachment": "workspace:*",
-    "@deepseek-ai/dsh-invariants": "workspace:*",
-    "@deepseek-ai/dsh-jobs": "workspace:*",
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-sandbox": "workspace:*",
-    "@deepseek-ai/dsh-sandbox-policy": "workspace:*",
-    "@deepseek-ai/dsh-schedule": "workspace:*",
-    "@deepseek-ai/dsh-scope": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-persistence": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-session-query": "workspace:*",
-    "@deepseek-ai/dsh-storage": "workspace:*",
-    "@deepseek-ai/dsh-storage-domain": "workspace:*",
-    "@deepseek-ai/dsh-storage-json": "workspace:*",
-    "@deepseek-ai/dsh-system-prompt": "workspace:*",
-    "@deepseek-ai/dsh-tools": "workspace:*",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*",
-    "@deepseek-ai/dsh-user-approval": "workspace:*",
-    "@deepseek-ai/dsh-util-time": "workspace:*",
-    "@deepseek-ai/dsh-permission-presets": "workspace:*",
-    "@deepseek-ai/dsh-workspace": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-agent": "workspace:*",
+    "@eco-agent/dsh-agent-preset-registry": "workspace:*",
+    "@eco-agent/dsh-attachment": "workspace:*",
+    "@eco-agent/dsh-invariants": "workspace:*",
+    "@eco-agent/dsh-jobs": "workspace:*",
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/dsh-sandbox": "workspace:*",
+    "@eco-agent/dsh-sandbox-policy": "workspace:*",
+    "@eco-agent/dsh-schedule": "workspace:*",
+    "@eco-agent/dsh-scope": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-session-persistence": "workspace:*",
+    "@eco-agent/dsh-session-projection": "workspace:*",
+    "@eco-agent/dsh-session-query": "workspace:*",
+    "@eco-agent/dsh-storage": "workspace:*",
+    "@eco-agent/dsh-storage-domain": "workspace:*",
+    "@eco-agent/dsh-storage-json": "workspace:*",
+    "@eco-agent/dsh-system-prompt": "workspace:*",
+    "@eco-agent/dsh-tools": "workspace:*",
+    "@eco-agent/dsh-typert-protocol": "workspace:*",
+    "@eco-agent/dsh-user-approval": "workspace:*",
+    "@eco-agent/dsh-util-time": "workspace:*",
+    "@eco-agent/dsh-permission-presets": "workspace:*",
+    "@eco-agent/dsh-workspace": "workspace:*"
   }
 }

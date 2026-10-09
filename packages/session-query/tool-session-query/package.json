@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-tool-session-query",
+  "name": "@eco-agent/dsh-tool-session-query",
   "description": "Workspace-authorized model-facing session history search, trace, and event read tools",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -27,35 +27,35 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-session-query": "workspace:*",
-    "@deepseek-ai/dsh-system-prompt": "workspace:*",
-    "@deepseek-ai/dsh-timeout": "workspace:*",
-    "@deepseek-ai/dsh-tools": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-agent": "workspace:*",
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-session-projection": "workspace:*",
+    "@eco-agent/dsh-session-query": "workspace:*",
+    "@eco-agent/dsh-system-prompt": "workspace:*",
+    "@eco-agent/dsh-timeout": "workspace:*",
+    "@eco-agent/dsh-tools": "workspace:*"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:*",
-    "@deepseek-ai/schemastery": "workspace:~"
+    "@eco-agent/dsh-brand": "workspace:*",
+    "@eco-agent/schemastery": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-agent-loop": "workspace:*",
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-persistence": "workspace:*",
-    "@deepseek-ai/dsh-session-persistence-jsonl": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-session-query": "workspace:*",
-    "@deepseek-ai/dsh-session-query-sqlite": "workspace:*",
-    "@deepseek-ai/dsh-session-title": "workspace:*",
-    "@deepseek-ai/dsh-system-prompt": "workspace:*",
-    "@deepseek-ai/dsh-timeout": "workspace:*",
-    "@deepseek-ai/dsh-tool-call-timeout-policy": "workspace:*",
-    "@deepseek-ai/dsh-tools": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-agent": "workspace:*",
+    "@eco-agent/dsh-agent-loop": "workspace:*",
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-session-persistence": "workspace:*",
+    "@eco-agent/dsh-session-persistence-jsonl": "workspace:*",
+    "@eco-agent/dsh-session-projection": "workspace:*",
+    "@eco-agent/dsh-session-query": "workspace:*",
+    "@eco-agent/dsh-session-query-sqlite": "workspace:*",
+    "@eco-agent/dsh-session-title": "workspace:*",
+    "@eco-agent/dsh-system-prompt": "workspace:*",
+    "@eco-agent/dsh-timeout": "workspace:*",
+    "@eco-agent/dsh-tool-call-timeout-policy": "workspace:*",
+    "@eco-agent/dsh-tools": "workspace:*"
   }
 }

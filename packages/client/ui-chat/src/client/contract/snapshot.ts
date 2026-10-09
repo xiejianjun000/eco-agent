@@ -1,8 +1,8 @@
 import type {
   ConversationNode, ConversationTimelineSnapshot, PartialAssistant, RunningToolCall,
-} from '@deepseek-ai/dsh-client-ui-conversation/client'
+} from '@eco-agent/dsh-client-ui-conversation/client'
 import type { ChatConversationViewNode, ChatNodeDataMap, ChatNodeKind } from './chat-nodes.ts'
-import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
+import type { ObservableSnapshot } from '@eco-agent/dsh-client-store'
 import type { TurnProcessSpec } from './turn-process.ts'
 
 export type {
@@ -11,7 +11,7 @@ export type {
   ModelRetryNode, PartialAssistant, PreparingToolCall, RunningToolCall, StartedToolCall, SteeringMessageNode, TodoItem,
   ToolCallBlock, ToolResultNode, TurnErrorNode, TurnMaxTokensNode, UnknownSurfaceNode,
   UserMessageNode,
-} from '@deepseek-ai/dsh-client-ui-conversation/client'
+} from '@eco-agent/dsh-client-ui-conversation/client'
 
 /** Per-key observable used by one mounted Chat Node Seat. */
 export interface ChatNodeSource {
@@ -111,7 +111,7 @@ export interface ChatSnapshot {
   readonly legacy: LegacyConversationSlice
 }
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@eco-agent/dsh-client-ui-conversation/client' {
   interface ConversationViewSnapshotMap {
     chat: ChatSnapshot
   }

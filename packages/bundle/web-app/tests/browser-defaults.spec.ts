@@ -1,10 +1,10 @@
 /** Profile defaults and explicit overrides for the shipped Browser entry. */
 import { fileURLToPath } from 'node:url'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import { applyEntryPatches } from '@deepseek-ai/cordis-plugin-include'
-import { loadOverlayPatches } from '@deepseek-ai/dsh-app-boot'
-import * as Browser from '@deepseek-ai/dsh-client-ui-sidebar-browser'
+import { Context } from '@eco-agent/cordis'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import { applyEntryPatches } from '@eco-agent/cordis-plugin-include'
+import { loadOverlayPatches } from '@eco-agent/dsh-app-boot'
+import * as Browser from '@eco-agent/dsh-client-ui-sidebar-browser'
 import { expect, it, onTestFinished } from 'vitest'
 
 it.each([
@@ -18,7 +18,7 @@ it.each([
   const rows = loadOverlayPatches('browser-defaults', fileURLToPath(new URL('../cordis.patch.yml', import.meta.url)))
     .flatMap(patch => patch.insert ?? []).filter(row => row.id === 'ui-sidebar-browser')
   expect(rows).toHaveLength(1)
-  expect(rows[0]!.name).toBe('@deepseek-ai/dsh-client-ui-sidebar-browser')
+  expect(rows[0]!.name).toBe('@eco-agent/dsh-client-ui-sidebar-browser')
   const configured = applyEntryPatches(rows, override === undefined ? [] : [{ id: 'ui-sidebar-browser', disabled: override }],
     (message) => { throw new Error(message) })
   const ctx = new Context()

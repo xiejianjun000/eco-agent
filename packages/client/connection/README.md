@@ -3,7 +3,7 @@ description: "Browser-host wire layer for the web GUI: Remote RPC, event-stream 
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-connection
+# @eco-agent/dsh-client-connection
 
 English | [中文](README.zh.md)
 

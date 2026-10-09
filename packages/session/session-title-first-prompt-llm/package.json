@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-session-title-first-prompt-llm",
+  "name": "@eco-agent/dsh-session-title-first-prompt-llm",
   "description": "First-message LLM provider plugin for DeepSeek Harness session titles",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -23,26 +23,26 @@
   "files": ["lib/index.js", "lib/types/**/*.d.ts"],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-title": "workspace:*",
-    "@deepseek-ai/dsh-session-title-llm": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-session-title": "workspace:*",
+    "@eco-agent/dsh-session-title-llm": "workspace:*",
+    "@eco-agent/cordis": "workspace:~"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "workspace:~"
+    "@eco-agent/schemastery": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis-plugin-include": "workspace:~",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:~",
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-llm-deepseek": "workspace:*",
-    "@deepseek-ai/dsh-llm-deepseek-api-key": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-title": "workspace:*",
-    "@deepseek-ai/dsh-session-title-llm": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-agent-loop": "workspace:*"
+    "@eco-agent/cordis-plugin-include": "workspace:~",
+    "@eco-agent/cordis-plugin-loader": "workspace:~",
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/dsh-llm-deepseek": "workspace:*",
+    "@eco-agent/dsh-llm-deepseek-api-key": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
+    "@eco-agent/dsh-session-title": "workspace:*",
+    "@eco-agent/dsh-session-title-llm": "workspace:*",
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-session-projection": "workspace:*",
+    "@eco-agent/dsh-agent-loop": "workspace:*"
   }
 }

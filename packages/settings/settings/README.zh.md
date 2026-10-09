@@ -3,7 +3,7 @@ description: "通过 Config 派生表单查看和编辑插件的即时配置。"
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-settings
+# @eco-agent/dsh-settings
 
 [English](README.md) | 中文
 
@@ -27,7 +27,7 @@ kind: "package-reference"
 
 ```yaml
 - id: settings
-  name: '@deepseek-ai/dsh-settings'
+  name: '@eco-agent/dsh-settings'
 ```
 
 此插件没有配置字段。表单只展示活动且可唯一定位的 profile 条目中的 volatile 字段。普通配置仍通过 Cordis 配置文件编辑。

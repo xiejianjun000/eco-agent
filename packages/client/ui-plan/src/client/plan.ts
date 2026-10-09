@@ -1,7 +1,7 @@
 /** Plan text and resource identities derived from logged native or PTC calls. */
-import type { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { SessionAddress } from '@deepseek-ai/dsh-api-session-controller/types'
+import type { ToolCallId } from '@eco-agent/dsh-llm/brand'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { SessionAddress } from '@eco-agent/dsh-api-session-controller/types'
 
 /** Complete Markdown and the heading displayed by a plan preview. */
 export interface PlanDocument {

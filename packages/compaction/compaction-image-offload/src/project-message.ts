@@ -1,7 +1,7 @@
 /** Immutable application of the image occurrences recorded by image/offload. */
 
-import type { ContentBlock, Message } from '@deepseek-ai/dsh-llm'
-import { deepFreeze } from '@deepseek-ai/dsh-util-values'
+import type { ContentBlock, Message } from '@eco-agent/dsh-llm'
+import { deepFreeze } from '@eco-agent/dsh-util-values'
 
 /**
  * Project selected image occurrences to immutable offloaded blocks.

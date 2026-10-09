@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, act } from '@testing-library/react'
-import { bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { ShortcutCatalogEntry, ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/client'
+import { bindSnapshotSelector, makeTranslate } from '@eco-agent/dsh-client-test-runtime'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
+import type { ShortcutCatalogEntry, ShortcutCommandId } from '@eco-agent/dsh-client-shortcuts/client'
 import { OpenInAppAction, type OpenInAppActionProps } from '../src/client/OpenInAppAction.tsx'
 import { OpenInAppController } from '../src/client/controller.ts'
 import { zh } from '../src/client/locales.ts'

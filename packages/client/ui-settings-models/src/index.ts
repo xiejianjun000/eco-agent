@@ -1,7 +1,7 @@
 /** Host configuration and page bootstrap for Models credential onboarding. */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-host-webserver'
+import type { Context } from '@eco-agent/cordis'
+import type {} from '@eco-agent/dsh-host-webserver'
 import { type Config, ONBOARDING_CONFIG_GLOBAL } from './onboarding-config.ts'
 
 export { Config } from './onboarding-config.ts'

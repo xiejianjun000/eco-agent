@@ -1,7 +1,7 @@
 /** Refresh failure feedback hosted outside the Plugins panel's lifetime. */
 import type { ReactNode } from 'react'
-import { IconWarningOutlineRegular, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import { IconWarningOutlineRegular, Toast } from '@eco-agent/dsh-client-ui-primitives'
+import type { InjectFace, PropsLocale } from '@eco-agent/dsh-client-ui-slots'
 import type { PluginManagerFace } from './manager-store.ts'
 import { noticeText } from './presentation.ts'
 

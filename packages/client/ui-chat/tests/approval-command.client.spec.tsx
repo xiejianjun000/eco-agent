@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import type { ChatSnapshot, UseChat } from '@deepseek-ai/dsh-client-ui-chat/client'
-import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ChatSnapshot, UseChat } from '@eco-agent/dsh-client-ui-chat/client'
+import type { PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ApprovalCommand, commandOf } from '../src/client/chat/ApprovalCommand.tsx'

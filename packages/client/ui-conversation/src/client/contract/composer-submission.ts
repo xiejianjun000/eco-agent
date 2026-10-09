@@ -12,7 +12,7 @@ export type ComposerSubmitGesture = 'enter' | 'accelerated'
 
 /** Session facts captured when a message submission starts, before asynchronous command arbitration. */
 export interface MessageSubmissionState {
-  readonly sessionId?: import('@deepseek-ai/dsh-session/types').SessionId
+  readonly sessionId?: import('@eco-agent/dsh-session/types').SessionId
   readonly model?: { readonly provider: string; readonly name: string; readonly effort?: string }
   readonly runMode: 'default' | 'plan' | 'goal'
   readonly running: boolean

@@ -3,7 +3,7 @@ description: "Create independent OTLP reporting channels through the shared Cord
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-otel
+# @eco-agent/dsh-otel
 
 English | [中文](README.zh.md)
 
@@ -23,7 +23,7 @@ Mount one `otel` service to create ordinary-event and Session-log reporting chan
 <a id="use-this-package"></a>
 ## Use this package
 
-The base bundle mounts `@deepseek-ai/dsh-otel`. Independent compositions must mount it before consumers that inject `otel`. Call `ctx.otel.createEventReporter(options)` for ordinary analytics or `ctx.otel.createSessionLogReporter(options)` for complete Session events. Options explicitly supply endpoint, scope, resource attributes, queue settings, and a diagnostic callback; the service has no deployment defaults or automatic collection policy of its own.
+The base bundle mounts `@eco-agent/dsh-otel`. Independent compositions must mount it before consumers that inject `otel`. Call `ctx.otel.createEventReporter(options)` for ordinary analytics or `ctx.otel.createSessionLogReporter(options)` for complete Session events. Options explicitly supply endpoint, scope, resource attributes, queue settings, and a diagnostic callback; the service has no deployment defaults or automatic collection policy of its own.
 
 The returned channel belongs to the consumer. Ordinary-event `shutdown(signal)` cancels requests and retry waits when the supplied signal aborts, and resolves after transport cleanup. Register shutdown with the consumer's Cordis fiber and bound the complete drain with its configured deadline. Injection makes service replacement unload dependent consumers. Do not retain a channel after its consumer unloads. The product and Session adapters implement this ownership for UI and feedback callers.
 

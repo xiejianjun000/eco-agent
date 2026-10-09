@@ -2,7 +2,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { Ajv2020 } from 'ajv/dist/2020.js'
-import Schema from '@deepseek-ai/schemastery'
+import Schema from '@eco-agent/schemastery'
 import { createConfigProjector, type ConfigProjection } from '../src/config-schema/projector.ts'
 
 const projector = await createConfigProjector()

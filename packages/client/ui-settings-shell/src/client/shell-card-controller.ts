@@ -1,10 +1,10 @@
 /** The shell page's staged form over the composed shell executor entry. */
 
-import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { SnapshotStore } from '@eco-agent/dsh-client-store'
 import {
   SettingsFormModel, settingsNumberField,
   type SettingsFieldState, type SettingsFormActions, type SettingsFormScope, type SettingsFormShell,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@eco-agent/dsh-client-ui-primitives'
 
 /** Profile entry id of the POSIX shell executor; the base bundle composes it off Windows. */
 export const BASH_NS = 'bash-sandbox'

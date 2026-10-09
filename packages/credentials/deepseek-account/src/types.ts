@@ -1,6 +1,6 @@
 /** Client-supplied request identity and client-safe account state; credentials never cross this projection. */
-import type {} from '@deepseek-ai/cordis'
-import type { Branded } from '@deepseek-ai/dsh-brand'
+import type {} from '@eco-agent/cordis'
+import type { Branded } from '@eco-agent/dsh-brand'
 
 /** Identity of the requesting UI for one account operation; the Host derives Platform request headers from it. */
 export interface AccountClientMetadata {
@@ -78,7 +78,7 @@ export interface AccountBonusBatch {
   readonly bonuses: readonly AccountBonusNotification[]
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Events {
     /** Server rejection removed the current account credential; this notification is not replayed.
      * @mode emit

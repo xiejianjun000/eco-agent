@@ -1,7 +1,7 @@
 /** Stateful reconstruction of historical tool definitions for request projection. */
 
-import type { ToolHistory, ToolSchema } from '@deepseek-ai/dsh-llm'
-import { deepFreeze } from '@deepseek-ai/dsh-util-values'
+import type { ToolHistory, ToolSchema } from '@eco-agent/dsh-llm'
+import { deepFreeze } from '@eco-agent/dsh-util-values'
 import type { SessionEvent, SessionSeq } from './types.ts'
 
 /** Folds committed headers and developer messages independently of model capability. */

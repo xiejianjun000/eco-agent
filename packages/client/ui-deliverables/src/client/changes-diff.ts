@@ -1,5 +1,5 @@
 /** Cache of the file comparisons the Host serves for listed changed files, read once per comparison and again after a failure. */
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import { changesDiffUrl, isChangesDiff, type ChangesDiff } from '../changes.ts'
 import { HostReadStore } from './host-read-store.ts'
 

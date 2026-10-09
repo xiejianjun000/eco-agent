@@ -10,7 +10,7 @@ export const REPLACED_EXTERNAL_PACKAGES: readonly string[] = [
   '@earendil-works/pi-ai',
   '@vscode/ripgrep',
   '@deepseek-ai/libreoffice-kit',
-  '@deepseek-ai/node-addon-system/flock',
+  '@eco-agent/node-addon-system/flock',
   'koffi',
   'node-pty',
   'execa',

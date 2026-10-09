@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-bash-local",
+  "name": "@eco-agent/dsh-bash-local",
   "description": "Local-subprocess implementation of the DeepSeek Harness bash executor seam",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -27,19 +27,19 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-shell": "workspace:*",
-    "@deepseek-ai/dsh-subprocess": "workspace:*",
-    "@deepseek-ai/dsh-timeout": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/dsh-shell": "workspace:*",
+    "@eco-agent/dsh-subprocess": "workspace:*",
+    "@eco-agent/dsh-timeout": "workspace:*",
+    "@eco-agent/cordis": "workspace:~"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "workspace:~"
+    "@eco-agent/schemastery": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-shell": "workspace:*",
-    "@deepseek-ai/dsh-subprocess": "workspace:*",
-    "@deepseek-ai/dsh-subprocess-local": "workspace:*",
-    "@deepseek-ai/dsh-timeout": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/dsh-shell": "workspace:*",
+    "@eco-agent/dsh-subprocess": "workspace:*",
+    "@eco-agent/dsh-subprocess-local": "workspace:*",
+    "@eco-agent/dsh-timeout": "workspace:*",
+    "@eco-agent/cordis": "workspace:~"
   }
 }

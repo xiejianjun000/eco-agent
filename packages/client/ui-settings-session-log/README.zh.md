@@ -3,7 +3,7 @@ description: "在通用设置中控制随 DeepSeek API 请求上传会话日志�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-settings-session-log
+# @eco-agent/dsh-client-ui-settings-session-log
 
 [English](README.md) | 中文
 

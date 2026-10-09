@@ -1,7 +1,7 @@
 /** Shared modal for voice activation and unavailable recognition. */
-import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
+import { Button, Modal } from '@eco-agent/dsh-client-ui-primitives'
+import type { PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-client-ui-plugin-manager/client'
 import type { NS } from './locales.ts'
 
 type VoiceSetupDialogProps = PropsLocale<typeof NS>

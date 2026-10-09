@@ -3,7 +3,7 @@ description: "The shell executor seam for developers and maintainers choosing, c
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-shell
+# @eco-agent/dsh-shell
 
 English | [中文](README.zh.md)
 
@@ -57,7 +57,7 @@ The seam is not an executor: mount exactly one provider per composition, and the
 
 ```yaml
 - id: bash
-  name: '@deepseek-ai/dsh-bash-local'
+  name: '@eco-agent/dsh-bash-local'
   config:
     cwd: /path/to/workspace
 ```

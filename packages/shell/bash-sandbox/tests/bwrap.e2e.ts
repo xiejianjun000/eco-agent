@@ -4,14 +4,14 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { LocalSandboxProvider } from '@deepseek-ai/dsh-sandbox-local'
-import { SandboxPolicyService } from '@deepseek-ai/dsh-sandbox-policy'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import { bwrapProfileArgs } from '@deepseek-ai/dsh-sandbox-local/src/profiles.ts'
-import { SandboxBashExecutor } from '@deepseek-ai/dsh-bash-sandbox'
-import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import type { ShellExecSpec, ShellExecution, ShellRunResult } from '@deepseek-ai/dsh-shell'
+import { Context } from '@eco-agent/cordis'
+import { LocalSandboxProvider } from '@eco-agent/dsh-sandbox-local'
+import { SandboxPolicyService } from '@eco-agent/dsh-sandbox-policy'
+import SessionProjectionRegistry from '@eco-agent/dsh-session-projection'
+import { bwrapProfileArgs } from '@eco-agent/dsh-sandbox-local/src/profiles.ts'
+import { SandboxBashExecutor } from '@eco-agent/dsh-bash-sandbox'
+import LocalSubprocessRuntime from '@eco-agent/dsh-subprocess-local'
+import type { ShellExecSpec, ShellExecution, ShellRunResult } from '@eco-agent/dsh-shell'
 
 /** Historical foreground shorthand over the unified execute() seam. */
 async function run(x: { execute(spec: ShellExecSpec): Promise<ShellExecution> }, spec: ShellExecSpec): Promise<ShellRunResult> {
@@ -28,7 +28,7 @@ function start(x: { execute(spec: ShellExecSpec): Promise<ShellExecution> }, spe
  * Keyless integration of the real provider and executor through public run/start paths. With
  * no rung forced, a passing bwrap probe selects the ladder's first rung. The tests check world
  * effects and stamped facts, including EROFS classification through the wrap-carried dialect;
- * backend-only confinement is covered by `@deepseek-ai/dsh-sandbox-local`.
+ * backend-only confinement is covered by `@eco-agent/dsh-sandbox-local`.
  *
  * Skips when bwrap or unprivileged user namespaces are unavailable. HOME-based paths are
  * intentional because bwrap replaces `/tmp`, which cannot prove the workspace-root boundary.

@@ -20,7 +20,7 @@ function createWorkspace(): string {
   const root = mkdtempSync(join(tmpdir(), 'dsh-package-licenses-'))
   roots.push(root)
   writeManifest(root, 'package.json', {
-    name: '@deepseek-ai/dsh-root',
+    name: '@eco-agent/dsh-root',
     license: 'MIT',
     workspaces: ['apps/*', 'packages/*/*', 'vendor/*'],
   })
@@ -30,30 +30,30 @@ function createWorkspace(): string {
 describe('DSH package license gate', () => {
   it('checks root, unhyphenated CLI, and dsh-prefixed package names while ignoring other families', () => {
     const root = createWorkspace()
-    writeManifest(root, 'apps/cli/package.json', { name: '@deepseek-ai/dsh', license: 'MIT' })
+    writeManifest(root, 'apps/cli/package.json', { name: '@eco-agent/dsh', license: 'MIT' })
     writeManifest(root, 'packages/core/agent/package.json', {
-      name: '@deepseek-ai/dsh-agent',
+      name: '@eco-agent/dsh-agent',
       license: 'BSD-3-Clause',
     })
     writeManifest(root, 'vendor/cordis/package.json', {
-      name: '@deepseek-ai/cordis',
+      name: '@eco-agent/cordis',
       license: 'BSD-3-Clause',
     })
 
     expect(inspectDshPackageLicenses(root)).toEqual({
       packageCount: 3,
       failures: [
-        'packages/core/agent/package.json: @deepseek-ai/dsh-agent must declare "license": "MIT"; found "BSD-3-Clause".',
+        'packages/core/agent/package.json: @eco-agent/dsh-agent must declare "license": "MIT"; found "BSD-3-Clause".',
       ],
     })
   })
 
   it('rejects a missing license declaration', () => {
     const root = createWorkspace()
-    writeManifest(root, 'packages/core/agent/package.json', { name: '@deepseek-ai/dsh-agent' })
+    writeManifest(root, 'packages/core/agent/package.json', { name: '@eco-agent/dsh-agent' })
 
     expect(inspectDshPackageLicenses(root).failures).toEqual([
-      'packages/core/agent/package.json: @deepseek-ai/dsh-agent must declare "license": "MIT"; found undefined.',
+      'packages/core/agent/package.json: @eco-agent/dsh-agent must declare "license": "MIT"; found undefined.',
     ])
   })
 })

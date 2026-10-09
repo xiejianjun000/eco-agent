@@ -3,4 +3,4 @@
 
 - insert:
     - id: experimental-inspector
-      name: '@deepseek-ai/dsh-experimental-inspector'
+      name: '@eco-agent/dsh-experimental-inspector'

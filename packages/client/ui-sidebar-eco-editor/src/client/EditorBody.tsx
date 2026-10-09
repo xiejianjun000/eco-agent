@@ -13,10 +13,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import type { DocumentPreviewProps } from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import { parseFileAddress } from '@deepseek-ai/dsh-util-workspace-path'
+import type { PropsLocale } from '@eco-agent/dsh-client-ui-slots'
+import type { DocumentPreviewProps } from '@eco-agent/dsh-client-ui-sidebar-documentpreview/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import { parseFileAddress } from '@eco-agent/dsh-util-workspace-path'
 import type { EditorKey } from './locales.ts'
 import { editorRemote } from './remote-store.ts'
 import css from './EditorBody.module.css'

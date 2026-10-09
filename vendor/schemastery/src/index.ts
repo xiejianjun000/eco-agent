@@ -1,5 +1,5 @@
-import { Binary, clone, deepEqual, filterKeys, isNullable, isPlainObject, pick, valueMap, type Dict } from '@deepseek-ai/cosmokit'
-import { createVolatile, isVolatile, type Volatile } from '@deepseek-ai/cosmokit'
+import { Binary, clone, deepEqual, filterKeys, isNullable, isPlainObject, pick, valueMap, type Dict } from '@eco-agent/cosmokit'
+import { createVolatile, isVolatile, type Volatile } from '@eco-agent/cosmokit'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 
 const kSchema = Symbol.for('schemastery')

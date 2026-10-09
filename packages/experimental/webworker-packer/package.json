@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-experimental-webworker-packer",
+  "name": "@eco-agent/dsh-experimental-webworker-packer",
   "description": "Build-time packer for the browser runtime's base VFS image and ordered data-overlay archives",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -33,21 +33,21 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/cordis-plugin-include": "workspace:~",
-    "@deepseek-ai/dsh-experimental-webworker-runtime": "workspace:*",
-    "@deepseek-ai/dsh-home-paths": "workspace:*",
-    "@deepseek-ai/dsh-session-format": "workspace:*",
-    "@deepseek-ai/dsh-session-format-catalog": "workspace:*",
-    "@deepseek-ai/dsh-session-format-v3-to-v4": "workspace:*",
+    "@eco-agent/cordis-plugin-include": "workspace:~",
+    "@eco-agent/dsh-experimental-webworker-runtime": "workspace:*",
+    "@eco-agent/dsh-home-paths": "workspace:*",
+    "@eco-agent/dsh-session-format": "workspace:*",
+    "@eco-agent/dsh-session-format-catalog": "workspace:*",
+    "@eco-agent/dsh-session-format-v3-to-v4": "workspace:*",
     "js-yaml": "^4.2.0",
     "picomatch": "^4.0.4"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
+    "@eco-agent/cordis": "workspace:~",
     "@types/js-yaml": "^4.0.9",
     "@types/picomatch": "^3.0.2"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/cordis": "workspace:~"
   }
 }

@@ -3,13 +3,13 @@ description: "Per-step clock context with the current time, browser zone, and el
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-time-context
+# @eco-agent/dsh-time-context
 
 English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-time-context` gives the model a clock: on eligible steps it appends a durable, source-attributed reading with the current time, the browser zone attached to the open request, and the elapsed time since the preceding model-visible message. It helps the model interpret otherwise-unqualified dates and times in the user's browser zone, and tells it to ask when current-turn browser zones are mixed or missing. The shipped Web composition carries no row for it; the optional `@deepseek-ai/dsh-experimental-schedule-bundle` inserts and mounts it with Schedule from the Plugins page. Readings default to a 10-minute minimum interval; `refreshIntervalMs: 0` injects at every eligible step.
+`dsh-time-context` gives the model a clock: on eligible steps it appends a durable, source-attributed reading with the current time, the browser zone attached to the open request, and the elapsed time since the preceding model-visible message. It helps the model interpret otherwise-unqualified dates and times in the user's browser zone, and tells it to ask when current-turn browser zones are mixed or missing. The shipped Web composition carries no row for it; the optional `@eco-agent/dsh-experimental-schedule-bundle` inserts and mounts it with Schedule from the Plugins page. Readings default to a 10-minute minimum interval; `refreshIntervalMs: 0` injects at every eligible step.
 
 ## Table of Contents
 
@@ -36,7 +36,7 @@ Each injected reading has three lines: an ISO-shaped timestamp with numeric offs
 The minimal mount needs no configuration. A positive `refreshIntervalMs` suppresses injections that fall within that many milliseconds of the latest one; omission uses 600000 ms (10 minutes), while `0` injects at every eligible entering pre-step whose signal is not already aborted.
 
 ```yaml
-- name: '@deepseek-ai/dsh-time-context'
+- name: '@eco-agent/dsh-time-context'
   config:
     timeZone: Asia/Shanghai
 ```

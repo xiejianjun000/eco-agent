@@ -3,7 +3,7 @@ description: "The Subagent settings page on the dsh web client's Plugins page: d
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-settings-subagent
+# @eco-agent/dsh-client-ui-settings-subagent
 
 English | [中文](README.zh.md)
 

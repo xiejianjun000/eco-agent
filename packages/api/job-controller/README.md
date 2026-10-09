@@ -8,7 +8,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`@deepseek-ai/dsh-api-job-controller` owns the Host `ctx.jobController` service and the generated Client `ctx.remote.job` namespace. Its two Remote streams are projections of `ctx.jobs`: `job.list` mirrors the jobs one session can see as whole-set frames, and `job.follow` delivers one job's retained output from an absolute byte offset; its one command, `job.kill`, stops a job on a human's behalf. The Client half installs `ctx.jobs`, the reference-counted service whose rosters and accumulated views the session-header job list renders and whose `kill` its stop control calls. Neither stream touches the model's consuming cursor or its completion notices, and a human kill is not the model's own.
+`@eco-agent/dsh-api-job-controller` owns the Host `ctx.jobController` service and the generated Client `ctx.remote.job` namespace. Its two Remote streams are projections of `ctx.jobs`: `job.list` mirrors the jobs one session can see as whole-set frames, and `job.follow` delivers one job's retained output from an absolute byte offset; its one command, `job.kill`, stops a job on a human's behalf. The Client half installs `ctx.jobs`, the reference-counted service whose rosters and accumulated views the session-header job list renders and whose `kill` its stop control calls. Neither stream touches the model's consuming cursor or its completion notices, and a human kill is not the model's own.
 
 ## Table of Contents
 
@@ -66,4 +66,4 @@ None.
 
 </details>
 
-**Runtime invariant:** No companion is published. The controller is a stateless projection of `ctx.jobs` reads; the registry's own `@deepseek-ai/dsh-jobs/invariant` owns the event protocol and event-versus-read relations these streams forward.
+**Runtime invariant:** No companion is published. The controller is a stateless projection of `ctx.jobs` reads; the registry's own `@eco-agent/dsh-jobs/invariant` owns the event protocol and event-versus-read relations these streams forward.

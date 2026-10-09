@@ -1,10 +1,10 @@
 /** Client Session object layer, Agent scopes, and Remote lifecycle wiring. */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-agent/types'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
-import type {} from '@deepseek-ai/dsh-client-file-upload/client'
-import { typertOwnedValue } from '@deepseek-ai/dsh-typert-protocol'
+import type { Context } from '@eco-agent/cordis'
+import type {} from '@eco-agent/dsh-agent/types'
+import type { ConnectionHandle } from '@eco-agent/dsh-client-connection/client'
+import type {} from '@eco-agent/dsh-client-file-upload/client'
+import { typertOwnedValue } from '@eco-agent/dsh-typert-protocol'
 import { createSessionControlStream } from './transport.ts'
 import { ClientSessions } from './sessions/service.ts'
 import type { SessionRemotes } from './sessions/remotes.ts'
@@ -87,7 +87,7 @@ export interface SessionReferenceSourceMap {
 /** Declaration-merge-extensible labels carried by independent Client references. */
 export type SessionReferenceSource = Extract<keyof SessionReferenceSourceMap, string>
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Client Session object layer and Agent scope owner. */
     sessions: import('./contract/sessions.ts').ISessions

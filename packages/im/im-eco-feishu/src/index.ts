@@ -11,11 +11,11 @@
  * @module @dsh-external/dsh-feishu-gateway
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-agent'
-import type {} from '@deepseek-ai/dsh-agent-default-model'
-import type {} from '@deepseek-ai/dsh-settings'
-import type {} from '@deepseek-ai/dsh-session'
+import type { Context } from '@eco-agent/cordis'
+import type {} from '@eco-agent/dsh-agent'
+import type {} from '@eco-agent/dsh-agent-default-model'
+import type {} from '@eco-agent/dsh-settings'
+import type {} from '@eco-agent/dsh-session'
 import {
   Config,
   FEISHU_SETTINGS_NAMESPACE,
@@ -30,7 +30,7 @@ import { PushService } from './push.ts'
 import { AdminServer } from './server.ts'
 import { logger } from './logger.ts'
 
-export const name = '@deepseek-ai/dsh-im-eco-feishu'
+export const name = '@eco-agent/dsh-im-eco-feishu'
 
 export { Config }
 

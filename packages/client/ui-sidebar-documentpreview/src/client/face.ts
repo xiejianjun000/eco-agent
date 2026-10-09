@@ -16,13 +16,13 @@
  * ended, and a settlement arriving after the record is gone has nothing left to
  * write to. A tab that never read has no bucket to forget.
  */
-import type { BoundActions } from '@deepseek-ai/dsh-client-store'
-import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { BoundActions } from '@eco-agent/dsh-client-store'
+import type { TabId } from '@eco-agent/dsh-client-ui-dockkit'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import type { ReadDocumentBytes, ReadWorkspaceFilePage, SessionFile } from './rpc.ts'
 import type { TextStore } from './store.ts'
 import type { DocumentLoadMode } from './document/registry.ts'
-import type { Resources } from '@deepseek-ai/dsh-client-resources/client'
+import type { Resources } from '@eco-agent/dsh-client-resources/client'
 import { ResourceGroup } from './document/resource-group.ts'
 
 /** The preview's injected business face, as the body receives it. */

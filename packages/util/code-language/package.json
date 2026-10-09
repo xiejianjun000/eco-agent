@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-util-code-language",
+  "name": "@eco-agent/dsh-util-code-language",
   "description": "Single file-extension to syntax-highlighting language table shared by Client code surfaces and the Host read card",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -27,9 +27,9 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/cordis": "workspace:~"
   }
 }

@@ -10,14 +10,14 @@
  * Host-effective default again.
  */
 
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls the ctx.remote merge into this program.
-import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from '@eco-agent/dsh-api-remotes/client'
 // Type-only: pulls the Developer tools preference (ctx.configForms) into this program.
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type { SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
-import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type {} from '@deepseek-ai/dsh-agent-preset-registry/types'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
+import type { SessionSummary } from '@eco-agent/dsh-api-session-controller/client'
+import { createSnapshotStore, type SnapshotStore } from '@eco-agent/dsh-client-store'
+import type {} from '@eco-agent/dsh-agent-preset-registry/types'
 import { presetOptions, readRoster } from './settings-store.ts'
 import type { AgentPresetOption } from './settings-store.ts'
 

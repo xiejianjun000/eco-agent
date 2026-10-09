@@ -4,10 +4,10 @@
  * each schema-declared secret position and whether it currently holds a value,
  * so a configuration surface can render a write-only input without ever
  * receiving the secret itself.
- * @module @deepseek-ai/dsh-settings/redact
+ * @module @eco-agent/dsh-settings/redact
  */
 
-import type z from '@deepseek-ai/schemastery'
+import type z from '@eco-agent/schemastery'
 
 /**
  * Minimal structural view of a live schemastery node. Only the relations the

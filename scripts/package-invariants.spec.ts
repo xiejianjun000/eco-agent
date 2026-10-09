@@ -79,10 +79,10 @@ function fixture(options: {
     exports,
     files: ['lib/index.js', ...invariantFile ? ['lib/invariant.js'] : []],
     peerDependencies: !invariantDependency || developmentOnlyInvariant ? {} : {
-      '@deepseek-ai/dsh-invariants': options.invariantRange ?? 'workspace:*',
+      '@eco-agent/dsh-invariants': options.invariantRange ?? 'workspace:*',
     },
     devDependencies: !invariantDependency ? {} : {
-      '@deepseek-ai/dsh-invariants': options.invariantRange ?? 'workspace:*',
+      '@eco-agent/dsh-invariants': options.invariantRange ?? 'workspace:*',
     },
   }
   writeFileSync(join(dir, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`)
@@ -110,8 +110,8 @@ describe('package invariant gate', () => {
 
   it('rejects caret ranges for the invariant peer and development dependency', () => {
     expect(collectPackageInvariantViolations(fixture({ invariantRange: 'workspace:^' }))).toEqual([
-      { path: 'packages/core/probe/package.json', message: '@deepseek-ai/dsh-invariants must be a workspace:* peerDependency' },
-      { path: 'packages/core/probe/package.json', message: '@deepseek-ai/dsh-invariants must be a workspace:* devDependency' },
+      { path: 'packages/core/probe/package.json', message: '@eco-agent/dsh-invariants must be a workspace:* peerDependency' },
+      { path: 'packages/core/probe/package.json', message: '@eco-agent/dsh-invariants must be a workspace:* devDependency' },
     ])
   })
 
@@ -133,7 +133,7 @@ describe('package invariant gate', () => {
   })
 
   it('accepts development-only invariants for configured Host dependencies', () => {
-    expect(collectPackageInvariantViolations(fixture({ packageName: '@deepseek-ai/dsh-llm' }))).toEqual([])
+    expect(collectPackageInvariantViolations(fixture({ packageName: '@eco-agent/dsh-llm' }))).toEqual([])
   })
 
   it('accepts development-only invariants for client packages', () => {

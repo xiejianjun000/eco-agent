@@ -3,7 +3,7 @@ description: "First-message LLM session-title provider for users and maintainers
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-session-title-first-prompt-llm
+# @eco-agent/dsh-session-title-first-prompt-llm
 
 English | [中文](README.zh.md)
 

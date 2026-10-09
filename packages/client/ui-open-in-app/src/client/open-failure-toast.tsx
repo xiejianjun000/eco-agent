@@ -1,7 +1,7 @@
 /** Per-control failure banner for path gestures. */
 import { useCallback, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { IconWarningOutlineRegular, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconWarningOutlineRegular, Toast } from '@eco-agent/dsh-client-ui-primitives'
 
 /**
  * Transient failure banner owned by the control that initiated the gesture,

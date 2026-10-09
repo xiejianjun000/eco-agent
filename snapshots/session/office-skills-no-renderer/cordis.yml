@@ -1,6 +1,6 @@
 - insert:
     - id: office-skills
-      name: '@deepseek-ai/dsh-skill-office'
+      name: '@eco-agent/dsh-skill-office'
       config:
         assetRoot: !!js process.cwd() + '/office-skills'
         cli: false

@@ -1,7 +1,7 @@
 /** Native V4 developer-message and deferred-tool-schema validation. */
 
-import { SessionFormatError, isSessionFormatJsonObject, sessionFormatCount } from '@deepseek-ai/dsh-session-format'
-import type { SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatError, isSessionFormatJsonObject, sessionFormatCount } from '@eco-agent/dsh-session-format'
+import type { SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@eco-agent/dsh-session-format'
 
 function assertToolChange(block: unknown, developer: boolean): void {
   if (!isSessionFormatJsonObject(block) || (block['type'] !== 'tool-addition' && block['type'] !== 'tool-removal')) return

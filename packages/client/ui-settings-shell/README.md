@@ -3,7 +3,7 @@ description: "The shell executor's settings page on the dsh web client's Plugins
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-settings-shell
+# @eco-agent/dsh-client-ui-settings-shell
 
 English | [中文](README.zh.md)
 

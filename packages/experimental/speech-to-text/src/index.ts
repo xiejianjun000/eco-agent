@@ -1,15 +1,15 @@
 /** Named transcription providers with disposable registration and explicit routing. */
-import { Context, Service, type Volatile } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
+import { Context, Service, type Volatile } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
 // Type-only: the `settings` service that persists `configure()` into this plugin's profile entry, and the Loader's
 // entry and `loader/volatile-update` merges.
-import type {} from '@deepseek-ai/dsh-settings'
-import type {} from '@deepseek-ai/cordis-plugin-loader'
+import type {} from '@eco-agent/dsh-settings'
+import type {} from '@eco-agent/cordis-plugin-loader'
 import type { SpeechPreparationOptions, SpeechProvider, SpeechProviderId, SpeechProviderInfo, SpeechSnapshot, SpeechSelectionPatch, SpeechRequest, SpeechSpec, Transcript } from './types.ts'
 
 export type * from './types.ts'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Experimental speech recognition provider registry. */
     speechToText: SpeechToText

@@ -1,7 +1,7 @@
 /** Disk output, resource bounds, and cancellation around the external kit. */
 import { access, mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import type { Converter, ConverterOptions } from '@deepseek-ai/libreoffice-kit'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import OfficeToPdf, { Config, OfficeSourceKey, type OfficeToPdfRequest } from '../src/index.ts'

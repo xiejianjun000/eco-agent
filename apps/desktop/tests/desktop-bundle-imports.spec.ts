@@ -12,7 +12,7 @@ import {
 } from '../scripts/desktop-bundle-imports.mjs'
 
 const MAIN: BundleImportPolicy = {
-  packages: new Set(['electron', 'electron-updater', '@deepseek-ai/dsh-api-gateway']),
+  packages: new Set(['electron', 'electron-updater', '@eco-agent/dsh-api-gateway']),
   nodeBuiltins: true,
 }
 const PRELOAD: BundleImportPolicy = { packages: new Set(['electron', 'events', 'timers', 'url']), nodeBuiltins: false }
@@ -20,13 +20,13 @@ const PRELOAD: BundleImportPolicy = { packages: new Set(['electron', 'events', '
 describe('desktop bundle imports', () => {
   it('names the package behind a bare specifier', () => {
     expect(importPackageName('electron-updater/out/electronHttpExecutor.js')).toBe('electron-updater')
-    expect(importPackageName('@deepseek-ai/dsh-api-gateway/stream-protocol')).toBe('@deepseek-ai/dsh-api-gateway')
+    expect(importPackageName('@eco-agent/dsh-api-gateway/stream-protocol')).toBe('@eco-agent/dsh-api-gateway')
     expect(importPackageName('ws')).toBe('ws')
   })
 
   it('tells external specifiers from bundled and virtual module ids', () => {
     expect(isBareSpecifier('electron')).toBe(true)
-    expect(isBareSpecifier('@deepseek-ai/dsh-home-paths')).toBe(true)
+    expect(isBareSpecifier('@eco-agent/dsh-home-paths')).toBe(true)
     expect(isBareSpecifier('node:fs')).toBe(true)
     expect(isBareSpecifier('./helper.js')).toBe(false)
     expect(isBareSpecifier(join(tmpdir(), 'lib', 'index.js'))).toBe(false)
@@ -39,7 +39,7 @@ describe('desktop bundle imports', () => {
       'crypto',
       'electron',
       'electron-updater/out/electronHttpExecutor.js',
-      '@deepseek-ai/dsh-api-gateway/stream-protocol',
+      '@eco-agent/dsh-api-gateway/stream-protocol',
     ], MAIN)).toEqual([])
   })
 
@@ -49,20 +49,20 @@ describe('desktop bundle imports', () => {
 
   it('reports each specifier the packaged application cannot resolve once, in import order', () => {
     expect(unpackagedImports([
-      '@deepseek-ai/dsh-home-paths',
+      '@eco-agent/dsh-home-paths',
       'ws',
-      '@deepseek-ai/dsh-home-paths',
+      '@eco-agent/dsh-home-paths',
       'electron',
-    ], MAIN)).toEqual(['@deepseek-ai/dsh-home-paths', 'ws'])
+    ], MAIN)).toEqual(['@eco-agent/dsh-home-paths', 'ws'])
   })
 })
 
 describe('packaged imports plugin', () => {
   const root = mkdtempSync(join(tmpdir(), 'dsh-desktop-bundle-imports-'))
   const entries = {
-    static: ['import { app } from "electron";', 'import { resolveDshHome } from "@deepseek-ai/dsh-home-paths";', 'export const home = resolveDshHome(app);'],
-    dynamic: ['import { app } from "electron";', 'export const home = () => import("@deepseek-ai/dsh-home-paths").then(m => m.resolveDshHome(app));'],
-    require: ['import { app } from "electron";', 'export const home = () => require("@deepseek-ai/dsh-home-paths").resolveDshHome(app);'],
+    static: ['import { app } from "electron";', 'import { resolveDshHome } from "@eco-agent/dsh-home-paths";', 'export const home = resolveDshHome(app);'],
+    dynamic: ['import { app } from "electron";', 'export const home = () => import("@eco-agent/dsh-home-paths").then(m => m.resolveDshHome(app));'],
+    require: ['import { app } from "electron";', 'export const home = () => require("@eco-agent/dsh-home-paths").resolveDshHome(app);'],
     builtin: ['import { contextBridge } from "electron";', 'import { readFileSync } from "node:fs";', 'contextBridge.exposeInMainWorld("x", readFileSync);'],
   } as const
   for (const [name, lines] of Object.entries(entries)) writeFileSync(join(root, `${name}.js`), lines.join('\n'))
@@ -86,7 +86,7 @@ describe('packaged imports plugin', () => {
     }
   }
 
-  const unshipped = /imports @deepseek-ai\/dsh-home-paths, which the packaged application does not ship/u
+  const unshipped = /imports @eco-agent\/dsh-home-paths, which the packaged application does not ship/u
 
   it('fails the bundle whose static import the packaged application does not ship', async () => {
     await expect(generate('static', { ...MAIN, packages: new Set(['electron']) })).rejects.toThrow(unshipped)
@@ -110,7 +110,7 @@ describe('packaged imports plugin', () => {
   })
 
   it('passes the bundles whose external imports are all packaged', async () => {
-    const policy = { ...MAIN, packages: new Set(['electron', '@deepseek-ai/dsh-home-paths']) }
+    const policy = { ...MAIN, packages: new Set(['electron', '@eco-agent/dsh-home-paths']) }
     for (const entry of ['static', 'dynamic'] as const) {
       const output = await generate(entry, policy)
       expect(output.output.map(chunk => chunk.fileName)).toEqual([`${entry}.js`])

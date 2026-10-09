@@ -13,4 +13,4 @@ export * from './service.ts'
 /** Shared internal helpers used by context, services, and plugin fibers. */
 export * from './utils.ts'
 /** Readonly references returned by volatile config schemas. */
-export type { Volatile, VolatileSnapshot } from '@deepseek-ai/cosmokit'
+export type { Volatile, VolatileSnapshot } from '@eco-agent/cosmokit'

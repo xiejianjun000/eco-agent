@@ -2,7 +2,7 @@
  * What a failed pnpm run was, read off how it ended and what it printed:
  * pnpm names its failures with stable `ERR_PNPM_*` codes and Node's errno
  * names, which the run's captured tail carries whatever the locale.
- * @module @deepseek-ai/dsh-plugin-manager/install-failure
+ * @module @eco-agent/dsh-plugin-manager/install-failure
  */
 
 import type { PluginInstallFailureKind } from './types.ts'

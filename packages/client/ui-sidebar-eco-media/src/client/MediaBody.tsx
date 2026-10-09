@@ -9,8 +9,8 @@
  */
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import type { DocumentPreviewProps } from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
+import type { PropsLocale } from '@eco-agent/dsh-client-ui-slots'
+import type { DocumentPreviewProps } from '@eco-agent/dsh-client-ui-sidebar-documentpreview/client'
 import css from './MediaBody.module.css'
 
 /** Standard document props plus this renderer's dictionary. */

@@ -6,14 +6,14 @@
  */
 
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: the ctx.configForms Context merge. Cross-plugin collaboration
 // goes through the service, never a value import (client bundle purity gate).
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
 // Type-only: the Plugins page's SlotMap merge (the 'plugins.item' entry).
-import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type {} from '@eco-agent/dsh-client-ui-plugin-manager/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 import { AgentLoopCard } from './AgentLoopCard.tsx'
 import { AGENT_LOOP_NS, AgentLoopCardController } from './agent-loop-card-controller.ts'
 import { en, zh, type AgentLoopSettingsLocaleKey } from './locales.ts'
@@ -22,7 +22,7 @@ export type { AgentLoopCardProps } from './AgentLoopCard.tsx'
 export type { AgentLoopCardFace, AgentLoopCardState, AgentLoopSettings } from './agent-loop-card-controller.ts'
 export type { AgentLoopSettingsLocaleKey } from './locales.ts'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** Agent loop settings page copy. */
     'settings.agentLoop': AgentLoopSettingsLocaleKey

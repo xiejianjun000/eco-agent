@@ -2,16 +2,16 @@
  * eco Agent「数据与诊断」设置页，浏览器 half：注册 section，绑定宿主插件清单
  * 与浏览器模块同步状态。
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls the ctx.settingsScope merge and the settings.section slot.
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
 // Type-only: pulls ctx.locale.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls ctx.slots (SlotRegistry) merge.
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 // Type-only: pulls ctx.remote.pluginInventory and ctx.modules.
-import type {} from '@deepseek-ai/dsh-api-remotes/client'
-import type {} from '@deepseek-ai/dsh-client-modules/client'
+import type {} from '@eco-agent/dsh-api-remotes/client'
+import type {} from '@eco-agent/dsh-client-modules/client'
 import { DiagnosticsSection } from './DiagnosticsSection.tsx'
 import type { DiagnosticsSectionInjected } from './DiagnosticsSection.tsx'
 import { en, zh, type DiagnosticsKey } from './locales.ts'
@@ -19,7 +19,7 @@ import { en, zh, type DiagnosticsKey } from './locales.ts'
 export type { DiagnosticsKey } from './locales.ts'
 export type { DiagnosticsSectionInjected, DiagnosticsSectionProps } from './DiagnosticsSection.tsx'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** 「数据与诊断」页面 copy。 */
     'settings.ecoDiagnostics': DiagnosticsKey

@@ -1,5 +1,5 @@
 /** Shared volatile schema fixture for the schema and Loader volatile specs. */
-import z from '@deepseek-ai/schemastery'
+import z from '@eco-agent/schemastery'
 
 /** Mixed ordinary, volatile, nested and whole-object volatile fields. */
 export const Config = z.object({

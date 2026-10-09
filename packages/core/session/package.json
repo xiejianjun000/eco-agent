@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-session",
+  "name": "@eco-agent/dsh-session",
   "description": "Event-sourced session store for the DeepSeek Harness",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -45,19 +45,19 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-scope": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/dsh-scope": "workspace:*",
+    "@eco-agent/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-invariants": "workspace:*",
-    "@deepseek-ai/dsh-scope": "workspace:*",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*",
-    "@deepseek-ai/dsh-typert-registry": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/dsh-invariants": "workspace:*",
+    "@eco-agent/dsh-scope": "workspace:*",
+    "@eco-agent/dsh-typert-protocol": "workspace:*",
+    "@eco-agent/dsh-typert-registry": "workspace:*",
+    "@eco-agent/cordis": "workspace:~"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-brand": "workspace:*",
-    "@deepseek-ai/dsh-util-values": "workspace:*"
+    "@eco-agent/dsh-llm": "workspace:*",
+    "@eco-agent/dsh-brand": "workspace:*",
+    "@eco-agent/dsh-util-values": "workspace:*"
   }
 }

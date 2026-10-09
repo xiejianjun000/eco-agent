@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
-import type { SubprocessTerminalSpawnSpec } from '@deepseek-ai/dsh-subprocess'
+import type { SubprocessTerminalSpawnSpec } from '@eco-agent/dsh-subprocess'
 import { prepareShellActivity, ShellActivity } from '../src/shell-activity.ts'
 
 vi.mock('node:fs', async (original) => {

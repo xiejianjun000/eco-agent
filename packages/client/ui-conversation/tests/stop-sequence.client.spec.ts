@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import { StopSequence, type StopTarget } from '../src/client/stop-sequence.ts'
 
 const id = (value: string): SessionId => value as SessionId

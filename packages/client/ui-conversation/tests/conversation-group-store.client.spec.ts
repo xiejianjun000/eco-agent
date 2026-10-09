@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { brandString } from '@deepseek-ai/dsh-brand'
+import { brandString } from '@eco-agent/dsh-brand'
 import type { ConversationViewNode } from '../src/client/contract/conversation.ts'
 import type { GroupKey, GroupSnapshot, GroupUpdate, NodeKey, NodeReference, RenderEntry } from '../src/client/contract/groups.ts'
 import { ConversationGroupStore } from '../src/client/conversation/group-store.ts'

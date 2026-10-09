@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SessionFormatArtifact, SessionFormatEvent } from '@deepseek-ai/dsh-session-format'
+import type { SessionFormatArtifact, SessionFormatEvent } from '@eco-agent/dsh-session-format'
 import { restoreReleasedV4Artifact } from '../src/index.ts'
 
 const header = { version: 4, id: 'open-vocabulary', createdAt: 1, delegationDepth: 0, isSeeded: false }

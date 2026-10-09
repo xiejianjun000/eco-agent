@@ -7,16 +7,16 @@
  * imports no provider.
  *
  * Namespace plugin (named exports, no default export).
- * @module @deepseek-ai/dsh-tool-lsp
+ * @module @eco-agent/dsh-tool-lsp
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import { defineTool } from '@deepseek-ai/dsh-tools'
-import { LspError } from '@deepseek-ai/dsh-lsp'
-import type {} from '@deepseek-ai/dsh-lsp'
-import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
-import { assertNever } from '@deepseek-ai/dsh-util-values'
+import type { Context } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
+import { defineTool } from '@eco-agent/dsh-tools'
+import { LspError } from '@eco-agent/dsh-lsp'
+import type {} from '@eco-agent/dsh-lsp'
+import { MAX_TIMER_DELAY_MS } from '@eco-agent/dsh-timeout'
+import { assertNever } from '@eco-agent/dsh-util-values'
 import {
   DEFAULT_MAX_LOCATIONS,
   DEFAULT_MAX_RESULT_CHARS,

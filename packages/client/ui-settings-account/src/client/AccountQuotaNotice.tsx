@@ -1,8 +1,8 @@
 /** Account-owned take-over of the frame-wide quota notice for account balances. */
 import { useEffect, useRef, useState } from 'react'
-import { Button, Modal, Toast, IconWarningOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, HostObservable, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { QuotaNoticeOwnerProps } from '@deepseek-ai/dsh-client-ui-chat/client'
+import { Button, Modal, Toast, IconWarningOutlineRegular } from '@eco-agent/dsh-client-ui-primitives'
+import type { InjectFace, HostObservable, PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
+import type { QuotaNoticeOwnerProps } from '@eco-agent/dsh-client-ui-chat/client'
 import type { AccountSnapshot } from './AccountSection.tsx'
 import type { PlatformPageClaim, PlatformPages } from './platform-pages.ts'
 

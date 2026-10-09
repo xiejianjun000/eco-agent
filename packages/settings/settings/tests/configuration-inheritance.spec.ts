@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, it, vi } from 'vitest'
-import * as appBoot from '@deepseek-ai/dsh-app-boot'
+import * as appBoot from '@eco-agent/dsh-app-boot'
 import { configurationFixture } from './configuration-fixture.ts'
 
 it('shares composition for entries without config overrides while retaining group and insert inheritance', async () => {

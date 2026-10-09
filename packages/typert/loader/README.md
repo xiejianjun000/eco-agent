@@ -3,7 +3,7 @@ description: "Loader integration for generated Typert artifacts: how mounted pac
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-typert-loader
+# @eco-agent/dsh-typert-loader
 
 English | [中文](README.zh.md)
 
@@ -32,8 +32,8 @@ Mount this plugin in a Host Loader composition that loads packages publishing ge
 Load the registry and the loader; the loader defaults to discovering every Loader entry:
 
 ```yaml
-- name: '@deepseek-ai/dsh-typert-registry'
-- name: '@deepseek-ai/dsh-typert-loader'
+- name: '@eco-agent/dsh-typert-registry'
+- name: '@eco-agent/dsh-typert-loader'
 ```
 
 | Field | Default | Meaning |

@@ -3,7 +3,7 @@ description: "dsh Web 客户端的 slot 注册表纯核心：普通扩展 slots�
 kind: "package-library"
 ---
 
-# @deepseek-ai/dsh-client-ui-slots
+# @eco-agent/dsh-client-ui-slots
 
 [English](README.md) | 中文
 

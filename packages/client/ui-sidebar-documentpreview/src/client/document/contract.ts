@@ -1,6 +1,6 @@
 /** Document renderer slot: the owner supplies shared file state, renderers own their presentation. */
-import type { PropsRuntime, SlotHookFactory } from '@deepseek-ai/dsh-client-ui-slots'
-import type { UseSidebarRightTabInfo } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+import type { PropsRuntime, SlotHookFactory } from '@eco-agent/dsh-client-ui-slots'
+import type { UseSidebarRightTabInfo } from '@eco-agent/dsh-client-ui-sidebar-right/client'
 import type { RefCallback } from 'react'
 
 /** One loaded text window, retaining source line positions. */
@@ -45,7 +45,7 @@ export interface DocumentBodyOwner {
   readonly scrollportRef: RefCallback<HTMLElement>
 }
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface SlotMap {
     /** Document body selected by a registered implementation id. */
     'sidebar.right.tab.document': {

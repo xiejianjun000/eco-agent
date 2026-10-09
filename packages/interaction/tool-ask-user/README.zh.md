@@ -3,7 +3,7 @@ description: "基于 user-questions seam 的模型侧 ask_user_question 工具�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-tool-ask-user
+# @eco-agent/dsh-tool-ask-user
 
 [English](README.md) | 中文
 
@@ -31,7 +31,7 @@ kind: "package-reference"
 
 ```yaml
 - id: tool-ask-user
-  name: '@deepseek-ai/dsh-tool-ask-user'
+  name: '@eco-agent/dsh-tool-ask-user'
   config:
     mode: timed
     timeout: 120

@@ -1,7 +1,7 @@
 /** SSH startup identity and request lifetimes over the actual administrative protocol. */
 import { EventEmitter } from 'node:events'
 import { Duplex, PassThrough } from 'node:stream'
-import { Context, Service } from '@deepseek-ai/cordis'
+import { Context, Service } from '@eco-agent/cordis'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { z } from 'zod'
 import { SshRpcPeer } from '../src/protocol.ts'

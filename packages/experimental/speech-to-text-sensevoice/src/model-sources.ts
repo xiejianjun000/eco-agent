@@ -1,5 +1,5 @@
 /** Host-side response comparison for pinned model files on Hugging Face-compatible origins. */
-import { deadline } from '@deepseek-ai/dsh-timeout'
+import { deadline } from '@eco-agent/dsh-timeout'
 
 /**
  * Prefer the first successful HEAD response while retaining other sources for download fallback.

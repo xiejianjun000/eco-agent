@@ -3,7 +3,7 @@ description: "Desktop Account settings display DeepSeek login state and offer br
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-settings-account
+# @eco-agent/dsh-client-ui-settings-account
 
 English | [中文](README.zh.md)
 

@@ -5,19 +5,19 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import Include from '@deepseek-ai/cordis-plugin-include'
-import AgentRegistry from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import ComputerUseRegistry from '@deepseek-ai/dsh-computer-use'
-import LocalAttachmentStore from '@deepseek-ai/dsh-attachment-local'
-import LlmRuntime, { LlmAdapter, ToolCallId, createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { GenerateOptions, LlmResolvedModelInfo, StreamChunk } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime from '@deepseek-ai/dsh-tools'
+import { Context } from '@eco-agent/cordis'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import Include from '@eco-agent/cordis-plugin-include'
+import AgentRegistry from '@eco-agent/dsh-agent'
+import AgentLoop from '@eco-agent/dsh-agent-loop'
+import ComputerUseRegistry from '@eco-agent/dsh-computer-use'
+import LocalAttachmentStore from '@eco-agent/dsh-attachment-local'
+import LlmRuntime, { LlmAdapter, ToolCallId, createUserMessage } from '@eco-agent/dsh-llm'
+import type { GenerateOptions, LlmResolvedModelInfo, StreamChunk } from '@eco-agent/dsh-llm'
+import SessionStore, { SessionId } from '@eco-agent/dsh-session'
+import SessionProjectionRegistry from '@eco-agent/dsh-session-projection'
+import SystemPrompt from '@eco-agent/dsh-system-prompt'
+import ToolRuntime from '@eco-agent/dsh-tools'
 import * as NativeProvider from '../src/index.ts'
 import { resetFixture, screenshotBase64 } from './fixtures/cua-driver.ts'
 
@@ -60,20 +60,20 @@ it('loads from cordis.yml and logs the native screenshot before the next model r
   root = await mkdtemp(join(tmpdir(), 'dsh-native-composition-'))
   const configPath = join(root, 'cordis.yml')
   const modules = new Map<string, unknown>([
-    ['@deepseek-ai/dsh-llm', LlmRuntime],
-    ['@deepseek-ai/dsh-session', SessionStore],
-    ['@deepseek-ai/dsh-session-projection', SessionProjectionRegistry],
-    ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
-    ['@deepseek-ai/dsh-tools', ToolRuntime],
-    ['@deepseek-ai/dsh-agent', AgentRegistry],
-    ['@deepseek-ai/dsh-agent-loop', AgentLoop],
-    ['@deepseek-ai/dsh-attachment-local', LocalAttachmentStore],
-    ['@deepseek-ai/dsh-computer-use', ComputerUseRegistry],
-    ['@deepseek-ai/dsh-experimental-computer-use-cua-driver-native', NativeProvider],
+    ['@eco-agent/dsh-llm', LlmRuntime],
+    ['@eco-agent/dsh-session', SessionStore],
+    ['@eco-agent/dsh-session-projection', SessionProjectionRegistry],
+    ['@eco-agent/dsh-system-prompt', SystemPrompt],
+    ['@eco-agent/dsh-tools', ToolRuntime],
+    ['@eco-agent/dsh-agent', AgentRegistry],
+    ['@eco-agent/dsh-agent-loop', AgentLoop],
+    ['@eco-agent/dsh-attachment-local', LocalAttachmentStore],
+    ['@eco-agent/dsh-computer-use', ComputerUseRegistry],
+    ['@eco-agent/dsh-experimental-computer-use-cua-driver-native', NativeProvider],
   ])
   await writeFile(configPath, [...modules.keys()].flatMap(name => [
     `- name: '${name}'`,
-    ...name === '@deepseek-ai/dsh-attachment-local' ? ['  config:', `    dshHome: ${JSON.stringify(root)}`] : [],
+    ...name === '@eco-agent/dsh-attachment-local' ? ['  config:', `    dshHome: ${JSON.stringify(root)}`] : [],
   ]).join('\n') + '\n')
 
   const context = ctx = new Context()

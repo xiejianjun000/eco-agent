@@ -5,11 +5,11 @@
  * output and error material from the settled result node. A supported terminal
  * call gets its expanded body from `terminalCardModel` instead.
  */
-import type { ToolCallBlock, ToolResultNode } from '@deepseek-ai/dsh-client-ui-chat/client'
-import type { LocaleKeysOf } from '@deepseek-ai/dsh-client-ui-slots'
-import { abbreviateHomePath, relativizeToCwd } from '@deepseek-ai/dsh-util-workspace-path'
+import type { ToolCallBlock, ToolResultNode } from '@eco-agent/dsh-client-ui-chat/client'
+import type { LocaleKeysOf } from '@eco-agent/dsh-client-ui-slots'
+import { abbreviateHomePath, relativizeToCwd } from '@eco-agent/dsh-util-workspace-path'
 
-export type { ToolCallBlock } from '@deepseek-ai/dsh-client-ui-chat/client'
+export type { ToolCallBlock } from '@eco-agent/dsh-client-ui-chat/client'
 
 /** Tool-call row variants selected by the generic atomic renderer. */
 export type ToolRowVariant = 'search' | 'read' | 'bash' | 'write' | 'edit' | 'code' | 'others'

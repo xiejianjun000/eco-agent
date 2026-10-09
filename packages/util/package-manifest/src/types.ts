@@ -1,7 +1,7 @@
 /**
  * Shared declarations for package.json fields and plugin display metadata.
  * Each reader owns JSON validation and resolved defaults.
- * @module @deepseek-ai/dsh-package-manifest/types
+ * @module @eco-agent/dsh-package-manifest/types
  */
 
 /** Package identity and metadata; local profile readers may accept a partial declaration. */

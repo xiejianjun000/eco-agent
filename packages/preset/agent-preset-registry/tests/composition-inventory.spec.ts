@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { evaluate } from '@deepseek-ai/cordis-plugin-loader'
+import { evaluate } from '@eco-agent/cordis-plugin-loader'
 import { definitionComposition } from '../src/composition-inventory.ts'
 
 it('reports evaluated and unresolved conditions with ancestor enablement', () => {

@@ -1,6 +1,6 @@
 /** Stream scripts, live stream control, cancellation, and the built-in `$events` opening. */
 import { describe, expect, it } from 'vitest'
-import type { RemoteStreamHandle } from '@deepseek-ai/dsh-typert-protocol'
+import type { RemoteStreamHandle } from '@eco-agent/dsh-typert-protocol'
 import { RemoteMock, frames, openStream, streamHandle, streamMethod } from '../src/index.ts'
 
 const idle = (): AbortSignal => new AbortController().signal

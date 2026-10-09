@@ -1,10 +1,10 @@
 /** Staged delegation limits backed by the Host's subagent settings section. */
 
-import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { SnapshotStore } from '@eco-agent/dsh-client-store'
 import {
   SettingsFormModel, settingsNumberField,
   type SettingsFieldSpec, type SettingsFieldState, type SettingsFormActions, type SettingsFormScope, type SettingsFormShell,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@eco-agent/dsh-client-ui-primitives'
 
 /** Host-owned delegation defaults and live capacity. */
 export interface SubagentLimitsSettings {

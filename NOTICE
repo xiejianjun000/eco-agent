@@ -1,0 +1,26 @@
+eco Agent
+========
+
+eco Agent is a white-label open-source distribution of DeepSeek Harness
+(upstream: https://github.com/deepseek-ai/deepseek-harness, "deepseek-harness"),
+forked and rebranded for the ecological/environmental protection domain.
+
+Copyright (c) 2026 eco Agent
+
+This product is derived from deepseek-harness, which is:
+  Copyright (c) 2026 DeepSeek
+  Licensed under the MIT License.
+
+Both eco Agent and deepseek-harness are distributed under the MIT License.
+The full text of the MIT License is provided in the LICENSE file.
+
+Third-party dependencies and their licenses are disclosed in THIRD_PARTY_NOTICES.md,
+which is generated from the vendored and workspace package manifests.
+
+Trademark notice
+-----------------
+"DeepSeek" and "DeepSeek Harness" are trademarks or registered trademarks of
+DeepSeek. eco Agent is an independent open-source project and is NOT affiliated
+with, endorsed by, or sponsored by DeepSeek. The "@/eco-agent" package scope and
+the "eco Agent" name are used under the MIT license's redistribution terms and do
+not imply any official relationship with DeepSeek.

@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-util-workspace-path",
+  "name": "@eco-agent/dsh-util-workspace-path",
   "description": "Browser-safe Workspace path and display helpers",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -16,7 +16,7 @@
   "exports": {
     ".": {
       "types": "./lib/types/index.d.ts",
-      "default": "./lib/index.js"
+      "default": "./lib/types/index.js"
     },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
@@ -27,9 +27,9 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/cordis": "workspace:~"
   }
 }

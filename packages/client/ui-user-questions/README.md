@@ -3,7 +3,7 @@ description: "Web ask_user_question feature for the dsh web client: the attached
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-user-questions
+# @eco-agent/dsh-client-ui-user-questions
 
 English | [中文](README.zh.md)
 

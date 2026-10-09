@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { inspect } from 'node:util'
-import type { StartupError } from '@deepseek-ai/dsh-app-boot'
+import type { StartupError } from '@eco-agent/dsh-app-boot'
 
 /** Launcher-owned context; no environment values or plugin configurations are collected. */
 interface StartupDiagnosticContext {

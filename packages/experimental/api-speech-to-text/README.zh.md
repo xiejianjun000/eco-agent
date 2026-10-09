@@ -3,7 +3,7 @@ description: "通过带认证的 Web Remote 提供有界临时转写。"
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-api-speech-to-text
+# @eco-agent/dsh-experimental-api-speech-to-text
 
 [English](README.md) | 中文
 

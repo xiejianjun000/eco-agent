@@ -20,7 +20,7 @@
  * "generating" state while patches keep coming.
  */
 
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type { SessionEvent } from '@eco-agent/dsh-session'
 import type { CardBody, FeishuClient } from './feishu.ts'
 import type { FeishuGatewayConfig } from './config.ts'
 import { logger } from './logger.ts'

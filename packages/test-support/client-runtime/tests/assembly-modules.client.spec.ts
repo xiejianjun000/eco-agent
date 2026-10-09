@@ -4,20 +4,20 @@
  * static namespace, and the resulting module system serves the vendored Loader
  * without ever loading a bundle.
  */
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import * as modulesClient from '@deepseek-ai/dsh-client-modules/client'
-import { parseBootManifest } from '@deepseek-ai/dsh-client-modules/client'
-import type { WebBootGraph } from '@deepseek-ai/dsh-client-modules/client'
-import * as uiRenderer from '@deepseek-ai/dsh-client-ui-renderer/client'
-import * as typertRegistry from '@deepseek-ai/dsh-typert-registry/client'
+import { Context } from '@eco-agent/cordis'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import * as modulesClient from '@eco-agent/dsh-client-modules/client'
+import { parseBootManifest } from '@eco-agent/dsh-client-modules/client'
+import type { WebBootGraph } from '@eco-agent/dsh-client-modules/client'
+import * as uiRenderer from '@eco-agent/dsh-client-ui-renderer/client'
+import * as typertRegistry from '@eco-agent/dsh-typert-registry/client'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { ClientRoster } from '../src/assembly/index.ts'
 import { MODULES_PACKAGE, createInProcessModules, loadPluginModules } from '../src/assembly/modules.ts'
 
-const RENDERER = '@deepseek-ai/dsh-client-ui-renderer'
-const TYPERT = '@deepseek-ai/dsh-typert-registry'
-const BRAND = '@deepseek-ai/dsh-client-ui-brand-official'
+const RENDERER = '@eco-agent/dsh-client-ui-renderer'
+const TYPERT = '@eco-agent/dsh-typert-registry'
+const BRAND = '@eco-agent/dsh-client-ui-brand-official'
 const MISSING = '@deepseek-ai/dsh-client-does-not-exist'
 
 const row = (name: string, immediately = false) => ({ name, inject: [], immediately })

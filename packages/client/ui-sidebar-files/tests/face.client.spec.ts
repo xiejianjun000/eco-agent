@@ -1,15 +1,15 @@
 /** Directory subscriptions and read settlements through the face's real store actions. */
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { WorkspaceDirectoryListing } from '@deepseek-ai/dsh-api-workspace-files/types'
+import { RemoteError } from '@eco-agent/dsh-client-test-runtime'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { WorkspaceDirectoryListing } from '@eco-agent/dsh-api-workspace-files/types'
 import { childPath, createList, filesFace } from '../src/client/face.ts'
 import type { WorkspaceFilesListRemote } from '../src/client/face.ts'
 import { createFilesStore } from '../src/client/store.ts'
 import type { DirLevel } from '../src/client/store.ts'
 import { DirectoryNode } from '../src/client/directory-node.ts'
 import { scriptedList } from './scripted-list.client.ts'
-import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
+import type { TabId } from '@eco-agent/dsh-client-ui-dockkit'
 
 const SESSION = 's-1' as SessionId
 const ROOT = '/work/app'

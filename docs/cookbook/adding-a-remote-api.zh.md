@@ -9,9 +9,9 @@
 owner 是一个 Host 侧 Cordis 服务：继承 `TypertRemoteService` 把 service 键与 wire namespace 一起绑定，再用 `@Remote` 标注对外暴露的方法。业务方法的签名若已符合 wire 约定就直接标注它本身；只有形态需要调整（补 `signal`、换参数顺序、换导出名）才写一个 `remoteExport*` adapter，由它调用不改名的业务方法。lookup 对象（`Agent`、`Session`）只能占顶层参数位，支持协作式取消的方法把 `signal: AbortSignal` 放在最后一位。
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import type { Context } from '@eco-agent/cordis'
+import type { Agent } from '@eco-agent/dsh-agent'
+import { Remote, TypertRemoteService } from '@eco-agent/dsh-typert-protocol'
 
 /** One stored note as a Client reads it. */
 export interface NoteRow {
@@ -19,7 +19,7 @@ export interface NoteRow {
   readonly title: string
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     notesController: NotesController
   }
@@ -60,9 +60,9 @@ Remote 失败只有一个类 `RemoteError`：域码经 declaration merging 进 `
 - 不上 wire 的本地失败不进码表，用调用方自己的类型表达。
 
 ```ts
-import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError } from '@eco-agent/dsh-typert-protocol'
 
-declare module '@deepseek-ai/dsh-typert-protocol' {
+declare module '@eco-agent/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     /** No stored note carries that id. */
     'note/not-found': { readonly noteId: string }
@@ -89,7 +89,7 @@ export async function rename(noteId: string, title: string): Promise<void> {
 
 ## 3. 在包上注册
 
-`@Remote` 必须落在一个 Loader entry 插件包里；owner 是抽象 seam 时把控制器放进 `packages/api/` 下的对应包。包清单要补两个生成入口与 protocol 的 peer 依赖，Client 侧则由 `@deepseek-ai/dsh-api-remotes` 的 assembly 挂载该贡献并按需转口类型词汇。两个入口分别指向哪个生成产物、生成管线如何排序，见 [API Gateway 参考](../api-gateway.zh.md)。
+`@Remote` 必须落在一个 Loader entry 插件包里；owner 是抽象 seam 时把控制器放进 `packages/api/` 下的对应包。包清单要补两个生成入口与 protocol 的 peer 依赖，Client 侧则由 `@eco-agent/dsh-api-remotes` 的 assembly 挂载该贡献并按需转口类型词汇。两个入口分别指向哪个生成产物、生成管线如何排序，见 [API Gateway 参考](../api-gateway.zh.md)。
 
 ```json
 {
@@ -97,8 +97,8 @@ export async function rename(noteId: string, title: string): Promise<void> {
     "./typert": { "types": "./lib/typert.host.d.ts", "default": "./lib/typert.host.js" },
     "./remote": { "types": "./lib/typert.remote-client.d.ts", "default": "./lib/typert.remote-client.js" }
   },
-  "peerDependencies": { "@deepseek-ai/dsh-typert-protocol": "workspace:*" },
-  "devDependencies": { "@deepseek-ai/dsh-typert-protocol": "workspace:*" }
+  "peerDependencies": { "@eco-agent/dsh-typert-protocol": "workspace:*" },
+  "devDependencies": { "@eco-agent/dsh-typert-protocol": "workspace:*" }
 }
 ```
 
@@ -111,9 +111,9 @@ export async function rename(noteId: string, title: string): Promise<void> {
 Host 的固定事实读 `ctx.remote.$host`：`home` 与 `isLoopback` 是普通值读取，没有订阅也没有 generation 计数器，`home` 在第一帧 ready 之前是 `undefined`；重连后的刷新走 `ctx.on('connection/reset')` 或各域自己的 remote 事件。调用方 abort 掉一次一元调用时，结果落在错误分支上的 `gateway/cancelled`，而不是抛出。
 
 ```ts ignore-check
-import type { Context } from '@deepseek-ai/cordis'
-import { isRemoteFailure } from '@deepseek-ai/dsh-api-gateway/client'
-import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type { Context } from '@eco-agent/cordis'
+import { isRemoteFailure } from '@eco-agent/dsh-api-gateway/client'
+import type {} from '@eco-agent/dsh-api-remotes/client'
 
 export const inject = ['remote', 'remote.notes']
 
@@ -151,7 +151,7 @@ export function hostLabel(): string {
 owner 侧断言抛出的码：捕获后用 `remoteErrorOf` 取出失败，再用 `toMatchObject` 比对 `code` 与需要的 `details` 字段——不要用 `toEqual` 深比对错误对象，也不要断言 `instanceof`。
 
 ```ts
-import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
+import { remoteErrorOf } from '@eco-agent/dsh-typert-protocol'
 import { expect, it } from 'vitest'
 
 declare function rename(noteId: string, title: string): Promise<void>
@@ -166,11 +166,11 @@ it('refuses an unknown note before writing', async () => {
 })
 ```
 
-Client 侧的替身返回真实例：`RemoteError` 与 `TestRemote` 的值 import 一律取自 `@deepseek-ai/dsh-client-test-runtime`，因为从 `api-remotes` facade 值 import 会拉起尚未构建的装配链。`TestRemote.$host` 是普通字段，spec 直接赋值即可。
+Client 侧的替身返回真实例：`RemoteError` 与 `TestRemote` 的值 import 一律取自 `@eco-agent/dsh-client-test-runtime`，因为从 `api-remotes` facade 值 import 会拉起尚未构建的装配链。`TestRemote.$host` 是普通字段，spec 直接赋值即可。
 
 ```ts ignore-check
-import { Context } from '@deepseek-ai/cordis'
-import { RemoteError, TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
+import { Context } from '@eco-agent/cordis'
+import { RemoteError, TestRemote } from '@eco-agent/dsh-client-test-runtime'
 import { expect, it } from 'vitest'
 
 it('renders the failure code the Host reported', async () => {

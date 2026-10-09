@@ -1,6 +1,6 @@
 - insert:
     - id: workspace-dependencies
-      name: '@deepseek-ai/dsh-tool-workspace-dependencies'
+      name: '@eco-agent/dsh-tool-workspace-dependencies'
       config:
         source: !!js process.cwd() + '/runtime-source'
         root: !!js process.cwd() + '/runtime-installed'

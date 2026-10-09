@@ -1,6 +1,6 @@
 /** Web transport delegates module and entry changes to the page-owned controller. */
-import { Context } from '@deepseek-ai/cordis'
-import type { ClientModuleLoader } from '@deepseek-ai/dsh-client-modules/client'
+import { Context } from '@eco-agent/cordis'
+import type { ClientModuleLoader } from '@eco-agent/dsh-client-modules/client'
 import { afterEach, expect, it, vi } from 'vitest'
 import { apply, inject } from '../src/client/index.ts'
 

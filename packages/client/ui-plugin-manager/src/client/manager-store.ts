@@ -6,9 +6,9 @@ import { sanitizeInstallInput } from './sanitize-install-input.ts'
  * after each action and after every `plugin-manager/changed` event, so a
  * change made on another surface shows here without a manual refresh.
  */
-import type {} from '@deepseek-ai/dsh-client-product-analytics/client'
-import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type {} from '@eco-agent/dsh-client-product-analytics/client'
+import { randomUUID } from '@eco-agent/dsh-util-crypto'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 import type {
   BundleInfo,
   ChangeResult,
@@ -25,12 +25,12 @@ import type {
   PluginSpecInspection,
   ReadOnlyReason,
   Registry,
-} from '@deepseek-ai/dsh-api-remotes/client'
-import { normalizeRegistry, NPMMIRROR_REGISTRY, OFFICIAL_NPM_REGISTRY, REGISTRY_URL } from '@deepseek-ai/dsh-plugin-manager/registry'
-import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
-import type { LocalizedText, PluginLocalizedMeta } from '@deepseek-ai/dsh-package-manifest'
-import type { SettingsDescribeFace, ConfigForms } from '@deepseek-ai/dsh-client-ui-settings/client'
+} from '@eco-agent/dsh-api-remotes/client'
+import { normalizeRegistry, NPMMIRROR_REGISTRY, OFFICIAL_NPM_REGISTRY, REGISTRY_URL } from '@eco-agent/dsh-plugin-manager/registry'
+import { createSnapshotStore, type SnapshotStore } from '@eco-agent/dsh-client-store'
+import type { HostObservable } from '@eco-agent/dsh-client-ui-slots'
+import type { LocalizedText, PluginLocalizedMeta } from '@eco-agent/dsh-package-manifest'
+import type { SettingsDescribeFace, ConfigForms } from '@eco-agent/dsh-client-ui-settings/client'
 import type { ConfigLedger } from './config-ledger.ts'
 import { shortName } from './presentation.ts'
 

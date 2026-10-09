@@ -6,9 +6,9 @@
  * @module dsh-feishu-gateway/config
  */
 
-import z from '@deepseek-ai/schemastery'
-import type Schema from '@deepseek-ai/schemastery'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
+import z from '@eco-agent/schemastery'
+import type Schema from '@eco-agent/schemastery'
+import { settingsNamespace } from '@eco-agent/dsh-settings'
 
 /** Settings document namespace owned by this plugin. */
 export const FEISHU_SETTINGS_NAMESPACE = settingsNamespace('feishu-gateway')

@@ -1,20 +1,20 @@
 // @vitest-environment jsdom
 /** Conversation assembly acceptance independent of Tool presentation. */
 import './control-row-dom.ts'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, waitFor, within } from '@testing-library/react'
 import { useState } from 'react'
-import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
-import type { ISession } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import { LocaleRuntime } from '@eco-agent/dsh-client-locale/client'
+import type { ISession } from '@eco-agent/dsh-api-session-controller/client'
+import type { PropsRenderSlots } from '@eco-agent/dsh-client-ui-slots'
 import {
   RemoteError, SlotTestRuntime, usePinnedBrowserLanguages, stubConfigForm,
-} from '@deepseek-ai/dsh-client-test-runtime'
+} from '@eco-agent/dsh-client-test-runtime'
 import { InputHub } from '../src/client/input/hub.ts'
-import { apply, inject, type EmptyWorkspaceOwnerProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
+import { apply, inject, type EmptyWorkspaceOwnerProps } from '@eco-agent/dsh-client-ui-conversation/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { WorkspaceId } from '@eco-agent/dsh-workspace/types'
 
 // jsdom implements no Range geometry (Lexical's scroll-into-view measures the
 // caret with one once the surface is genuinely contenteditable).

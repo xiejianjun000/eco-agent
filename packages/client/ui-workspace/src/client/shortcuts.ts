@@ -1,10 +1,10 @@
 /** Workspace command registration and browser-owned opening requests. */
-import type { Context } from '@deepseek-ai/cordis'
-import type { SessionForkError } from '@deepseek-ai/dsh-api-session-controller/client'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { ShortcutCommand, ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/client'
-import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { Context } from '@eco-agent/cordis'
+import type { SessionForkError } from '@eco-agent/dsh-api-session-controller/client'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
+import type { ShortcutCommand, ShortcutCommandId } from '@eco-agent/dsh-client-shortcuts/client'
+import type { SnapshotStore } from '@eco-agent/dsh-client-store'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import type { UiWorkspace } from './navigation.ts'
 
 /** Transient requests consumed by the existing workspace browser. */

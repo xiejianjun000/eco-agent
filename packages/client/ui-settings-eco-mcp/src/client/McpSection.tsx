@@ -6,10 +6,10 @@
  * 画成灰点，绝不用一个绿点假装连上了。
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { PluginInventorySnapshot } from '@deepseek-ai/dsh-api-remotes/client'
-import { Button, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PluginInventorySnapshot } from '@eco-agent/dsh-api-remotes/client'
+import { Button, StateDot, Tag } from '@eco-agent/dsh-client-ui-primitives'
+import type { StateDotState } from '@eco-agent/dsh-client-ui-primitives'
+import type { InjectFace, PropsRenderSlots } from '@eco-agent/dsh-client-ui-slots'
 import type { en } from './locales.ts'
 import styles from './McpSection.module.css'
 

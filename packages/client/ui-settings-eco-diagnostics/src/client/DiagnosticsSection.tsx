@@ -4,11 +4,11 @@
  * 计数全部来自运行时快照；拿不到的就写"读不到"，不补估算值。
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { ClientEntryState } from '@deepseek-ai/dsh-client-modules/client'
-import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
-import type { PluginInventorySnapshot } from '@deepseek-ai/dsh-api-remotes/client'
-import { Button, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ClientEntryState } from '@eco-agent/dsh-client-modules/client'
+import type { ObservableSnapshot } from '@eco-agent/dsh-client-store'
+import type { PluginInventorySnapshot } from '@eco-agent/dsh-api-remotes/client'
+import { Button, StateDot } from '@eco-agent/dsh-client-ui-primitives'
+import type { InjectFace, PropsRenderSlots } from '@eco-agent/dsh-client-ui-slots'
 import type { en } from './locales.ts'
 import styles from './DiagnosticsSection.module.css'
 

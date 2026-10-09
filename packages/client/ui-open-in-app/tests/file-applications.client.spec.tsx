@@ -2,7 +2,7 @@
 /** Shared association reads retain one native request until the last control leaves. */
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import type { SessionWorkspacePathApplication } from '@deepseek-ai/dsh-api-session-controller/types'
+import type { SessionWorkspacePathApplication } from '@eco-agent/dsh-api-session-controller/types'
 import { useFileApplications } from '../src/client/file-applications.ts'
 
 afterEach(cleanup)

@@ -7,20 +7,20 @@
  * Registrations outlive producer and controller fibers. Agent or service
  * disposal cancels live work and awaits compliant producers; a throwing
  * teardown cancel force-fails only the record and reports a possible orphan.
- * @module @deepseek-ai/dsh-jobs-local
+ * @module @eco-agent/dsh-jobs-local
  */
 
-import { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { ScopedLayers, scopeOf } from '@deepseek-ai/dsh-scope'
-import type { SessionId } from '@deepseek-ai/dsh-session'
-import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
-import { JobRegistry, JobId } from '@deepseek-ai/dsh-jobs'
+import { Context } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
+import type { Agent } from '@eco-agent/dsh-agent'
+import { ScopedLayers, scopeOf } from '@eco-agent/dsh-scope'
+import type { SessionId } from '@eco-agent/dsh-session'
+import { deadline, timeoutOf } from '@eco-agent/dsh-timeout'
+import { JobRegistry, JobId } from '@eco-agent/dsh-jobs'
 import type {
   JobAppendOptions, JobEvent, JobEvents, JobHandle, JobKind, JobOutcome, JobOutputRead, JobOutputSource,
   JobRead, JobSettleCause, JobSpec, JobStatus, JobView,
-} from '@deepseek-ai/dsh-jobs'
+} from '@eco-agent/dsh-jobs'
 import { JobEventHub, JobLayer } from './events.ts'
 import { startPump } from './pump.ts'
 import type { PumpHandle } from './pump.ts'
@@ -122,7 +122,7 @@ function isTerminal(status: JobStatus): boolean {
 
 /**
  * The in-memory `jobs` registry. See the Service Definition contract in
- * `@deepseek-ai/dsh-jobs` for the ownership, isolation, and lifecycle
+ * `@eco-agent/dsh-jobs` for the ownership, isolation, and lifecycle
  * semantics this implementation honors.
  */
 export class LocalJobRegistry extends JobRegistry {
@@ -206,7 +206,7 @@ export class LocalJobRegistry extends JobRegistry {
   start(spec: JobSpec): JobId {
     const owner = this.resolveOwner(spec.owner)
     if (!this.servesOwner(owner)) {
-      throw new Error('background jobs unavailable: no job controller serves this agent (load @deepseek-ai/dsh-tool-jobs in its composition)')
+      throw new Error('background jobs unavailable: no job controller serves this agent (load @eco-agent/dsh-tool-jobs in its composition)')
     }
     if (spec.kind.length === 0) throw new Error('invalid job kind: expected a non-empty string')
     if (spec.label.length === 0) throw new Error('invalid job label: expected a non-empty string')
@@ -358,7 +358,7 @@ export class LocalJobRegistry extends JobRegistry {
     if (session === undefined) return undefined
     const agents = this.selfCtx.get('agents')
     if (agents === undefined) {
-      throw new Error('background job ownership requires the agent registry (load @deepseek-ai/dsh-agent)')
+      throw new Error('background job ownership requires the agent registry (load @eco-agent/dsh-agent)')
     }
     const owner = agents.get(session)
     if (owner === undefined) {

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import {
   initProfile,
   createRuntimeResolution,
@@ -13,29 +13,29 @@ import {
   loadProfile,
   PluginPackages,
   type Profile,
-} from '@deepseek-ai/dsh-app-boot'
-import { provideCmdline } from '@deepseek-ai/dsh-cmdline'
-import { SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+} from '@eco-agent/dsh-app-boot'
+import { provideCmdline } from '@eco-agent/dsh-cmdline'
+import { SessionId, SessionLogOffset } from '@eco-agent/dsh-session'
+import type { Agent } from '@eco-agent/dsh-agent'
+import type { PatchOptions } from '@eco-agent/cordis-plugin-include'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { dump, load } from 'js-yaml'
-import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
-import { bundlePatchPaths, composeEntries } from '@deepseek-ai/dsh-app-boot'
+import { entryListSchema } from '@eco-agent/cordis-plugin-include'
+import { bundlePatchPaths, composeEntries } from '@eco-agent/dsh-app-boot'
 /** Profile entry ids whose volatile fields these scenarios edit through Settings. */
 const SETTINGS_NAMESPACE = 'agent-preset-registry'
 const SUBAGENT_MODEL_SELECTION_SETTINGS_NAMESPACE = 'subagent-model-selection-settings'
-import { applyChildComposition, childSessionMeta } from '@deepseek-ai/dsh-subagent'
-import { ToolCallId } from '@deepseek-ai/dsh-llm'
-import type {} from '@deepseek-ai/dsh-compaction-basic'
-import type {} from '@deepseek-ai/dsh-skill'
-import type {} from '@deepseek-ai/dsh-tools'
+import { applyChildComposition, childSessionMeta } from '@eco-agent/dsh-subagent'
+import { ToolCallId } from '@eco-agent/dsh-llm'
+import type {} from '@eco-agent/dsh-compaction-basic'
+import type {} from '@eco-agent/dsh-skill'
+import type {} from '@eco-agent/dsh-tools'
 // Type-only: resolves `ctx.get('sessionProjections')` and `ctx.get('tokenMeter')`.
-import type {} from '@deepseek-ai/dsh-session-projection'
-import type {} from '@deepseek-ai/dsh-token-meter'
+import type {} from '@eco-agent/dsh-session-projection'
+import type {} from '@eco-agent/dsh-token-meter'
 
 const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url))
-const { boot } = createRequire(import.meta.url)(join(REPO_ROOT, 'packages/boot/app-boot/lib/index.js')) as typeof import('@deepseek-ai/dsh-app-boot')
+const { boot } = createRequire(import.meta.url)(join(REPO_ROOT, 'packages/boot/app-boot/lib/index.js')) as typeof import('@eco-agent/dsh-app-boot')
 /** The shipped Web surface: the dsh-base and dsh-web-app bundle patches over an empty profile. */
 const BASE_PATCH = join(REPO_ROOT, 'packages/bundle/base/cordis.patch.yml')
 const WEB_BUNDLE = join(REPO_ROOT, 'packages/bundle/web-app')
@@ -113,8 +113,8 @@ async function bootWeb(
     // supplies `directoryPicker` without one.
     { id: 'directory-picker', disabled: true },
     { insert: [
-      { id: 'directory-picker-browse', name: '@deepseek-ai/dsh-host-directory-picker-browse' },
-      { id: 'ui-directory-picker-browse', name: '@deepseek-ai/dsh-client-ui-directory-picker-browse' },
+      { id: 'directory-picker-browse', name: '@eco-agent/dsh-host-directory-picker-browse' },
+      { id: 'ui-directory-picker-browse', name: '@eco-agent/dsh-client-ui-directory-picker-browse' },
     ] },
     { id: 'agent-preset-registry', config: { default: 'standard' } },
     ...extra,
@@ -122,7 +122,7 @@ async function bootWeb(
   const home = profileHome
   const profileDir = join(home, 'profiles', 'spec')
   await mkdir(profileDir, { recursive: true })
-  if (profileBundles === undefined) initProfile(profileDir, ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])
+  if (profileBundles === undefined) initProfile(profileDir, ['@eco-agent/dsh-base', '@eco-agent/dsh-web-app'])
   // Product Bundles are installed into the Profile, not the dsh app. Model
   // pnpm's package link for only the selected products; their own production
   // dependencies resolve from the linked workspace packages, while shared
@@ -168,7 +168,7 @@ async function bootWeb(
   return await boot('dsh-test', rootConfig, [...bundlePatches, ...overrides], async (bootCtx) => {
     bootCtx.provide('profileContext', { name: 'spec', dir: profileDir, patchPath: profile.patchPath,
       installAnchor: INSTALL_ANCHOR, home, cwd: home,
-      startedBundles: profileBundles ?? ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],
+      startedBundles: profileBundles ?? ['@eco-agent/dsh-base', '@eco-agent/dsh-web-app'],
       overlays: [], telemetryDisabledEnv: '1' })
     await bootCtx.plugin(PluginPackages, { resolution })
     bootCtx.provide('connection', {
@@ -193,7 +193,7 @@ function toolParameterNames(ctx: Context, agent: Agent, toolName: string): strin
 }
 
 function enablePresetTool(composition: string, id: string): string {
-  const rows = load(composition, { schema: entryListSchema }) as import('@deepseek-ai/cordis-plugin-loader').EntryOptions[]
+  const rows = load(composition, { schema: entryListSchema }) as import('@eco-agent/cordis-plugin-loader').EntryOptions[]
   const visit = (entries: typeof rows): boolean => entries.some((row) => {
     if (row.id === id) { row.disabled = false; return true }
     return row.group === true && visit(row.config as typeof rows)
@@ -544,8 +544,8 @@ describe('product Bundle and user-preset intersection', () => {
 
   async function bootProducts(installed: readonly Product[]): Promise<Context> {
     const root = await mkdtemp(join(tmpdir(), 'dsh-product-presets-'))
-    const definitions: import('@deepseek-ai/cordis-plugin-loader').EntryOptions[] = []
-    const standardConfig = composeEntries([webPatches('test')]).find(row => row.id === 'preset-standard')!.config as import('@deepseek-ai/dsh-agent-preset-registry').PresetDefinition
+    const definitions: import('@eco-agent/cordis-plugin-loader').EntryOptions[] = []
+    const standardConfig = composeEntries([webPatches('test')]).find(row => row.id === 'preset-standard')!.config as import('@eco-agent/dsh-agent-preset-registry').PresetDefinition
     const standard = dump(standardConfig.plugins, { schema: entryListSchema })
     for (const id of presetIds) {
       let composition = standard
@@ -555,19 +555,19 @@ describe('product Bundle and user-preset intersection', () => {
       if (id === 'products-claude' || id === 'products-both') {
         composition = enablePresetTool(composition, 'tool-subagent-claude-code')
       }
-      definitions.push({ id: `preset-${id}`, name: '@deepseek-ai/dsh-agent-preset', config: { id, plugins: load(composition, { schema: entryListSchema }) } })
+      definitions.push({ id: `preset-${id}`, name: '@eco-agent/dsh-agent-preset', config: { id, plugins: load(composition, { schema: entryListSchema }) } })
     }
     const packageDir = (product: Product): string => (
       product === 'codex' ? CODEX_PACKAGE_DIR : CLAUDE_CODE_PACKAGE_DIR
     )
     const packageName = (product: Product): string => (
       product === 'codex'
-        ? '@deepseek-ai/dsh-subagent-codex'
-        : '@deepseek-ai/dsh-subagent-claude-code'
+        ? '@eco-agent/dsh-subagent-codex'
+        : '@eco-agent/dsh-subagent-claude-code'
     )
     return await bootWeb(root, [{ insert: definitions }], installed.map(packageDir), [
-      '@deepseek-ai/dsh-base',
-      '@deepseek-ai/dsh-web-app',
+      '@eco-agent/dsh-base',
+      '@eco-agent/dsh-web-app',
       ...installed.map(packageName),
     ])
   }
@@ -634,13 +634,13 @@ describe('a user preset declared from the shipped cordis rows', () => {
 
   it('mounts beside the shipped `cordis` preset and reads the shared Host inspect providers', async () => {
     // The Host inspect providers are one process-global set registered by the
-    // host composition (`@deepseek-ai/dsh-tool-cordis/host`); each preset's
+    // host composition (`@eco-agent/dsh-tool-cordis/host`); each preset's
     // `tool-cordis` row only registers the tools. Before that split the copy
     // failed to mount: its row re-registered provider "Service".
     const root = await mkdtemp(join(tmpdir(), 'dsh-copied-preset-'))
-    const cordis = composeEntries([webPatches('test')]).find(row => row.id === 'preset-cordis')!.config as import('@deepseek-ai/dsh-agent-preset-registry').PresetDefinition
+    const cordis = composeEntries([webPatches('test')]).find(row => row.id === 'preset-cordis')!.config as import('@eco-agent/dsh-agent-preset-registry').PresetDefinition
     const copyCtx = await bootWeb(root, [{ insert: [{
-      id: 'preset-cordis-copy', name: '@deepseek-ai/dsh-agent-preset',
+      id: 'preset-cordis-copy', name: '@eco-agent/dsh-agent-preset',
       config: { ...cordis, id: 'cordis-copy', name: 'Cordis copy' },
     }] }])
     try {
@@ -706,7 +706,7 @@ describe('a user preset declared from the shipped cordis rows', () => {
           expect(page.isError, resultText(page)).toBe(false)
           return (JSON.parse(resultText(page)) as ConfigPage).data
         }
-        const toolsRows = await listConfigs({ name: '@deepseek-ai/dsh-tools' }, 'copied-preset-inspect-configs')
+        const toolsRows = await listConfigs({ name: '@eco-agent/dsh-tools' }, 'copied-preset-inspect-configs')
         const toolsRow = toolsRows.entries[0]
         expect(toolsRow).toMatchObject({ patchId: 'tools', status: 'schema' })
         expect(toolsRows).toMatchObject({ total: 1, nextOffset: null })

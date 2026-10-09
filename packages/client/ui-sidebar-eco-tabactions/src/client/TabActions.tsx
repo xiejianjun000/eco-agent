@@ -10,9 +10,9 @@
  */
 
 import type { ReactNode } from 'react'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import type { SidebarRightTabMenuOwnerProps } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
-import { parseFileAddress } from '@deepseek-ai/dsh-util-workspace-path'
+import type { PropsLocale } from '@eco-agent/dsh-client-ui-slots'
+import type { SidebarRightTabMenuOwnerProps } from '@eco-agent/dsh-client-ui-sidebar-right/client'
+import { parseFileAddress } from '@eco-agent/dsh-util-workspace-path'
 import { tabActions } from './actions-store.ts'
 import { flashNotice } from './notice.ts'
 import type { TabActionsKey } from './locales.ts'

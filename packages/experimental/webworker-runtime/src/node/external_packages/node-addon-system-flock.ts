@@ -1,5 +1,5 @@
 /**
- * Single-process worker replacement for `@deepseek-ai/node-addon-system/flock`.
+ * Single-process worker replacement for `@eco-agent/node-addon-system/flock`.
  * The JSONL backend's in-process write claim already excludes every writer,
  * so its kernel-lock request succeeds without acquiring another resource.
  */

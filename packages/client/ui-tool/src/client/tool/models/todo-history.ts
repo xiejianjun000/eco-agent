@@ -1,9 +1,9 @@
 /** Indexed recorded todo predecessors for root and nested Tool calls. */
-import type {} from '@deepseek-ai/dsh-tools/types'
-import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@eco-agent/dsh-tools/types'
+import type { Context } from '@eco-agent/cordis'
 import type {
   ConversationNodeDefinition, ConversationViewDefinition, ConversationViewNode, TodoItem,
-} from '@deepseek-ai/dsh-client-ui-conversation/client'
+} from '@eco-agent/dsh-client-ui-conversation/client'
 
 /** The durable list preceding one Tool invocation; absent before the first loaded write. */
 export interface TodoBaseline {
@@ -16,7 +16,7 @@ export interface TodoHistory {
   get(callId: string): TodoBaseline | undefined
 }
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@eco-agent/dsh-client-ui-conversation/client' {
   interface ConversationViewSnapshotMap {
     /** Recorded todo lists preceding each loaded todo call. */
     'tool-todo-history': TodoHistory

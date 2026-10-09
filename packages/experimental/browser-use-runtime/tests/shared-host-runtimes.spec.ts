@@ -22,7 +22,7 @@ interface Manifest {
 const manifestPath = fileURLToPath(new URL('../package.json', import.meta.url))
 
 /** Host runtimes whose module-local state must not be duplicated. */
-const SHARED_HOST_RUNTIMES = ['@deepseek-ai/dsh-mcp-client', '@deepseek-ai/dsh-scope'] as const
+const SHARED_HOST_RUNTIMES = ['@eco-agent/dsh-mcp-client', '@eco-agent/dsh-scope'] as const
 
 describe('profile installs share the installation host runtime instances', () => {
   it('declares every identity-bearing host runtime as a peer, never a dependency', async () => {

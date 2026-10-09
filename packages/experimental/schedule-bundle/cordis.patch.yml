@@ -7,10 +7,10 @@
 
 - insert:
     - id: time-context
-      name: '@deepseek-ai/dsh-time-context'
+      name: '@eco-agent/dsh-time-context'
 
     - id: schedule
-      name: '@deepseek-ai/dsh-schedule'
+      name: '@eco-agent/dsh-schedule'
 
     - id: ui-schedule
-      name: '@deepseek-ai/dsh-client-ui-schedule'
+      name: '@eco-agent/dsh-client-ui-schedule'

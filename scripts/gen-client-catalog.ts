@@ -453,7 +453,7 @@ export function renderClientCatalog(entries: readonly SlotEntry[]): string {
     ' * mounted for the seat to exist. Data only — this module is the one legitimate',
     ' * meeting point of the two planes, so it carries strings, never client imports.',
     ' *',
-    ' * @module @deepseek-ai/dsh-cordis-client-runner/client/slot-catalog',
+    ' * @module @eco-agent/dsh-cordis-client-runner/client/slot-catalog',
     ' */',
     '',
     '/* jscpd:ignore-start */',

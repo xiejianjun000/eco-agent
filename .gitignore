@@ -56,3 +56,18 @@ packages/session/**/src/**/*.js
 packages/session/**/src/**/*.js.map
 packages/session/**/src/**/*.d.ts
 packages/session/**/src/**/*.d.ts.map
+
+# 本地调试/构建临时产物（勿提交，避免污染 rescope 提交）
+/.dsh-web.log
+/.dsh-web2.log
+/.dsh-web3.log
+/.dsh-web4.log
+/apps/web/.http-server.log
+/apps/web/.vite-build.log
+/apps/web/.vite-build2.log
+/apps/web/.vite-build3.log
+/chrome154.log
+/edge.log
+/edge_cdp.log
+/dom.html
+/_tmp_11592_b92a8de9a085abd08166696b50584b19

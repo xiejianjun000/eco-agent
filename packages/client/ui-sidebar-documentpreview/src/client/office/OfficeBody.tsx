@@ -1,10 +1,10 @@
 /** Office presents retained conversion results and font notices around the shared PDF view. */
 import { useEffect, type ReactNode } from 'react'
-import type { PropsLocale, PropsRenderSlots, PropsStore, SlotHookFactory } from '@deepseek-ai/dsh-client-ui-slots'
-import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
-import { Button, FileTypeIcon, classifyFileType } from '@deepseek-ai/dsh-client-ui-primitives'
-import { pathPartsOf } from '@deepseek-ai/dsh-util-workspace-path'
-import type { UseSidebarRightTabInfo } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+import type { PropsLocale, PropsRenderSlots, PropsStore, SlotHookFactory } from '@eco-agent/dsh-client-ui-slots'
+import type { TabId } from '@eco-agent/dsh-client-ui-dockkit'
+import { Button, FileTypeIcon, classifyFileType } from '@eco-agent/dsh-client-ui-primitives'
+import { pathPartsOf } from '@eco-agent/dsh-util-workspace-path'
+import type { UseSidebarRightTabInfo } from '@eco-agent/dsh-client-ui-sidebar-right/client'
 import type { DocumentBodyOwner, DocumentPreviewProps } from '../document/contract.ts'
 import { hostFileOf } from '../rpc.ts'
 import { LoadingIndicator } from '../LoadingIndicator.tsx'
@@ -13,7 +13,7 @@ import type { OfficeStore } from './store.ts'
 import common from '../TextPreview.module.css'
 import css from './OfficeBody.module.css'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface SlotMap {
     /** PDF presentation supplied with Office-owned converted bytes. */
     'sidebar.right.tab.document.office.pdf': {
@@ -73,6 +73,6 @@ export function OfficeBody(props: OfficeBodyProps): ReactNode {
     {props.renderSlot('sidebar.right.tab.document.office.pdf', {
       resourceAddress, content: { kind: 'bytes', data: file.data }, wrap: props.wrap, scrollportRef: props.scrollportRef,
       addResource: props.addResource, setResources: props.setResources,
-    }, { entryKey: '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/office', hookContext: props.useTabInfo })}
+    }, { entryKey: '@eco-agent/dsh-client-ui-sidebar-documentpreview/office', hookContext: props.useTabInfo })}
   </div>
 }

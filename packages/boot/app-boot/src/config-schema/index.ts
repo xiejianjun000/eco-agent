@@ -1,6 +1,6 @@
 /** Profile schema generation: composition diagnostics, runtime resolution, and boot-free discovery. */
 
-import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import type { PatchOptions } from '@eco-agent/cordis-plugin-include'
 import { composeEntries, createRuntimeResolution, type Profile } from '../profile.ts'
 import { collectConfigSchemas } from './collect.ts'
 import type { ConfigSchemaDiagnostic, ConfigSchemaDump } from './types.ts'

@@ -3,7 +3,7 @@
  * `root` slot, which is the only ctx-level slot render in the application.
  */
 import type { ReactNode } from 'react'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 
 /** Inputs available after the UI renderer's inject set activates. */
 export interface AssemblyDeps {

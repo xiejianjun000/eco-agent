@@ -9,7 +9,7 @@
  * intent to Explorer: the shell's own default-application resolution, the one
  * a double-click uses, selects the application, while a process that resolves
  * the association itself reads a narrower record and reports none.
- * @module @deepseek-ai/dsh-native-command/path-opener
+ * @module @eco-agent/dsh-native-command/path-opener
  */
 
 import { release as osRelease } from 'node:os'

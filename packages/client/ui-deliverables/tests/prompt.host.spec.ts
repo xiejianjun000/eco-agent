@@ -1,9 +1,9 @@
 /** Node-half coverage for the model guidance paired with Web file references. */
 
 import { readFile } from 'node:fs/promises'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { afterEach, describe, expect, it } from 'vitest'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import SystemPrompt from '@eco-agent/dsh-system-prompt'
 import { apply, inject } from '../src/index.ts'
 
 let ctx: Context | undefined

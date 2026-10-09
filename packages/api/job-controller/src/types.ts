@@ -2,14 +2,14 @@
  * Wire types of the generated `job` Remote namespace: the per-session roster
  * stream, the per-job observation stream, and the human kill. Client-safe: no
  * Host imports.
- * @module @deepseek-ai/dsh-api-job-controller/types
+ * @module @eco-agent/dsh-api-job-controller/types
  */
 
-import type { JobId } from '@deepseek-ai/dsh-jobs/brand'
-import type { JobChunk, JobView } from '@deepseek-ai/dsh-jobs/view'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { JobId } from '@eco-agent/dsh-jobs/brand'
+import type { JobChunk, JobView } from '@eco-agent/dsh-jobs/view'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 
-export type { JobChunk, JobView } from '@deepseek-ai/dsh-jobs/view'
+export type { JobChunk, JobView } from '@eco-agent/dsh-jobs/view'
 
 /** Target of one `job.list` stream: the session whose visible jobs the stream mirrors. */
 export interface JobListRequest {
@@ -38,7 +38,7 @@ export interface JobKillValue {
   readonly outcome: 'requested' | 'already-finished'
 }
 
-declare module '@deepseek-ai/dsh-typert-protocol' {
+declare module '@eco-agent/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     /** The session's job list no longer carries a killable row under that id. */
     'job/not-found': { readonly sessionId: SessionId; readonly jobId: JobId }

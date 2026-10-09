@@ -3,7 +3,7 @@ description: "Manage the profile's plugin bundles, their rows, and the plugins' 
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-plugin-manager
+# @eco-agent/dsh-client-ui-plugin-manager
 
 English | [中文](README.zh.md)
 

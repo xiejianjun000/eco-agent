@@ -2,9 +2,9 @@
 /** Tool updates share the context disclosure while keeping names and counts readable. */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
-import { en as commonEn } from '@deepseek-ai/dsh-client-locale/src/locales/en.ts'
-import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
+import { makeTranslate } from '@eco-agent/dsh-client-test-runtime'
+import { en as commonEn } from '@eco-agent/dsh-client-locale/src/locales/en.ts'
+import { zh as commonZh } from '@eco-agent/dsh-client-locale/src/locales/zh.ts'
 import { ContextInjectionRow } from '../src/client/chat/ContextInjectionRow.tsx'
 import { en, zh } from '../src/client/locale.ts'
 

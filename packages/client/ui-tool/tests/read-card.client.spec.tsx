@@ -1,18 +1,18 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useDisclosure } from '@deepseek-ai/dsh-client-ui-chat/src/client/chat/use-disclosure.ts'
+import { useDisclosure } from '@eco-agent/dsh-client-ui-chat/src/client/chat/use-disclosure.ts'
 import { cleanup, fireEvent, render } from '@testing-library/react'
-import { Context } from '@deepseek-ai/cordis'
-import { bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
-import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
-import type { StartedToolCall, ToolResultNode } from '@deepseek-ai/dsh-client-ui-chat/client'
-import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import { Context } from '@eco-agent/cordis'
+import { bindSnapshotSelector, makeTranslate } from '@eco-agent/dsh-client-test-runtime'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
+import { zh as commonZh } from '@eco-agent/dsh-client-locale/src/locales/zh.ts'
+import type { StartedToolCall, ToolResultNode } from '@eco-agent/dsh-client-ui-chat/client'
+import type { SessionListState } from '@eco-agent/dsh-api-session-controller/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import { CHAT_READ_MAX_LINES, readCallLine, readCardModel } from '../src/client/tool/models/read-card-model.ts'
 import { GenericToolCard, type GenericToolCardProps } from '../src/client/tool/toolviews/GenericToolCard.tsx'
-import { zh } from '@deepseek-ai/dsh-client-ui-conversation/src/client/locales.ts'
+import { zh } from '@eco-agent/dsh-client-ui-conversation/src/client/locales.ts'
 import { ReadRow, readToolview } from '../src/client/tool/toolviews/read-row.tsx'
 
 afterEach(cleanup)

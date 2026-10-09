@@ -1,18 +1,18 @@
 /**
  * Package-owned relational invariants for the session event log. Load this
- * companion beside `@deepseek-ai/dsh-invariants` to enable the checks.
+ * companion beside `@eco-agent/dsh-invariants` to enable the checks.
  *
- * @module @deepseek-ai/dsh-session/invariant
+ * @module @eco-agent/dsh-session/invariant
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { ToolCallId } from '@deepseek-ai/dsh-llm'
-import type { InvariantFailure, InvariantInstaller } from '@deepseek-ai/dsh-invariants'
-import type { Session, SessionEvent, SessionSeqCursor } from '@deepseek-ai/dsh-session'
-import { assertNever } from '@deepseek-ai/dsh-util-values'
+import type { Context } from '@eco-agent/cordis'
+import type { ToolCallId } from '@eco-agent/dsh-llm'
+import type { InvariantFailure, InvariantInstaller } from '@eco-agent/dsh-invariants'
+import type { Session, SessionEvent, SessionSeqCursor } from '@eco-agent/dsh-session'
+import { assertNever } from '@eco-agent/dsh-util-values'
 import { TOOL_NOT_STARTED } from './repair.ts'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-session'
+const PACKAGE_NAME = '@eco-agent/dsh-session'
 
 /** Cordis companion plugin name. */
 export const name = 'session-invariant'

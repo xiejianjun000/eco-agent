@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-client-ui-sidebar-terminal",
+  "name": "@eco-agent/dsh-client-ui-sidebar-terminal",
   "description": "Interactive shell tabs for the right Sidebar",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -28,11 +28,11 @@
   "dsh": {
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-api-terminal-controller",
-        "@deepseek-ai/dsh-client-ui-sidebar-right",
-        "@deepseek-ai/dsh-api-remotes",
-        "@deepseek-ai/dsh-client-ui-theme",
-        "@deepseek-ai/dsh-client-shortcuts"
+        "@eco-agent/dsh-api-terminal-controller",
+        "@eco-agent/dsh-client-ui-sidebar-right",
+        "@eco-agent/dsh-api-remotes",
+        "@eco-agent/dsh-client-ui-theme",
+        "@eco-agent/dsh-client-shortcuts"
       ],
       "platform": "web"
     }
@@ -43,34 +43,34 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-api-remotes": "workspace:*",
-    "@deepseek-ai/dsh-client-locale": "workspace:*",
-    "@deepseek-ai/dsh-client-store": "workspace:*",
-    "@deepseek-ai/dsh-client-test-runtime": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-dockkit": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-primitives": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-renderer": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-session": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-sidebar-right": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-slots": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-api-remotes": "workspace:*",
+    "@eco-agent/dsh-client-locale": "workspace:*",
+    "@eco-agent/dsh-client-store": "workspace:*",
+    "@eco-agent/dsh-client-test-runtime": "workspace:*",
+    "@eco-agent/dsh-client-ui-dockkit": "workspace:*",
+    "@eco-agent/dsh-client-ui-primitives": "workspace:*",
+    "@eco-agent/dsh-client-ui-renderer": "workspace:*",
+    "@eco-agent/dsh-client-ui-session": "workspace:*",
+    "@eco-agent/dsh-client-ui-sidebar-right": "workspace:*",
+    "@eco-agent/dsh-client-ui-slots": "workspace:*",
+    "@eco-agent/dsh-session": "workspace:*",
     "@testing-library/react": "^16.1.0",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.0",
     "react": "^18.2.0",
     "clsx": "^2.0.0",
     "react-dom": "^18.2.0",
-    "@deepseek-ai/dsh-api-terminal-controller": "workspace:*",
+    "@eco-agent/dsh-api-terminal-controller": "workspace:*",
     "@xterm/xterm": "^6.0.0",
     "@xterm/addon-fit": "^0.11.0",
-    "@deepseek-ai/dsh-client-ui-layout": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-conversation": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-theme": "workspace:*",
-    "@deepseek-ai/dsh-client-shortcuts": "workspace:*"
+    "@eco-agent/dsh-client-ui-layout": "workspace:*",
+    "@eco-agent/dsh-client-ui-conversation": "workspace:*",
+    "@eco-agent/dsh-client-ui-theme": "workspace:*",
+    "@eco-agent/dsh-client-shortcuts": "workspace:*"
   },
   "files": [
     "lib/index.js",

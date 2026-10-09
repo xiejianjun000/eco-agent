@@ -1,9 +1,9 @@
 /** Resumable desktop onboarding and preference application over Host settings. */
-import type { TranscriptViewMode } from '@deepseek-ai/dsh-client-ui-chat/client'
-import { createSnapshotStore, shallowEqual } from '@deepseek-ai/dsh-client-store'
+import type { TranscriptViewMode } from '@eco-agent/dsh-client-ui-chat/client'
+import { createSnapshotStore, shallowEqual } from '@eco-agent/dsh-client-store'
 import { hasOnboardingCredit } from './onboarding-balance.ts'
-import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
-import type { SettingsDescribeFace, ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { HostObservable } from '@eco-agent/dsh-client-ui-slots'
+import type { SettingsDescribeFace, ConfigForm } from '@eco-agent/dsh-client-ui-settings/client'
 import type { OnboardingProgress, OnboardingSettings } from '../onboarding-settings.ts'
 import type { AccountSnapshot } from './AccountSection.tsx'
 import type { DesktopOnboardingState, OnboardingChange } from './onboarding-contract.ts'

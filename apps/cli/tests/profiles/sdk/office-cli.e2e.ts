@@ -33,7 +33,7 @@ it.skipIf(!process.env.DEEPSEEK_API_KEY || process.platform === 'win32')(`agent 
       ...(process.env.DSH_OFFICE_TEST_API === 'openai-completions' ? [{ id: 'llm-deepseek', disabled: true }, { id: 'llm-pi-ai', config: { providers: { 'office-test': { api: 'openai-completions', apiKeyEnv: 'DEEPSEEK_API_KEY', baseURL: process.env.DEEPSEEK_BASE_URL, compat: { thinkingFormat: 'deepseek' }, models: [{ id: process.env.MODEL_NAME ?? 'deepseek-v4-flash', contextWindow: 128000, maxTokens: 8000 }] } } } }] : []),
       { id: 'session-persistence-jsonl', config: { root: join(root, 'sessions'), compression: 'none' } },
       ...carrier === 'sdk' ? [] : [{ insert: [{
-        id: 'office-cli-discovery', name: '@deepseek-ai/dsh-skill-office', config: {
+        id: 'office-cli-discovery', name: '@eco-agent/dsh-skill-office', config: {
           ...(process.env.DSH_OFFICE_TEST_NODE ? { node: process.env.DSH_OFFICE_TEST_NODE } : {}),
           ...(process.env.DSH_OFFICE_TEST_CLI ? { cli: process.env.DSH_OFFICE_TEST_CLI } : {}),
           ...(process.env.DSH_OFFICE_TEST_ASSETS ? { assetRoot: process.env.DSH_OFFICE_TEST_ASSETS } : {}),

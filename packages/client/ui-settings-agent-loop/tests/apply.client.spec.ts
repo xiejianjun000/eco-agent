@@ -1,12 +1,12 @@
 /** What the browser half registers, when, and that it all leaves with the fiber. */
 
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { describe, expect, it, vi } from 'vitest'
-import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { RemoteError, TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
-import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
-import { apply as settingsApply, inject as settingsInject } from '@deepseek-ai/dsh-client-ui-settings/client'
+import { resolveSlotLabel } from '@eco-agent/dsh-client-ui-slots'
+import { SlotRegistry } from '@eco-agent/dsh-client-ui-renderer/client'
+import { RemoteError, TestRemote } from '@eco-agent/dsh-client-test-runtime'
+import { LocaleRuntime } from '@eco-agent/dsh-client-locale/client'
+import { apply as settingsApply, inject as settingsInject } from '@eco-agent/dsh-client-ui-settings/client'
 import { apply, inject, NS } from '../src/client/index.ts'
 import type { AgentLoopCardFace } from '../src/client/index.ts'
 import { apply as hostApply } from '../src/index.ts'

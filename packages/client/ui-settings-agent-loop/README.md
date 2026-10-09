@@ -3,7 +3,7 @@ description: "The agent loop's settings page on the dsh web client's Plugins pag
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-settings-agent-loop
+# @eco-agent/dsh-client-ui-settings-agent-loop
 
 English | [中文](README.zh.md)
 

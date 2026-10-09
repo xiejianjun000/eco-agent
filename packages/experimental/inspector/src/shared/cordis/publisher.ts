@@ -1,6 +1,6 @@
 /** Shared Host/Client publication of browser-safe Cordis snapshots. */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import { CORDIS_TREE_TOPIC } from '../bridge/messages/cordis.ts'
 import type { InspectorStatePublisher } from '../bridge/publisher.ts'
 import type { InspectorJsonValue } from '../json.ts'

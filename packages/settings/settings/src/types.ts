@@ -1,7 +1,7 @@
 /** Client-safe configuration form views and change notifications. */
 
-import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import type { Branded } from '@eco-agent/dsh-brand'
+import type { JsonValue } from '@eco-agent/dsh-util-values'
 
 /** Nominal id of one profile plugin entry. */
 export type SettingsNamespace = Branded<'SettingsNamespace'>
@@ -63,7 +63,7 @@ export interface SettingsDescribeValue {
   namespaces: SettingsNamespaceView[]
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Events {
     /**
      * One profile entry's form values, availability, or page policy changed.

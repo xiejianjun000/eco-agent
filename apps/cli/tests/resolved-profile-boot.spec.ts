@@ -3,18 +3,18 @@ import { lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
-import { createLaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
+import { Context } from '@eco-agent/cordis'
+import { createLaunchEnvironmentSnapshot } from '@eco-agent/dsh-launch-environment'
 import {
   boot, composeEntries, createRuntimeResolution,
   PluginPackages, type Profile,
-} from '@deepseek-ai/dsh-app-boot'
-import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
+} from '@eco-agent/dsh-app-boot'
+import { installProxyFromEnvironment } from '@eco-agent/dsh-http-proxy'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { runProfile } from '../src/profile-boot.ts'
 
-vi.mock('@deepseek-ai/dsh-app-boot', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@deepseek-ai/dsh-app-boot')>()
+vi.mock('@eco-agent/dsh-app-boot', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@eco-agent/dsh-app-boot')>()
   return {
     ...actual,
     boot: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock('@deepseek-ai/dsh-app-boot', async (importOriginal) => {
     installFailLoud: vi.fn(),
   }
 })
-vi.mock('@deepseek-ai/dsh-http-proxy', () => ({ installProxyFromEnvironment: vi.fn() }))
+vi.mock('@eco-agent/dsh-http-proxy', () => ({ installProxyFromEnvironment: vi.fn() }))
 
 const homes: string[] = []
 afterEach(() => {

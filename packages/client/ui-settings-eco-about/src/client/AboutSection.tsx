@@ -3,7 +3,7 @@
  * 从哪拿源码、在哪提问题。
  */
 import type { ReactNode } from 'react'
-import type { InjectFace, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsRenderSlots } from '@eco-agent/dsh-client-ui-slots'
 import type { en } from './locales.ts'
 import styles from './AboutSection.module.css'
 

@@ -15,12 +15,12 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime from '@deepseek-ai/dsh-tools'
-import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import * as toolFsSearch from '@deepseek-ai/dsh-tool-fs-search'
+import { Context } from '@eco-agent/cordis'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import SystemPrompt from '@eco-agent/dsh-system-prompt'
+import ToolRuntime from '@eco-agent/dsh-tools'
+import LocalSubprocessRuntime from '@eco-agent/dsh-subprocess-local'
+import * as toolFsSearch from '@eco-agent/dsh-tool-fs-search'
 
 describe('dsh-tool-fs-search real-load-path guard', () => {
   it('has no default export and keeps name/inject/Config through unwrapExports', () => {

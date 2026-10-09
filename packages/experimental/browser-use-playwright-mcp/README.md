@@ -3,7 +3,7 @@ description: "Operate Chromium through Playwright MCP with separate browser stat
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-browser-use-playwright-mcp
+# @eco-agent/dsh-experimental-browser-use-playwright-mcp
 
 English | [中文](README.zh.md)
 
@@ -28,8 +28,8 @@ Use Playwright MCP to inspect pages and operate Chromium through its upstream to
 Mount both entries before creating or resuming a Session, in a profile composition that supplies Agents, tools, and system prompts. Loading or reloading this provider does not adopt Sessions that are already active. Browser installation follows the upstream runtime; select an existing Chromium installation with `executablePath`.
 
 ```yaml
-- name: '@deepseek-ai/dsh-browser-use'
-- name: '@deepseek-ai/dsh-experimental-browser-use-playwright-mcp'
+- name: '@eco-agent/dsh-browser-use'
+- name: '@eco-agent/dsh-experimental-browser-use-playwright-mcp'
   config:
     mode: launch
     headless: true

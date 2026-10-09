@@ -3,7 +3,7 @@ description: "Experimental Chrome DevTools inspection for Host and browser Clien
 kind: "package-bundle"
 ---
 
-# @deepseek-ai/dsh-experimental-inspector
+# @eco-agent/dsh-experimental-inspector
 
 English | [中文](README.zh.md)
 
@@ -11,7 +11,7 @@ English | [中文](README.zh.md)
 
 Inspect one running dsh Host and its browser Clients in Chrome DevTools: Host and Client Console contexts, Host Sources and debugging, captured Host fetches, and a shared Cordis tree, with all CDP state in a Worker.
 
-The Inspector stays off the default plugin list. Install its bundle explicitly with `dsh plugin --profile web add @deepseek-ai/dsh-experimental-inspector`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the installed package; `pnpm run demo:inspector` mounts the source tree. The Host row needs a Web server. The Worker never accesses live Cordis objects: the shared collector projects them into validated snapshots before transport.
+The Inspector stays off the default plugin list. Install its bundle explicitly with `dsh plugin --profile web add @eco-agent/dsh-experimental-inspector`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the installed package; `pnpm run demo:inspector` mounts the source tree. The Host row needs a Web server. The Worker never accesses live Cordis objects: the shared collector projects them into validated snapshots before transport.
 
 ## Table of Contents
 
@@ -82,8 +82,8 @@ The Host logs a `devtools://` URL after the Worker listens. The same Worker serv
 Both plugin faces provide the same service:
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import type { InspectorJsonValue } from '@deepseek-ai/dsh-experimental-inspector'
+import type { Context } from '@eco-agent/cordis'
+import type { InspectorJsonValue } from '@eco-agent/dsh-experimental-inspector'
 
 declare const ctx: Context
 declare const topic: string

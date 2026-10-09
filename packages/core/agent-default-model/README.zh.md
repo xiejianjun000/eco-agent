@@ -3,7 +3,7 @@ description: "面向用户与维护者的部署默认模型选择说明，用于
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-agent-default-model
+# @eco-agent/dsh-agent-default-model
 
 [English](README.md) | 中文
 
@@ -32,7 +32,7 @@ kind: "package-reference"
 组合要求提供 provider 和模型。即使没有挂载配置编辑器，消费者也可读取即时引用。
 
 ```yaml
-- name: '@deepseek-ai/dsh-agent-default-model'
+- name: '@eco-agent/dsh-agent-default-model'
   config:
     provider: deepseek
     model: deepseek-chat

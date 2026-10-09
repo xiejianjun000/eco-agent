@@ -3,7 +3,7 @@ description: "Inspect and edit live plugin configuration through Config-derived 
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-settings
+# @eco-agent/dsh-settings
 
 English | [中文](README.zh.md)
 
@@ -27,7 +27,7 @@ Mount this plugin with Loader and [config-editor](../../boot/config-editor/READM
 
 ```yaml
 - id: settings
-  name: '@deepseek-ai/dsh-settings'
+  name: '@eco-agent/dsh-settings'
 ```
 
 This plugin has no configuration fields. Forms expose only volatile fields from active, uniquely addressed profile entries. Ordinary configuration remains editable through Cordis configuration files.

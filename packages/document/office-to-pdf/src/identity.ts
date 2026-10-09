@@ -1,5 +1,5 @@
 /** Source locators and converter-owned identities for shared PDF reuse. */
-import { brandString, type Branded } from '@deepseek-ai/dsh-brand'
+import { brandString, type Branded } from '@eco-agent/dsh-brand'
 
 /** Authorized execution scope and canonical source path, encoded by the consumer. */
 export type OfficeSourceKey = Branded<'OfficeSourceKey'>

@@ -5,13 +5,13 @@
  * signal. A provider timeout remains a backstop for direct service callers.
  */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import TurndownService from 'turndown'
 import { gfm } from '@joplin/turndown-plugin-gfm'
-import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { GenericCallView, ToolResult, WebFetchResultView } from '@deepseek-ai/dsh-tools'
-import type { WebFetchBody, WebFetchResult } from '@deepseek-ai/dsh-web'
-import { assertNever, type JsonValue } from '@deepseek-ai/dsh-util-values'
+import { defineTool } from '@eco-agent/dsh-tools'
+import type { GenericCallView, ToolResult, WebFetchResultView } from '@eco-agent/dsh-tools'
+import type { WebFetchBody, WebFetchResult } from '@eco-agent/dsh-web'
+import { assertNever, type JsonValue } from '@eco-agent/dsh-util-values'
 import { EXTERNAL_WEB_CONTENT_NOTICE } from './trust.ts'
 
 /**
@@ -98,7 +98,7 @@ turndown.addRule('tableRowWithoutSpanExpansion', {
  * Validate value constraints the schema DSL can't express: a non-blank `url`.
  * Throws a plain `Error` otherwise. No timeout parameter — the tool-call budget
  * is deployment policy declared via `fetchTimeoutMs` config and enforced by
- * `@deepseek-ai/dsh-tool-call-timeout-policy`, not a model argument.
+ * `@eco-agent/dsh-tool-call-timeout-policy`, not a model argument.
  *
  * @param args - the schema-validated `web_fetch` arguments.
  * @returns the arguments as the seam's request fields.
@@ -440,7 +440,7 @@ export function presentFetchResult(args: { url: string }, result: ToolResult): W
  * @param ctx - context whose `tools` and `systemPrompt` registries receive the
  *   registrations; both are effect-scoped and unregister on plugin dispose.
  * @param timeoutMs - the cooperative tool-call budget (ms) attached as the tool's
- *   `ToolDefinition.timeoutMs` for `@deepseek-ai/dsh-tool-call-timeout-policy` to enforce.
+ *   `ToolDefinition.timeoutMs` for `@eco-agent/dsh-tool-call-timeout-policy` to enforce.
  * @param maxOutputChars - cap on the complete rendered tool output (see
  *   {@link formatFetchOutput}) and on source characters converted synchronously.
  */

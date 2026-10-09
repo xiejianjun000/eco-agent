@@ -7,7 +7,7 @@ These tests boot the real web composition in-process and drive it with real brow
 After installing workspace dependencies, install the browsers and their system dependencies from the repository root:
 
 ```sh
-pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install --with-deps chromium webkit
+pnpm --filter @eco-agent/dsh-web-frontend exec playwright install --with-deps chromium webkit
 ```
 
 On Linux, `--with-deps` installs dependencies through the system package manager. The persistent CI VM must provide these dependencies through image maintenance; CI installs only the browser binaries, as required by the [failover runbook](../../../.agents/notes/implemented/process/2026-07-26-ci-failover-runbook.md).
@@ -26,7 +26,7 @@ They type-check in the root `tsconfig.host.json`, not in the Client aggregate, b
 
 ## Do not import `@deepseek-ai/dsh-client-*` here
 
-Importing a Client package — a value or a type — pulls its whole TypeScript project, and every project it references, into the **Host build graph**. That has bitten this lane once already: four Client consumer packages reference `api/remotes`' Client face, which cannot compile until Host tsdown has generated `@deepseek-ai/dsh-goal/remote`, so the Host build phase ended up waiting on an artifact it produces itself.
+Importing a Client package — a value or a type — pulls its whole TypeScript project, and every project it references, into the **Host build graph**. That has bitten this lane once already: four Client consumer packages reference `api/remotes`' Client face, which cannot compile until Host tsdown has generated `@eco-agent/dsh-goal/remote`, so the Host build phase ended up waiting on an artifact it produces itself.
 
 When a scenario needs a Client-owned constant or pure function, mirror it here instead, next to the commented-out import that names the source module. A drift then surfaces as a missed selector or a stale mirrored value — a loud failure, never a silent pass. `scaffold.ts` follows this rule for the welcome-notice namespace, acknowledgement field, version, and asserted Chinese copy.
 

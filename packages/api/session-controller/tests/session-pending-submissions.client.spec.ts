@@ -5,12 +5,12 @@
  */
 
 import { afterEach, describe, expect, vi } from 'vitest'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { FileAttachmentRef, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
-import { SessionSeq, type SessionEvent } from '@deepseek-ai/dsh-session/types'
-import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
-import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import { createClientTest, webApp } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
+import { createUserMessage } from '@eco-agent/dsh-llm'
+import type { FileAttachmentRef, ImageAttachmentRef } from '@eco-agent/dsh-attachment'
+import { SessionSeq, type SessionEvent } from '@eco-agent/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-api-remotes/client'
+import { RemoteError } from '@eco-agent/dsh-typert-protocol'
+import { createClientTest, webApp } from '@eco-agent/dsh-client-test-runtime/src/assembly/index.ts'
 import type { PendingSubmissionRetirement } from '../src/client/contract/session.ts'
 import type { SessionRequestId } from '../src/types.ts'
 import { ev, historyValue } from './event-script.client.ts'
@@ -20,7 +20,7 @@ import {
 } from './remote/session.client.ts'
 
 /** A Session talks through the Gateway client; its dependency cone is the Typert registry and the Connection. */
-const API_ROSTER = webApp.closure(['@deepseek-ai/dsh-api-gateway'])
+const API_ROSTER = webApp.closure(['@eco-agent/dsh-api-gateway'])
 const it = createClientTest({ roster: API_ROSTER })
 const SID = 'fk-s1' as SessionId
 /** The first client boot pays the cold module transform of the api cone. */

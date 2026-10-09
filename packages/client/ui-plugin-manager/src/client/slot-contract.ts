@@ -16,8 +16,8 @@
  * all. The page draws the title, icon, and crumb itself.
  */
 
-import type {} from '@deepseek-ai/dsh-client-ui-slots'
-import type { ConfigForm, ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-slots'
+import type { ConfigForm, ConfigFormSnapshot } from '@eco-agent/dsh-client-ui-settings/client'
 
 /** The view the page asks a configuration entry for. */
 export interface PluginConfigViewProps {
@@ -72,7 +72,7 @@ export interface PluginActivationOwnerProps {
   readonly onOpenDetails: () => void
 }
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface SlotMap {
     /** Optional guidance after the user enables a bundle from the list, keyed by npm package name. */
     'plugins.bundle.activation': { kind: 'keyed'; scope: 'root'; owner: PluginActivationOwnerProps }

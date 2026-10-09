@@ -1,6 +1,6 @@
 /** Bind independent disclosure state to a Chat seat's reset source. */
 import { useCallback, useState, useSyncExternalStore } from 'react'
-import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
+import type { ObservableSnapshot } from '@eco-agent/dsh-client-store'
 import type { UseDisclosure } from '../contract/slots.ts'
 
 /**

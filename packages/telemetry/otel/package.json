@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-otel",
+  "name": "@eco-agent/dsh-otel",
   "description": "Cordis service for independent ordinary-event and byte-bounded Session-log OTLP channels",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -37,11 +37,11 @@
     "got": "^14.6.6"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-session": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-session": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-session": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-session": "workspace:*"
   }
 }

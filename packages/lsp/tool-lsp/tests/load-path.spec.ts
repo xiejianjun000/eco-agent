@@ -6,8 +6,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import * as toolLsp from '@deepseek-ai/dsh-tool-lsp'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import * as toolLsp from '@eco-agent/dsh-tool-lsp'
 
 describe('dsh-tool-lsp Loader export-shape guard', () => {
   it('has no default export and keeps name/inject/Config through unwrapExports', () => {

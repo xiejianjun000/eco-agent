@@ -1,7 +1,7 @@
 /** Browser-safe formatting shared by Session and Host reminder catalogs. */
-import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ScheduleRecord } from '@deepseek-ai/dsh-schedule/client'
-import { assertNever } from '@deepseek-ai/dsh-util-values'
+import type { Translate } from '@eco-agent/dsh-client-ui-slots'
+import type { ScheduleRecord } from '@eco-agent/dsh-schedule/client'
+import { assertNever } from '@eco-agent/dsh-util-values'
 import type { CronDescriptionKey } from './task-cron.ts'
 import { cronPreview, parseCronExpression } from './task-cron.ts'
 

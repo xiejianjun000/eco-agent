@@ -4,13 +4,13 @@
  * 默认在 bundle 的 cordis 配置里 disabled：开源自部署版没有账号体系。正式应用版
  * 启用时只需删掉那一行的 `disabled: true`。
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls the settings.section slot.
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
 // Type-only: pulls ctx.locale.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls ctx.slots (SlotRegistry) merge.
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 import { AccountSection } from './AccountSection.tsx'
 import type { AccountSectionInjected } from './AccountSection.tsx'
 import { en, zh, type AccountKey } from './locales.ts'
@@ -18,7 +18,7 @@ import { en, zh, type AccountKey } from './locales.ts'
 export type { AccountKey } from './locales.ts'
 export type { AccountSectionInjected, AccountSectionProps } from './AccountSection.tsx'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** 「账号与身份」页面 copy。 */
     'settings.ecoAccount': AccountKey

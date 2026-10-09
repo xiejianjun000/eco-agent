@@ -1,7 +1,7 @@
 /** Released V3 plugin-source conversion and declared message traversal. */
 
-import { SessionFormatError, isSessionFormatJsonObject } from '@deepseek-ai/dsh-session-format'
-import type { SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatError, isSessionFormatJsonObject } from '@eco-agent/dsh-session-format'
+import type { SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@eco-agent/dsh-session-format'
 
 /**
  * Visit only messages carried by first-party event payloads.
@@ -41,7 +41,7 @@ const RENAMED_PRODUCERS: Readonly<Record<string, string>> = Object.freeze({
   'tools-code-mode': 'ptc-mode',
   'tools-ptc': 'ptc-mode',
   'dsh-compaction-basic': 'compact-basic',
-  '@deepseek-ai/dsh-system-prompt': 'runtime-context',
+  '@eco-agent/dsh-system-prompt': 'runtime-context',
 })
 
 /** First-party V3 plugin identities that intentionally keep their current kind. */
@@ -57,7 +57,7 @@ const RELEASED_SAME_NAME_PRODUCERS: ReadonlySet<string> = new Set([
 
 /** Resolve the current producer kind for one released V3 plugin string. */
 function producerKind(plugin: string, role: SessionFormatJsonValue | undefined): string {
-  if (plugin === '@deepseek-ai/dsh-system-prompt' && role === 'system') return 'system-prompt'
+  if (plugin === '@eco-agent/dsh-system-prompt' && role === 'system') return 'system-prompt'
   const renamed = Object.hasOwn(RENAMED_PRODUCERS, plugin) ? RENAMED_PRODUCERS[plugin] : undefined
   if (renamed !== undefined) return renamed
   if (RELEASED_SAME_NAME_PRODUCERS.has(plugin)) return plugin

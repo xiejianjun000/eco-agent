@@ -19,10 +19,10 @@ Declaring a child has three effects: it makes the child key live, authorizes tha
 Registrations and declarations follow Cordis effect lifetimes. Disposing an entry removes its contribution and recursively collapses the child slots it declared. A feature that contributes into another package's slot therefore uses `ctx.slots.inject(key, callback)`: the callback runs for each declaration lifetime, its effects are removed when the owner collapses, and it runs again if the owner is mounted again.
 
 ```tsx ignore-check
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type {} from '@deepseek-ai/dsh-client-ui-session/client'
-import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { Context } from '@eco-agent/cordis'
+import type {} from '@eco-agent/dsh-client-ui-conversation/client'
+import type {} from '@eco-agent/dsh-client-ui-session/client'
+import type { PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
 
 type HeaderActionProps = PropsRuntime<'conversation.session.header.actions'>
 

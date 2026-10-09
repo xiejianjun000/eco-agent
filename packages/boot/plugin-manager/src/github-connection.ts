@@ -2,7 +2,7 @@
 import { mkdir, mkdtemp, open } from 'node:fs/promises'
 import { join } from 'node:path'
 import { execa } from 'execa'
-import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
+import { scrubbedParentEnv } from '@eco-agent/dsh-subprocess'
 import { classifyInstallFailure } from './install-failure.ts'
 import type { ParsedInstallSpec } from './install-spec.ts'
 import type { PackageResult } from './types.ts'

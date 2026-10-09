@@ -3,7 +3,7 @@ description: "通过 Stagehand 原生浏览器操作与显式配置的模型推�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-browser-use-stagehand-native
+# @eco-agent/dsh-experimental-browser-use-stagehand-native
 
 [English](README.md) | 中文
 
@@ -30,8 +30,8 @@ kind: "package-reference"
 ### 最小配置
 
 ```yaml
-- name: '@deepseek-ai/dsh-browser-use'
-- name: '@deepseek-ai/dsh-experimental-browser-use-stagehand-native'
+- name: '@eco-agent/dsh-browser-use'
+- name: '@eco-agent/dsh-experimental-browser-use-stagehand-native'
   config:
     mode: launch
     headless: true

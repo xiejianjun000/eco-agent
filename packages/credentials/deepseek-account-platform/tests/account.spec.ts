@@ -1,16 +1,16 @@
 import { createHash } from 'node:crypto'
 import { afterEach, expect, it, vi } from 'vitest'
-import { Context, Service } from '@deepseek-ai/cordis'
+import { Context, Service } from '@eco-agent/cordis'
 import { mkdtemp, rm, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { createServer as createTcpServer, connect, Socket } from 'node:net'
 import { join } from 'node:path'
 import { createServer, IncomingMessage, ServerResponse } from 'node:http'
-import WebServer from '@deepseek-ai/dsh-host-webserver'
-import AuthorizationService from '@deepseek-ai/dsh-authorization'
-import type { AccountClientMetadata } from '@deepseek-ai/dsh-deepseek-account'
-import { LocalCredentialProvider } from '@deepseek-ai/dsh-credentials-local'
-import { credentialKey, credentialRef } from '@deepseek-ai/dsh-credentials'
+import WebServer from '@eco-agent/dsh-host-webserver'
+import AuthorizationService from '@eco-agent/dsh-authorization'
+import type { AccountClientMetadata } from '@eco-agent/dsh-deepseek-account'
+import { LocalCredentialProvider } from '@eco-agent/dsh-credentials-local'
+import { credentialKey, credentialRef } from '@eco-agent/dsh-credentials'
 import { Config, PlatformAccount } from '../src/index.ts'
 import { browserUrl, platformHeaders, platformOrigin, loginOrigin } from '../src/protocol.ts'
 
@@ -1095,7 +1095,7 @@ it('returns no credentials when signed out or disposed', async () => {
   const f = await fixture()
   expect(await f.account.resolveToken('https://api.deepseek.com')).toBeUndefined()
   expect(await f.account.getPlatformSession()).toBeNull()
-  await f.account.cancelSignIn('missing' as import('@deepseek-ai/dsh-deepseek-account').SignInAttemptId)
+  await f.account.cancelSignIn('missing' as import('@eco-agent/dsh-deepseek-account').SignInAttemptId)
   await f.dispose()
   expect(await f.account.getProfile(clientMetadata())).toBeNull()
   expect(await f.account.getPlatformSession()).toBeNull()

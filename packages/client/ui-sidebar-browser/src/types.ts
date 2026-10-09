@@ -1,5 +1,5 @@
 /** Type-only Electron bridge declarations shared by the desktop shell and browser provider. */
-import type { Branded } from '@deepseek-ai/dsh-brand'
+import type { Branded } from '@eco-agent/dsh-brand'
 
 /** Main-issued identity of one guest reservation. */
 export type DesktopBrowserLeaseId = Branded<'DesktopBrowserLeaseId'>

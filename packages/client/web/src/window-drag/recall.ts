@@ -17,7 +17,7 @@
  * long as any box keeps changing. Each frame that changed sets the recall mark, and
  * the frame that finds the same geometry clears it and stops once the short grace
  * window below has passed: that clear is the collection the steady state comes from.
- * @module @deepseek-ai/dsh-client-web/src/window-drag/recall
+ * @module @eco-agent/dsh-client-web/src/window-drag/recall
  */
 import { DRAG_MARK, RECALL_MARK } from './regions.ts'
 

@@ -38,7 +38,7 @@ function fixture() {
     writeFileSync(join(root, path), content)
   }
   write('package.json', '{"name":"isolation-fixture","type":"module"}')
-  write('apps/web/package.json', '{"name":"@deepseek-ai/dsh-web-frontend","type":"module"}')
+  write('apps/web/package.json', '{"name":"@eco-agent/dsh-web-frontend","type":"module"}')
   write('apps/web/index.html', '<script type="module" src="/src/main.js"></script>')
   write('apps/web/src/main.js', 'globalThis.product = true')
   write('apps/web/src/preview.js', 'import "../../../packages/experimental/prototype/index.js"')

@@ -4,7 +4,7 @@
  * cancelled on disposal. Each store decides what a response means and which
  * states a later request reads again.
  */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
 
 /** What one store makes of its reads. */
 export interface HostReadPolicy<T> {

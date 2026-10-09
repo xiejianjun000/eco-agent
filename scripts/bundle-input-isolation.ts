@@ -35,7 +35,7 @@ export class BundleInputIsolation {
   }
 
   private checkInput(id: string, allowMissing: boolean): void {
-    if (/(?:^|[/:\u0000])@deepseek-ai\/dsh-experimental-[^/?#]+/.test(id)) {
+    if (/(?:^|[/:\u0000])@eco-agent\/dsh-experimental-[^/?#]+/.test(id)) {
       throw new Error(`${this.label}: experimental input ${id}`)
     }
     const file = physicalBundleInput(id)

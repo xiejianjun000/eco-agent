@@ -4,60 +4,60 @@
 
 - insert:
     - id: sdk-app-startup
-      name: '@deepseek-ai/dsh-sdk-app'
+      name: '@eco-agent/dsh-sdk-app'
       config:
         profile: sdk-minimal
 
     - id: sdk-jsonrpc-server
-      name: '@deepseek-ai/dsh-sdk-jsonrpc-server'
+      name: '@eco-agent/dsh-sdk-jsonrpc-server'
       inject: [sdkAppStartup, loader]
       config:
         maxTokensAsSuccess: false
 
     - id: deepseek-llm-api-extensions
-      name: '@deepseek-ai/dsh-deepseek-llm-api-extensions'
+      name: '@eco-agent/dsh-deepseek-llm-api-extensions'
 
     - id: session-log-deepseek
-      name: '@deepseek-ai/dsh-session-log-deepseek'
+      name: '@eco-agent/dsh-session-log-deepseek'
 
     - id: plugin-package-inventory-deepseek
-      name: '@deepseek-ai/dsh-plugin-package-inventory-deepseek'
+      name: '@eco-agent/dsh-plugin-package-inventory-deepseek'
 
     - id: llm-deepseek
-      name: '@deepseek-ai/dsh-llm-deepseek-api-key'
+      name: '@eco-agent/dsh-llm-deepseek-api-key'
       config:
         apiKeyEnv: DEEPSEEK_API_KEY
         defaultContextWindow: !!js Number(process.env.DSH_CONTEXT_WINDOW ?? 1000000)
         streamIdleTimeoutMs: 172800000
 
     - id: sandbox
-      name: '@deepseek-ai/dsh-sandbox-local'
+      name: '@eco-agent/dsh-sandbox-local'
 
     # Shared projection registry: sandbox-policy and terminal-bash fold
     # sandbox-mode state through its units and require it as a hard injection.
     - id: session-projection
-      name: '@deepseek-ai/dsh-session-projection'
+      name: '@eco-agent/dsh-session-projection'
 
     - id: sandbox-policy
-      name: '@deepseek-ai/dsh-sandbox-policy'
+      name: '@eco-agent/dsh-sandbox-policy'
       config:
         mode: danger-full-access
         workspaceRoot: !!js process.cwd()
 
     - id: subprocess
-      name: '@deepseek-ai/dsh-subprocess-local'
+      name: '@eco-agent/dsh-subprocess-local'
 
     - id: pty
-      name: '@deepseek-ai/dsh-terminal'
+      name: '@eco-agent/dsh-terminal'
 
     - id: terminal-bash
-      name: '@deepseek-ai/dsh-terminal-bash'
+      name: '@eco-agent/dsh-terminal-bash'
       disabled: !!js process.platform === 'win32'
       config:
         timeoutMs: 300000
 
     - id: terminal-pwsh
-      name: '@deepseek-ai/dsh-terminal-bash'
+      name: '@eco-agent/dsh-terminal-bash'
       disabled: !!js process.platform !== 'win32'
       config:
         shellDialect: pwsh
@@ -66,65 +66,65 @@
     # Keep the minimal agent kernel explicit: unlike dsh-base, this profile
     # owns each service row and omits every optional producer it does not use.
     - id: timer
-      name: '@deepseek-ai/cordis-plugin-timer'
+      name: '@eco-agent/cordis-plugin-timer'
 
     - id: llm
-      name: '@deepseek-ai/dsh-llm'
+      name: '@eco-agent/dsh-llm'
 
     - id: session
-      name: '@deepseek-ai/dsh-session'
+      name: '@eco-agent/dsh-session'
 
     - id: session-title
-      name: '@deepseek-ai/dsh-session-title'
+      name: '@eco-agent/dsh-session-title'
       config:
         fallbackMaxWords: 5
         fallbackMaxBytes: 40
         maxTitleBytes: 80
 
     - id: system-prompt
-      name: '@deepseek-ai/dsh-system-prompt'
+      name: '@eco-agent/dsh-system-prompt'
       config:
         includeHarnessIdentity: false
         includeRuntimeContext: false
         personaPrefix: !!js process.env.DSH_SYSTEM_PROMPT ?? 'You are a helpful software engineer assistant.'
 
     - id: tools
-      name: '@deepseek-ai/dsh-tools'
+      name: '@eco-agent/dsh-tools'
 
     - id: mcp-resources
-      name: '@deepseek-ai/dsh-mcp-resources'
+      name: '@eco-agent/dsh-mcp-resources'
 
     - id: agent
-      name: '@deepseek-ai/dsh-agent'
+      name: '@eco-agent/dsh-agent'
 
     - id: llm-retry
-      name: '@deepseek-ai/dsh-llm-retry'
+      name: '@eco-agent/dsh-llm-retry'
 
     - id: jobs
-      name: '@deepseek-ai/dsh-jobs-local'
+      name: '@eco-agent/dsh-jobs-local'
 
     - id: invariants
-      name: '@deepseek-ai/dsh-invariants'
+      name: '@eco-agent/dsh-invariants'
 
     - id: session-invariant
-      name: '@deepseek-ai/dsh-session/invariant'
+      name: '@eco-agent/dsh-session/invariant'
 
     - id: agent-invariant
-      name: '@deepseek-ai/dsh-agent/invariant'
+      name: '@eco-agent/dsh-agent/invariant'
 
     - id: scope-invariant
-      name: '@deepseek-ai/dsh-scope/invariant'
+      name: '@eco-agent/dsh-scope/invariant'
 
     - id: agent-loop-invariant
-      name: '@deepseek-ai/dsh-agent-loop/invariant'
+      name: '@eco-agent/dsh-agent-loop/invariant'
 
     - id: agent-loop
-      name: '@deepseek-ai/dsh-agent-loop'
+      name: '@eco-agent/dsh-agent-loop'
       config:
         agents: []
 
     - id: persistent-bash
-      name: '@deepseek-ai/dsh-tool-bash-persistent'
+      name: '@eco-agent/dsh-tool-bash-persistent'
       disabled: !!js process.platform === 'win32'
       config:
         timeoutMs: 300000
@@ -138,7 +138,7 @@
           * Please run long lived commands in the background, e.g. 'sleep 10 &' or start a server in the background.
 
     - id: persistent-pwsh
-      name: '@deepseek-ai/dsh-tool-pwsh-persistent'
+      name: '@eco-agent/dsh-tool-pwsh-persistent'
       disabled: !!js process.platform !== 'win32'
       config:
         timeoutMs: 300000
@@ -152,7 +152,7 @@
           * Please run long lived commands in the background, e.g. 'Start-Job' or start a server with Start-Process.
 
     - id: sessions
-      name: '@deepseek-ai/dsh-session-persistence-jsonl'
+      name: '@eco-agent/dsh-session-persistence-jsonl'
       config:
         root: !!js dshHomePath('sessions')
         compression: none

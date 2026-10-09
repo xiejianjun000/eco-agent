@@ -2,13 +2,13 @@
  * eco Agent「权限与审批」设置页，浏览器 half：注册 section，绑定宿主 permission
  * namespace 的作用域，读写新会话的默认权限预设。
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls the ctx.settingsScope merge and the settings.section slot.
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
 // Type-only: pulls ctx.locale.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls ctx.slots (SlotRegistry) merge.
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 import { PermissionSection } from './PermissionSection.tsx'
 import type { PermissionConfig, PermissionSectionInjected } from './PermissionSection.tsx'
 import { en, zh, type PermissionKey } from './locales.ts'
@@ -16,7 +16,7 @@ import { en, zh, type PermissionKey } from './locales.ts'
 export type { PermissionKey } from './locales.ts'
 export type { PermissionConfig, PermissionSectionInjected, PermissionSectionProps } from './PermissionSection.tsx'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** 「权限与审批」页面 copy。 */
     'settings.ecoPermission': PermissionKey

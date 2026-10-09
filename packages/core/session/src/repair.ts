@@ -2,12 +2,12 @@
  * Pending tool-result recovery shared by failed live steps, interrupted logs,
  * and fork seeds. Tail repair preserves closed steps and supplies only missing
  * tool results and lifecycle boundaries, with cause-specific retry guidance.
- * @module @deepseek-ai/dsh-session/repair
+ * @module @eco-agent/dsh-session/repair
  */
 
-import { brandString } from '@deepseek-ai/dsh-brand'
-import type { MessageId, ToolCallId, ToolResultMessage } from '@deepseek-ai/dsh-llm'
-import { deepFreeze } from '@deepseek-ai/dsh-util-values'
+import { brandString } from '@eco-agent/dsh-brand'
+import type { MessageId, ToolCallId, ToolResultMessage } from '@eco-agent/dsh-llm'
+import { deepFreeze } from '@eco-agent/dsh-util-values'
 import { SessionSeq } from './types.ts'
 import type { SessionEvent, SessionSeq as SessionSeqType } from './types.ts'
 

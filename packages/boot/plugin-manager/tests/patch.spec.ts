@@ -3,8 +3,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { expect, it, onTestFinished } from 'vitest'
-import { applyEntryPatches } from '@deepseek-ai/cordis-plugin-include'
-import { loadOptionalPatches } from '@deepseek-ai/dsh-app-boot'
+import { applyEntryPatches } from '@eco-agent/cordis-plugin-include'
+import { loadOptionalPatches } from '@eco-agent/dsh-app-boot'
 import { writePluginEnabled } from '../src/patch.ts'
 
 async function fixture(text?: string): Promise<string> {

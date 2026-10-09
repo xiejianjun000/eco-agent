@@ -1,8 +1,8 @@
 /** First-party Host inspect providers registered by the Cordis tool package. */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { HostCordisInspectProviderRegistration } from '@deepseek-ai/dsh-cordis-host-runner'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import type { Context } from '@eco-agent/cordis'
+import type { HostCordisInspectProviderRegistration } from '@eco-agent/dsh-cordis-host-runner'
+import type { JsonValue } from '@eco-agent/dsh-util-values'
 import { EVENT_API, queryEventApi, queryServiceApi } from './api-catalog.ts'
 import { queryLiveConfig } from './config.ts'
 

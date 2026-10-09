@@ -1,6 +1,6 @@
 /** Public page-bootstrap options shared by the Host and Client halves. */
 
-import z from '@deepseek-ai/schemastery'
+import z from '@eco-agent/schemastery'
 
 /** Onboarding options after schema defaults are applied. */
 export interface Config {

@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-sandbox-windows-acl",
+  "name": "@eco-agent/dsh-sandbox-windows-acl",
   "description": "Windows ACL write-restriction sandbox backend (restricted-token spawn with capability-SID write allowlist) for the DeepSeek Harness sandbox seam",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -34,24 +34,24 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-skill": "workspace:*",
-    "@deepseek-ai/dsh-subprocess": "workspace:*"
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-skill": "workspace:*",
+    "@eco-agent/dsh-subprocess": "workspace:*"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-lazy-require": "workspace:*",
-    "@deepseek-ai/dsh-win32-process": "workspace:*",
+    "@eco-agent/dsh-lazy-require": "workspace:*",
+    "@eco-agent/dsh-win32-process": "workspace:*",
     "koffi": "3.1.1",
     "yaml": "^2.4.2"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis-plugin-loader": "workspace:~",
-    "@deepseek-ai/cordis-plugin-include": "workspace:~",
-    "@deepseek-ai/dsh-pwsh-local": "workspace:*",
-    "@deepseek-ai/dsh-sandbox-local": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-skill": "workspace:*",
-    "@deepseek-ai/dsh-subprocess": "workspace:*",
-    "@deepseek-ai/dsh-subprocess-local": "workspace:*"
+    "@eco-agent/cordis-plugin-loader": "workspace:~",
+    "@eco-agent/cordis-plugin-include": "workspace:~",
+    "@eco-agent/dsh-pwsh-local": "workspace:*",
+    "@eco-agent/dsh-sandbox-local": "workspace:*",
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-skill": "workspace:*",
+    "@eco-agent/dsh-subprocess": "workspace:*",
+    "@eco-agent/dsh-subprocess-local": "workspace:*"
   }
 }

@@ -1,11 +1,11 @@
-/** Package-owned scoped-dispatch invariants. @module @deepseek-ai/dsh-scope/invariant */
+/** Package-owned scoped-dispatch invariants. @module @eco-agent/dsh-scope/invariant */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
-import { carrierKeyOf, isScopeCarrier } from '@deepseek-ai/dsh-scope'
+import type { Context } from '@eco-agent/cordis'
+import type { InvariantInstaller } from '@eco-agent/dsh-invariants'
+import { carrierKeyOf, isScopeCarrier } from '@eco-agent/dsh-scope'
 import { scopedSubjectResolverFor } from './scoped-events.generated.ts'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-scope'
+const PACKAGE_NAME = '@eco-agent/dsh-scope'
 
 /** Cordis companion plugin name. */
 export const name = 'scope-invariant'

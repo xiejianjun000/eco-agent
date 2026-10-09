@@ -9,7 +9,7 @@ export const inject = ['cordisInspect', 'agents', 'llm', 'typertGateway']
 
 /**
  * Leave a disconnected query pending until timeout, then answer after reconnection.
- * @param {import('@deepseek-ai/cordis').Context} ctx - isolated snapshot Host.
+ * @param {import('@eco-agent/cordis').Context} ctx - isolated snapshot Host.
  */
 export function apply(ctx) {
   const open = registerSilentClientTransport(ctx)

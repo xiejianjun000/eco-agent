@@ -1,11 +1,11 @@
 /** Product analytics policy adapter for the shared Cordis OTel service. */
-import { Context, Service } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
+import { Context, Service } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
 import { validateHeaderValue } from 'node:http'
 import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base'
-import type { EventLogReporter, OTelEventRecord, OTelEventScalar } from '@deepseek-ai/dsh-otel'
+import type { EventLogReporter, OTelEventRecord, OTelEventScalar } from '@eco-agent/dsh-otel'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context { productTelemetry: ProductTelemetry }
 }
 
@@ -88,7 +88,7 @@ export default class ProductTelemetry extends Service {
         ...(config.compression === undefined ? {} : { compression: config.compression === 'gzip' ? CompressionAlgorithm.GZIP : CompressionAlgorithm.NONE }),
       },
       resourceAttributes: { 'service.name': config.serviceName, 'service.version': config.serviceVersion },
-      scope: { name: '@deepseek-ai/dsh-host-product-telemetry-otel' },
+      scope: { name: '@eco-agent/dsh-host-product-telemetry-otel' },
       processor: {
         maxExportBatchSize: config.maxExportBatchSize, maxQueueSize: config.maxQueueSize,
         scheduledDelayMillis: config.scheduledDelayMillis, exportTimeoutMillis: config.exportTimeoutMillis,

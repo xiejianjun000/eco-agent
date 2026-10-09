@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { SessionFormatEventCollector } from '@deepseek-ai/dsh-session-format'
-import type { SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatEventCollector } from '@eco-agent/dsh-session-format'
+import type { SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@eco-agent/dsh-session-format'
 import { migrateV3Content, migrateV3EventContent } from '../src/content.ts'
 import { createSessionFormatV3ToV4, releasedV4SessionFormatCodec } from '../src/index.ts'
 import { assertV4MessageSources } from '../src/message-sources.ts'

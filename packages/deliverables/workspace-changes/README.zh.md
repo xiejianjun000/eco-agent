@@ -3,7 +3,7 @@ description: "用 git 工作树快照和文件工具编辑前后的整文件捕�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-workspace-changes
+# @eco-agent/dsh-workspace-changes
 
 [English](README.md) | 中文
 
@@ -28,7 +28,7 @@ kind: "package-reference"
 正式提供的 Web bundle 挂载本插件。任何具备 `subprocess` 能力且 Host 上有 git 可执行文件的组合都可以挂载它：
 
 ```yaml
-- name: '@deepseek-ai/dsh-workspace-changes'
+- name: '@eco-agent/dsh-workspace-changes'
   config:
     maxFiles: 500
 ```

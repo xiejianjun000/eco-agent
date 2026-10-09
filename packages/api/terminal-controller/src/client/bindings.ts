@@ -1,5 +1,5 @@
 /** Independent content-to-terminal records keep concurrent browser writes disjoint. */
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import type { WebTerminalId } from '../types.ts'
 
 const PREFIX = 'dsh.terminal.binding.v1.'

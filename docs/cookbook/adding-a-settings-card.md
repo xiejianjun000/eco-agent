@@ -7,8 +7,8 @@ Declare live fields in the plugin Config schema and expose them through a produc
 ## 1. Declare live fields
 
 ```ts
-import type { Context, Volatile } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
+import type { Context, Volatile } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
 
 export interface Config {
   endpoint: Volatile<string | undefined>
@@ -65,7 +65,7 @@ The built `./client` file must be in the client module system's lazy-CJS factory
     ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
     "./client": { "types": "./lib/types/client/index.d.ts", "default": "./lib/client.js" }
   },
-  "dsh": { "client": { "platform": "web", "inject": ["@deepseek-ai/dsh-client-ui-settings"] } }
+  "dsh": { "client": { "platform": "web", "inject": ["@eco-agent/dsh-client-ui-settings"] } }
 }
 ```
 

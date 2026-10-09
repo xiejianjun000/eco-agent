@@ -8,7 +8,7 @@ import { createRef } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { act } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import type { AccountBonusOrderId } from '@deepseek-ai/dsh-deepseek-account/types'
+import type { AccountBonusOrderId } from '@eco-agent/dsh-deepseek-account/types'
 import { AccountNoticeCard } from '../src/client/AccountNotice.tsx'
 
 const disconnect = vi.fn()

@@ -9,10 +9,10 @@
  * complete until the tab knows how it was navigated to.
  */
 import { describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { LayoutState, PaneId, TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
-import { dockPaneIds, findTabPane, getPane } from '@deepseek-ai/dsh-client-ui-dockkit'
+import { Context } from '@eco-agent/cordis'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { LayoutState, PaneId, TabId } from '@eco-agent/dsh-client-ui-dockkit'
+import { dockPaneIds, findTabPane, getPane } from '@eco-agent/dsh-client-ui-dockkit'
 import { createSidebarRightController } from '../src/client/service.ts'
 import { SidebarRightTabRegistry } from '../src/client/tab-registry.ts'
 import { createSidebarRightStore } from '../src/client/stores.ts'

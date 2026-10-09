@@ -1,20 +1,20 @@
-import { BlockAssembler, expandAssistantStream } from '@deepseek-ai/dsh-llm'
-import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
+import { BlockAssembler, expandAssistantStream } from '@eco-agent/dsh-llm'
+import { deepEqualJson } from '@eco-agent/dsh-util-values'
 import {
   SessionFormatError,
   SessionFormatUnsupportedMigrationError,
   sessionFormatCount,
   snapshotSessionFormatJson,
-} from '@deepseek-ai/dsh-session-format'
+} from '@eco-agent/dsh-session-format'
 import type {
   SessionFormatArtifact,
   SessionFormatEvent,
   SessionFormatJsonValue,
-} from '@deepseek-ai/dsh-session-format'
+} from '@eco-agent/dsh-session-format'
 import {
   assertReleasedPayloadSemantics,
   assertReleasedSurfaceMetadata,
-} from '@deepseek-ai/dsh-session-format-v0-to-v1'
+} from '@eco-agent/dsh-session-format-v0-to-v1'
 import { RELEASED_V2_EVENT_DISPOSITIONS, RELEASED_V2_EVENT_TYPES } from '../dispositions.ts'
 import {
   assertReleasedV2Keys,

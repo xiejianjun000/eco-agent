@@ -3,7 +3,7 @@ description: "dsh Web 客户端插件页上的 Agent 循环设置页：agent-loo
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-settings-agent-loop
+# @eco-agent/dsh-client-ui-settings-agent-loop
 
 [English](README.md) | 中文
 

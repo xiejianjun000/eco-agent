@@ -2,10 +2,10 @@
  * Browser half: `ctx.resources` (protocol-registered providers, pinning, live
  * sources) and the `useResource` global standard hook.
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only service merge for ctx.slots.
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type { RootStandardSourceContribution } from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type { RootStandardSourceContribution } from '@eco-agent/dsh-client-ui-slots'
 import { ResourceRegistry } from './resources.ts'
 
 export type {
@@ -17,7 +17,7 @@ export type {
   ResourceStatus,
   UseResource,
 } from './contract.ts'
-export type { ResourceProtocolMap } from '@deepseek-ai/dsh-client-ui-slots'
+export type { ResourceProtocolMap } from '@eco-agent/dsh-client-ui-slots'
 
 /** Required browser services. */
 export const inject = ['slots']

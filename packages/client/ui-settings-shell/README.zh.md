@@ -3,7 +3,7 @@ description: "dsh Web 客户端插件页上的终端执行器设置页：shell �
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-settings-shell
+# @eco-agent/dsh-client-ui-settings-shell
 
 [English](README.md) | 中文
 

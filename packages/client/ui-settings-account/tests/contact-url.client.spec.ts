@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import type { AccountUserId } from '@deepseek-ai/dsh-deepseek-account/types'
+import type { AccountUserId } from '@eco-agent/dsh-deepseek-account/types'
 import { ContactConfig } from '../src/contact-config.ts'
 import { contactUrl } from '../src/client/contact-url.ts'
 

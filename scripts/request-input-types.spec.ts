@@ -7,11 +7,11 @@ const root = resolve(import.meta.dirname, '..')
 const probePath = resolve(import.meta.dirname, '__request_input_probe.ts')
 
 const probe = `
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { Session } from '@deepseek-ai/dsh-session'
-import type { SessionTitleLlmRequestEventData } from '@deepseek-ai/dsh-session-title-llm'
-import { createUserMessage, projectFilesToText, projectImagesForTextModel, projectOffloadedImages } from '@deepseek-ai/dsh-llm'
-import type { GenerateOptions, Message, MessageId, MessageSource, RequestMessage, RequestUserInput } from '@deepseek-ai/dsh-llm'
+import type { Agent } from '@eco-agent/dsh-agent'
+import type { Session } from '@eco-agent/dsh-session'
+import type { SessionTitleLlmRequestEventData } from '@eco-agent/dsh-session-title-llm'
+import { createUserMessage, projectFilesToText, projectImagesForTextModel, projectOffloadedImages } from '@eco-agent/dsh-llm'
+import type { GenerateOptions, Message, MessageId, MessageSource, RequestMessage, RequestUserInput } from '@eco-agent/dsh-llm'
 
 declare const session: Session
 declare const agent: Agent

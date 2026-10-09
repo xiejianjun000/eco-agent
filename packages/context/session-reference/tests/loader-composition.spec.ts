@@ -5,21 +5,21 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import Include from '@deepseek-ai/cordis-plugin-include'
-import { agentEvents, type Agent } from '@deepseek-ai/dsh-agent'
-import { createUserMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
-import * as systemPromptPlugin from '@deepseek-ai/dsh-system-prompt'
-import * as toolsPlugin from '@deepseek-ai/dsh-tools'
-import * as fsPlugin from '@deepseek-ai/dsh-fs-local'
-import * as toolFsPlugin from '@deepseek-ai/dsh-tool-fs'
-import * as sessionPlugin from '@deepseek-ai/dsh-session'
-import { Session, SessionId } from '@deepseek-ai/dsh-session'
-import * as queryPlugin from '@deepseek-ai/dsh-session-query-sqlite'
-import * as referencePlugin from '@deepseek-ai/dsh-session-reference'
-import * as spillPlugin from '@deepseek-ai/dsh-spill-local'
-import { sessionDir } from '@deepseek-ai/dsh-spill-local'
+import { Context } from '@eco-agent/cordis'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import Include from '@eco-agent/cordis-plugin-include'
+import { agentEvents, type Agent } from '@eco-agent/dsh-agent'
+import { createUserMessage, ToolCallId } from '@eco-agent/dsh-llm'
+import * as systemPromptPlugin from '@eco-agent/dsh-system-prompt'
+import * as toolsPlugin from '@eco-agent/dsh-tools'
+import * as fsPlugin from '@eco-agent/dsh-fs-local'
+import * as toolFsPlugin from '@eco-agent/dsh-tool-fs'
+import * as sessionPlugin from '@eco-agent/dsh-session'
+import { Session, SessionId } from '@eco-agent/dsh-session'
+import * as queryPlugin from '@eco-agent/dsh-session-query-sqlite'
+import * as referencePlugin from '@eco-agent/dsh-session-reference'
+import * as spillPlugin from '@eco-agent/dsh-spill-local'
+import { sessionDir } from '@eco-agent/dsh-spill-local'
 import * as sourcePlugin from './fixtures/source-session.ts'
 
 let context: Context | undefined
@@ -44,14 +44,14 @@ describe('session-reference real Loader composition', () => {
     await ctx.plugin(Loader)
     ctx.loader.builtins.include = Include
     const modules = new Map<string, unknown>([
-      ['@deepseek-ai/dsh-session', sessionPlugin],
-      ['@deepseek-ai/dsh-system-prompt', systemPromptPlugin],
-      ['@deepseek-ai/dsh-tools', toolsPlugin],
-      ['@deepseek-ai/dsh-fs-local', fsPlugin],
-      ['@deepseek-ai/dsh-tool-fs', toolFsPlugin],
-      ['@deepseek-ai/dsh-session-query-sqlite', queryPlugin],
-      ['@deepseek-ai/dsh-session-reference', referencePlugin],
-      ['@deepseek-ai/dsh-spill-local', spillPlugin],
+      ['@eco-agent/dsh-session', sessionPlugin],
+      ['@eco-agent/dsh-system-prompt', systemPromptPlugin],
+      ['@eco-agent/dsh-tools', toolsPlugin],
+      ['@eco-agent/dsh-fs-local', fsPlugin],
+      ['@eco-agent/dsh-tool-fs', toolFsPlugin],
+      ['@eco-agent/dsh-session-query-sqlite', queryPlugin],
+      ['@eco-agent/dsh-session-reference', referencePlugin],
+      ['@eco-agent/dsh-spill-local', spillPlugin],
       ['./source-session.ts', sourcePlugin],
     ])
     ctx.loader.internal = {

@@ -1,7 +1,7 @@
 /** Developer-tool choices share settings validation, persistence and accepted-state publication. */
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { stubConfigForm, TestRemote, RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
+import { stubConfigForm, TestRemote, RemoteError } from '@eco-agent/dsh-client-test-runtime'
 import { DEVELOPER_TOOLS_NAMESPACE, DeveloperToolsSettingsSchema, type DeveloperToolsSettings } from '../src/developer-tools-settings.ts'
 import { DeveloperToolsPreference } from '../src/client/developer-tools.ts'
 import { apply as clientApply, inject } from '../src/client/index.ts'

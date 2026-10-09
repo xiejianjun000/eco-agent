@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { getEnvironmentData } from 'node:worker_threads'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { afterEach, describe, expect, it } from 'vitest'
 import { PluginPackages } from '../src/profile-resolution/service.ts'
 import type { RuntimeResolution } from '../src/profile.ts'
@@ -188,7 +188,7 @@ describe('profile package metadata service', () => {
     }
     const removed: RuntimeResolution = { ...initial, linkedRoots: [] }
     const relinked: RuntimeResolution = { ...initial, linkedRoots: [{ ...linked, realPath: linkedB }] }
-    const key = '@deepseek-ai/dsh-app-boot/profile-resolution'
+    const key = '@eco-agent/dsh-app-boot/profile-resolution'
     const previous = getEnvironmentData(key)
     const ctx = new Context()
     contexts.push(ctx)
@@ -234,7 +234,7 @@ describe('profile package metadata service', () => {
     const first = join(root, 'first')
     const firstAnchor = pkg(first, '1.0.0')
     const initial = resolution(profilesDir, profileDir, first, firstAnchor, '1.0.0')
-    const key = '@deepseek-ai/dsh-app-boot/profile-resolution'
+    const key = '@eco-agent/dsh-app-boot/profile-resolution'
     const previous = getEnvironmentData(key)
     const ctx = new Context()
     contexts.push(ctx)

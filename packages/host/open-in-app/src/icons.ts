@@ -12,7 +12,7 @@
 import { mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { desktopApplicationIcon } from '@deepseek-ai/dsh-native-command'
+import { desktopApplicationIcon } from '@eco-agent/dsh-native-command'
 import type { OpenInAppApp } from './catalog.ts'
 import {
   findDesktopEntry, output, resolveInternals, specFor, xdgDataDirectories,

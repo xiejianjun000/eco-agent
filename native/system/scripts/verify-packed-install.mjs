@@ -30,7 +30,7 @@ import { entryDirs, packageDirs, platformDirs, readJson, root } from './repo.mjs
 const args = process.argv.slice(2);
 const currentPlatformOnly = args.includes('--current-platform-only');
 const tarballDir = path.resolve(args.find((arg) => !arg.startsWith('--')) || path.join(root, 'dist', 'npm'));
-const entryPackageName = '@deepseek-ai/node-addon-system';
+const entryPackageName = '@eco-agent/node-addon-system';
 
 function tarballName(manifest) {
   if (manifest.name.startsWith('@')) {
@@ -166,10 +166,10 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { grantArgs, launcherPath, probe } from '@deepseek-ai/node-addon-system/landlock-run';
-import { tryLockExclusive } from '@deepseek-ai/node-addon-system/flock';
+import { grantArgs, launcherPath, probe } from '@eco-agent/node-addon-system/landlock-run';
+import { tryLockExclusive } from '@eco-agent/node-addon-system/flock';
 
-await assert.rejects(import('@deepseek-ai/node-addon-system'), {
+await assert.rejects(import('@eco-agent/node-addon-system'), {
   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
 });
 

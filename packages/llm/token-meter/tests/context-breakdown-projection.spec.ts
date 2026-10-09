@@ -2,16 +2,16 @@
 // plus the shared estimator's pricing branches.
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { createMessage, createSystemMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { ContentBlock, ToolSchema } from '@deepseek-ai/dsh-llm'
-import type { ContextFormed } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
-import type { Session, SessionEvent, SessionSeq as SessionSeqType } from '@deepseek-ai/dsh-session'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import TokenMeter from '@deepseek-ai/dsh-token-meter'
-import type { ContextBreakdownProjection } from '@deepseek-ai/dsh-token-meter/client'
-import { CompactionId } from '@deepseek-ai/dsh-compaction'
+import { Context } from '@eco-agent/cordis'
+import { createMessage, createSystemMessage, createUserMessage } from '@eco-agent/dsh-llm'
+import type { ContentBlock, ToolSchema } from '@eco-agent/dsh-llm'
+import type { ContextFormed } from '@eco-agent/dsh-llm'
+import SessionStore, { SessionLogOffset, SessionSeq } from '@eco-agent/dsh-session'
+import type { Session, SessionEvent, SessionSeq as SessionSeqType } from '@eco-agent/dsh-session'
+import SessionProjectionRegistry from '@eco-agent/dsh-session-projection'
+import TokenMeter from '@eco-agent/dsh-token-meter'
+import type { ContextBreakdownProjection } from '@eco-agent/dsh-token-meter/client'
+import { CompactionId } from '@eco-agent/dsh-compaction'
 import { contextBreakdownProjectionDefinition } from '../src/breakdown-projection.ts'
 import {
   estimateContent,
@@ -20,7 +20,7 @@ import {
   estimateToolsTokens,
 } from '../src/estimate.ts'
 
-declare module '@deepseek-ai/dsh-llm' {
+declare module '@eco-agent/dsh-llm' {
   interface MessageSourceMap {
     'test': { kind: 'test' } & ContextFormed
   }

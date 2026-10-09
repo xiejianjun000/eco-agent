@@ -12,21 +12,21 @@
  * shows up as an extra choice in the viewer list rather than hijacking files
  * that already have a purpose-built view.
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls ctx.locale / ctx.slots / ctx.documentPreviews merges, and the
 // two generated Remote namespaces this body calls.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
-import type {} from '@deepseek-ai/dsh-api-workspace-files/remote'
-import type {} from '@deepseek-ai/dsh-api-eco-workspace-write/remote'
-import type { DocumentPreviewDefinition } from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-sidebar-documentpreview/client'
+import type {} from '@eco-agent/dsh-api-workspace-files/remote'
+import type {} from '@eco-agent/dsh-api-eco-workspace-write/remote'
+import type { DocumentPreviewDefinition } from '@eco-agent/dsh-client-ui-sidebar-documentpreview/client'
 import { EditorBody } from './EditorBody.tsx'
 import { en, NS, zh, type EditorKey } from './locales.ts'
 import { setEditorRemote } from './remote-store.ts'
 
 /** This renderer's identity, shared by metadata and the keyed document body. */
-export const EDITOR_BODY_ID = '@deepseek-ai/dsh-client-ui-sidebar-eco-editor'
+export const EDITOR_BODY_ID = '@eco-agent/dsh-client-ui-sidebar-eco-editor'
 
 /**
  * Text suffixes the editor claims. Deliberately excludes the suffixes the
@@ -45,7 +45,7 @@ export const EDITOR_EXTENSIONS: readonly string[] = [
   'css', 'scss', 'less', 'vue', 'svelte',
 ]
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** eco document editor copy. */
     sidebarEcoEditor: EditorKey

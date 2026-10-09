@@ -3,7 +3,7 @@ description: "录制语音并将可确认的转写文字插入会话草稿。"
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-client-ui-voice-input
+# @eco-agent/dsh-experimental-client-ui-voice-input
 
 [English](README.md) | 中文
 

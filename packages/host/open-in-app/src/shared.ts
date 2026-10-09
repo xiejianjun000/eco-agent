@@ -1,6 +1,6 @@
 /**
  * Route paths and wire payloads shared verbatim by the host routes and the
- * browser package (`@deepseek-ai/dsh-client-ui-open-in-app`), published as
+ * browser package (`@eco-agent/dsh-client-ui-open-in-app`), published as
  * the `./shared` subpath. Browser-safe: constants and types only. Each route
  * carries the absolute pathname the Host registers beside the
  * document-relative form the browser addresses; see

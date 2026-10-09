@@ -1,5 +1,5 @@
 /** One accepted preference drives every developer-tool consumer. */
-import { createSnapshotStore, type ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore, type ObservableSnapshot } from '@eco-agent/dsh-client-store'
 import type { DeveloperToolsSettings } from '../developer-tools-settings.ts'
 import type { ConfigForm } from './config-form-types.ts'
 

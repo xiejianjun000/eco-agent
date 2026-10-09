@@ -163,7 +163,7 @@ export async function preparePrimaryRuntime(options: PreparePrimaryRuntimeOption
     rmSync(staging, { recursive: true, force: true })
   }
   const require = createRequire(import.meta.url)
-  await prepareOfficeSkillAssets(join(dirname(require.resolve('@deepseek-ai/dsh-skill-office/package.json')), 'assets'),
+  await prepareOfficeSkillAssets(join(dirname(require.resolve('@eco-agent/dsh-skill-office/package.json')), 'assets'),
     join(paths.runtime, 'office-skills'))
 }
 

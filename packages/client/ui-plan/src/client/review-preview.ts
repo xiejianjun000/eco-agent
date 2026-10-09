@@ -1,8 +1,8 @@
 /** Temporary review previews carry their document in in-memory tab navigation. */
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import type { PlanDocument } from './plan.ts'
 
-declare module '@deepseek-ai/dsh-client-ui-sidebar-right/client' {
+declare module '@eco-agent/dsh-client-ui-sidebar-right/client' {
   interface SidebarRightResourceParamsMap {
     /** Review text without a logged invocation; never persisted in sidebar layout. */
     'plan-review': { planReview: PlanDocument }

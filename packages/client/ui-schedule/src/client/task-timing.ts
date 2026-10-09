@@ -2,11 +2,11 @@
  * Exact rule snapshots, editable timing fields, the injected task update callback, and Host
  * failure mapping; zone interpretation belongs to the Host.
  */
-import type { RemoteResult } from '@deepseek-ai/dsh-api-remotes/client'
+import type { RemoteResult } from '@eco-agent/dsh-api-remotes/client'
 import type {
   ScheduleRecord, ScheduleUpdateRequest, ScheduleUpdateResult,
-} from '@deepseek-ai/dsh-schedule/client'
-import { assertNever } from '@deepseek-ai/dsh-util-values'
+} from '@eco-agent/dsh-schedule/client'
+import { assertNever } from '@eco-agent/dsh-util-values'
 import type { TaskManagerKey } from './task-manager-locales.ts'
 
 /** Task mutation callback injected by the task catalog owner. */

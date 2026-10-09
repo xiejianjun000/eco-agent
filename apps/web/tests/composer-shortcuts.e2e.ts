@@ -1,7 +1,7 @@
 /** The shipped composer preserves drafts when an application Enter chord has extra modifiers. */
 import { chromium, type Page } from 'playwright'
 import { expect, it } from 'vitest'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type { SessionEvent } from '@eco-agent/dsh-session'
 import { launchWebScaffold, watchConsole } from './scaffold.ts'
 import { connectFreshWorkspace, newEnglishPage, saveFailureShot, writeComposerDraft } from './support.ts'
 

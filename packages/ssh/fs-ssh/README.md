@@ -3,7 +3,7 @@ description: "Remote filesystem semantics for consumers sharing files with SSH s
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-fs-ssh
+# @eco-agent/dsh-fs-ssh
 
 English | [中文](README.zh.md)
 

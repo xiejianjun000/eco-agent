@@ -3,7 +3,7 @@ description: "通过共享 Cordis OTel 服务创建独立的 OTLP 上报通道�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-otel
+# @eco-agent/dsh-otel
 
 [English](README.md) | 中文
 
@@ -23,7 +23,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-base bundle 挂载 `@deepseek-ai/dsh-otel`。独立组合必须在注入 `otel` 的调用方之前挂载它。普通埋点调用 `ctx.otel.createEventReporter(options)`，完整 Session 事件调用 `ctx.otel.createSessionLogReporter(options)`。选项显式提供 endpoint、scope、resource attributes、队列设置和诊断回调；服务本身没有部署默认值或自动采集策略。
+base bundle 挂载 `@eco-agent/dsh-otel`。独立组合必须在注入 `otel` 的调用方之前挂载它。普通埋点调用 `ctx.otel.createEventReporter(options)`，完整 Session 事件调用 `ctx.otel.createSessionLogReporter(options)`。选项显式提供 endpoint、scope、resource attributes、队列设置和诊断回调；服务本身没有部署默认值或自动采集策略。
 
 返回的通道由调用方持有。普通事件 `shutdown(signal)` 在传入信号中止时取消请求和重试等待，并在传输清理完成后返回。将关闭注册到调用方的 Cordis fiber，并用配置的期限约束完整清空过程。注入机制使服务替换时卸载依赖方。调用方卸载后不得继续保留通道。产品和 Session 适配器为 UI 和反馈调用方实现这些职责。
 

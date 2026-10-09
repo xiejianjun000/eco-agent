@@ -5,7 +5,7 @@
  * 启用时不用改代码 —— 去掉 cordis 行上的 disabled 就插上了。
  */
 import type { ReactNode } from 'react'
-import type { InjectFace, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsRenderSlots } from '@eco-agent/dsh-client-ui-slots'
 import type { en } from './locales.ts'
 import styles from './AccountSection.module.css'
 

@@ -145,9 +145,9 @@ function fixture(name = '@deepseek-ai/dsh-core'): {
   // and the long directory name for a Windows tmpdir spelled with an 8.3 short name.
   const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'dsh-profile-resolution-')))
   roots.push(root)
-  const installDir = join(root, 'global', 'node_modules', '@deepseek-ai', 'dsh')
+  const installDir = join(root, 'global', 'node_modules', '@eco-agent', 'dsh')
   const installed = join(installDir, 'node_modules', name)
-  const installAnchor = pkg(installDir, '@deepseek-ai/dsh', 0, { [name]: '*' })
+  const installAnchor = pkg(installDir, '@eco-agent/dsh', 0, { [name]: '*' })
   pkg(installed, name, 1)
   const profileDir = join(root, 'profiles', 'web')
   file(join(profileDir, 'package.json'), JSON.stringify({
@@ -285,7 +285,7 @@ describe('runtime resolution', { concurrent: false }, () => {
       symlinkSync(dirname(f.installAnchor), dirname(installAnchor), 'junction')
     }
     if (origin === 'bundle') {
-      pkg(dirname(f.installAnchor), '@deepseek-ai/dsh', 0)
+      pkg(dirname(f.installAnchor), '@eco-agent/dsh', 0)
       f.profile.layers.push({
         packageName: 'bridge', packageDir: f.installed,
         patchPaths: [join(f.installed, 'cordis.patch.yml')], patches: [],
@@ -295,7 +295,7 @@ describe('runtime resolution', { concurrent: false }, () => {
     const resolution = await createRuntimeResolution({
       installAnchor, profile: f.profile, home: f.root,
     })
-    expect(resolution.entries.find(entry => entry.name === '@deepseek-ai/dsh')?.declarer).toBe(f.installAnchor)
+    expect(resolution.entries.find(entry => entry.name === '@eco-agent/dsh')?.declarer).toBe(f.installAnchor)
     expect(resolution.entries.find(entry => entry.name === 'middle')?.declarer)
       .toBe(join(bridge, 'package.json'))
     expect(resolution.entries.find(entry => entry.name === 'leaf')).toMatchObject({
@@ -563,7 +563,7 @@ describe('runtime resolution', { concurrent: false }, () => {
   it('preserves an npm alias package self-reference', async () => {
     const f = fixture()
     file(f.installAnchor, JSON.stringify({
-      name: '@deepseek-ai/dsh',
+      name: '@eco-agent/dsh',
       version: '0.0.0',
       type: 'module',
       exports: { import: './index.js', require: './index.cjs' },
@@ -899,7 +899,7 @@ describe('runtime resolution', { concurrent: false }, () => {
   it('keeps a local legacy main outside its package directory ahead of the resolution', async () => {
     const f = fixture()
     const local = join(f.profile.dir, 'node_modules', '@deepseek-ai/dsh-core')
-    const outside = join(f.profile.dir, 'node_modules', '@deepseek-ai', 'outside.cjs')
+    const outside = join(f.profile.dir, 'node_modules', '@eco-agent', 'outside.cjs')
     file(join(local, 'package.json'), JSON.stringify({ name: '@deepseek-ai/dsh-core', main: '../outside.cjs' }))
     file(outside, 'module.exports = { marker: 2 }\n')
     const require = createRequire(join(f.profile.dir, 'entry.cjs'))
@@ -1116,7 +1116,7 @@ describe('runtime resolution', { concurrent: false }, () => {
     file(join(f.profile.dir, 'package.json'), JSON.stringify({
       name: 'dsh-profile-web', private: true, dependencies: { '@deepseek-ai/dsh-core': '*' },
     }))
-    const target = join(f.root, 'old-dsh', 'node_modules', '@deepseek-ai', 'dsh-core')
+    const target = join(f.root, 'old-dsh', 'node_modules', '@eco-agent', 'dsh-core')
     pkg(target, '@deepseek-ai/dsh-core', 9)
     const owned = join(f.profile.dir, '.dsh-module-fallback', 'node_modules', '@deepseek-ai/dsh-core')
     const projected = join(f.profile.dir, 'node_modules', '@deepseek-ai/dsh-core')
@@ -1693,7 +1693,7 @@ describe('runtime resolution', { concurrent: false }, () => {
   it('publishes and restores the resolution inherited by owned Workers', async () => {
     const f = fixture()
     const resolution = await resolutionOf(f)
-    const key = '@deepseek-ai/dsh-app-boot/profile-resolution'
+    const key = '@eco-agent/dsh-app-boot/profile-resolution'
     const previous = getEnvironmentData(key)
     const dispose = registerWorkerResolution(resolution)
     try {
@@ -1861,8 +1861,8 @@ describe('runtime resolution', { concurrent: false }, () => {
   } {
     const f = fixture()
     const installDir = dirname(f.installAnchor)
-    pkg(installDir, '@deepseek-ai/dsh', 0, { '@deepseek-ai/dsh-core': '*', '@deepseek-ai/dsh-util': '*' })
-    pkg(join(installDir, 'node_modules', '@deepseek-ai', 'dsh-util'), '@deepseek-ai/dsh-util', 2)
+    pkg(installDir, '@eco-agent/dsh', 0, { '@deepseek-ai/dsh-core': '*', '@deepseek-ai/dsh-util': '*' })
+    pkg(join(installDir, 'node_modules', '@eco-agent', 'dsh-util'), '@deepseek-ai/dsh-util', 2)
     const linkedRoot = join(f.root, 'work', 'my-plugin')
     const writeManifest = (peers: Record<string, string> | undefined): void => {
       file(join(linkedRoot, 'package.json'), JSON.stringify({
@@ -1881,9 +1881,9 @@ describe('runtime resolution', { concurrent: false }, () => {
     file(join(linkedRoot, 'index.cjs'), 'module.exports = { marker: 30 }\n')
     // The devDependency copy a type checker needs, the plugin's own third-party version, and a dsh package
     // declared as a plain dependency.
-    pkg(join(linkedRoot, 'node_modules', '@deepseek-ai', 'dsh-core'), '@deepseek-ai/dsh-core', 21)
+    pkg(join(linkedRoot, 'node_modules', '@eco-agent', 'dsh-core'), '@deepseek-ai/dsh-core', 21)
     pkg(join(linkedRoot, 'node_modules', 'zod'), 'zod', 22)
-    pkg(join(linkedRoot, 'node_modules', '@deepseek-ai', 'dsh-util'), '@deepseek-ai/dsh-util', 23)
+    pkg(join(linkedRoot, 'node_modules', '@eco-agent', 'dsh-util'), '@deepseek-ai/dsh-util', 23)
     pkg(join(f.root, 'work', 'node_modules', 'left-pad'), 'left-pad', 24)
     // A transitive dependency in pnpm's isolated layout, with a sibling of its own.
     const helper = join(linkedRoot, 'node_modules', '.pnpm', 'helper@1.0.0', 'node_modules', 'helper')
@@ -2260,7 +2260,7 @@ describe('runtime resolution', { concurrent: false }, () => {
         selected: join(installDir, 'node_modules', 'outer-peer'), marker: 3,
       },
     ]
-    pkg(installDir, '@deepseek-ai/dsh', 0, Object.fromEntries(queries.map(({ name }) => [name, '*'])))
+    pkg(installDir, '@eco-agent/dsh', 0, Object.fromEntries(queries.map(({ name }) => [name, '*'])))
     for (const [index, query] of queries.entries()) {
       pkg(join(installDir, 'node_modules', query.name), query.name, index + 1)
       pkg(query.nativeDir, query.name, query.nativeMarker)
@@ -2308,7 +2308,7 @@ describe('runtime resolution', { concurrent: false }, () => {
       const name = '@deepseek-ai/dsh-core'
       const f = fixture(name)
       const installDir = dirname(f.installAnchor)
-      pkg(installDir, '@deepseek-ai/dsh', 0, {
+      pkg(installDir, '@eco-agent/dsh', 0, {
         [name]: '*', 'host-consumer': '*', 'workspace-consumer': '*',
       })
       const hostSource = join(installDir, 'src')
@@ -2402,7 +2402,7 @@ describe('runtime resolution', { concurrent: false }, () => {
     expect(resolveFrom('zod', `${parent}?t=1`)).toBe(pathToFileURL(join(linkedRoot, 'node_modules', 'zod', 'index.js')).href)
     // Plain dependencies keep the plugin's own copies, including a dsh package declared as one.
     await expectResolution('zod', join(linkedRoot, 'node_modules', 'zod'), 22)
-    await expectResolution('@deepseek-ai/dsh-util', join(linkedRoot, 'node_modules', '@deepseek-ai', 'dsh-util'), 23)
+    await expectResolution('@deepseek-ai/dsh-util', join(linkedRoot, 'node_modules', '@eco-agent', 'dsh-util'), 23)
     // An undeclared name without an entry follows the real ancestor chain.
     await expectResolution('left-pad', join(f.root, 'work', 'node_modules', 'left-pad'), 24)
     // Package imports and self-references keep their Node semantics inside the linked package.
@@ -2424,10 +2424,10 @@ describe('runtime resolution', { concurrent: false }, () => {
   it('continues above a linked plugin after a CommonJS subpath miss in an occupied peer', async () => {
     const { f, linkedRoot } = linkedPluginFixture()
     file(join(f.installed, 'package.json'), JSON.stringify({ name: '@deepseek-ai/dsh-core', version: '1.0.0', main: './index.cjs' }))
-    const above = join(f.root, 'work', 'node_modules', '@deepseek-ai', 'dsh-core')
+    const above = join(f.root, 'work', 'node_modules', '@eco-agent', 'dsh-core')
     file(join(above, 'package.json'), JSON.stringify({ name: '@deepseek-ai/dsh-core', version: '3.0.0' }))
     file(join(above, 'sub.cjs'), 'module.exports = { marker: 3 }\n')
-    file(join(linkedRoot, 'node_modules', '@deepseek-ai', 'dsh-core', 'sub.cjs'), 'module.exports = { marker: 21 }\n')
+    file(join(linkedRoot, 'node_modules', '@eco-agent', 'dsh-core', 'sub.cjs'), 'module.exports = { marker: 21 }\n')
     const registration = installRuntimeInterception(await resolutionOf(f))
     registrations.push(registration)
     const require = createRequire(join(linkedRoot, 'entry.cjs'))
@@ -2468,7 +2468,7 @@ describe('runtime resolution', { concurrent: false }, () => {
     const { f, linkedRoot, writeManifest } = linkedPluginFixture({})
     const registration = installRuntimeInterception(await resolutionOf(f))
     registrations.push(registration)
-    const devCopy = join(linkedRoot, 'node_modules', '@deepseek-ai', 'dsh-core')
+    const devCopy = join(linkedRoot, 'node_modules', '@eco-agent', 'dsh-core')
     const require = createRequire(join(linkedRoot, 'entry.cjs'))
     const parent = pathToFileURL(join(linkedRoot, 'entry.mjs')).href
     expect(require.resolve('@deepseek-ai/dsh-core')).toBe(join(devCopy, 'index.cjs'))

@@ -2,28 +2,28 @@
 
 import { modelAvailable } from './catalog.ts'
 import { randomUUID } from 'node:crypto'
-import type { Context } from '@deepseek-ai/cordis'
-import { brandString } from '@deepseek-ai/dsh-brand'
-import type { Agent, ModelSelection as AgentModelSelection } from '@deepseek-ai/dsh-agent'
-import { AttachmentError } from '@deepseek-ai/dsh-attachment'
+import type { Context } from '@eco-agent/cordis'
+import { brandString } from '@eco-agent/dsh-brand'
+import type { Agent, ModelSelection as AgentModelSelection } from '@eco-agent/dsh-agent'
+import { AttachmentError } from '@eco-agent/dsh-attachment'
 import type {
   AttachmentAdmissionPart, FileAttachmentRef, ImageAttachmentRef,
-} from '@deepseek-ai/dsh-attachment'
-import type { FileUploadReceiptId } from '@deepseek-ai/dsh-client-file-upload/types'
-import type {} from '@deepseek-ai/dsh-client-file-upload'
+} from '@eco-agent/dsh-attachment'
+import type { FileUploadReceiptId } from '@eco-agent/dsh-client-file-upload/types'
+import type {} from '@eco-agent/dsh-client-file-upload'
 import {
   ReasoningEffortId, assistantStreamChunks, createUserMessage, freezeMessage,
-} from '@deepseek-ai/dsh-llm'
-import type { MessageSource } from '@deepseek-ai/dsh-llm'
-import { buildForkSeed } from '@deepseek-ai/dsh-session/fork'
-import { SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
-import type { SessionEvent, SessionHeader, SessionId, UserMessage } from '@deepseek-ai/dsh-session'
-import { SessionQueryError, type SessionObservation } from '@deepseek-ai/dsh-session-query'
-import { SessionTitleInvalidError } from '@deepseek-ai/dsh-session-title'
-import { canonicalClientTimeZone } from '@deepseek-ai/dsh-util-time'
-import { assertNever } from '@deepseek-ai/dsh-util-values'
-import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
-import type { Workspace } from '@deepseek-ai/dsh-workspace'
+} from '@eco-agent/dsh-llm'
+import type { MessageSource } from '@eco-agent/dsh-llm'
+import { buildForkSeed } from '@eco-agent/dsh-session/fork'
+import { SessionLogOffset, SessionSeq } from '@eco-agent/dsh-session'
+import type { SessionEvent, SessionHeader, SessionId, UserMessage } from '@eco-agent/dsh-session'
+import { SessionQueryError, type SessionObservation } from '@eco-agent/dsh-session-query'
+import { SessionTitleInvalidError } from '@eco-agent/dsh-session-title'
+import { canonicalClientTimeZone } from '@eco-agent/dsh-util-time'
+import { assertNever } from '@eco-agent/dsh-util-values'
+import { RemoteError, remoteErrorOf } from '@eco-agent/dsh-typert-protocol'
+import type { Workspace } from '@eco-agent/dsh-workspace'
 import {
   ApiSessionAgentController,
   ApiSessionCwdConflict,

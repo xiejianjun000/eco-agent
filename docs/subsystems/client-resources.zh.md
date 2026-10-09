@@ -24,13 +24,13 @@
 协议拥有者在 `ResourceProtocolMap` 上声明其值类型，并在自己的 `ctx.effect` 里注册一个提供方，使协议与插件同寿（[提供协议](../../packages/client/resources/README.zh.md#provide-a-protocol)）。`open(address, { signal })` 返回一条 `RemoteResult` 帧流——首帧是当前状态，之后每次变化一帧——并且必须在 `signal` 中止时停下。失败是携带 `RemoteFailure` 的 `ok: false` 帧；流里抛出是编程错误，不会被捕获。
 
 ```ts ignore-check
-import type { Context } from '@deepseek-ai/cordis'
-import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
-import type {} from '@deepseek-ai/dsh-client-resources/client'
+import type { Context } from '@eco-agent/cordis'
+import type { RemoteResult } from '@eco-agent/dsh-typert-protocol'
+import type {} from '@eco-agent/dsh-client-resources/client'
 
 interface NoteView { readonly title: string; readonly updatedAt: string }
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface ResourceProtocolMap { note: NoteView }
 }
 
@@ -62,8 +62,8 @@ export function apply(ctx: Context): void {
 | `failed` | 最新一帧报告了失败 | 保留的上一个 `ok` 值 | 该帧的 `RemoteFailure` |
 
 ```tsx ignore-check
-import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type {} from '@deepseek-ai/dsh-api-workspace-files/client'
+import type { PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-api-workspace-files/client'
 
 type Props = PropsRuntime<'sidebar.right.pane.tab'>
 

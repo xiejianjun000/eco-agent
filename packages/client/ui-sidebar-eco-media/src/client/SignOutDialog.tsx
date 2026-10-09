@@ -1,6 +1,6 @@
 /** Account sign-out confirmation with the current task impact. */
 import { useState } from 'react'
-import { Button, IconCloseOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, Modal } from '@eco-agent/dsh-client-ui-primitives'
 import type { AccountKey } from './locales.ts'
 import css from './SignInDialog.module.css'
 

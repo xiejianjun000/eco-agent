@@ -29,11 +29,11 @@ afterEach(() => {
 describe('installed default-product isolation', () => {
   it('ignores development dependencies and unrelated installed experimental packages', () => {
     const root = fixture()
-    const entry = writePackage(root, '@deepseek-ai/dsh', {
+    const entry = writePackage(root, '@eco-agent/dsh', {
       dependencies: { core: '1.0.0' },
       devDependencies: { [experimental]: '1.0.0' },
     })
-    writePackage(root, 'core', { peerDependencies: { '@deepseek-ai/dsh': '1.0.0' } })
+    writePackage(root, 'core', { peerDependencies: { '@eco-agent/dsh': '1.0.0' } })
     writePackage(root, experimental, {})
 
     expect(verifyInstalledProductIsolation(entry)).toBe(2)
@@ -43,18 +43,18 @@ describe('installed default-product isolation', () => {
     'rejects a transitive experimental %s',
     (section) => {
       const root = fixture()
-      const entry = writePackage(root, '@deepseek-ai/dsh', { dependencies: { thirdParty: '1.0.0' } })
+      const entry = writePackage(root, '@eco-agent/dsh', { dependencies: { thirdParty: '1.0.0' } })
       writePackage(root, 'thirdParty', { [section]: { [experimental]: '1.0.0' } })
 
       expect(() => verifyInstalledProductIsolation(entry)).toThrow(
-        `@deepseek-ai/dsh -> thirdParty -> ${experimental}`,
+        `@eco-agent/dsh -> thirdParty -> ${experimental}`,
       )
     },
   )
 
   it('skips the entry package\'s optional bundles, which must be installed, and still rejects other experimental edges', () => {
     const root = fixture()
-    const entry = writePackage(root, '@deepseek-ai/dsh', { dependencies: { core: '1.0.0', [experimental]: '1.0.0' } })
+    const entry = writePackage(root, '@eco-agent/dsh', { dependencies: { core: '1.0.0', [experimental]: '1.0.0' } })
     writePackage(root, 'core', {})
     writePackage(root, experimental, { dependencies: { '@deepseek-ai/dsh-experimental-inner': '1.0.0' } })
     expect(verifyInstalledProductIsolation(entry, [experimental])).toBe(2)
@@ -68,7 +68,7 @@ describe('installed default-product isolation', () => {
 
   it('rejects experimental identities hidden behind an installed alias', () => {
     const root = fixture()
-    const entry = writePackage(root, '@deepseek-ai/dsh', { dependencies: { safeName: 'file:../prototype' } })
+    const entry = writePackage(root, '@eco-agent/dsh', { dependencies: { safeName: 'file:../prototype' } })
     writePackage(root, 'safeName', { name: experimental })
 
     expect(() => verifyInstalledProductIsolation(entry)).toThrow(experimental)
@@ -76,7 +76,7 @@ describe('installed default-product isolation', () => {
 
   it('rejects experimental npm aliases even when an optional package is omitted', () => {
     const root = fixture()
-    const entry = writePackage(root, '@deepseek-ai/dsh', {
+    const entry = writePackage(root, '@eco-agent/dsh', {
       optionalDependencies: { safeName: `npm:${experimental}@1.0.0` },
     })
 
@@ -85,7 +85,7 @@ describe('installed default-product isolation', () => {
 
   it('follows nested installations rather than an unrelated hoisted package', () => {
     const root = fixture()
-    const entry = writePackage(root, '@deepseek-ai/dsh', { dependencies: { core: '1.0.0' } })
+    const entry = writePackage(root, '@eco-agent/dsh', { dependencies: { core: '1.0.0' } })
     writePackage(root, 'core', {})
     writePackage(entry, 'core', { dependencies: { [experimental]: '1.0.0' } })
 
@@ -94,14 +94,14 @@ describe('installed default-product isolation', () => {
 
   it('permits missing optional packages and optional peers but rejects missing dependencies', () => {
     const root = fixture()
-    const entry = writePackage(root, '@deepseek-ai/dsh', {
+    const entry = writePackage(root, '@eco-agent/dsh', {
       dependencies: { optional: '1.0.0' },
       optionalDependencies: { optional: '1.0.0' },
       peerDependencies: { peer: '1.0.0' },
       peerDependenciesMeta: { peer: { optional: true } },
     })
     expect(verifyInstalledProductIsolation(entry)).toBe(1)
-    writePackage(root, '@deepseek-ai/dsh', { dependencies: { missing: '1.0.0' } })
+    writePackage(root, '@eco-agent/dsh', { dependencies: { missing: '1.0.0' } })
     expect(() => verifyInstalledProductIsolation(entry)).toThrow('dependency is missing')
   })
 })

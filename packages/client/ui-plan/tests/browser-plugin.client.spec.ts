@@ -5,16 +5,16 @@
  * outcomes into null (admitted) or a user-visible failure line; teardown
  * empties the seat (HMR safety).
  */
-import { ConversationEventRegistry } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { Context } from '@deepseek-ai/cordis'
+import { ConversationEventRegistry } from '@eco-agent/dsh-client-ui-conversation/client'
+import { Context } from '@eco-agent/cordis'
 import { describe, expect, it, vi } from 'vitest'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { ChatSnapshot } from '@deepseek-ai/dsh-client-ui-chat/client'
+import { SlotRegistry } from '@eco-agent/dsh-client-ui-renderer/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import { LocaleRuntime } from '@eco-agent/dsh-client-locale/client'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
+import type { ChatSnapshot } from '@eco-agent/dsh-client-ui-chat/client'
 import { EMPTY_CHAT_SNAPSHOT } from '../../ui-chat/src/client/contract/snapshot.ts'
-import { RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
+import { RemoteError } from '@eco-agent/dsh-client-test-runtime'
 import { PlanChip } from '../src/client/PlanModeControl.tsx'
 import { PlanCards, PlanReviewOpen, type PlanCardsInjected, type PlanOpenInjected, type PlanReviewOpenInjected } from '../src/client/PlanCard.tsx'
 import { PlanPreview, PlanTitle } from '../src/client/PlanPreview.tsx'
@@ -22,9 +22,9 @@ import { submittedPlan } from '../src/client/plan.ts'
 import type { PlanChipInjected } from '../src/client/index.ts'
 import { apply, inject } from '../src/client/index.ts'
 import { apply as nodeApply } from '../src/index.ts'
-import { createSidebarRightController } from '@deepseek-ai/dsh-client-ui-sidebar-right/src/client/service.ts'
-import { SidebarRightTabRegistry } from '@deepseek-ai/dsh-client-ui-sidebar-right/src/client/tab-registry.ts'
-import { createSidebarRightStore } from '@deepseek-ai/dsh-client-ui-sidebar-right/src/client/stores.ts'
+import { createSidebarRightController } from '@eco-agent/dsh-client-ui-sidebar-right/src/client/service.ts'
+import { SidebarRightTabRegistry } from '@eco-agent/dsh-client-ui-sidebar-right/src/client/tab-registry.ts'
+import { createSidebarRightStore } from '@eco-agent/dsh-client-ui-sidebar-right/src/client/stores.ts'
 
 function providePreview(ctx: Context) {
   const events = new ConversationEventRegistry(ctx)

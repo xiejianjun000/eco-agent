@@ -3,7 +3,7 @@ description: "Plan-mode status chip for the Web GUI: the composer control that s
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-plan
+# @eco-agent/dsh-client-ui-plan
 
 English | [中文](README.zh.md)
 

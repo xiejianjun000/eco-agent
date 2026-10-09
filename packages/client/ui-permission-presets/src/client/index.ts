@@ -15,26 +15,26 @@
  * The General-settings row separately writes the default preset for sessions
  * created later through the host Settings API.
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type { SessionFace } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
-import type { PermissionCatalog, PermissionSelection } from '@deepseek-ai/dsh-permission-presets/client'
+import type { Context as ClientContext } from '@eco-agent/cordis'
+import type { SessionFace } from '@eco-agent/dsh-api-session-controller/client'
+import type { SessionId } from '@eco-agent/dsh-api-remotes/client'
+import type { PermissionCatalog, PermissionSelection } from '@eco-agent/dsh-permission-presets/client'
 // Direct dependency: catalog settlements are fenced by the actual connection
 // generation rather than by a parallel domain counter.
-import type {} from '@deepseek-ai/dsh-client-connection/client'
+import type {} from '@eco-agent/dsh-client-connection/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: the settings slot types (this package registers a General row).
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-client-ui-session/client'
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-session/client'
+import type {} from '@eco-agent/dsh-client-ui-conversation/client'
 // Type-only: pulls the ctx.remote merge and the forwarded-event key face
 // (the settings invalidation rides the allowlist) into this program.
-import type {} from '@deepseek-ai/dsh-api-remotes/client'
-import type { CommandUiContract, SelectOption } from '@deepseek-ai/dsh-client-ui-commands/client'
-import type { ClientSessionContext } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
-import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-api-remotes/client'
+import type { CommandUiContract, SelectOption } from '@eco-agent/dsh-client-ui-commands/client'
+import type { ClientSessionContext } from '@eco-agent/dsh-client-ui-input-trigger/client'
+import type { TranslateNS } from '@eco-agent/dsh-client-ui-slots'
 import { PermissionCatalogDirectory } from './catalog.ts'
 import { PermissionSelect } from './PermissionSelect.tsx'
 import type { PermissionSelectInjected } from './PermissionSelect.tsx'
@@ -62,7 +62,7 @@ export const inject = [
   'configForms', 'settingsSchema',
 ]
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** Current-session permission picker and confirmation copy. */
     'permission.access': keyof typeof accessEn

@@ -6,13 +6,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import Schema from '@deepseek-ai/schemastery'
+import Schema from '@eco-agent/schemastery'
 import { Ajv2020 } from 'ajv/dist/2020.js'
 import { buildConfigSchemaDocument } from '../src/config-schema/document.ts'
 import type { CollectedConfigEntry, ConfigJsonSchemaObject, ConfigSchemaDump } from '../src/config-schema/types.ts'
-import { EntryGroup, ModuleLoader, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import Group from '@deepseek-ai/cordis-plugin-group'
-import Include, { type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import { EntryGroup, ModuleLoader, type EntryOptions } from '@eco-agent/cordis-plugin-loader'
+import Group from '@eco-agent/cordis-plugin-group'
+import Include, { type PatchOptions } from '@eco-agent/cordis-plugin-include'
 import { collectConfigSchemas } from '../src/config-schema/collect.ts'
 import { generateConfigSchema } from '../src/config-schema/index.ts'
 import * as profileOperations from '../src/profile.ts'
@@ -234,7 +234,7 @@ describe('collectConfigSchemas', () => {
       static [EntryGroup.key] = true
       constructor() { throw new Error('must not activate Include') }
     }
-    modules.set('@deepseek-ai/cordis-plugin-include', { default: ExternalInclude })
+    modules.set('@eco-agent/cordis-plugin-include', { default: ExternalInclude })
     modules.set('include-alias', { default: ExternalInclude })
     const result = await collectConfigSchemas(profile, [
       row('include-alias', { path: './missing.yml', initial: [row('noop')] }),
@@ -242,8 +242,8 @@ describe('collectConfigSchemas', () => {
     ], resolution)
     expect(result['x-cordis'].complete).toBe(true)
     expect(result['x-cordis'].entries.filter(entry => entry.tree === 'include')).toHaveLength(2)
-    expect(importModule.mock.calls.filter(([name]) => name === '@deepseek-ai/cordis-plugin-include')).toHaveLength(1)
-    expect(importModule.mock.calls.filter(([name]) => name === '@deepseek-ai/cordis-plugin-group')).toHaveLength(1)
+    expect(importModule.mock.calls.filter(([name]) => name === '@eco-agent/cordis-plugin-include')).toHaveLength(1)
+    expect(importModule.mock.calls.filter(([name]) => name === '@eco-agent/cordis-plugin-group')).toHaveLength(1)
   })
 
   it('recognizes an external canonical Group even when Include cannot resolve', async () => {
@@ -251,17 +251,17 @@ describe('collectConfigSchemas', () => {
       static [EntryGroup.key] = true
       constructor() { throw new Error('must not activate Group') }
     }
-    modules.set('@deepseek-ai/cordis-plugin-group', { default: ExternalGroup })
+    modules.set('@eco-agent/cordis-plugin-group', { default: ExternalGroup })
     modules.set('group-alias', { default: ExternalGroup })
     const result = await collectConfigSchemas(profile, [row('group-alias', [row('group-alias', [row('noop')])])], resolution)
     expect(result['x-cordis'].complete).toBe(true)
     expect(result['x-cordis'].entries.map(entry => entry.path)).toEqual(['/0', '/0/config/0', '/0/config/0/config/0'])
-    expect(importModule.mock.calls.filter(([name]) => name === '@deepseek-ai/cordis-plugin-group')).toHaveLength(1)
+    expect(importModule.mock.calls.filter(([name]) => name === '@eco-agent/cordis-plugin-group')).toHaveLength(1)
   })
 
   it('reports unknown tree-carrier identities instead of silently omitting their children', async () => {
-    modules.set('@deepseek-ai/cordis-plugin-group', { default: Group })
-    modules.set('@deepseek-ai/cordis-plugin-include', { default: Include })
+    modules.set('@eco-agent/cordis-plugin-group', { default: Group })
+    modules.set('@eco-agent/cordis-plugin-include', { default: Include })
     modules.set('other-include', { default: class OtherInclude {
       static [EntryGroup.key] = true
       constructor() { throw new Error('must not activate a tree carrier') }

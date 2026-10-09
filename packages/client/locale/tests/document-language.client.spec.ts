@@ -9,12 +9,12 @@
  * document language rather than merely looking untidy.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { apply as settingsApply, inject as settingsInject } from '@deepseek-ai/dsh-client-ui-settings/client'
-import { TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
-import { apply, inject } from '@deepseek-ai/dsh-client-locale/client'
-import type { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
+import { Context } from '@eco-agent/cordis'
+import { SlotRegistry } from '@eco-agent/dsh-client-ui-renderer/client'
+import { apply as settingsApply, inject as settingsInject } from '@eco-agent/dsh-client-ui-settings/client'
+import { TestRemote } from '@eco-agent/dsh-client-test-runtime'
+import { apply, inject } from '@eco-agent/dsh-client-locale/client'
+import type { LocaleRuntime } from '@eco-agent/dsh-client-locale/client'
 import { LOCALE_SETTINGS_NAMESPACE, LocaleSettingsSchema } from '../src/locale-settings.ts'
 
 /** Boot the plugin over a stub Host settings document. */

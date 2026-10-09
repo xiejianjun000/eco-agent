@@ -1,6 +1,6 @@
 /** Credit introduction retains the action ordering selected on first entry. */
 import type { RefObject } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '@eco-agent/dsh-client-ui-primitives'
 import type { DesktopOnboardingProps } from './onboarding-contract.ts'
 import { OnboardingIllustration } from './OnboardingIllustration.tsx'
 import art from './assets/onboarding-recharge.png'

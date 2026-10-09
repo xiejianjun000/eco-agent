@@ -1,14 +1,14 @@
 /** Archived-session Settings page, browser half. */
 
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { Context as ClientContext } from '@eco-agent/cordis'
+import type {} from '@eco-agent/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
 // Type-only: pulls the `uiWorkspace` Context merge and the `useWorkspaces`
 // global standard prop this page reads.
-import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
+import type {} from '@eco-agent/dsh-client-ui-workspace/client'
 // Type-only: pulls the `useSessions` global standard prop.
-import type {} from '@deepseek-ai/dsh-client-ui-session/client'
+import type {} from '@eco-agent/dsh-client-ui-session/client'
 import { ArchivedSessionsSection } from './ArchivedSessionsSection.tsx'
 import type { ArchivedSessionsSectionInjected } from './ArchivedSessionsSection.tsx'
 import { en, zh, type ArchivedSessionsLocaleKey } from './locales.ts'
@@ -16,7 +16,7 @@ import { en, zh, type ArchivedSessionsLocaleKey } from './locales.ts'
 export type { ArchivedSessionsSectionInjected, ArchivedSessionsSectionProps } from './ArchivedSessionsSection.tsx'
 export type { ArchivedSessionsLocaleKey } from './locales.ts'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** Archived-session page copy. */
     'settings.archivedSessions': ArchivedSessionsLocaleKey

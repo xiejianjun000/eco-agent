@@ -2,15 +2,15 @@
  * Client-safe recursive catalog rows and browser continuation requests,
  * receipts, and failures.
  *
- * @module @deepseek-ai/dsh-subagent/control-types
+ * @module @eco-agent/dsh-subagent/control-types
  */
 
-import type { PromptContentPart } from '@deepseek-ai/dsh-attachment/types'
-import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { PromptContentPart } from '@eco-agent/dsh-attachment/types'
+import type { Branded } from '@eco-agent/dsh-brand'
+import type { MessageId } from '@eco-agent/dsh-llm/brand'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 // Type-only: the Workspace registry's archive-admission family map this runtime merges `subagent` into.
-import type {} from '@deepseek-ai/dsh-workspace/types'
+import type {} from '@eco-agent/dsh-workspace/types'
 
 /**
  * Client-minted identity of one browser prompt, persisted on the exact accepted
@@ -115,14 +115,14 @@ export interface SubagentInterruptReceipt {
  * Failure details the control surface answers with. Prompts and interrupts
  * share these failures with the Client Remote result.
  */
-declare module '@deepseek-ai/dsh-workspace/types' {
+declare module '@eco-agent/dsh-workspace/types' {
   interface SessionActivityKindMap {
     /** A subagent session delegated from this session (at any depth) is inside a turn. */
     subagent: true
   }
 }
 
-declare module '@deepseek-ai/dsh-typert-protocol' {
+declare module '@eco-agent/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     /** A browser-supplied zone is neither UTC nor a canonical IANA name. */
     'subagent/invalid-time-zone': { readonly value: string }

@@ -8,7 +8,7 @@
  * Only the three markdown-fence and `run_code` grammars (TypeScript, shell,
  * JSON) load into the singleton at boot — the set every session renders. Every
  * other language in the shared extension table
- * (`@deepseek-ai/dsh-util-code-language`: python, rust, yaml, markup, …) is
+ * (`@eco-agent/dsh-util-code-language`: python, rust, yaml, markup, …) is
  * imported lazily and registered the first time such a language is requested,
  * so a session that never opens a code surface in one of those languages pays
  * neither the grammar modules nor their synchronous init. The first render of a
@@ -116,7 +116,7 @@ const LAZY_GRAMMARS = new Map<string, () => Promise<LangModule>>([
  * a label like `constructor` or `__proto__` must miss instead of resolving an
  * inherited property and crashing the renderer inside shiki. Keys cover both
  * the markdown-fence aliases `CodeBlock` uses, the file-extension language ids
- * `@deepseek-ai/dsh-util-code-language` resolves, and the short ids
+ * `@eco-agent/dsh-util-code-language` resolves, and the short ids
  * `readLangHintForPath` persists, so every caller resolves the same grammars.
  * A new short name in the shared table must be aliased here too. The JS family maps to the TypeScript grammar (see {@link LANGS} for
  * the JSX/TSX approximation). A value not in {@link LANGS} names a

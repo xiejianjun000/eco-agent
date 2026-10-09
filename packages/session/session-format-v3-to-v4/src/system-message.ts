@@ -1,6 +1,6 @@
 /** Native system-message fields checked before physical recovery can discard a row. */
 
-import { SessionFormatError, isSessionFormatJsonObject, sessionFormatCount } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatError, isSessionFormatJsonObject, sessionFormatCount } from '@eco-agent/dsh-session-format'
 
 function record(value: unknown, subject: string): Readonly<Record<string, unknown>> {
   if (!isSessionFormatJsonObject(value)) throw new SessionFormatError(`format v4 ${subject} requires an object`)

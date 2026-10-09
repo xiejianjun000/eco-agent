@@ -1,5 +1,5 @@
 /** Deterministic MCP screenshot result for real-profile retention replay. */
-import { createMcpToolDefinition } from '@deepseek-ai/dsh-mcp-client'
+import { createMcpToolDefinition } from '@eco-agent/dsh-mcp-client'
 
 export const inject = ['tools', 'attachments']
 

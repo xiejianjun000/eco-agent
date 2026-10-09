@@ -5,11 +5,11 @@
  * official DeepSeek route. The step reuses that page's credential editor in
  * the onboarding plugin's shared modal, so the key is entered once.
  */
-import type { TrackProductEvent } from '@deepseek-ai/dsh-client-product-analytics/client'
+import type { TrackProductEvent } from '@eco-agent/dsh-client-product-analytics/client'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { InjectFace, PropsRuntime, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import type { SnapshotStore } from '@eco-agent/dsh-client-store'
+import type { InjectFace, PropsRuntime, PropsRenderSlots } from '@eco-agent/dsh-client-ui-slots'
 import type { ModelsSettingsState, ModelsSettingsStore } from './store.ts'
 import { onboardingReadiness } from './store.ts'
 import type { ModelsOperations } from './operations.ts'

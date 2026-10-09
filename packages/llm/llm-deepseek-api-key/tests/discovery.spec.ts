@@ -1,6 +1,6 @@
 /** The configured model catalog is independent of request credentials. */
-import { Context } from '@deepseek-ai/cordis'
-import LlmRuntime from '@deepseek-ai/dsh-llm'
+import { Context } from '@eco-agent/cordis'
+import LlmRuntime from '@eco-agent/dsh-llm'
 import { expect, it, vi } from 'vitest'
 import * as ApiKey from '../src/index.ts'
 

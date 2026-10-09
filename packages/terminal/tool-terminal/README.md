@@ -3,7 +3,7 @@ description: "Six model-facing persistent terminal tools with owner isolation, b
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-tool-terminal
+# @eco-agent/dsh-tool-terminal
 
 English | [中文](README.zh.md)
 
@@ -41,12 +41,12 @@ Enable these tools when the composition mounts a terminal backend and the model 
 ### Composition
 
 ```yaml
-- name: '@deepseek-ai/dsh-terminal'
-- name: '@deepseek-ai/dsh-terminal-bash'
-- name: '@deepseek-ai/dsh-tool-terminal'
+- name: '@eco-agent/dsh-terminal'
+- name: '@eco-agent/dsh-terminal-bash'
+- name: '@eco-agent/dsh-tool-terminal'
 ```
 
-The tools need `ctx.terminals` — a backend must be mounted — and the system-prompt service for the guidance section. Background sends additionally require the jobs service and its model-facing controller (`@deepseek-ai/dsh-tool-jobs`).
+The tools need `ctx.terminals` — a backend must be mounted — and the system-prompt service for the guidance section. Background sends additionally require the jobs service and its model-facing controller (`@eco-agent/dsh-tool-jobs`).
 
 ### Configuration
 
@@ -171,7 +171,7 @@ Append-only; new results follow the reusable request prefix.
 These limits define the model-facing surface that is absent. They are current package constraints, not a task backlog.
 
 - **No TUI or key-sequence surface** — named key sequences, full-screen TUI interaction, BEL, resize, and auto-start are not exposed in any schema.
-- **Background mode requires the jobs surface** — `run_in_background` needs both `@deepseek-ai/dsh-jobs` and its model-facing controller (`@deepseek-ai/dsh-tool-jobs`); without them the argument is rejected.
+- **Background mode requires the jobs surface** — `run_in_background` needs both `@eco-agent/dsh-jobs` and its model-facing controller (`@eco-agent/dsh-tool-jobs`); without them the argument is rejected.
 
 <a id="dev-note"></a>
 ### Dev Note

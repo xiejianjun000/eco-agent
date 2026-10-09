@@ -3,7 +3,7 @@ description: "Host Office conversion with the independently published LibreOffic
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-office-to-pdf
+# @eco-agent/dsh-office-to-pdf
 
 English | [中文](README.zh.md)
 
@@ -25,7 +25,7 @@ Convert Office documents to PDFs on the Host computer. Targets with a declared n
 <a id="use-this-package"></a>
 ## Use this package
 
-The [Web bundle](../../bundle/web-app/README.md) mounts this provider as `office-to-pdf`. Independent compositions mount `@deepseek-ai/dsh-office-to-pdf` as a `cordis.yml` row.
+The [Web bundle](../../bundle/web-app/README.md) mounts this provider as `office-to-pdf`. Independent compositions mount `@eco-agent/dsh-office-to-pdf` as a `cordis.yml` row.
 
 Callers submit authorized source identity, version, optional byte size, a deferred bounded read, Office extension, and scheduling priority through `ctx.officeToPdf.convert()`. A changed source version rejects conversion. Results contain caller-owned PDF bytes, missing fonts, a cache key, and a conversion generation that changes on configuration replacement. Cancellation rejects with its reason; conversion failures use `OfficeToPdfError`.
 

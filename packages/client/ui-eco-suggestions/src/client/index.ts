@@ -1,16 +1,16 @@
 /** Browser half of the eco suggestion-cards plugin. */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 // Type-only: pulls the locale Context merge (ctx.locale).
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls the conversation SlotMap merge (the suggestions slot).
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@eco-agent/dsh-client-ui-conversation/client'
 // Type-only: pulls the renderer-owned slots service (ctx.slots).
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 import { Suggestions } from './Suggestions.tsx'
 import { en, NS, zh, type SuggestionKey } from './locales.ts'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** eco suggestion-card copy. */
     [NS]: SuggestionKey

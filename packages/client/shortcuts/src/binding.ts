@@ -1,5 +1,5 @@
 /** Physical-key protocol shared by browser commands and desktop adapters; no DOM or runtime state. */
-import type { Branded } from '@deepseek-ai/dsh-brand'
+import type { Branded } from '@eco-agent/dsh-brand'
 
 /** Stable command identity owned by the registering feature. */
 export type ShortcutCommandId = Branded<'ShortcutCommandId'>

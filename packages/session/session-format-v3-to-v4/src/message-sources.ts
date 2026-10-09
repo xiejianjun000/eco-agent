@@ -1,7 +1,7 @@
 /** Native source admission preserves unknown attribution and refuses retired plugin wrappers. */
 
-import { SessionFormatError, isSessionFormatJsonObject } from '@deepseek-ai/dsh-session-format'
-import type { SessionFormatEvent } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatError, isSessionFormatJsonObject } from '@eco-agent/dsh-session-format'
+import type { SessionFormatEvent } from '@eco-agent/dsh-session-format'
 import { mapEventMessages } from './sources.ts'
 
 function source(message: Readonly<Record<string, unknown>>): void {

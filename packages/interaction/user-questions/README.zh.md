@@ -3,7 +3,7 @@ description: "基于 waterfall 的问答服务，用于工具、权限插件、�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-user-questions
+# @eco-agent/dsh-user-questions
 
 [English](README.md) | 中文
 

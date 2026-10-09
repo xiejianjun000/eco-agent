@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { mountRuntime } from '../../../packages/ptc-runtime/ptc-runtime-node/tests/setup.ts'
 

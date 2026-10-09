@@ -8,18 +8,18 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { execa } from 'execa'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import { afterAll, beforeAll, expect, it, onTestFinished, vi } from 'vitest'
 import {
   boot, composeEntries, initProfile, loadProfileDirectory, readProfilePatches, readProfileManifest,
   reconcileProfilePatches, OPTIONAL_BUNDLES, PluginPackages, readPluginMeta, getDshRuntimeVersion,
   type ProfileContext, type RuntimeResolution,
-} from '@deepseek-ai/dsh-app-boot'
+} from '@eco-agent/dsh-app-boot'
 import PluginManager, { type Config, type PluginChange, type PluginInstallLogChunk, type PluginInstallProgress, type PluginInstallRequestId } from '../src/index.ts'
-import Hmr from '@deepseek-ai/dsh-hmr'
-import Timer from '@deepseek-ai/cordis-plugin-timer'
-import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
-import { Group } from '@deepseek-ai/cordis-plugin-loader'
+import Hmr from '@eco-agent/dsh-hmr'
+import Timer from '@eco-agent/cordis-plugin-timer'
+import type { PatchOptions } from '@eco-agent/cordis-plugin-include'
+import { Group } from '@eco-agent/cordis-plugin-loader'
 import * as operations from '../src/operations.ts'
 import * as githubConnection from '../src/github-connection.ts'
 import { parse, parseDocument } from 'yaml'
@@ -686,9 +686,9 @@ it('refuses management bundle disablement and permits repeated bundle selections
 })
 
 it.each([
-  '@deepseek-ai/dsh-host-plugin-inventory',
-  '@deepseek-ai/dsh-typert-registry',
-  '@deepseek-ai/dsh-api-remotes',
+  '@eco-agent/dsh-host-plugin-inventory',
+  '@eco-agent/dsh-typert-registry',
+  '@eco-agent/dsh-api-remotes',
 ])('protects the management dependency %s and its containing bundle', async (name) => {
   const { ctx, manager, bundle, profile, dir } = await fixture('startup')
   bundle('extra', [{ id: 'dependency', name, disabled: true }])
@@ -1334,7 +1334,7 @@ it.each(['live', 'startup'] as const)('requires exact risk acknowledgement and p
   const { manager, dir, ctx } = await fixture(mode, false, undefined, {}, undefined, (dir) => {
     const file = join(dir, 'node_modules', 'extra', 'package.json')
     const metadata = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>
-    writeFileSync(file, JSON.stringify({ ...metadata, peerDependencies: { '@deepseek-ai/dsh': '999.0.0' } }))
+    writeFileSync(file, JSON.stringify({ ...metadata, peerDependencies: { '@eco-agent/dsh': '999.0.0' } }))
   })
   const runtime = getDshRuntimeVersion()
   const managed = () => [...ctx.loader.entries()].find(entry => entry.id === 'include:managed')
@@ -1342,7 +1342,7 @@ it.each(['live', 'startup'] as const)('requires exact risk acknowledgement and p
   expect(managed()).toBeUndefined()
   expect((await manager.listBundles()).find(bundle => bundle.name === 'extra')?.error).toEqual({
     code: 'incompatible-version',
-    incompatible: [{ name: 'extra', version: '1.0.0', runtimeVersion: runtime, peers: { '@deepseek-ai/dsh': '999.0.0' } }],
+    incompatible: [{ name: 'extra', version: '1.0.0', runtimeVersion: runtime, peers: { '@eco-agent/dsh': '999.0.0' } }],
   })
   expect(await manager.setBundleEnabled('extra', true)).toMatchObject({ changed: false, application: 'failed' })
   expect(await manager.setVersionExemption('extra@1.0.0', runtime, true)).toMatchObject({ changed: false, application: 'failed' })
@@ -1367,7 +1367,7 @@ it.each(['live', 'startup'] as const)('requires exact risk acknowledgement and p
 
 it('reports a package run refused for compatibility as a typed refusal', async () => {
   const { manager } = await fixture()
-  const incompatible = [{ name: 'dsh-x', version: '2.0.0', runtimeVersion: getDshRuntimeVersion(), peers: { '@deepseek-ai/dsh': '999.0.0' } }]
+  const incompatible = [{ name: 'dsh-x', version: '2.0.0', runtimeVersion: getDshRuntimeVersion(), peers: { '@eco-agent/dsh': '999.0.0' } }]
   const install = vi.spyOn(operations, 'runProfilePnpm').mockResolvedValue({
     exitCode: 1, output: 'dsh: installation rejected', truncated: false, logPath: 'pnpm.log', kind: 'unknown', incompatible,
   })
@@ -1385,7 +1385,7 @@ it.each([false, true])('rechecks installed bundle peers before accepting a disab
     bundle('incompatible', [])
     const file = join(dir, 'node_modules', 'incompatible', 'package.json')
     const metadata = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>
-    writeFileSync(file, JSON.stringify({ ...metadata, peerDependencies: { '@deepseek-ai/dsh': '<0.0.0' } }))
+    writeFileSync(file, JSON.stringify({ ...metadata, peerDependencies: { '@eco-agent/dsh': '<0.0.0' } }))
     const profile = readProfileManifest('test', dir)
     profile.dependencies = { ...profile.dependencies, incompatible: '1.0.0' }
     writeFileSync(join(dir, 'package.json'), JSON.stringify(profile))

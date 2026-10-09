@@ -3,7 +3,7 @@ description: "Shared React UI atoms for the dsh web client: controls, icons, mar
 kind: "package-library"
 ---
 
-# @deepseek-ai/dsh-client-ui-primitives
+# @eco-agent/dsh-client-ui-primitives
 
 English | [中文](README.zh.md)
 
@@ -71,7 +71,7 @@ Check this table before writing a control in a feature package. A plugin cannot 
 | `PluginArtworkTerminal`/`Loop`/`Subagent`/`Search`/`Default` | Fixed-palette 36×36 plugin artwork; `Terminal` supplies the light-blue prompt in plugin cards and sidebar guide entries. `Default` marks plugins without artwork of their own. Def ids are per-instance, so the same artwork repeats safely on one page. |
 | `GuideArtworkBrowser`/`Files` | Fixed-palette 36×36 browser and folder artwork for sidebar guide entries. |
 | `FileTypeIcon`, `classifyFileType`, `fileExtension` | A category-colored 28px file or folder glyph and the shared case-insensitive filename mapping behind it. Code and configuration files use detailed full-color technology glyphs; use `LinkIconMedium` for link-leading glyphs and image previews for image content. |
-| `languageForPath`, `CODE_HIGHLIGHT_EXTENSIONS`, `useCodeHighlighter` | The lazy line-token highlighter shared by code preview and diff review. The filename grammar selection is re-exported from `@deepseek-ai/dsh-util-code-language`, the single extension table also behind the read card's persisted short-id `lang` hint. |
+| `languageForPath`, `CODE_HIGHLIGHT_EXTENSIONS`, `useCodeHighlighter` | The lazy line-token highlighter shared by code preview and diff review. The filename grammar selection is re-exported from `@eco-agent/dsh-util-code-language`, the single extension table also behind the read card's persisted short-id `lang` hint. |
 
 Four pairs are easy to confuse:
 

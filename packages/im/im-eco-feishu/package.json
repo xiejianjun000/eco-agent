@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-im-eco-feishu",
+  "name": "@eco-agent/dsh-im-eco-feishu",
   "description": "eco Agent 飞书助手：把飞书（Lark）长连接桥接到 eco Agent，持久会话、/new、Markdown 回复、流式进度卡片、主动推送。",
   "version": "0.1.7-alpha.2",
   "repository": {
@@ -32,28 +32,28 @@
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-agent-default-model": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-settings": "workspace:^",
-    "@deepseek-ai/dsh-user-approval": "workspace:^",
-    "@deepseek-ai/dsh-user-questions": "workspace:^",
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@eco-agent/cordis": "workspace:^",
+    "@eco-agent/dsh-agent": "workspace:^",
+    "@eco-agent/dsh-agent-default-model": "workspace:^",
+    "@eco-agent/dsh-llm": "workspace:^",
+    "@eco-agent/dsh-session": "workspace:^",
+    "@eco-agent/dsh-settings": "workspace:^",
+    "@eco-agent/dsh-user-approval": "workspace:^",
+    "@eco-agent/dsh-user-questions": "workspace:^",
+    "@eco-agent/schemastery": "workspace:^"
   },
   "dependencies": {
     "@larksuiteoapi/node-sdk": "^1.73.0"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-agent-default-model": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-settings": "workspace:^",
-    "@deepseek-ai/dsh-user-approval": "workspace:^",
-    "@deepseek-ai/dsh-user-questions": "workspace:^",
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@eco-agent/cordis": "workspace:^",
+    "@eco-agent/dsh-agent": "workspace:^",
+    "@eco-agent/dsh-agent-default-model": "workspace:^",
+    "@eco-agent/dsh-llm": "workspace:^",
+    "@eco-agent/dsh-session": "workspace:^",
+    "@eco-agent/dsh-settings": "workspace:^",
+    "@eco-agent/dsh-user-approval": "workspace:^",
+    "@eco-agent/dsh-user-questions": "workspace:^",
+    "@eco-agent/schemastery": "workspace:^"
   }
 }

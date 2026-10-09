@@ -2,9 +2,9 @@
 
 import { cp, lstat, mkdir, mkdtemp, readFile, rename, rm, stat } from 'node:fs/promises'
 import { dirname, isAbsolute, join } from 'node:path'
-import type { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import { defineTool } from '@deepseek-ai/dsh-tools'
+import type { Context } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
+import { defineTool } from '@eco-agent/dsh-tools'
 
 /** Cordis plugin identity. */
 export const name = 'tool-workspace-dependencies'

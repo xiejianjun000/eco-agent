@@ -1,7 +1,7 @@
 /** Desktop Platform viewport; the native child owns remote content and credentials. */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Button, IconChevronLeftOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconChevronLeftOutlineRegular } from '@eco-agent/dsh-client-ui-primitives'
 import type { PlatformPage } from './platform-pages.ts'
 import css from './PlatformOverlay.module.css'
 import { acquireOverlayInert } from './overlay-inert.ts'

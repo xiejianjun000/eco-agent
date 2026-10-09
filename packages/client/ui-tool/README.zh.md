@@ -3,7 +3,7 @@ description: "dsh Web 客户端的 Client 工具展示插件：完整调用树�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-tool
+# @eco-agent/dsh-client-ui-tool
 
 [English](README.md) | 中文
 
@@ -87,7 +87,7 @@ Auto 拒绝优先于按工具名选择的专门视图。其通用行保留调用
 
 展开后的状态圆点和文字使用静态语义色。操作回执和任务输出的标题保持中性色，展开时省略标题中的状态。中断回执仅确认已发出中断请求。
 
-terminal model 使用浏览器安全入口 `@deepseek-ai/dsh-spill-policy/notice` 的 `hasSpillNotice`，而非独立的 UI 匹配规则。[spill-policy README](../../spill/spill-policy/README.zh.md#shared-notice-ownership) 负责提示文本的格式化与识别。该检查保守地选择通用输出；匹配的文本无法证明其来源，回放也不改变已记录的结果字节。
+terminal model 使用浏览器安全入口 `@eco-agent/dsh-spill-policy/notice` 的 `hasSpillNotice`，而非独立的 UI 匹配规则。[spill-policy README](../../spill/spill-policy/README.zh.md#shared-notice-ownership) 负责提示文本的格式化与识别。该检查保守地选择通用输出；匹配的文本无法证明其来源，回放也不改变已记录的结果字节。
 
 ### 声明的可选能力
 

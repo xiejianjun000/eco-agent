@@ -1,6 +1,6 @@
 /** CPU SenseVoice inference and Silero segmentation, confined to the recognition process. */
 import { createRequire } from 'node:module'
-import type { Transcript } from '@deepseek-ai/dsh-experimental-speech-to-text/types'
+import type { Transcript } from '@eco-agent/dsh-experimental-speech-to-text/types'
 import type { Config } from './config.ts'
 import { validateInput } from './input.ts'
 

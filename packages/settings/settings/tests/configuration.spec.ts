@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { join } from 'node:path'
 import { expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
-import z from '@deepseek-ai/schemastery'
+import z from '@eco-agent/schemastery'
 import { configurationFixture as fixture } from './configuration-fixture.ts'
 
 it('persists a model edit, updates the real consumer without remounting, and restores it at restart', async () => {

@@ -6,7 +6,7 @@
  * props. The plugin publishes it here instead and withdraws it on unload — the
  * same pattern the tab-action menu items use, for the same reason.
  */
-import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
+import type { ClientRemote } from '@eco-agent/dsh-api-gateway/client'
 
 let published: ClientRemote | undefined
 

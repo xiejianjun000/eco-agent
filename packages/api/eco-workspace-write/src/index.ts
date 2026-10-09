@@ -15,28 +15,28 @@
  * offered for the smaller in-place case an agent-driven caller already has.
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import type {} from '@deepseek-ai/dsh-fs'
-import type { FsTarget, FsVersion } from '@deepseek-ai/dsh-fs'
-import type {} from '@deepseek-ai/dsh-sandbox-policy'
-import type { SandboxExecutionPolicy } from '@deepseek-ai/dsh-sandbox'
-import type {} from '@deepseek-ai/dsh-session'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type {} from '@deepseek-ai/dsh-session-persistence'
-import { Remote, RemoteError, TypertRemoteService, type TypertLookup } from '@deepseek-ai/dsh-typert-protocol'
+import type { Context } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
+import type {} from '@eco-agent/dsh-fs'
+import type { FsTarget, FsVersion } from '@eco-agent/dsh-fs'
+import type {} from '@eco-agent/dsh-sandbox-policy'
+import type { SandboxExecutionPolicy } from '@eco-agent/dsh-sandbox'
+import type {} from '@eco-agent/dsh-session'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type {} from '@eco-agent/dsh-session-persistence'
+import { Remote, RemoteError, TypertRemoteService, type TypertLookup } from '@eco-agent/dsh-typert-protocol'
 import type { EcoWriteEdit, EcoWriteResult, EcoWriteScope } from './types.ts'
 
 export type * from './types.ts'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Host owner of the `ecoWorkspaceWrite` Remote namespace. */
     ecoWorkspaceWrite: EcoWorkspaceWrite
   }
 }
 
-declare module '@deepseek-ai/dsh-typert-protocol' {
+declare module '@eco-agent/dsh-typert-protocol' {
   interface TypertLookupMap {
     /** Resolve a Session id to its workspace root without loading its event body or activating an Agent. */
     ecoWriteScope: TypertLookup<EcoWriteScope, SessionId>
@@ -69,8 +69,8 @@ export class EcoWorkspaceWrite extends TypertRemoteService {
       scope.typert.lookups.register('ecoWriteScope', {
         parameter: 'ecoWriteScope',
         wire: 'ecoWriteScopeId',
-        hostTypeSymbol: '@deepseek-ai/dsh-api-eco-workspace-write#EcoWriteScope',
-        wireTypeSymbol: '@deepseek-ai/dsh-session/types#SessionId',
+        hostTypeSymbol: '@eco-agent/dsh-api-eco-workspace-write#EcoWriteScope',
+        wireTypeSymbol: '@eco-agent/dsh-session/types#SessionId',
         resolve: async (sessionId) => {
           const live = scope.sessions.get(sessionId)?.header
           const stored = live === undefined

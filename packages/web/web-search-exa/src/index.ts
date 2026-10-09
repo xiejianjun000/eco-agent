@@ -2,13 +2,13 @@
  * Exa-backed `WebSearchProvider` plugin. It contributes to the `ctx.web`
  * registry without owning the service.
  *
- * @module @deepseek-ai/dsh-web-search-exa
+ * @module @eco-agent/dsh-web-search-exa
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
-import z from '@deepseek-ai/schemastery'
-import type {} from '@deepseek-ai/dsh-web'
+import type { Context } from '@eco-agent/cordis'
+import { launchEnvironmentOf } from '@eco-agent/dsh-launch-environment'
+import z from '@eco-agent/schemastery'
+import type {} from '@eco-agent/dsh-web'
 import {
   ExaSearchProvider,
   EXA_DEFAULT_BASE_URL,

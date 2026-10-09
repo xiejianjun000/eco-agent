@@ -3,7 +3,7 @@ description: "面向部署方与维护者的 SQLite FTS5 会话历史全文搜�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-session-query-sqlite
+# @eco-agent/dsh-session-query-sqlite
 
 [English](README.md) | 中文
 
@@ -34,8 +34,8 @@ kind: "package-reference"
 ### 最小配置
 
 ```yaml
-- name: '@deepseek-ai/dsh-session'
-- name: '@deepseek-ai/dsh-session-query-sqlite'
+- name: '@eco-agent/dsh-session'
+- name: '@eco-agent/dsh-session-query-sqlite'
   config:
     path: /absolute/path/to/session-search.db
 ```

@@ -1,20 +1,20 @@
 /**
  * Parent-owned durable subagent catalog events and their chunked projection.
  *
- * @module @deepseek-ai/dsh-subagent/catalog
+ * @module @eco-agent/dsh-subagent/catalog
  */
 
 import { z } from 'zod'
-import { appendChunkedList, chunkedListSchema, iterateChunkedList } from '@deepseek-ai/dsh-chunked-list'
-import type { ChunkedList } from '@deepseek-ai/dsh-chunked-list'
+import { appendChunkedList, chunkedListSchema, iterateChunkedList } from '@eco-agent/dsh-chunked-list'
+import type { ChunkedList } from '@eco-agent/dsh-chunked-list'
 import type {
   Session,
   SessionEvent,
   SessionHeader,
   SessionId,
   SessionLogOffset,
-} from '@deepseek-ai/dsh-session'
-import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
+} from '@eco-agent/dsh-session'
+import type { ProjectionDefinition } from '@eco-agent/dsh-session-projection'
 import type { SubagentCatalogEntry } from './projection-types.ts'
 
 /** Catalog payload version emitted by live child creation. */
@@ -34,7 +34,7 @@ export type SubagentCatalogEvent =
     | ({ readonly version: 1 } & (KnownCatalogMode | { readonly mode: 'unknown'; readonly label?: string }))
   )
 
-declare module '@deepseek-ai/dsh-session/types' {
+declare module '@eco-agent/dsh-session/types' {
   interface SessionEventMap {
     /**
      * A direct child's identity and available discovery fields.
@@ -90,7 +90,7 @@ const stateSchema: z.ZodType<SubagentCatalogState> = z.object({
   head: chunkedListSchema(eventDataSchema).optional(),
 }).strict()
 
-declare module '@deepseek-ai/dsh-session-projection/types' {
+declare module '@eco-agent/dsh-session-projection/types' {
   interface SessionProjectionStateMap {
     subagentCatalog: SubagentCatalogState
   }

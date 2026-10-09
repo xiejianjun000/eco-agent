@@ -2,7 +2,7 @@
 import { memo } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
-import { createSnapshotStore, type ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore, type ObservableSnapshot } from '@eco-agent/dsh-client-store'
 import type { UseDisclosure } from '../src/client/contract/slots.ts'
 import { bindDisclosure, useDisclosure } from '../src/client/chat/use-disclosure.ts'
 

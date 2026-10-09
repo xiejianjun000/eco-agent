@@ -1,7 +1,7 @@
 /** Original-Session link label and availability from the current public Session and Workspace feeds. */
-import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionListState } from '@eco-agent/dsh-api-session-controller/client'
+import type { WorkspaceSnapshot } from '@eco-agent/dsh-api-workspace-controller/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 
 /** Navigation state shown beside the retained task's original Session id. */
 export type SessionLinkState = 'available' | 'loading' | 'archived' | 'unavailable'

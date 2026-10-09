@@ -3,7 +3,7 @@ description: "The model-facing read, read_image, write, and edit tools for users
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-tool-fs
+# @eco-agent/dsh-tool-fs
 
 English | [中文](README.zh.md)
 
@@ -32,9 +32,9 @@ Mount the tools after a `ctx.fs` backend and, for read-before-write/edit behavio
 A backend, the policy plugin, then the tools; the attachment store is optional and enables `read_image`.
 
 ```yaml
-- name: '@deepseek-ai/dsh-fs-local'
-- name: '@deepseek-ai/dsh-fs-observation-policy'
-- name: '@deepseek-ai/dsh-tool-fs'
+- name: '@eco-agent/dsh-fs-local'
+- name: '@eco-agent/dsh-fs-observation-policy'
+- name: '@eco-agent/dsh-tool-fs'
 ```
 
 The policy plugin is optional: without it the tools run against the bare provider (unconditional write, overwrite, and edit with no observed-state). A deployment that loads these tools is expected to also load it, so the behavior is read-before-write/edit. `read_image` registers only while a durable `ctx.attachments` service is mounted; execution additionally refuses on a route whose exact model does not declare image input, so a text route's durable history stays free of image blocks.

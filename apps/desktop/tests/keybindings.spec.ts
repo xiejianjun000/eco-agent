@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it, onTestFinished } from 'vitest'
 import { desktopKeybindings } from '../src/keybindings.ts'
-import type { ShortcutCommandId, ShortcutConfigSnapshot } from '@deepseek-ai/dsh-client-shortcuts/protocol'
+import type { ShortcutCommandId, ShortcutConfigSnapshot } from '@eco-agent/dsh-client-shortcuts/protocol'
 
 it('persists into the supplied userData, reloads null bindings, and retains original future-version bytes', async () => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-keybindings-'))

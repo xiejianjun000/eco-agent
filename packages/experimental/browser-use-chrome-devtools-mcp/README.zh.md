@@ -3,7 +3,7 @@ description: "通过 Chrome DevTools MCP 操作 Chromium，为每个活动 Sessi
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp
+# @eco-agent/dsh-experimental-browser-use-chrome-devtools-mcp
 
 [English](README.md) | 中文
 
@@ -28,8 +28,8 @@ kind: "package-reference"
 在创建或恢复 Session 前，将以下条目挂载到已提供 Agent、工具和系统提示词的 profile 组合中。加载或重新加载此提供方不会接管已经活动的 Session。浏览器安装遵循上游运行时；使用 `executablePath` 选择已有 Chromium 安装。
 
 ```yaml
-- name: '@deepseek-ai/dsh-browser-use'
-- name: '@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp'
+- name: '@eco-agent/dsh-browser-use'
+- name: '@eco-agent/dsh-experimental-browser-use-chrome-devtools-mcp'
   config:
     mode: launch
     headless: true

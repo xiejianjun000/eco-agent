@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-chunked-list",
+  "name": "@eco-agent/dsh-chunked-list",
   "description": "Persistent append-only chunked lists with bounded copying and JSON checkpoint validation",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -27,10 +27,10 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/cordis": "workspace:~"
   },
   "dependencies": {
     "zod": "^4.4.3"

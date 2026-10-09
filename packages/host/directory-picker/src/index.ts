@@ -8,10 +8,10 @@
  * can reach). Consumers switch on `capability().kind`; the union is
  * merge-extensible, and the documented default for an unknown kind is to
  * hide the picking affordance rather than fail.
- * @module @deepseek-ai/dsh-host-directory-picker
+ * @module @eco-agent/dsh-host-directory-picker
  */
 
-import { Context, Service } from '@deepseek-ai/cordis'
+import { Context, Service } from '@eco-agent/cordis'
 import type { DirectoryListing } from './types.ts'
 
 export type { DirectoryEntry, DirectoryListing } from './types.ts'
@@ -87,7 +87,7 @@ export class DirectoryPickerError extends Error {
   }
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     directoryPicker: DirectoryPicker
   }

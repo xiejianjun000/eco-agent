@@ -1,4 +1,4 @@
-import type { Volatile } from '@deepseek-ai/cordis'
+import type { Volatile } from '@eco-agent/cordis'
 /** Public preset roster and selection configuration. */
 /** One declared preset and its current activation failure, if any. */
 export interface AgentPreset {

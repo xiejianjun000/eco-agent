@@ -24,7 +24,7 @@ import {
   type WorkspacePackageManifest,
 } from './verify-package-dependencies.ts'
 
-const CORDIS = '@deepseek-ai/cordis'
+const CORDIS = '@eco-agent/cordis'
 const roots: string[] = []
 
 afterEach(() => {
@@ -66,7 +66,7 @@ function facts(manifest: PackageDependencyManifest): PackageDependencyFacts {
       '@deepseek-ai/dsh-runtime',
       '@deepseek-ai/dsh-types',
       '@deepseek-ai/dsh-stale',
-      '@deepseek-ai/schemastery',
+      '@eco-agent/schemastery',
     ]),
     allSourceUses: new Map([
       ['@deepseek-ai/dsh-runtime', ['packages/core/probe/src/index.ts']],
@@ -183,41 +183,41 @@ function hostRuntimeFixture(): {
 describe('package dependency scope', () => {
   it('keeps the measured Host relay roster explicit', () => {
     expect(PACKAGE_DEPENDENCY_POLICY.clientFaceExclude).toEqual([
-      '@deepseek-ai/dsh-api-session-controller',
-      '@deepseek-ai/dsh-api-workspace-controller',
+      '@eco-agent/dsh-api-session-controller',
+      '@eco-agent/dsh-api-workspace-controller',
     ])
     expect(PACKAGE_DEPENDENCY_POLICY.hostPackages).toEqual([
-      '@deepseek-ai/dsh-llm',
-      '@deepseek-ai/dsh-session',
+      '@eco-agent/dsh-llm',
+      '@eco-agent/dsh-session',
     ])
     expect(PACKAGE_DEPENDENCY_POLICY.configurationOnlyDevDependencies).toEqual({
-      '@deepseek-ai/dsh-client-locale': ['@deepseek-ai/dsh-api-remotes'],
-      '@deepseek-ai/dsh-client-ui-conversation': [
-        '@deepseek-ai/dsh-api-remotes',
-        '@deepseek-ai/dsh-client-ui-workspace',
+      '@eco-agent/dsh-client-locale': ['@eco-agent/dsh-api-remotes'],
+      '@eco-agent/dsh-client-ui-conversation': [
+        '@eco-agent/dsh-api-remotes',
+        '@eco-agent/dsh-client-ui-workspace',
       ],
-      '@deepseek-ai/dsh-client-ui-model-selection': ['@deepseek-ai/dsh-client-ui-input-trigger'],
-      '@deepseek-ai/dsh-client-ui-sidebar': ['@deepseek-ai/dsh-client-ui-workspace'],
-      '@deepseek-ai/dsh-client-ui-subagent': ['@deepseek-ai/dsh-client-ui-input-trigger'],
-      '@deepseek-ai/dsh-client-ui-theme': ['@deepseek-ai/dsh-api-remotes'],
-      '@deepseek-ai/dsh-client-ui-tool': ['@deepseek-ai/dsh-api-remotes'],
+      '@eco-agent/dsh-client-ui-model-selection': ['@eco-agent/dsh-client-ui-input-trigger'],
+      '@eco-agent/dsh-client-ui-sidebar': ['@eco-agent/dsh-client-ui-workspace'],
+      '@eco-agent/dsh-client-ui-subagent': ['@eco-agent/dsh-client-ui-input-trigger'],
+      '@eco-agent/dsh-client-ui-theme': ['@eco-agent/dsh-api-remotes'],
+      '@eco-agent/dsh-client-ui-tool': ['@eco-agent/dsh-api-remotes'],
     })
     expect(PACKAGE_DEPENDENCY_POLICY.duplicateSafePackages).toEqual([
-      '@deepseek-ai/dsh-brand',
-      '@deepseek-ai/dsh-lazy-require',
-      '@deepseek-ai/dsh-typert-protocol',
-      '@deepseek-ai/dsh-util-code-language',
-      '@deepseek-ai/dsh-util-crypto',
-      '@deepseek-ai/dsh-util-values',
+      '@eco-agent/dsh-brand',
+      '@eco-agent/dsh-lazy-require',
+      '@eco-agent/dsh-typert-protocol',
+      '@eco-agent/dsh-util-code-language',
+      '@eco-agent/dsh-util-crypto',
+      '@eco-agent/dsh-util-values',
     ])
-    expect(PACKAGE_DEPENDENCY_POLICY.safeHostDependencyExports['@deepseek-ai/dsh-deque']).toEqual(['Deque'])
-    expect(PACKAGE_DEPENDENCY_POLICY.safeHostDependencyExports['@deepseek-ai/schemastery']).toEqual(['default'])
-    expect(PACKAGE_DEPENDENCY_POLICY.safeHostDependencyExports['@deepseek-ai/dsh-session/types']).toBeUndefined()
-    expect(PACKAGE_DEPENDENCY_POLICY.safeHostDependencyExports['@deepseek-ai/dsh-typert-protocol']).toBeUndefined()
-    expect(PACKAGE_DEPENDENCY_POLICY.peerRequiredHostExports['@deepseek-ai/dsh-scope']).toEqual([
+    expect(PACKAGE_DEPENDENCY_POLICY.safeHostDependencyExports['@eco-agent/dsh-deque']).toEqual(['Deque'])
+    expect(PACKAGE_DEPENDENCY_POLICY.safeHostDependencyExports['@eco-agent/schemastery']).toEqual(['default'])
+    expect(PACKAGE_DEPENDENCY_POLICY.safeHostDependencyExports['@eco-agent/dsh-session/types']).toBeUndefined()
+    expect(PACKAGE_DEPENDENCY_POLICY.safeHostDependencyExports['@eco-agent/dsh-typert-protocol']).toBeUndefined()
+    expect(PACKAGE_DEPENDENCY_POLICY.peerRequiredHostExports['@eco-agent/dsh-scope']).toEqual([
       'carrierKeyOf', 'createScope', 'scopeOf', 'scopeTarget',
     ])
-    expect(PACKAGE_DEPENDENCY_POLICY.peerRequiredHostExports['@deepseek-ai/dsh-typert-protocol']).toBeUndefined()
+    expect(PACKAGE_DEPENDENCY_POLICY.peerRequiredHostExports['@eco-agent/dsh-typert-protocol']).toBeUndefined()
   })
 
   it('discovers the Client directory, dsh.client declarations, and configured Host packages', () => {
@@ -614,16 +614,16 @@ describe('face-aware source classification', () => {
       "export * from '@f/star'",
       "void import('@f/dynamic')",
       "void require('@f/required')",
-      "import { createLazyRequire as lazy } from '@deepseek-ai/dsh-lazy-require'",
-      "import * as lazyModule from '@deepseek-ai/dsh-lazy-require'",
+      "import { createLazyRequire as lazy } from '@eco-agent/dsh-lazy-require'",
+      "import * as lazyModule from '@eco-agent/dsh-lazy-require'",
       "void lazy('@f/lazy', import.meta.url)",
       "void lazyModule.createLazyRequire('@f/lazy-namespace', import.meta.url)",
       'void defaultValue; void local; void namespace',
     ].join('\n')
     const uses = collectRuntimeSourceExportUses('probe.ts', source)
     expect(uses.map(({ specifier, exportName }) => ({ specifier, exportName }))).toEqual([
-      { specifier: '@deepseek-ai/dsh-lazy-require', exportName: '*' },
-      { specifier: '@deepseek-ai/dsh-lazy-require', exportName: 'createLazyRequire' },
+      { specifier: '@eco-agent/dsh-lazy-require', exportName: '*' },
+      { specifier: '@eco-agent/dsh-lazy-require', exportName: 'createLazyRequire' },
       { specifier: '@f/dynamic', exportName: '*' },
       { specifier: '@f/effect', exportName: '(side effect)' },
       { specifier: '@f/lazy', exportName: '*' },
@@ -771,7 +771,7 @@ describe('dependency sections', () => {
 
   it('does not leak repository configuration into captured dependency facts', () => {
     const manifest: PackageDependencyManifest = {
-      name: '@deepseek-ai/dsh-client-locale',
+      name: '@eco-agent/dsh-client-locale',
       dependencies: { '@deepseek-ai/dsh-runtime': 'workspace:*' },
       devDependencies: { [CORDIS]: 'workspace:~', '@deepseek-ai/dsh-types': 'workspace:*' },
       peerDependencies: { [CORDIS]: 'workspace:~' },
@@ -779,7 +779,7 @@ describe('dependency sections', () => {
     const base = facts(manifest)
     const subject: PackageDependencyFacts = {
       ...base,
-      workspaceNames: new Set([...base.workspaceNames, '@deepseek-ai/dsh-api-remotes']),
+      workspaceNames: new Set([...base.workspaceNames, '@eco-agent/dsh-api-remotes']),
     }
 
     expect(collectPackageDependencyViolations({
@@ -832,7 +832,7 @@ describe('dependency sections', () => {
       name: '@deepseek-ai/dsh-probe',
       dependencies: {
         '@deepseek-ai/dsh-runtime': 'workspace:*',
-        '@deepseek-ai/schemastery': 'workspace:~',
+        '@eco-agent/schemastery': 'workspace:~',
         external: '^1.0.0',
       },
       devDependencies: {
@@ -948,7 +948,7 @@ describe('dependency sections', () => {
     const manifestPath = 'package.json'
     const manifest: PackageDependencyManifest = {
       name: '@deepseek-ai/dsh-probe',
-      dependencies: { '@deepseek-ai/schemastery': 'workspace:*', external: '^1.0.0' },
+      dependencies: { '@eco-agent/schemastery': 'workspace:*', external: '^1.0.0' },
       devDependencies: { [CORDIS]: 'workspace:~', '@deepseek-ai/dsh-runtime': 'workspace:*' },
       peerDependencies: {
         [CORDIS]: 'workspace:~',
@@ -964,7 +964,7 @@ describe('dependency sections', () => {
     expect(fixPackageDependencies(root, state)).toEqual([manifestPath])
     const fixed = JSON.parse(readFileSync(join(root, manifestPath), 'utf8')) as PackageDependencyManifest
     expect(fixed.dependencies).toEqual({
-      '@deepseek-ai/schemastery': 'workspace:~',
+      '@eco-agent/schemastery': 'workspace:~',
       external: '^1.0.0',
       '@deepseek-ai/dsh-runtime': 'workspace:*',
     })

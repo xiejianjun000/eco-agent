@@ -1,4 +1,4 @@
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebhookRuntime, {
@@ -200,7 +200,7 @@ describe('WebhookRuntime', () => {
     ].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n')
     const forbidden: ReadonlyArray<readonly [string, RegExp]> = [
       ['execution records', /\bWebhook(?:Execution|Status)\b/],
-      ['delivery storage domains', /@deepseek-ai\/dsh-storage|\bstorageDomain\b|\bDomainSpec\b/],
+      ['delivery storage domains', /@eco-agent\/dsh-storage|\bstorageDomain\b|\bDomainSpec\b/],
       ['retry timers', /\bset(?:Timeout|Interval)\s*\(/],
       ['delivery-id dedupe maps', /new Map<\s*WebhookDeliveryId/],
       ['Agent idle waits', /\.whenIdle\s*\(/],

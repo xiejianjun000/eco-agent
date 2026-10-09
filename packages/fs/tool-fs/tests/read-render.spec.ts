@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { languageForPath } from '@deepseek-ai/dsh-util-code-language'
+import { languageForPath } from '@eco-agent/dsh-util-code-language'
 import { buildWindow, langFromPath, readMetaFromMeta, READ_MAX_BYTES, READ_MAX_LINE_LENGTH } from '../src/read-render.ts'
 import type { ReadWindow } from '../src/read-render.ts'
 

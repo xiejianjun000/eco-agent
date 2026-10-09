@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import type { Context } from '@deepseek-ai/cordis'
-import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { Context } from '@eco-agent/cordis'
+import type { PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
 // The domain's client-namespace pure-type outlet: one import edge delivers
 // the `todos` projection-key merge (single source, no consumer-side restated
 // declare) and the payload type. Type-only by construction — the outlet is
 // free of host value imports, so no host Context merge enters this program.
-import type { TodoItem } from '@deepseek-ai/dsh-tool-todo/client'
+import type { TodoItem } from '@eco-agent/dsh-tool-todo/client'
 import {
   IconChecklistOutlineRegular, IconChevronDownOutlineRegular, IconChevronUpOutlineRegular, StateDot,
   type StateDotState,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@eco-agent/dsh-client-ui-primitives'
 import { NS } from '../locales.ts'
 import css from './TodoPanel.module.css'
 

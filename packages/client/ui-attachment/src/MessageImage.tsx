@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
-import { IconLoadingOutlineRegular, IconRefreshOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
-import { ImageLightbox } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ImageLightboxLabels } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { ImageAttachmentRef } from '@eco-agent/dsh-attachment'
+import { IconLoadingOutlineRegular, IconRefreshOutlineRegular } from '@eco-agent/dsh-client-ui-primitives'
+import { ImageLightbox } from '@eco-agent/dsh-client-ui-primitives'
+import type { ImageLightboxLabels } from '@eco-agent/dsh-client-ui-primitives'
 import css from './MessageImage.module.css'
 
 /** Loads a session-authorized durable image URL and may expose a cached URL synchronously. */

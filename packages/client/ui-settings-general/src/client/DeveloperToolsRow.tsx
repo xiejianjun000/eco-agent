@@ -1,8 +1,8 @@
 /** General Settings control for shared developer-tool visibility and previews. */
 import { useState } from 'react'
-import { Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import { Switch } from '@eco-agent/dsh-client-ui-primitives'
+import type { ObservableSnapshot } from '@eco-agent/dsh-client-store'
+import type { InjectFace, PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
 import css from './DeveloperToolsRow.module.css'
 
 /** Accepted setting and ordered mutation supplied by the settings owner. */

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { INTERACTIVE_SELECTOR } from '../src/window-drag/regions.ts'
 
-const THEME_PACKAGE = '@deepseek-ai/dsh-client-ui-theme'
+const THEME_PACKAGE = '@eco-agent/dsh-client-ui-theme'
 const baseCss = readFileSync(fileURLToPath(new URL('../src/base.css', import.meta.url)), 'utf8')
 
 /**

@@ -1,9 +1,9 @@
 /** Collected output remains byte-addressable and recoverable across transport lag and helper teardown. */
 import { createHash } from 'node:crypto'
 import { readFile, rm } from 'node:fs/promises'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { describe, expect, it } from 'vitest'
-import { SshSubprocessRuntime } from '@deepseek-ai/dsh-subprocess-ssh'
+import { SshSubprocessRuntime } from '@eco-agent/dsh-subprocess-ssh'
 import { createHelperHarness } from './fixtures/helper.ts'
 import { doneSchema, preparedSchema } from '../src/schemas.ts'
 import { z } from 'zod'

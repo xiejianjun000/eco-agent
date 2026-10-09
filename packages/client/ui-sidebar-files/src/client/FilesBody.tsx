@@ -11,16 +11,16 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import clsx from 'clsx'
-import type { RemoteFailure } from '@deepseek-ai/dsh-api-remotes/client'
+import type { RemoteFailure } from '@eco-agent/dsh-api-remotes/client'
 import type {
   PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore, TranslateNS,
-} from '@deepseek-ai/dsh-client-ui-slots'
+} from '@eco-agent/dsh-client-ui-slots'
 import {
   FileTypeIcon, IconFolderCloseRegular, IconFolderOpenRegular, IconRefreshOutlineRegular, Tooltip, classifyFileType,
   IconPauseOutlineRegular, IconPlayOutlineRegular, PathLabel,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import { fileAddressFor } from '@deepseek-ai/dsh-util-workspace-path'
-import type { WorkspaceDirectoryEntry } from '@deepseek-ai/dsh-api-workspace-files/types'
+} from '@eco-agent/dsh-client-ui-primitives'
+import { fileAddressFor } from '@eco-agent/dsh-util-workspace-path'
+import type { WorkspaceDirectoryEntry } from '@eco-agent/dsh-api-workspace-files/types'
 import { childPath } from './face.ts'
 import type { FilesInjected } from './face.ts'
 import type {} from './locales.ts'

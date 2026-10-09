@@ -18,8 +18,8 @@
  * succeeded after the tab appeared cannot resolve. Only the task's Session and id are stored; its name, instruction, and
  * deliveries are not.
  */
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { ScheduleId } from '@deepseek-ai/dsh-schedule/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { ScheduleId } from '@eco-agent/dsh-schedule/client'
 
 /** The Sidebar fields that identify one task tab page across a reload. */
 export interface TaskTabPage {

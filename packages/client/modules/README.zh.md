@@ -3,7 +3,7 @@ description: "面向用户与维护者的 web GUI 客户端模块系统说明：
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-modules
+# @eco-agent/dsh-client-modules
 
 [English](README.md) | 中文
 

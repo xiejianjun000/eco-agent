@@ -44,7 +44,7 @@ export default defineConfig([
     dts: false,
     clean: false,
     codeSplitting: false,
-    deps: { alwaysBundle: ['@deepseek-ai/dsh-atomic-write'] },
+    deps: { alwaysBundle: ['@eco-agent/dsh-atomic-write'] },
   },
   {
     entry: ['lib/types/main.js'],

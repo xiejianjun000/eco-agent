@@ -3,7 +3,7 @@ description: "面向快照测试的无密钥 LLM（大语言模型）回放插�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-llm-replay
+# @eco-agent/dsh-llm-replay
 
 [English](README.md) | 中文
 
@@ -33,7 +33,7 @@ kind: "package-reference"
 
 ```yaml
 - id: llm-replay
-  name: '@deepseek-ai/dsh-llm-replay'
+  name: '@eco-agent/dsh-llm-replay'
   config:
     providers:
       - id: deepseek-official

@@ -3,7 +3,7 @@ description: "The load_workspace_dependencies tool: absolute paths into a bundle
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-tool-workspace-dependencies
+# @eco-agent/dsh-tool-workspace-dependencies
 
 English | [中文](README.zh.md)
 
@@ -25,12 +25,12 @@ Deployments that ship their own script runtimes (Desktop's primary runtime, or a
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount the plugin beside the tool registry with the payload directory. Configuration validation requires a nonempty `source` and rejects empty `root` values before activation; both paths must be absolute. The bundled Office skills (`@deepseek-ai/dsh-skill-office`) reference this tool by name for their default interpreter.
+Mount the plugin beside the tool registry with the payload directory. Configuration validation requires a nonempty `source` and rejects empty `root` values before activation; both paths must be absolute. The bundled Office skills (`@eco-agent/dsh-skill-office`) reference this tool by name for their default interpreter.
 
 ### Minimal configuration
 
 ```yaml
-- name: '@deepseek-ai/dsh-tool-workspace-dependencies'
+- name: '@eco-agent/dsh-tool-workspace-dependencies'
   config:
     source: /path/to/primary-runtime
 ```

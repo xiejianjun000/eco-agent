@@ -3,7 +3,7 @@ description: "`ctx.fs` 的宿主文件系统后端：面向选择或排查本地
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-fs-local
+# @eco-agent/dsh-fs-local
 
 [English](README.md) | 中文
 
@@ -36,7 +36,7 @@ kind: "package-reference"
 用一个基础目录加载后端；相对路径基于它解析，绝对路径则忽略它。相对基础目录以提供方进程工作目录为起点，展示路径始终保持绝对路径。在 POSIX 上，解析先遵循文件系统语义，再进行词法规范化：`symlink/..` 到达链接目标的父目录，即使最终文件尚不存在也如此。目录列表中的子项展示路径保留同样的物理遍历语义。Windows 保留原生的驱动器相对路径规范化行为。
 
 ```yaml
-- name: '@deepseek-ai/dsh-fs-local'
+- name: '@eco-agent/dsh-fs-local'
   config:
     cwd: /absolute/path/to/workspace
 ```

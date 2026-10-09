@@ -3,7 +3,7 @@ description: "Changed files, deliveries, and clickable file references for the W
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-deliverables
+# @eco-agent/dsh-client-ui-deliverables
 
 English | [中文](README.zh.md)
 

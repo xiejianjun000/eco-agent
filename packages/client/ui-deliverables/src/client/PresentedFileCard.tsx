@@ -1,8 +1,8 @@
 /** File identity, Sidebar preview, and contributed native actions for one delivery. */
 import type { ReactNode } from 'react'
-import { resolveWorkspacePath } from '@deepseek-ai/dsh-util-workspace-path'
-import { FileTypeIcon, fileExtension } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import { resolveWorkspacePath } from '@eco-agent/dsh-util-workspace-path'
+import { FileTypeIcon, fileExtension } from '@eco-agent/dsh-client-ui-primitives'
+import type { PropsLocale } from '@eco-agent/dsh-client-ui-slots'
 import type { PresentedHost } from '../presented.ts'
 import { PRESENTED_SUCCESS_HOLD_MS, PRESENTED_SUCCESS_FADE_MS, type PresentedOpenPhase } from './present-open.ts'
 import { basename, type PresentedPath } from './turn-deliverables.ts'

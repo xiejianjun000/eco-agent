@@ -1,9 +1,9 @@
 import { byteResult } from './fixtures.client.ts'
 /** HTML metadata and keyed slot contributions share one identity and unwind with their fiber. */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { sessionFileAddress } from '@deepseek-ai/dsh-util-workspace-path'
+import { Context } from '@eco-agent/cordis'
+import { sessionFileAddress } from '@eco-agent/dsh-util-workspace-path'
 import { DocumentPreviewRegistry } from '../src/client/document/registry.ts'
 import { apply, HTML_BODY_ID, htmlBodyDefinition } from '../src/client/html/index.ts'
 import { HtmlBody } from '../src/client/html/HtmlBody.tsx'

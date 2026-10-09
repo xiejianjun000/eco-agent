@@ -7,7 +7,7 @@ export const name = 'python-snapshot-image-offload'
 export const inject = ['attachments', 'agents', 'llm']
 
 /**
- * @param {import('@deepseek-ai/cordis').Context} ctx - Scenario-local host context.
+ * @param {import('@eco-agent/cordis').Context} ctx - Scenario-local host context.
  * @param {{ parentSessionId: string }} config - The one session receiving the authored failure.
  */
 export function apply(ctx, config) {

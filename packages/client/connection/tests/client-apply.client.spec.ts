@@ -2,7 +2,7 @@
  * Connection plugin browser-half apply: ctx.connection handle mounting,
  * explicit carrier selection, and single-consumer connection-loop ownership.
  */
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   apply,

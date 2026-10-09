@@ -127,24 +127,24 @@ function checkManifest(
   if (!manifest.files?.includes('lib/invariant.js')) {
     addViolation(violations, owner.manifestPath, 'files must publish lib/invariant.js')
   }
-  if (owner.packageName === '@deepseek-ai/dsh-invariants') return
+  if (owner.packageName === '@eco-agent/dsh-invariants') return
   const developmentOnlyInvariant = usesFlattenedPackageDependencies(
     owner.manifestPath,
     owner.packageName,
     manifest.dsh,
   )
   const expectedRange = 'workspace:*'
-  const peerRange = manifest.peerDependencies?.['@deepseek-ai/dsh-invariants']
+  const peerRange = manifest.peerDependencies?.['@eco-agent/dsh-invariants']
   if (developmentOnlyInvariant ? peerRange !== undefined : peerRange !== expectedRange) {
     addViolation(violations, owner.manifestPath, developmentOnlyInvariant
-      ? '@deepseek-ai/dsh-invariants must not be a peerDependency under this package dependency policy'
-      : '@deepseek-ai/dsh-invariants must be a workspace:* peerDependency')
+      ? '@eco-agent/dsh-invariants must not be a peerDependency under this package dependency policy'
+      : '@eco-agent/dsh-invariants must be a workspace:* peerDependency')
   }
-  if (manifest.devDependencies?.['@deepseek-ai/dsh-invariants'] !== expectedRange) {
+  if (manifest.devDependencies?.['@eco-agent/dsh-invariants'] !== expectedRange) {
     addViolation(
       violations,
       owner.manifestPath,
-      `@deepseek-ai/dsh-invariants must be a ${expectedRange} devDependency`,
+      `@eco-agent/dsh-invariants must be a ${expectedRange} devDependency`,
     )
   }
 }
@@ -157,7 +157,7 @@ function checkBuild(
 ): void {
   const tsconfigPath = `${owner.dir}/tsconfig.json`
   if (hasCompanion
-    && owner.packageName !== '@deepseek-ai/dsh-invariants'
+    && owner.packageName !== '@eco-agent/dsh-invariants'
     && !projectReferencesInvariants(root, owner.dir, tsconfigPath)) {
     addViolation(
       violations,

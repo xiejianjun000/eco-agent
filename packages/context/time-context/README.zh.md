@@ -3,13 +3,13 @@ description: "按步骤提供时钟上下文，包含当前时间、浏览器时
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-time-context
+# @eco-agent/dsh-time-context
 
 [English](README.md) | 中文
 
 ## 概述
 
-`dsh-time-context` 给模型一只时钟：在符合条件的步骤上，它追加一条持久、带来源的读数，包含当前时间、附加到当前开放请求的浏览器时区，以及自前一条模型可见消息以来的经过时长。它帮助模型按用户的浏览器时区解释未明确限定时区的日期与时间；时区来源混杂或缺失时，它告诉模型去询问。随发行版交付的 Web 组合不含该行；可选的 `@deepseek-ai/dsh-experimental-schedule-bundle` 在插件管理页会插入它并随 Schedule 一起挂载。读数默认采用 10 分钟的最小间隔；`refreshIntervalMs: 0` 会在每个符合条件的步骤注入。
+`dsh-time-context` 给模型一只时钟：在符合条件的步骤上，它追加一条持久、带来源的读数，包含当前时间、附加到当前开放请求的浏览器时区，以及自前一条模型可见消息以来的经过时长。它帮助模型按用户的浏览器时区解释未明确限定时区的日期与时间；时区来源混杂或缺失时，它告诉模型去询问。随发行版交付的 Web 组合不含该行；可选的 `@eco-agent/dsh-experimental-schedule-bundle` 在插件管理页会插入它并随 Schedule 一起挂载。读数默认采用 10 分钟的最小间隔；`refreshIntervalMs: 0` 会在每个符合条件的步骤注入。
 
 ## 目录
 
@@ -36,7 +36,7 @@ kind: "package-reference"
 最小挂载无需任何配置。正的 `refreshIntervalMs` 会抑制距最近一次注入不足该毫秒数的注入；省略时采用 600000 毫秒（10 分钟），设为 `0` 时，每个信号尚未中止且将进入步骤的合格 pre-step 都会注入。
 
 ```yaml
-- name: '@deepseek-ai/dsh-time-context'
+- name: '@eco-agent/dsh-time-context'
   config:
     timeZone: Asia/Shanghai
 ```

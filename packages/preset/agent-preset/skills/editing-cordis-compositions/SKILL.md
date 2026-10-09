@@ -5,11 +5,11 @@ description: Use when creating, changing, or validating an agent preset or other
 
 # Editing Cordis compositions
 
-Agent presets are ordinary `@deepseek-ai/dsh-agent-preset` declarations carried by bundle patches. Nothing edits a declaration in place: a preset is created or changed by installing a bundle whose patch declares or overrides it. This file states the declaration format; when it leaves a question open, read the `@deepseek-ai/dsh-agent-preset` README and `lib/types` declarations under the `packageDir` that `cordis_inspect_query` `Config.listConfigs` returns when queried with a `preset-<id>` row's `entry` id, or `packages/preset/agent-preset/src` in a source checkout.
+Agent presets are ordinary `@eco-agent/dsh-agent-preset` declarations carried by bundle patches. Nothing edits a declaration in place: a preset is created or changed by installing a bundle whose patch declares or overrides it. This file states the declaration format; when it leaves a question open, read the `@eco-agent/dsh-agent-preset` README and `lib/types` declarations under the `packageDir` that `cordis_inspect_query` `Config.listConfigs` returns when queried with a `preset-<id>` row's `entry` id, or `packages/preset/agent-preset/src` in a source checkout.
 
 ## Where declarations live
 
-The shipped Web presets are `presets/<id>.patch.yml` files of the `@deepseek-ai/dsh-web-app` bundle, ids `standard`, `ptc`, `minimal` and `cordis`. Installed, the bundle resolves from the dsh installation, not the profile; querying `Config.listConfigs` with the `entry` id of any `preset-<id>` row it declares returns that `packageDir`. In a source checkout of DSH it is `packages/bundle/web-app/`. Read one file with the file-read tool when you need a template; `minimal.patch.yml` is the shortest. In Desktop the bundle sits inside `app.asar`, which shell commands cannot open. Load `cordis-composition-reference` for the patch dialect and the list of plugin packages a preset can mount.
+The shipped Web presets are `presets/<id>.patch.yml` files of the `@eco-agent/dsh-web-app` bundle, ids `standard`, `ptc`, `minimal` and `cordis`. Installed, the bundle resolves from the dsh installation, not the profile; querying `Config.listConfigs` with the `entry` id of any `preset-<id>` row it declares returns that `packageDir`. In a source checkout of DSH it is `packages/bundle/web-app/`. Read one file with the file-read tool when you need a template; `minimal.patch.yml` is the shortest. In Desktop the bundle sits inside `app.asar`, which shell commands cannot open. Load `cordis-composition-reference` for the patch dialect and the list of plugin packages a preset can mount.
 
 A declaration row has these `config` fields: `id` (required, lowercase letters, digits and hyphens), `plugins` (required Cordis entry list), and optional `name`, `description` and `order` (roster position). The Loader row `id` is `preset-<id>` by convention.
 
@@ -34,7 +34,7 @@ Write a bundle directory in the workspace with exactly two files, then install i
 ```yaml
 - insert:
     - id: preset-review
-      name: '@deepseek-ai/dsh-agent-preset'
+      name: '@eco-agent/dsh-agent-preset'
       config:
         id: review
         name: Review
@@ -42,11 +42,11 @@ Write a bundle directory in the workspace with exactly two files, then install i
         order: 10
         plugins:
           - id: persona
-            name: '@deepseek-ai/dsh-persona'
+            name: '@eco-agent/dsh-persona'
             config:
               prefix: You review software changes.
           - id: tool-bash
-            name: '@deepseek-ai/dsh-tool-bash'
+            name: '@eco-agent/dsh-tool-bash'
 ```
 
 Install with `plugin_manager`, `action: install_bundle`, `target` set to the absolute bundle directory. It runs package installation and bundle selection itself; do not reproduce those steps with shell commands.
@@ -57,7 +57,7 @@ Override the declaration by its Loader row id instead of inserting. The override
 
 ```yaml
 - id: preset-standard
-  name: '@deepseek-ai/dsh-agent-preset'
+  name: '@eco-agent/dsh-agent-preset'
   config:
     id: standard
     order: 1

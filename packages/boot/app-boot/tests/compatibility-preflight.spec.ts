@@ -3,9 +3,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { Context } from '@deepseek-ai/cordis'
-import { entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
-import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
+import { Context } from '@eco-agent/cordis'
+import { entryListSchema, type PatchOptions } from '@eco-agent/cordis-plugin-include'
+import type { EntryOptions } from '@eco-agent/cordis-plugin-loader'
 import { load } from 'js-yaml'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
@@ -173,7 +173,7 @@ it('denies a row whose peer metadata cannot be validated', async () => {
   const f = fixture()
   f.plugin('malformed-plugin')
   writeFileSync(join(f.dir, 'node_modules', 'malformed-plugin', 'package.json'),
-    JSON.stringify({ name: 'malformed-plugin', version: '1.0.0', peerDependencies: ['@deepseek-ai/dsh'] }))
+    JSON.stringify({ name: 'malformed-plugin', version: '1.0.0', peerDependencies: ['@eco-agent/dsh'] }))
   expect(await f.run(insert('malformed-plugin'))).toEqual([])
   expect(f.warnings.join('\n')).toContain('cannot be validated')
 })

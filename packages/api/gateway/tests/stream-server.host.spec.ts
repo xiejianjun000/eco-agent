@@ -1,7 +1,7 @@
 import { once } from 'node:events'
 import { createServer, type Server } from 'node:http'
-import { Context } from '@deepseek-ai/cordis'
-import { remoteErrorOf, type PeerId, type PeerScope } from '@deepseek-ai/dsh-typert-protocol'
+import { Context } from '@eco-agent/cordis'
+import { remoteErrorOf, type PeerId, type PeerScope } from '@eco-agent/dsh-typert-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket from 'ws'
 import {

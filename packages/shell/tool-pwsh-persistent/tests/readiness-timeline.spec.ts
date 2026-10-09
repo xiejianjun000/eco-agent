@@ -1,8 +1,8 @@
 import { Readable } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { SubprocessOutcome, SubprocessTerminalForeground, SubprocessTerminalHandle } from '@deepseek-ai/dsh-subprocess'
-import type { TerminalSendOperation, TerminalSendResult } from '@deepseek-ai/dsh-terminal'
-import { CONTROLLED_PROMPT, TerminalSanitizer } from '@deepseek-ai/dsh-terminal-bash/src/sanitize.ts'
+import type { SubprocessOutcome, SubprocessTerminalForeground, SubprocessTerminalHandle } from '@eco-agent/dsh-subprocess'
+import type { TerminalSendOperation, TerminalSendResult } from '@eco-agent/dsh-terminal'
+import { CONTROLLED_PROMPT, TerminalSanitizer } from '@eco-agent/dsh-terminal-bash/src/sanitize.ts'
 import { ReadinessTimeline, TIMELINE_HEADER, replayPromptEvidence } from './readiness-timeline.ts'
 
 const MARKER = '\x1b]133;D;0\x07'

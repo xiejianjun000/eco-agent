@@ -1,6 +1,6 @@
 /** Target-scoped watch streams with explicit delivery and asynchronous release barriers. */
 import { vi } from 'vitest'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import type { WatchWorkspaceDirectory } from '../src/client/face.ts'
 
 type Event = 'ready' | 'change'

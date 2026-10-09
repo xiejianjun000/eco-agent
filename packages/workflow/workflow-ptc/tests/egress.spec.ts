@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
-import SubagentRuntime from '@deepseek-ai/dsh-subagent'
+import { Context } from '@eco-agent/cordis'
+import { installProxyFromEnvironment } from '@eco-agent/dsh-http-proxy'
+import SubagentRuntime from '@eco-agent/dsh-subagent'
 import PtcWorkflowEngine from '../src/index.ts'
 import { fakeParent, mountPtcRuntime } from './setup.ts'
 

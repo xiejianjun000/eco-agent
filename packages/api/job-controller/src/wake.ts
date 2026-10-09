@@ -2,7 +2,7 @@
  * Wake bookkeeping shared by the two observation generators: a wake-flag
  * waiter that never loses a wake between waits, and an abortable sleep that
  * coalesces bursts into bounded frames.
- * @module @deepseek-ai/dsh-api-job-controller/wake
+ * @module @eco-agent/dsh-api-job-controller/wake
  */
 
 /** Wake-flag waiter: a wake between waits is never lost. */

@@ -1,5 +1,5 @@
 /** Local Markdown image destinations served by the authenticated file route. */
-import { fileMediaUrl, isAbsoluteWorkspacePath, pathPartsOf } from '@deepseek-ai/dsh-util-workspace-path'
+import { fileMediaUrl, isAbsoluteWorkspacePath, pathPartsOf } from '@eco-agent/dsh-util-workspace-path'
 
 /**
  * Build a file URL, resolving relative destinations beside the previewed file.

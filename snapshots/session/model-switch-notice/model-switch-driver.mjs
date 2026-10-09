@@ -1,6 +1,6 @@
 /** Test-only driver that selects another model after the first step's tool call. */
 
-import { installModelSelection } from '@deepseek-ai/dsh-agent'
+import { installModelSelection } from '@eco-agent/dsh-agent'
 
 const SELECTED = { provider: 'deepseek-official', model: 'deepseek-v4-pro' }
 const selections = new WeakMap()
@@ -10,7 +10,7 @@ export const inject = ['agents']
 
 /**
  * Install the real selection helper and change its input after `todo_write`.
- * @param {import('@deepseek-ai/cordis').Context} ctx - composition context.
+ * @param {import('@eco-agent/cordis').Context} ctx - composition context.
  */
 export function apply(ctx) {
   ctx.on('agent/created', ({ agent }) => {

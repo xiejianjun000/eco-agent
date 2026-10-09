@@ -33,7 +33,7 @@ const PREFIX = '@deepseek-ai/dsh-'
 
 /** One workspace package the generated region maps. */
 interface PackageAlias {
-  /** Bare specifier, e.g. `@deepseek-ai/dsh-session`. */
+  /** Bare specifier, e.g. `@eco-agent/dsh-session`. */
   readonly specifier: string
   /** Repository-relative source directory, e.g. `./packages/session/session/src`. */
   readonly source: string
@@ -144,7 +144,7 @@ export function collectPackageNames(): string[] {
  */
 export function mappedSpecifiers(text: string): Set<string> {
   const keys = new Set<string>()
-  for (const match of text.matchAll(/^\s*"(@deepseek-ai\/dsh-[^"/]+)":/gm)) {
+  for (const match of text.matchAll(/^\s*"(@eco-agent\/dsh-[^"/]+)":/gm)) {
     const key = match[1]
     if (key !== undefined) keys.add(key)
   }
@@ -217,7 +217,7 @@ function handWrittenSpecifiers(text: string): Set<string> {
   const end = text.indexOf(END)
   const outside = begin < 0 || end < begin ? text : text.slice(0, begin) + text.slice(end)
   const keys = new Set<string>()
-  for (const match of outside.matchAll(/^\s*"(@deepseek-ai\/[^"]+)":/gm)) {
+  for (const match of outside.matchAll(/^\s*"(@eco-agent\/[^"]+)":/gm)) {
     const key = match[1]
     if (key !== undefined) keys.add(key)
   }

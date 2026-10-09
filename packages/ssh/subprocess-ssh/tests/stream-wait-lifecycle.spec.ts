@@ -1,10 +1,10 @@
 /** Caller-owned stream closure and bounded observations across remote allocation. */
 import { duplexPair, type Duplex } from 'node:stream'
 import { getEventListeners } from 'node:events'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { z } from 'zod'
-import type { SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
+import type { SubprocessSpawnSpec } from '@eco-agent/dsh-subprocess'
 import { SshSubprocessRuntime } from '../src/index.ts'
 
 type Stage = 'prepare' | 'connect' | 'start' | 'wait' | 'terminate'

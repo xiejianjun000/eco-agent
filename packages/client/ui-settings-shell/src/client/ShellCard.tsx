@@ -1,8 +1,8 @@
 /** The shell executor's settings page: the limits every command the agent runs is bound by. */
 
-import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
-import { SettingsForm, SettingsValueField } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-client-ui-plugin-manager/client'
+import { SettingsForm, SettingsValueField } from '@eco-agent/dsh-client-ui-primitives'
+import type { InjectFace, PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
 import { formLabels } from './locales.ts'
 import type { ShellCardFace } from './shell-card-controller.ts'
 

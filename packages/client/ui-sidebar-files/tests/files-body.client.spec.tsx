@@ -2,9 +2,9 @@
 /** File-tree presentation over controlled directory watches and deferred listings. */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent } from '@testing-library/react'
-import { makeTranslate, RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
-import type { RemoteFailure } from '@deepseek-ai/dsh-api-remotes/client'
-import { fileAddressFor } from '@deepseek-ai/dsh-util-workspace-path'
+import { makeTranslate, RemoteError } from '@eco-agent/dsh-client-test-runtime'
+import type { RemoteFailure } from '@eco-agent/dsh-api-remotes/client'
+import { fileAddressFor } from '@eco-agent/dsh-util-workspace-path'
 import { failureLine, orderEntries } from '../src/client/FilesBody.tsx'
 import type { DirLevel } from '../src/client/store.ts'
 import { zh } from '../src/client/locales.ts'

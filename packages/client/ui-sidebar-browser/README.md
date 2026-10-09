@@ -3,7 +3,7 @@ description: "Right-Sidebar browser tabs for sandboxed HTTP(S) pages, including 
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-sidebar-browser
+# @eco-agent/dsh-client-ui-sidebar-browser
 
 English | [中文](README.zh.md)
 

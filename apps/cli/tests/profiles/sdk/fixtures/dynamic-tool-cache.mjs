@@ -1,6 +1,6 @@
 /** SDK fixture for native registry changes and unmodified DeepSeek request observation. */
 import { appendFile } from 'node:fs/promises'
-import { defineTool } from '@deepseek-ai/dsh-tools'
+import { defineTool } from '@eco-agent/dsh-tools'
 
 export const name = 'sdk-dynamic-tool-cache-fixture'
 export const inject = ['tools', 'systemPrompt', 'deepseekLlmApiExtensions']

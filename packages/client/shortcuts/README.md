@@ -3,7 +3,7 @@ description: "Customize application keyboard commands for each device"
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-shortcuts
+# @eco-agent/dsh-client-shortcuts
 
 English | [中文](README.zh.md)
 

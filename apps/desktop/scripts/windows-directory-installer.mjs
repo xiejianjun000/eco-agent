@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path'
 
 const require = createRequire(import.meta.url)
 const templates = join(dirname(require.resolve('app-builder-lib/package.json')), 'templates/nsis')
-const patched = Symbol.for('@deepseek-ai/dsh-desktop/directory-installer')
+const patched = Symbol.for('@eco-agent/dsh-desktop/directory-installer')
 
 function replaceOnce(source, before, after) {
   if (source.split(before).length !== 2) throw new Error(`Desktop NSIS template changed: ${before}`)

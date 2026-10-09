@@ -3,7 +3,7 @@ description: "通过共享的沙箱化 PTC Node 进程运行时执行工作流�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-workflow-ptc
+# @eco-agent/dsh-workflow-ptc
 
 [English](README.md) | 中文
 
@@ -32,8 +32,8 @@ kind: "package-reference"
 上述依赖可用后，挂载引擎及其面向模型的消费方：
 
 ```yaml
-- name: '@deepseek-ai/dsh-workflow-ptc'
-- name: '@deepseek-ai/dsh-tool-workflow'
+- name: '@eco-agent/dsh-workflow-ptc'
+- name: '@eco-agent/dsh-tool-workflow'
 ```
 
 | 字段 | 默认值 | 含义 |

@@ -1,7 +1,7 @@
 /** Historical child identity reduced to the fields required by a parent's catalog. */
 
-import { SessionFormatError, SessionFormatUnsupportedMigrationError, isSessionFormatJsonObject, sessionFormatCount } from '@deepseek-ai/dsh-session-format'
-import type { SessionFormatArtifact, SessionFormatJsonObject, SessionFormatJsonValue } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatError, SessionFormatUnsupportedMigrationError, isSessionFormatJsonObject, sessionFormatCount } from '@eco-agent/dsh-session-format'
+import type { SessionFormatArtifact, SessionFormatJsonObject, SessionFormatJsonValue } from '@eco-agent/dsh-session-format'
 
 /**
  * Collect a child's own descriptor without requiring one before its parent catalog is read.

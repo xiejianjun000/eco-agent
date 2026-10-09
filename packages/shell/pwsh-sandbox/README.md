@@ -3,7 +3,7 @@ description: "The sandbox-consuming PowerShell executor for deployments and main
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-pwsh-sandbox
+# @eco-agent/dsh-pwsh-sandbox
 
 English | [中文](README.zh.md)
 
@@ -45,14 +45,14 @@ On Windows, mount the ACL restricted-token provider; on Linux and macOS, mount t
 
 ```yaml
 - id: sandbox
-  name: '@deepseek-ai/dsh-sandbox-windows-acl'
+  name: '@eco-agent/dsh-sandbox-windows-acl'
 - id: sandbox-policy
-  name: '@deepseek-ai/dsh-sandbox-policy'
+  name: '@eco-agent/dsh-sandbox-policy'
   config:
     mode: read-only
     workspaceRoot: !!js process.cwd() # fallback for calls without a session cwd
 - id: bash
-  name: '@deepseek-ai/dsh-pwsh-sandbox'
+  name: '@eco-agent/dsh-pwsh-sandbox'
 ```
 
 ### Denials and escalation
@@ -138,7 +138,7 @@ None directly; the denial surface belongs to the tool layer.
 
 These limits define when this executor is only a partial boundary on Windows. They are current package constraints, not a roadmap.
 
-- **Reads are unrestricted on Windows** — the ACL runner restricts writes only; the read boundary is documented in `@deepseek-ai/dsh-sandbox-windows-acl`.
+- **Reads are unrestricted on Windows** — the ACL runner restricts writes only; the read boundary is documented in `@eco-agent/dsh-sandbox-windows-acl`.
 - **Windows workspace-write temp authority is private** — per live session/workspace pair; agentless calls receive a fresh private directory per invocation; the ambient temp root is never granted, and the runner rewrites `TMP`/`TEMP` to the private directory before spawning.
 - **Windows read-only grants no explicit writable root but remains partial** — NTFS hard links alias one file object across paths, reads stay unconfined, and a tree another AppContainer tool has ACL'd with a package SID is unreadable to the Low-integrity child. NUL stays writable in both modes because the device DACL grants Everyone write and carries no higher label; PowerShell's `> $null` redirection still works without opening it.
 

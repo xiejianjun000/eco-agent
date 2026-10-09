@@ -1,8 +1,8 @@
 /** Current-generation benchmark seeds retain the system head across continuation. */
 import { expect, it } from 'vitest'
-import { createSystemMessage } from '@deepseek-ai/dsh-llm'
-import { parseSessionLog } from '@deepseek-ai/dsh-llm-replay'
-import { Session, SessionId, SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session'
+import { createSystemMessage } from '@eco-agent/dsh-llm'
+import { parseSessionLog } from '@eco-agent/dsh-llm-replay'
+import { Session, SessionId, SESSION_FORMAT_VERSION } from '@eco-agent/dsh-session'
 import { syntheticHistory as browserHistory } from '../long-session-browser/synthetic-history.ts'
 import { syntheticHistory } from './workload.ts'
 

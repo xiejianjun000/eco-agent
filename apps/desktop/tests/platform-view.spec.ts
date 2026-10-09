@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import type { AccountUserId } from '@deepseek-ai/dsh-deepseek-account/types'
+import type { AccountUserId } from '@eco-agent/dsh-deepseek-account/types'
 import { DesktopPlatformView, platformBounds } from '../src/platform-view.ts'
 
 const state = vi.hoisted(() => ({

@@ -1,6 +1,6 @@
 /** Raw config comparison reads schema metadata without resolving config or committing references. */
 import { expect, it, vi } from 'vitest'
-import z from '@deepseek-ai/schemastery'
+import z from '@eco-agent/schemastery'
 import { equalExceptVolatile as equal } from '../vendor/loader/src/config/diff.ts'
 
 it('ignores volatile fields in frozen raw inputs without running schema callbacks', () => {

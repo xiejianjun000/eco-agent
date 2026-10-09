@@ -1,11 +1,11 @@
 /**
  * Strict Schedule decoding, replay, time validation, and framing.
- * @module @deepseek-ai/dsh-schedule
+ * @module @eco-agent/dsh-schedule
  */
 
 import { Temporal } from '@js-temporal/polyfill'
-import { SessionLogOffset } from '@deepseek-ai/dsh-session'
-import type { SessionEvent, SessionLogOffset as SessionLogOffsetType } from '@deepseek-ai/dsh-session'
+import { SessionLogOffset } from '@eco-agent/dsh-session'
+import type { SessionEvent, SessionLogOffset as SessionLogOffsetType } from '@eco-agent/dsh-session'
 import type {
   AfterScheduleRecord,
   AtInput,

@@ -3,7 +3,7 @@ description: "The model-facing background-job controls for users and maintainers
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-tool-jobs
+# @eco-agent/dsh-tool-jobs
 
 English | [中文](README.zh.md)
 
@@ -46,7 +46,7 @@ Waking is unbounded by default: an unattended agent that chains background comma
 Loading the plugin with no config is the common path; a `waitTimeoutMs` above `maxWaitTimeoutMs` fails at load.
 
 ```yaml
-- name: '@deepseek-ai/dsh-tool-jobs'
+- name: '@eco-agent/dsh-tool-jobs'
 ```
 
 | Field | Default | Meaning |

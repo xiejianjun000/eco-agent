@@ -3,7 +3,7 @@ description: "Managed SSH subprocess and terminal behavior for Bash, LSP and Nod
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-subprocess-ssh
+# @eco-agent/dsh-subprocess-ssh
 
 English | [中文](README.zh.md)
 

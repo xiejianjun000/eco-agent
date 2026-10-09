@@ -1,15 +1,15 @@
 # SDK-profile patch for the deterministic diagnostic child runtime.
 
 - id: llm-deepseek
-  name: '@deepseek-ai/dsh-llm-deepseek-api-key'
+  name: '@eco-agent/dsh-llm-deepseek-api-key'
   disabled: true
 
 - id: agent-instructions
-  name: '@deepseek-ai/dsh-agent-instructions'
+  name: '@eco-agent/dsh-agent-instructions'
   disabled: true
 
 - id: system-prompt
-  name: '@deepseek-ai/dsh-system-prompt'
+  name: '@eco-agent/dsh-system-prompt'
   config:
     personaPrefix: 'Return the scripted DSH SDK failure.'
 

@@ -5,7 +5,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { CodeBlock as LocalizedCodeBlock } from '../src/markdown/CodeBlock.tsx'
 import { CODE_HIGHLIGHT_EXTENSIONS, languageForPath } from '../src/code-highlighting.ts'
-import { readLangHintForPath } from '@deepseek-ai/dsh-util-code-language'
+import { readLangHintForPath } from '@eco-agent/dsh-util-code-language'
 import { highlightToHtml, subscribeGrammarLoaded } from '../src/markdown/highlight.ts'
 import { markdownLabels } from './labels.client.ts'
 

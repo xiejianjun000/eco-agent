@@ -3,7 +3,7 @@ export const name = 'summary-image-budget'
 export const inject = ['llm']
 
 /**
- * @param {import('@deepseek-ai/cordis').Context} ctx - Scenario-local context.
+ * @param {import('@eco-agent/cordis').Context} ctx - Scenario-local context.
  */
 export function apply(ctx) {
   let failed = false

@@ -4,14 +4,14 @@
  * Session's feedback dialog, whose submission records that judgment with its
  * category and text. Clicking the recorded rating retracts it. A recorded rating
  * shows the filled glyph so the signal survives a pointer leaving the row.
- * @module @deepseek-ai/dsh-client-ui-message-feedback/client/MessageFeedbackActions
+ * @module @eco-agent/dsh-client-ui-message-feedback/client/MessageFeedbackActions
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   IconDislikeFillRegular, IconDislikeOutlineRegular, IconLikeFillRegular, IconLikeOutlineRegular, Tooltip,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import type { MessageFeedbackRating } from '@deepseek-ai/dsh-message-feedback/types'
+} from '@eco-agent/dsh-client-ui-primitives'
+import type { MessageFeedbackRating } from '@eco-agent/dsh-message-feedback/types'
 import type { MessageFeedbackActionFailure } from './controller.ts'
 import type { MessageFeedbackActionProps } from './slots.ts'
 import css from './MessageFeedbackActions.module.css'

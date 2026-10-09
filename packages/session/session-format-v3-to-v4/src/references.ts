@@ -1,7 +1,7 @@
 /** Remap released V3 local event references after interrupted-turn insertion. */
 
-import { SessionFormatError, isSessionFormatJsonObject, sessionFormatCount } from '@deepseek-ai/dsh-session-format'
-import type { SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatError, isSessionFormatJsonObject, sessionFormatCount } from '@eco-agent/dsh-session-format'
+import type { SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@eco-agent/dsh-session-format'
 
 function object(value: SessionFormatJsonValue | undefined): SessionFormatJsonObject {
   if (!isSessionFormatJsonObject(value)) throw new SessionFormatError('V3 event reference container must be an object')

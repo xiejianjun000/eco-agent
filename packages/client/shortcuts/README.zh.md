@@ -3,7 +3,7 @@ description: "为每台设备自定义应用键盘命令"
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-shortcuts
+# @eco-agent/dsh-client-shortcuts
 
 [English](README.md) | 中文
 

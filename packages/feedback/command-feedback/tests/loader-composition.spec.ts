@@ -3,16 +3,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import Include from '@deepseek-ai/cordis-plugin-include'
-import AgentRegistry from '@deepseek-ai/dsh-agent'
-import type { Agent, AgentStatus } from '@deepseek-ai/dsh-agent'
-import CommandRuntime from '@deepseek-ai/dsh-commands'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import * as CommandFeedback from '@deepseek-ai/dsh-command-feedback'
-import { getOrCreateAnonymousUserId } from '@deepseek-ai/dsh-anonymous-user-id'
-import { unsupportedInbox } from '@deepseek-ai/dsh-agent-loop-testkit'
+import { Context } from '@eco-agent/cordis'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import Include from '@eco-agent/cordis-plugin-include'
+import AgentRegistry from '@eco-agent/dsh-agent'
+import type { Agent, AgentStatus } from '@eco-agent/dsh-agent'
+import CommandRuntime from '@eco-agent/dsh-commands'
+import SessionStore, { SessionId } from '@eco-agent/dsh-session'
+import * as CommandFeedback from '@eco-agent/dsh-command-feedback'
+import { getOrCreateAnonymousUserId } from '@eco-agent/dsh-anonymous-user-id'
+import { unsupportedInbox } from '@eco-agent/dsh-agent-loop-testkit'
 
 let root: string | undefined
 let context: Context | undefined
@@ -56,10 +56,10 @@ describe('/feedback real Loader composition through cordis.yml', () => {
     vi.stubEnv('DSH_HOME', root)
     const configPath = join(root, 'cordis.yml')
     await writeFile(configPath, [
-      "- name: '@deepseek-ai/dsh-agent'",
-      "- name: '@deepseek-ai/dsh-session'",
-      "- name: '@deepseek-ai/dsh-commands'",
-      "- name: '@deepseek-ai/dsh-command-feedback'",
+      "- name: '@eco-agent/dsh-agent'",
+      "- name: '@eco-agent/dsh-session'",
+      "- name: '@eco-agent/dsh-commands'",
+      "- name: '@eco-agent/dsh-command-feedback'",
       '',
     ].join('\n'))
 
@@ -68,10 +68,10 @@ describe('/feedback real Loader composition through cordis.yml', () => {
     await context.plugin(Loader)
     context.loader.builtins.include = Include
     const modules = new Map<string, unknown>([
-      ['@deepseek-ai/dsh-agent', AgentRegistry],
-      ['@deepseek-ai/dsh-session', SessionStore],
-      ['@deepseek-ai/dsh-commands', CommandRuntime],
-      ['@deepseek-ai/dsh-command-feedback', CommandFeedback],
+      ['@eco-agent/dsh-agent', AgentRegistry],
+      ['@eco-agent/dsh-session', SessionStore],
+      ['@eco-agent/dsh-commands', CommandRuntime],
+      ['@eco-agent/dsh-command-feedback', CommandFeedback],
     ])
     context.loader.internal = {
       version: 'v2',

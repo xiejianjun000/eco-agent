@@ -3,7 +3,7 @@ description: "面向用户与维护者的凭据 seam：在不把机密值写进�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-credentials
+# @eco-agent/dsh-credentials
 
 [English](README.md) | 中文
 
@@ -36,7 +36,7 @@ kind: "package-reference"
 加载本地存储包并给出文档路径：
 
 ```yaml
-- name: '@deepseek-ai/dsh-credentials-local'
+- name: '@eco-agent/dsh-credentials-local'
   config:
     path: /absolute/path/to/.credentials.yaml
 ```
@@ -46,8 +46,8 @@ kind: "package-reference"
 ### 存储、检查与移除密钥
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import { credentialRef } from '@deepseek-ai/dsh-credentials'
+import type { Context } from '@eco-agent/cordis'
+import { credentialRef } from '@eco-agent/dsh-credentials'
 
 declare const ctx: Context
 
@@ -65,8 +65,8 @@ await ctx.credentials.unset(ref)                       // no-op when absent; sam
 插件按 `<scope>/<id>` 寻址每条记录——自身注册名加一个自选 id，例如提供方路由键——并读取、修改或移除它所持有的内容：
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import { credentialKey } from '@deepseek-ai/dsh-credentials'
+import type { Context } from '@eco-agent/cordis'
+import { credentialKey } from '@eco-agent/dsh-credentials'
 
 declare const ctx: Context
 

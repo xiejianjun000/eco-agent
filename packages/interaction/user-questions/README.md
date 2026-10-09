@@ -3,7 +3,7 @@ description: "Waterfall-based question and answer service for tools, permission 
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-user-questions
+# @eco-agent/dsh-user-questions
 
 English | [中文](README.zh.md)
 

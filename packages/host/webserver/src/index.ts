@@ -1,5 +1,5 @@
 /**
- * @deepseek-ai/dsh-host-webserver — node:http route registration with optional
+ * @eco-agent/dsh-host-webserver — node:http route registration with optional
  * gzip, index injection, and one fallback seat. It knows no harness concepts
  * and serves no files; the composing application owns dist serving. Electron
  * uses file:// plus IPC instead, and this package never prints the URL.
@@ -10,8 +10,8 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse, Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
-import { Context, Service } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
+import { Context, Service } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
 import compressionMiddleware from 'compression'
 import Negotiator from 'negotiator'
 import { renderIndexInjections, type IndexInjection } from './injections.ts'
@@ -19,7 +19,7 @@ import { renderIndexInjections, type IndexInjection } from './injections.ts'
 export { renderIndexInjections } from './injections.ts'
 export type { IndexInjection, IndexInjectionPlacement } from './injections.ts'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     webServer: WebServer
   }

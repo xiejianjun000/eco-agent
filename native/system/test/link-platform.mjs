@@ -5,6 +5,6 @@ import { fileURLToPath } from 'node:url';
 
 const packages = fileURLToPath(new URL('../packages/', import.meta.url));
 const platform = `${process.platform}-${process.arch}`;
-const parent = path.join(packages, 'entry/node_modules/@deepseek-ai');
+const parent = path.join(packages, 'entry/node_modules/@eco-agent');
 fs.mkdirSync(parent, { recursive: true });
 fs.symlinkSync(path.join(packages, platform), path.join(parent, `node-addon-system-${platform}`), 'junction');

@@ -1,8 +1,8 @@
 /** Argument-free Cordis tool prefix shared by its three card families. */
 import type { ReactNode } from 'react'
-import { DisclosureRow } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ToolCallViewProps } from '@deepseek-ai/dsh-client-ui-tool/client'
+import { DisclosureRow } from '@eco-agent/dsh-client-ui-primitives'
+import type { PropsLocale } from '@eco-agent/dsh-client-ui-slots'
+import type { ToolCallViewProps } from '@eco-agent/dsh-client-ui-tool/client'
 
 /* v8 ignore next -- Non-expandable rows never invoke DisclosureRow's required toggle callback. */
 const noop = (): void => undefined

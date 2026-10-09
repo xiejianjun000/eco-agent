@@ -1,6 +1,6 @@
 /** Window holds and conservative idle reclamation for one terminal owner. */
-import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import type { SubprocessTerminalActivity } from '@deepseek-ai/dsh-subprocess'
+import { RemoteError } from '@eco-agent/dsh-typert-protocol'
+import type { SubprocessTerminalActivity } from '@eco-agent/dsh-subprocess'
 import type { TerminalRetentionFrame } from './types.ts'
 
 /** Validated Host timing policy for unattended terminal cleanup. */

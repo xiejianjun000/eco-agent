@@ -1,5 +1,5 @@
-import { BrandWordmark, EcoLogo } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { SidebarBrandMarkOwnerProps } from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import { BrandWordmark, EcoLogo } from '@eco-agent/dsh-client-ui-primitives'
+import type { SidebarBrandMarkOwnerProps } from '@eco-agent/dsh-client-ui-sidebar/client'
 
 /**
  * Render the official mark with the presentation requested by its host surface.

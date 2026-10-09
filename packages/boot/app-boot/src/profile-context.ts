@@ -2,7 +2,7 @@
 import { join } from 'node:path'
 import { composeEntries, loadProfileDirectory, PROFILE_PATCH_FILENAME, type Profile } from './profile.ts'
 import { loadOptionalPatches } from './index.ts'
-import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import type { PatchOptions } from '@eco-agent/cordis-plugin-include'
 
 /** Application-owned package manager executable; environment applies only to package operations. */
 export interface ProfilePnpmInvocation {
@@ -29,7 +29,7 @@ export interface ProfileContext {
   readonly telemetryDisabledEnv: string | undefined
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Present only in a profile launched by dsh. */
     profileContext: ProfileContext

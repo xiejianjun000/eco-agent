@@ -2,10 +2,10 @@
 import { describe, expect, onTestFinished, vi } from 'vitest'
 import { createElement, Fragment, useSyncExternalStore } from 'react'
 import { act, cleanup, render } from '@testing-library/react'
-import { createClientTest, webApp } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
-import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import type {} from '@deepseek-ai/dsh-client-shortcuts/client'
-import type { DesktopKeyboardApi, DesktopShortcutInput, ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/protocol'
+import { createClientTest, webApp } from '@eco-agent/dsh-client-test-runtime/src/assembly/index.ts'
+import { Modal } from '@eco-agent/dsh-client-ui-primitives'
+import type {} from '@eco-agent/dsh-client-shortcuts/client'
+import type { DesktopKeyboardApi, DesktopShortcutInput, ShortcutCommandId } from '@eco-agent/dsh-client-shortcuts/protocol'
 import type { createSettingsShellStore } from '../../ui-settings-general/src/client/shell-store.ts'
 import type { createLayoutStore } from '../../ui-layout/src/client/stores.ts'
 import type { ReferenceInjected } from '../src/client/Reference.tsx'
@@ -41,10 +41,10 @@ describe('assembled shortcut command owners', () => {
     expect(fixedIds()).toEqual(expect.arrayContaining(conversationIds))
     expect(shortcuts.fixedCatalog.getSnapshot().find(row => row.id === 'response.stop'))
       .toMatchObject({ group: 'input', keys: ['Esc', 'Esc'] })
-    await client.unload('@deepseek-ai/dsh-client-ui-shortcuts')
+    await client.unload('@eco-agent/dsh-client-ui-shortcuts')
     expect(fixedIds()).toEqual(expect.arrayContaining(conversationIds))
     expect(fixedIds()).not.toContain('fixed.move')
-    await client.unload('@deepseek-ai/dsh-client-ui-conversation')
+    await client.unload('@eco-agent/dsh-client-ui-conversation')
     for (const id of conversationIds) expect(fixedIds()).not.toContain(id)
     for (const owner of ['ui-settings-general', 'ui-layout']) await client.unload(`@deepseek-ai/dsh-client-${owner}`)
     expect(ownedRows()).toEqual([])

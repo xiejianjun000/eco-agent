@@ -1,10 +1,10 @@
 /** Window-chrome controls for the fully hidden sidebar (frame shell.leading seat). */
 import {
   IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, Tooltip,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+} from '@eco-agent/dsh-client-ui-primitives'
+import type { InjectFace, PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
 // Type-only: pulls the frame's shell.leading slot declaration.
-import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
+import type {} from '@eco-agent/dsh-client-ui-layout/client'
 import type { SidebarRootInjected } from './contract/slots.ts'
 import css from './HeaderLeadingControls.module.css'
 

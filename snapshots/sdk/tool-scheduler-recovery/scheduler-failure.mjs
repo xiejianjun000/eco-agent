@@ -1,7 +1,7 @@
 /** Reject one scheduler preparation to exercise the terminal internal-failure path. */
 export const inject = ['tools']
 
-/** @param {import('@deepseek-ai/cordis').Context} ctx - Scenario-owned runtime. */
+/** @param {import('@eco-agent/cordis').Context} ctx - Scenario-owned runtime. */
 export function apply(ctx) {
   // Inspect the active instance's key so the fixture cannot introduce a second tools module.
   const key = Object.getOwnPropertySymbols(ctx.tools)

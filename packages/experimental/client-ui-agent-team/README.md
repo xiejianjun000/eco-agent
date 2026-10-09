@@ -3,7 +3,7 @@ description: "Use and debug the experimental Web Agent Teams roster, shared task
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-client-ui-agent-team
+# @eco-agent/dsh-experimental-client-ui-agent-team
 
 English | [中文](README.zh.md)
 
@@ -25,7 +25,7 @@ This package adds an Agent Teams action to the Web conversation header, where a 
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable this package through [`@deepseek-ai/dsh-experimental-agent-team-profile`](../agent-team-profile/README.md), which supplies the Team service, tools, and Web UI together. The Web Client loader mounts the `/client` export; the root Host export is inert, and the package has no user configuration fields.
+Enable this package through [`@eco-agent/dsh-experimental-agent-team-profile`](../agent-team-profile/README.md), which supplies the Team service, tools, and Web UI together. The Web Client loader mounts the `/client` export; the root Host export is inert, and the package has no user configuration fields.
 
 ### Inspect and navigate the roster
 

@@ -4,9 +4,9 @@ import { readFile, realpath } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import * as yaml from 'js-yaml'
-import Loader, { EntryGroup, ModuleLoader, isJsExpr, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import Group from '@deepseek-ai/cordis-plugin-group'
-import Include, { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import Loader, { EntryGroup, ModuleLoader, isJsExpr, type EntryOptions } from '@eco-agent/cordis-plugin-loader'
+import Group from '@eco-agent/cordis-plugin-group'
+import Include, { applyEntryPatches, entryListSchema, type PatchOptions } from '@eco-agent/cordis-plugin-include'
 import type { Profile, RuntimeResolution } from '../profile.ts'
 import { installRuntimeInterception } from '../profile-resolution/resolver.ts'
 import { buildConfigSchemaDocument } from './document.ts'
@@ -99,8 +99,8 @@ export async function collectConfigSchemas(
       if (resolved === undefined) {
         // Include may be bundled into app-boot; compare against the native packages resolved for this tree as well.
         resolved = Promise.allSettled([
-          loader.import('@deepseek-ai/cordis-plugin-group', baseUrl, {}),
-          loader.import('@deepseek-ai/cordis-plugin-include', baseUrl, {}),
+          loader.import('@eco-agent/cordis-plugin-group', baseUrl, {}),
+          loader.import('@eco-agent/cordis-plugin-include', baseUrl, {}),
         ]).then(([group, include]) => {
           const groupPlugin: unknown = group.status === 'fulfilled' ? Loader.prototype.unwrapExports(group.value) : undefined
           const includePlugin: unknown = include.status === 'fulfilled' ? Loader.prototype.unwrapExports(include.value) : undefined

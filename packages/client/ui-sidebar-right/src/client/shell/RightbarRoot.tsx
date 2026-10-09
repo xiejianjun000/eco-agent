@@ -1,7 +1,7 @@
 /** Root-scoped controller for the right Sidebar's Session content. */
 import { useLayoutEffect } from 'react'
-import type { HostObservable, InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { HostObservable, InjectFace, PropsRenderSlots, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
+import type { SessionReference } from '@eco-agent/dsh-api-session-controller/client'
 import type { SidebarSessionViewSnapshot } from '../session-views.ts'
 import type {} from '../contract/slots.ts'
 import css from './SidebarRight.module.css'

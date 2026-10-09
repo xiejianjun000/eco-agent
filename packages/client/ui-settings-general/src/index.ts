@@ -1,9 +1,9 @@
 /** Welcome acknowledgement stored in the plugin configuration. */
-import type {} from '@deepseek-ai/dsh-settings'
+import type {} from '@eco-agent/dsh-settings'
 
-import type { Volatile, Context } from '@deepseek-ai/cordis'
+import type { Volatile, Context } from '@eco-agent/cordis'
 
-import z from '@deepseek-ai/schemastery'
+import z from '@eco-agent/schemastery'
 
 /** Runtime preferences projected to the browser. */
 export interface Config {

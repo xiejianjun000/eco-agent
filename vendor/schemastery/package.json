@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/schemastery",
+  "name": "@eco-agent/schemastery",
   "description": "Type driven schema validator",
   "version": "3.18.4",
   "publishConfig": {
@@ -34,6 +34,6 @@
   "license": "MIT",
   "dependencies": {
     "@standard-schema/spec": "^1.1.0",
-    "@deepseek-ai/cosmokit": "workspace:~"
+    "@eco-agent/cosmokit": "workspace:~"
   }
 }

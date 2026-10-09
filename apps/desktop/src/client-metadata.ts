@@ -1,5 +1,5 @@
 /** Desktop client identity for one Platform account call. */
-import type { AccountClientMetadata } from '@deepseek-ai/dsh-deepseek-account/types'
+import type { AccountClientMetadata } from '@eco-agent/dsh-deepseek-account/types'
 
 /**
  * Read the client build version inlined by the Desktop build.

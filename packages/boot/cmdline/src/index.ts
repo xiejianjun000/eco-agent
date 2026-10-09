@@ -1,5 +1,5 @@
 /**
- * @deepseek-ai/dsh-cmdline — the command line a dsh launcher hands to the app
+ * @eco-agent/dsh-cmdline — the command line a dsh launcher hands to the app
  * it boots.
  *
  * The launcher parses only its own flags (`--profile`, `--patch`, the config
@@ -13,11 +13,11 @@
  * can inject that service and read it from lazily resolved config —
  * `port: !!js ctx.webStartup.port ?? 3080` — so a flag beats the value written
  * beside it. No row has launcher-level command-line status.
- * @module @deepseek-ai/dsh-cmdline
+ * @module @eco-agent/dsh-cmdline
  */
 
 import type { Command } from 'commander'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 
 /**
  * The invocation's inner arguments: everything after the launcher's own flags,
@@ -52,7 +52,7 @@ export interface AppReady {
   onReady(listener: () => void): () => void
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** The invocation's inner arguments; provided by a launcher before the tree mounts. */
     cmdlineArgs?: CmdlineArgs

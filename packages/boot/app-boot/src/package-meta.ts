@@ -3,8 +3,8 @@
 import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { dirname, extname, isAbsolute, relative, resolve, sep, win32 } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { ModuleLoader } from '@deepseek-ai/cordis-plugin-loader'
-import type { LocalizedText, PluginLocalizedMeta } from '@deepseek-ai/dsh-package-manifest'
+import { ModuleLoader } from '@eco-agent/cordis-plugin-loader'
+import type { LocalizedText, PluginLocalizedMeta } from '@eco-agent/dsh-package-manifest'
 import { barePackageName } from './profile-resolution/resolver.ts'
 
 const LANGUAGE_ID = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u

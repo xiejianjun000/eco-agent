@@ -3,7 +3,7 @@ description: "九个让模型创建、发消息与协调 teammate 的工具，�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-tool-agent-team
+# @eco-agent/dsh-experimental-tool-agent-team
 
 [English](README.md) | 中文
 
@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-当模型应该通过工具运行一支团队时，在 `@deepseek-ai/dsh-experimental-agent-team` 之上挂载本包。挂载后，每个团队成员——Lead 与每个 teammate——都会获得相同的九个工具，以及相同的协作策略。`spawn_teammate` 在初始任务前加上 teammate 的角色和名字。
+当模型应该通过工具运行一支团队时，在 `@eco-agent/dsh-experimental-agent-team` 之上挂载本包。挂载后，每个团队成员——Lead 与每个 teammate——都会获得相同的九个工具，以及相同的协作策略。`spawn_teammate` 在初始任务前加上 teammate 的角色和名字。
 
 ### 何时选择
 
@@ -37,7 +37,7 @@ kind: "package-reference"
 
 ```yaml
 - id: tool-agent-team
-  name: '@deepseek-ai/dsh-experimental-tool-agent-team'
+  name: '@eco-agent/dsh-experimental-tool-agent-team'
   config:
     freshProvider: spawn
     forkProvider: fork

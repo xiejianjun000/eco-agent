@@ -1,7 +1,7 @@
 /** Live Browser tab title from the Browser store. */
 import type { ReactNode } from 'react'
-import { IconGlobeOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+import { IconGlobeOutlineRegular } from '@eco-agent/dsh-client-ui-primitives'
+import type { PropsRuntime, PropsStore } from '@eco-agent/dsh-client-ui-slots'
 import { currentBrowserTarget } from '../browser/BrowserPersistence.ts'
 import type { BrowserStore } from '../browser/store.ts'
 import css from './Browser.module.css'

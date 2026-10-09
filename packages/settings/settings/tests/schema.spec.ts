@@ -1,6 +1,6 @@
 /** Form projection preserves live containers and removes secret defaults. */
 import { expect, it } from 'vitest'
-import z from '@deepseek-ai/schemastery'
+import z from '@eco-agent/schemastery'
 import { isVolatilePath, plainConfig, projectForm, volatileForm } from '../src/schema.ts'
 
 it('exposes nested live fields while omitting ordinary fields', () => {

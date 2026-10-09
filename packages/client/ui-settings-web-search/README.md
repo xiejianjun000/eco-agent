@@ -3,7 +3,7 @@ description: "The DeepSeek web-search provider's settings page on the dsh web cl
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-settings-web-search
+# @eco-agent/dsh-client-ui-settings-web-search
 
 English | [中文](README.zh.md)
 

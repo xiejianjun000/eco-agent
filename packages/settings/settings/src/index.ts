@@ -3,11 +3,11 @@ import { existsSync } from 'node:fs'
 import { readFile, rename } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse } from 'yaml'
-import { Context, FiberState, Service, resolveConfig, type Fiber } from '@deepseek-ai/cordis'
-import type z from '@deepseek-ai/schemastery'
-import { interpolate, type Entry } from '@deepseek-ai/cordis-plugin-loader'
-import type {} from '@deepseek-ai/dsh-config-editor'
-import type {} from '@deepseek-ai/dsh-app-boot'
+import { Context, FiberState, Service, resolveConfig, type Fiber } from '@eco-agent/cordis'
+import type z from '@eco-agent/schemastery'
+import { interpolate, type Entry } from '@eco-agent/cordis-plugin-loader'
+import type {} from '@eco-agent/dsh-config-editor'
+import type {} from '@eco-agent/dsh-app-boot'
 import { redactSecrets, type RedactedSecret } from './redact.ts'
 import { isVolatilePath, plainConfig, projectForm, volatileForm } from './schema.ts'
 import type { SettingsNamespace } from './types.ts'
@@ -35,7 +35,7 @@ export interface SettingsDescribeOptions {
   redactSecrets?: boolean
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Schema-derived plugin configuration forms. */
     settings: SettingsForms

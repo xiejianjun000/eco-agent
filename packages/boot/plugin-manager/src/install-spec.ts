@@ -1,7 +1,7 @@
 /**
  * Reading an install spec before pnpm sees it: which of pnpm's spec forms it
  * takes, and for a registry name whether it is one the registry can accept.
- * @module @deepseek-ai/dsh-plugin-manager/install-spec
+ * @module @eco-agent/dsh-plugin-manager/install-spec
  */
 
 import { isAbsolute } from 'node:path'

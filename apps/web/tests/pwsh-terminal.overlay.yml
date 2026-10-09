@@ -9,22 +9,22 @@
 # the composition must boot the pwsh executor, so the lane skips on hosts
 # without a usable `pwsh`.
 - id: bash-sandbox
-  name: '@deepseek-ai/dsh-bash-sandbox'
+  name: '@eco-agent/dsh-bash-sandbox'
   disabled: true
 - id: pwsh-sandbox
-  name: '@deepseek-ai/dsh-pwsh-sandbox'
+  name: '@eco-agent/dsh-pwsh-sandbox'
   disabled: true
 - id: permission
-  name: '@deepseek-ai/dsh-permission-presets'
+  name: '@eco-agent/dsh-permission-presets'
   disabled: true
 - insert:
     - id: pwsh-local
-      name: '@deepseek-ai/dsh-pwsh-local'
+      name: '@eco-agent/dsh-pwsh-local'
 
 # tool-pwsh already exists in the shipped composition: the base bundle declares
 # it platform-gated on every platform, and the web-app overlay disables it for
 # surfaces that use presets. So this lane enables it by id rather than
 # inserting a second row to the same id.
 - id: tool-pwsh
-  name: '@deepseek-ai/dsh-tool-pwsh'
+  name: '@eco-agent/dsh-tool-pwsh'
   disabled: false

@@ -3,7 +3,7 @@ export const name = 'snapshot-feedback-producer'
 export const inject = ['commands', 'messageFeedback', 'sessionFeedback']
 
 /**
- * @param {import('@deepseek-ai/cordis').Context} ctx - Composed runtime services.
+ * @param {import('@eco-agent/cordis').Context} ctx - Composed runtime services.
  */
 export function apply(ctx) {
   ctx.on('agent/turn-stopping', async ({ agent, signal }) => {

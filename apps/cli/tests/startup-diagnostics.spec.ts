@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { inspect } from 'node:util'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { StartupError } from '@deepseek-ai/dsh-app-boot'
+import { StartupError } from '@eco-agent/dsh-app-boot'
 import { reportStartupFailure } from '../src/startup-diagnostics.ts'
 
 async function home(): Promise<string> {

@@ -3,7 +3,7 @@ description: "右侧 Sidebar 浏览器 tab：在 sandbox 中访问 HTTP(S) 页�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-sidebar-browser
+# @eco-agent/dsh-client-ui-sidebar-browser
 
 [English](README.md) | 中文
 

@@ -3,7 +3,7 @@ description: "Configure Desktop product analytics, identity fields, and event ti
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-product-analytics
+# @eco-agent/dsh-client-product-analytics
 
 English | [中文](README.zh.md)
 

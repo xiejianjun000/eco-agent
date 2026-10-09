@@ -1,5 +1,5 @@
 // wechat-bridge fetch MCP server — minimal, dependency-light, MIT-only.
-// Spawned by @deepseek-ai/dsh-mcp-client over stdio.
+// Spawned by @eco-agent/dsh-mcp-client over stdio.
 //
 // Safety design (per the WeChat-bridge safety rules):
 //  - GET-only web fetch of http/https public URLs.

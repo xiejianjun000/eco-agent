@@ -10,8 +10,8 @@ import {
   type RegistryIndex,
 } from './benchmark-npm-resolution.ts'
 
-const DSH_PACKAGE = '@deepseek-ai/dsh'
-const CORDIS_PACKAGE = '@deepseek-ai/cordis'
+const DSH_PACKAGE = '@eco-agent/dsh'
+const CORDIS_PACKAGE = '@eco-agent/cordis'
 const NESTED_DSH_ALIAS = 'dsh-previous'
 const NESTED_DSH_PATH = `node_modules/${NESTED_DSH_ALIAS}`
 const DEPENDENCY_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'] as const

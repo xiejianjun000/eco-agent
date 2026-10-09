@@ -45,7 +45,7 @@ it('loads both tarballs through plain Node and mounts their base image and overl
   await writeFile(join(root, 'package.json'), JSON.stringify({ private: true, type: 'module' }))
   for (const name of packages) {
     const source = join(experimentalDirectory, name)
-    const directory = join(root, 'node_modules/@deepseek-ai', `dsh-experimental-${name}`)
+    const directory = join(root, 'node_modules/@eco-agent', `dsh-experimental-${name}`)
     const packRoot = join(root, name)
     await mkdir(packRoot, { recursive: true })
     await mkdir(directory, { recursive: true })
@@ -73,16 +73,16 @@ it('loads both tarballs through plain Node and mounts their base image and overl
     import assert from 'node:assert/strict'
     import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
     import { fileURLToPath } from 'node:url'
-    import * as packer from '@deepseek-ai/dsh-experimental-webworker-packer'
-    import * as runtime from '@deepseek-ai/dsh-experimental-webworker-runtime'
-    import * as client from '@deepseek-ai/dsh-experimental-webworker-runtime/client'
-    import { sessionFormatCatalog } from '@deepseek-ai/dsh-session-format-catalog'
+    import * as packer from '@eco-agent/dsh-experimental-webworker-packer'
+    import * as runtime from '@eco-agent/dsh-experimental-webworker-runtime'
+    import * as client from '@eco-agent/dsh-experimental-webworker-runtime/client'
+    import { sessionFormatCatalog } from '@eco-agent/dsh-session-format-catalog'
     for (const name of ['webworker-packer', 'webworker-runtime']) {
       assert.equal(import.meta.resolve('@deepseek-ai/dsh-experimental-' + name),
         new URL('./node_modules/@deepseek-ai/dsh-experimental-' + name + '/lib/index.js', import.meta.url).href)
     }
     assert.equal(typeof client.connectWorkerHost, 'function')
-    const worker = fileURLToPath(import.meta.resolve('@deepseek-ai/dsh-experimental-webworker-runtime/worker'))
+    const worker = fileURLToPath(import.meta.resolve('@eco-agent/dsh-experimental-webworker-runtime/worker'))
     assert.ok(existsSync(worker))
     assert.equal(readFileSync(worker, 'utf8').match(/^import[ \\t]/m), null)
     const base = packer.packVfsImage({ config: '[]\\n', profile: 'packed-consumer', workspaces: new Map(), resolveFrom: process.cwd(), entries: [] })

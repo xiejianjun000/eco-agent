@@ -101,7 +101,7 @@ async function checkPty() {
 
 /** Exercise grep and glob operations with the search tool's resolved native executable. */
 async function checkSearch() {
-  const { resolveRgPath } = await import(pathToFileURL(requireRuntime.resolve('@deepseek-ai/dsh-tool-fs-search')).href)
+  const { resolveRgPath } = await import(pathToFileURL(requireRuntime.resolve('@eco-agent/dsh-tool-fs-search')).href)
   const executable = await resolveRgPath()
   const name = 'ripgrep-smoke.txt'
   const marker = 'desktop-ripgrep-smoke'

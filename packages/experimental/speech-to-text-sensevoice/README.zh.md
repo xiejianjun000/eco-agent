@@ -3,7 +3,7 @@ description: "按需准备和运行本地 CPU SenseVoice 工作进程。"
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-speech-to-text-sensevoice
+# @eco-agent/dsh-experimental-speech-to-text-sensevoice
 
 [English](README.md) | 中文
 

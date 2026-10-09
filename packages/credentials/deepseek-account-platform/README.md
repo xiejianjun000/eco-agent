@@ -3,7 +3,7 @@ description: "Sign in through the system browser and keep the account credential
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-deepseek-account-platform
+# @eco-agent/dsh-deepseek-account-platform
 
 English | [中文](README.zh.md)
 

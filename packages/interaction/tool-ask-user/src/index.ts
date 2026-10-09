@@ -3,14 +3,14 @@
  * The tool pauses until a UI provider returns a human answer, then feeds that
  * answer back into the agent loop as an ordinary tool result.
  *
- * @module @deepseek-ai/dsh-tool-ask-user
+ * @module @eco-agent/dsh-tool-ask-user
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import { defineTool } from '@deepseek-ai/dsh-tools'
-import z from '@deepseek-ai/schemastery'
+import type { Context } from '@eco-agent/cordis'
+import { defineTool } from '@eco-agent/dsh-tools'
+import z from '@eco-agent/schemastery'
 import { registerTimedAskUser } from './timed.ts'
-import '@deepseek-ai/dsh-user-questions'
+import '@eco-agent/dsh-user-questions'
 
 /** Cordis row selecting the tool schema and its default foreground wait. */
 export interface Config {

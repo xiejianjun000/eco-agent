@@ -4,11 +4,11 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { Context } from '@deepseek-ai/cordis'
-import Include from '@deepseek-ai/cordis-plugin-include'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import { loadOverlayPatches } from '@deepseek-ai/dsh-app-boot'
-import WebServer from '@deepseek-ai/dsh-host-webserver'
+import { Context } from '@eco-agent/cordis'
+import Include from '@eco-agent/cordis-plugin-include'
+import Loader from '@eco-agent/cordis-plugin-loader'
+import { loadOverlayPatches } from '@eco-agent/dsh-app-boot'
+import WebServer from '@eco-agent/dsh-host-webserver'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as Inspector from '../src/index.ts'
 
@@ -27,7 +27,7 @@ describe('experimental Inspector through a real Loader composition', () => {
     root = await mkdtemp(join(tmpdir(), 'dsh-inspector-loader-'))
     const configPath = join(root, 'cordis.yml')
     await writeFile(configPath, [
-      "- name: '@deepseek-ai/dsh-host-webserver'",
+      "- name: '@eco-agent/dsh-host-webserver'",
       '  config:',
       "    host: '127.0.0.1'",
       '    port: 0',
@@ -37,7 +37,7 @@ describe('experimental Inspector through a real Loader composition', () => {
     // profile patch configures that id, as the Plugins page and a `--patch` overlay do.
     const bundlePatches = loadOverlayPatches('test', fileURLToPath(new URL('../cordis.patch.yml', import.meta.url)))
     expect(bundlePatches.flatMap(patch => patch.insert ?? [])).toEqual([
-      { id: 'experimental-inspector', name: '@deepseek-ai/dsh-experimental-inspector' },
+      { id: 'experimental-inspector', name: '@eco-agent/dsh-experimental-inspector' },
     ])
 
     context = new Context()
@@ -53,8 +53,8 @@ describe('experimental Inspector through a real Loader composition', () => {
     })
     context.loader.builtins.include = Include
     const modules = new Map<string, unknown>([
-      ['@deepseek-ai/dsh-host-webserver', WebServer],
-      ['@deepseek-ai/dsh-experimental-inspector', Inspector],
+      ['@eco-agent/dsh-host-webserver', WebServer],
+      ['@eco-agent/dsh-experimental-inspector', Inspector],
     ])
     context.loader.internal = {
       version: 'v2',
@@ -80,7 +80,7 @@ describe('experimental Inspector through a real Loader composition', () => {
     })
 
     const inspectorEntry = [...context.loader.entries()]
-      .find(entry => entry.options.name === '@deepseek-ai/dsh-experimental-inspector')
+      .find(entry => entry.options.name === '@eco-agent/dsh-experimental-inspector')
     expect(inspectorEntry?.fiber).toBeDefined()
     await inspectorEntry!.fiber!.dispose()
     expect(context.get('inspector')).toBeUndefined()

@@ -9,8 +9,8 @@
 创建 `config-demo.ts`，并将其放在 `tmp/cordis-tutorial` 中：
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import Schema from '@deepseek-ai/schemastery'
+import type { Context } from '@eco-agent/cordis'
+import Schema from '@eco-agent/schemastery'
 
 export const name = 'config-demo'
 
@@ -73,9 +73,9 @@ ValidationError: invalid config:
 对于插件在每次操作中读取的字段，可以使用 `.volatile()`。字段变化会更新稳定引用，无需重新挂载插件。通过 `.get()` 读取：
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/cordis-plugin-loader'
-import Schema from '@deepseek-ai/schemastery'
+import type { Context } from '@eco-agent/cordis'
+import type {} from '@eco-agent/cordis-plugin-loader'
+import Schema from '@eco-agent/schemastery'
 
 export const Config = Schema.object({
   greeting: Schema.string().default('Hello').volatile(),

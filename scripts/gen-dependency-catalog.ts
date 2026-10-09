@@ -8,7 +8,7 @@ import { parseArgs } from 'node:util'
 import { runCommandWithTimeout } from './benchmark-npm-resolution.ts'
 
 const ROOT = resolve(import.meta.dirname, '..')
-const PACKAGE = '@deepseek-ai/dsh'
+const PACKAGE = '@eco-agent/dsh'
 const ENTRY = `node_modules/${PACKAGE}`
 const REGISTRY = 'https://registry.npmjs.org/'
 const LOCK = 'scripts/dependency-catalog/package-lock.json'
@@ -236,7 +236,7 @@ export function createNpmResolutionEnvironment(
   const globalConfig = join(temporary, '.npmrc-global')
   writeFileSync(userConfig, '')
   writeFileSync(globalConfig, '')
-  writeFileSync(join(temporary, '.npmrc'), `registry=${REGISTRY}\n@deepseek-ai:registry=${REGISTRY}\ninstall-strategy=hoisted\n`)
+  writeFileSync(join(temporary, '.npmrc'), `registry=${REGISTRY}\n@eco-agent:registry=${REGISTRY}\ninstall-strategy=hoisted\n`)
   return {
     ...Object.fromEntries(Object.entries(inherited).filter(([name]) => !name.toLowerCase().startsWith('npm_config_'))),
     npm_config_userconfig: userConfig,

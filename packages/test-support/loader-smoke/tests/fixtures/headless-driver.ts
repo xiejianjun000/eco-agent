@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /** Snapshot-only Loader driver: stream one fixture turn as canonical JSONL. */
 
-import type { Context, FiberState } from '@deepseek-ai/cordis'
-import { installFailLoud, loadEnv, resolveConfigPath } from '@deepseek-ai/dsh-app-boot'
-import { runFixtureTurn } from '@deepseek-ai/dsh-loader-smoke'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type { Context, FiberState } from '@eco-agent/cordis'
+import { installFailLoud, loadEnv, resolveConfigPath } from '@eco-agent/dsh-app-boot'
+import { runFixtureTurn } from '@eco-agent/dsh-loader-smoke'
+import type { SessionEvent } from '@eco-agent/dsh-session'
 import { bootProductionProfile } from './production-profile.ts'
 
 const NAME = 'headless-test-driver'

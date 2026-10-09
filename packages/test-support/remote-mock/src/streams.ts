@@ -1,6 +1,6 @@
 /** Stream scripts and the pushable, abort-aware stream a script drives. */
 
-import { isRemoteUplinkItem, type RemoteStreamHandle } from '@deepseek-ai/dsh-typert-protocol'
+import { isRemoteUplinkItem, type RemoteStreamHandle } from '@eco-agent/dsh-typert-protocol'
 import type { StreamRecord } from './log.ts'
 
 /**

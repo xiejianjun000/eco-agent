@@ -3,7 +3,7 @@ description: "Client module system for the web GUI: the host composes the boot g
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-modules
+# @eco-agent/dsh-client-modules
 
 English | [中文](README.zh.md)
 

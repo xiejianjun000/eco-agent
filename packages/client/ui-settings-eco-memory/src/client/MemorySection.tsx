@@ -6,8 +6,8 @@
  * 这里连开关都不画。
  */
 import type { ReactNode } from 'react'
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
-import type { InjectFace, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import type { SettingsScope, SettingsScopeSnapshot } from '@eco-agent/dsh-client-ui-settings/client'
+import type { InjectFace, PropsRenderSlots } from '@eco-agent/dsh-client-ui-slots'
 import type { en } from './locales.ts'
 import styles from './MemorySection.module.css'
 

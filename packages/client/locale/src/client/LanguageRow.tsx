@@ -5,9 +5,9 @@
  * settings surface.
  */
 import { useState } from 'react'
-import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
-import { IconChevronDownOutlineRegular, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { PropsLocale, PropsRuntime, PropsStore } from '@eco-agent/dsh-client-ui-slots'
+import { IconChevronDownOutlineRegular, Menu } from '@eco-agent/dsh-client-ui-primitives'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
 import type { createLanguageRowStore } from './settings-store.ts'
 import css from './LanguageRow.module.css'
 

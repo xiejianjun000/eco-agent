@@ -3,11 +3,11 @@
  * algorithm used by the agent loop to build an assistant message from a chunk
  * stream while logging the raw chunks for replay fidelity.
  *
- * @module @deepseek-ai/dsh-llm/assembler
+ * @module @eco-agent/dsh-llm/assembler
  */
 
-import { brandString } from '@deepseek-ai/dsh-brand'
-import { assertNever } from '@deepseek-ai/dsh-util-values'
+import { brandString } from '@eco-agent/dsh-brand'
+import { assertNever } from '@eco-agent/dsh-util-values'
 import type { ToolCallId } from './brand.ts'
 import { createAssistantMessage } from './message.ts'
 import type { AssistantMessage, ModelMessageSource } from './message.ts'

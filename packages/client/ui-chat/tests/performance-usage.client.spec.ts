@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { stubConfigForm } from '@deepseek-ai/dsh-client-test-runtime'
+import { stubConfigForm } from '@eco-agent/dsh-client-test-runtime'
 import type { ChatSettings } from '../src/chat-settings.ts'
 import { PerformanceUsagePolicy } from '../src/client/performance-usage.ts'
 

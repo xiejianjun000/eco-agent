@@ -1,22 +1,22 @@
 /** Plan-mode control, persistent Chat cards, and Session-backed sidebar previews. */
-import type {} from '@deepseek-ai/dsh-api-remotes/client'
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type {} from '@eco-agent/dsh-api-remotes/client'
+import type { Context as ClientContext } from '@eco-agent/cordis'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 // Type-only: pulls the ui-conversation SlotMap merge (the input.plan seat).
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@eco-agent/dsh-client-ui-conversation/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls the `plan` SessionProjectionMap merge for useProjection.
-import type {} from '@deepseek-ai/dsh-plan-mode/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-client-ui-session/client'
-import type {} from '@deepseek-ai/dsh-api-session-controller/remote'
-import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
-import type {} from '@deepseek-ai/dsh-client-ui-user-questions/client'
-import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
-import type {} from '@deepseek-ai/dsh-client-resources/client'
-import { extractMarkdownPlainText } from '@deepseek-ai/dsh-client-ui-primitives'
-import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
+import type {} from '@eco-agent/dsh-plan-mode/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-session/client'
+import type {} from '@eco-agent/dsh-api-session-controller/remote'
+import type {} from '@eco-agent/dsh-client-ui-chat/client'
+import type {} from '@eco-agent/dsh-client-ui-user-questions/client'
+import type {} from '@eco-agent/dsh-client-ui-sidebar-right/client'
+import type {} from '@eco-agent/dsh-client-resources/client'
+import { extractMarkdownPlainText } from '@eco-agent/dsh-client-ui-primitives'
+import { randomUUID } from '@eco-agent/dsh-util-crypto'
 import { PlanCards, PlanReviewOpen, type PlanCardsInjected, type PlanOpenInjected, type PlanReviewOpenInjected } from './PlanCard.tsx'
 import { PlanPreview, PlanTitle } from './PlanPreview.tsx'
 import { planDefinition } from './plan-definition.ts'
@@ -29,7 +29,7 @@ import { en, zh, type PlanKey } from './locales.ts'
 
 export type { PlanKey } from './locales.ts'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** The composer plan chip's copy. */
     plan: PlanKey
@@ -58,7 +58,7 @@ export const inject = ['slots', 'remote', 'remote.commands', 'remote.session', '
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-plan: dictionaries')
 
-  const previewId = '@deepseek-ai/dsh-client-ui-plan'
+  const previewId = '@eco-agent/dsh-client-ui-plan'
   const t = ctx.locale.bind(NS)
   ctx.effect(() => ctx.uiConversation.events.register(planDefinition), 'ui-plan: conversation definition')
   ctx.effect(() => ctx.resources.register(planResourceProvider(ctx.remote.session)), 'ui-plan: resources')

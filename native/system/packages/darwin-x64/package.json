@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/node-addon-system-darwin-x64",
+  "name": "@eco-agent/node-addon-system-darwin-x64",
   "version": "0.1.2",
   "description": "Prebuilt POSIX flock Node-API binding for macOS x64",
   "repository": {

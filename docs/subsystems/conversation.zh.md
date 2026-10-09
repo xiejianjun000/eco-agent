@@ -77,13 +77,13 @@ Group 存储在安装前校验完整提交结果：根 Group 引用与记录一�
 
 ```ts ignore-check
 import { createElement } from 'react'
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type { Branded } from '@deepseek-ai/dsh-brand'
+import type { Context as ClientContext } from '@eco-agent/cordis'
+import type { Branded } from '@eco-agent/dsh-brand'
 import type {
   ConversationLocation, ConversationNodeContext,
   ConversationNodeDefinition,
-} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type { ChatNodeViewProps } from '@deepseek-ai/dsh-client-ui-chat/client'
+} from '@eco-agent/dsh-client-ui-conversation/client'
+import type { ChatNodeViewProps } from '@eco-agent/dsh-client-ui-chat/client'
 
 type ReviewId = Branded<'ReviewId'>
 
@@ -108,7 +108,7 @@ interface ReviewEndData {
   readonly summary: string
 }
 
-declare module '@deepseek-ai/dsh-session/types' {
+declare module '@eco-agent/dsh-session/types' {
   interface SessionEventMap {
     /**
      * Opens one durable review job.
@@ -138,13 +138,13 @@ interface ReviewChatData {
   readonly summary?: string
 }
 
-declare module '@deepseek-ai/dsh-client-ui-chat/client' {
+declare module '@eco-agent/dsh-client-ui-chat/client' {
   interface ChatNodeDataMap {
     'review-job': ReviewChatData
   }
 }
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@eco-agent/dsh-client-ui-conversation/client' {
   interface ConversationStepDataMap {
     'review-job': ReviewChatData
   }

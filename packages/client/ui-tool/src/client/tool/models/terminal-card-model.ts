@@ -1,8 +1,8 @@
 /** Pure terminal-card derivation from raw Tool call and result fields. @module */
-import type { TerminalBlockLabels, TerminalBlockProps } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
-import { resolveWorkspacePath } from '@deepseek-ai/dsh-util-workspace-path'
-import { hasSpillNotice } from '@deepseek-ai/dsh-spill-policy/notice'
+import type { TerminalBlockLabels, TerminalBlockProps } from '@eco-agent/dsh-client-ui-primitives'
+import type { TranslateNS } from '@eco-agent/dsh-client-ui-slots'
+import { resolveWorkspacePath } from '@eco-agent/dsh-util-workspace-path'
+import { hasSpillNotice } from '@eco-agent/dsh-spill-policy/notice'
 import type { ToolCallBlock } from './tool-call-model.ts'
 import { parsedToolCall, singleResultText, validEscalationFields } from './raw-tool-call.ts'
 
@@ -258,7 +258,7 @@ function terminalSendCall(name: string, args: Record<string, unknown>): Terminal
 }
 
 /**
- * Parse the marker literals owned by `@deepseek-ai/dsh-shell/render` without
+ * Parse the marker literals owned by `@eco-agent/dsh-shell/render` without
  * importing that Host-only package into the Client dependency graph.
  * @param text - rendered shell result text.
  * @returns output with a trailing exit-code or signal marker extracted.

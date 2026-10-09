@@ -3,7 +3,7 @@ description: "持久终端会话的随产品交付的 shell 后端：在共享�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-terminal-bash
+# @eco-agent/dsh-terminal-bash
 
 [English](README.md) | 中文
 
@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-当组合需要持久 shell 会话时挂载此后端——cwd、导出的变量、函数或正在运行的交互式子进程等状态必须跨工具调用存活。它是默认的 `shell` 类型：组合只挂载 `@deepseek-ai/dsh-terminal` 而不挂载它时，将没有任何会话可打开。
+当组合需要持久 shell 会话时挂载此后端——cwd、导出的变量、函数或正在运行的交互式子进程等状态必须跨工具调用存活。它是默认的 `shell` 类型：组合只挂载 `@eco-agent/dsh-terminal` 而不挂载它时，将没有任何会话可打开。
 
 ### 何时选择
 
@@ -36,12 +36,12 @@ kind: "package-reference"
 挂载终端服务、子进程提供方、沙箱与策略服务、此后端以及一个工具包：
 
 ```yaml
-- name: '@deepseek-ai/dsh-terminal'
-- name: '@deepseek-ai/dsh-subprocess-local'
-- name: '@deepseek-ai/dsh-sandbox-local'
-- name: '@deepseek-ai/dsh-sandbox-policy'
-- name: '@deepseek-ai/dsh-terminal-bash'
-- name: '@deepseek-ai/dsh-tool-terminal'
+- name: '@eco-agent/dsh-terminal'
+- name: '@eco-agent/dsh-subprocess-local'
+- name: '@eco-agent/dsh-sandbox-local'
+- name: '@eco-agent/dsh-sandbox-policy'
+- name: '@eco-agent/dsh-terminal-bash'
+- name: '@eco-agent/dsh-tool-terminal'
 ```
 
 `danger-full-access` 直接启动 shell。受限模式要求同一执行世界中存在 `ctx.sandbox` 提供方：缺少时，spawn 会在 shell 启动前失败。限制准备过程接收打开操作的取消信号；即使提供方稍后返回，取消仍会阻止终端分配。
@@ -133,7 +133,7 @@ Scrollback 和尚未读取的发送输出保留独立拥有的字符串，并增
 
 #### 模型看到什么
 
-此包不注册提示词或工具。模型通过 `@deepseek-ai/dsh-tool-terminal` 或其他 PTY 消费方可能收到有界的启动输出、发送增量、scrollback 页、就绪原因与清理错误。
+此包不注册提示词或工具。模型通过 `@eco-agent/dsh-tool-terminal` 或其他 PTY 消费方可能收到有界的启动输出、发送增量、scrollback 页、就绪原因与清理错误。
 
 #### Token 影响
 

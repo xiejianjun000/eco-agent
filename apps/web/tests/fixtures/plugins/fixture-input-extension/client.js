@@ -3,7 +3,7 @@ window.__ModuleLoader__.load({
   id: '@fixture/input-extension',
   factory(require) {
     const React = require('react')
-    const { Button, Modal, IconApiOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Modal, IconApiOutlineRegular } = require('@eco-agent/dsh-client-ui-primitives')
     const h = React.createElement
     return {
       inject: ['slots', 'locale'],

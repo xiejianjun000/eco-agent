@@ -1,11 +1,11 @@
 /** Standard ACP MCP-server declarations translated into Agent-scoped DSH MCP clients. */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import { createHash } from 'node:crypto'
 import { validateHeaderName, validateHeaderValue } from 'node:http'
 import { isAbsolute } from 'node:path'
 import type { McpServer } from '@agentclientprotocol/sdk'
-import * as McpClient from '@deepseek-ai/dsh-mcp-client'
+import * as McpClient from '@eco-agent/dsh-mcp-client'
 
 const VALID_SERVER_NAME = /^[A-Za-z0-9_-]{1,32}$/
 

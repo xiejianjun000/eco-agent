@@ -17,11 +17,11 @@
  * in this tab's place, so the guide is a doorway rather than a page that stays
  * open.
  */
-import { ShortcutKeys } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ShortcutCatalogEntry } from '@deepseek-ai/dsh-client-shortcuts/client'
+import { ShortcutKeys } from '@eco-agent/dsh-client-ui-primitives'
+import type { ShortcutCatalogEntry } from '@eco-agent/dsh-client-shortcuts/client'
 import type { ReactNode } from 'react'
-import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
-import type { ChainRenderOpts, HookContextOf, InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ObservableSnapshot } from '@eco-agent/dsh-client-store'
+import type { ChainRenderOpts, HookContextOf, InjectFace, PropsRenderSlots, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
 import type { SidebarRightGuideBox } from '../../tab-registry.ts'
 import { CompassGlyph, CubeGlyph } from './GuideTitle.tsx'
 import css from './GuideBody.module.css'

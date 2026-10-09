@@ -1,5 +1,5 @@
 /** Resolve CWD-keyed Electron storage after the authoritative Workspace list has arrived. */
-import type { WorkspaceSource } from '@deepseek-ai/dsh-api-workspace-controller/client'
+import type { WorkspaceSource } from '@eco-agent/dsh-api-workspace-controller/client'
 
 /**
  * Use the Workspace's canonical CWD, not its record id; ungrouped Sessions remain isolated.

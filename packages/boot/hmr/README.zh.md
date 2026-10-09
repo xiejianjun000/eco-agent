@@ -3,7 +3,7 @@ description: "通过统一协调队列热重载插件代码和 profile 配置。
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-hmr
+# @eco-agent/dsh-hmr
 
 [English](README.md) | 中文
 
@@ -33,7 +33,7 @@ kind: "package-reference"
     root: ["."]
 ```
 
-已有配置将模块名 `@deepseek-ai/cordis-plugin-hmr` 替换为 `@deepseek-ai/dsh-hmr`。继续提供 `hmr` 服务键、`baseDir`、`config`、`getLinked()`、`getOuterStack()`、`hmr/change` 和 `hmr/reload`。工作区保留 vendored 包；DSH profile 使用本包。
+已有配置将模块名 `@eco-agent/cordis-plugin-hmr` 替换为 `@eco-agent/dsh-hmr`。继续提供 `hmr` 服务键、`baseDir`、`config`、`getLinked()`、`getOuterStack()`、`hmr/change` 和 `hmr/reload`。工作区保留 vendored 包；DSH profile 使用本包。
 
 ### 配置
 

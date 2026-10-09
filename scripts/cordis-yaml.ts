@@ -50,7 +50,7 @@ export function isCordisGroupEntry(value: unknown): value is Record<string, unkn
     && value !== null
     && Array.isArray((value as Record<string, unknown>).config)
     && ((value as Record<string, unknown>).group === true
-      || (value as Record<string, unknown>).name === '@deepseek-ai/cordis-plugin-group')
+      || (value as Record<string, unknown>).name === '@eco-agent/cordis-plugin-group')
 }
 
 /** Test whether an entry declares an Agent preset with a child plugin list.
@@ -60,7 +60,7 @@ export function isCordisGroupEntry(value: unknown): value is Record<string, unkn
 export function isAgentPresetEntry(value: unknown): value is Record<string, unknown> & { config: { id: string; plugins: unknown[] } } {
   if (typeof value !== 'object' || value === null) return false
   const row = value as Record<string, unknown>
-  if (row.name !== '@deepseek-ai/dsh-agent-preset' || typeof row.config !== 'object' || row.config === null) return false
+  if (row.name !== '@eco-agent/dsh-agent-preset' || typeof row.config !== 'object' || row.config === null) return false
   const config = row.config as Record<string, unknown>
   return typeof config.id === 'string' && Array.isArray(config.plugins)
 }

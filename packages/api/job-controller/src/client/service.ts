@@ -4,14 +4,14 @@
  * `job.follow` stream per observed job — so overlapping viewers share a
  * stream, rosters resume whole after a reconnect, and observations resume
  * from the model's cursor, plus the human kill passthrough over `job.kill`.
- * @module @deepseek-ai/dsh-api-job-controller/client/service
+ * @module @eco-agent/dsh-api-job-controller/client/service
  */
 
-import { Service, type Context } from '@deepseek-ai/cordis'
-import { RemoteStreamCarrierError, type ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
-import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
-import type { JobId } from '@deepseek-ai/dsh-jobs/brand'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import { Service, type Context } from '@eco-agent/cordis'
+import { RemoteStreamCarrierError, type ClientRemote } from '@eco-agent/dsh-api-gateway/client'
+import type { RemoteResult } from '@eco-agent/dsh-typert-protocol'
+import type { JobId } from '@eco-agent/dsh-jobs/brand'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import type { JobKillRequest, JobKillValue, JobFollowFrame, JobFollowRequest, JobListFrame, JobListRequest } from '../types.ts'
 import type { ClientJobsModel, JobsSource } from './model.ts'
 
@@ -82,7 +82,7 @@ interface StreamEntry {
   dispose: () => Promise<void>
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** React-free client job rosters and observation control. */
     jobs: IJobs

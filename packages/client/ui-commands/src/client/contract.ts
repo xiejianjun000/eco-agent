@@ -4,9 +4,9 @@
  * consume its registration and dismissal operations.
  */
 import type { ComponentType } from 'react'
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type { ClientSessionContext } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
-import type { IconProps } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { Context as ClientContext } from '@eco-agent/cordis'
+import type { ClientSessionContext } from '@eco-agent/dsh-client-ui-input-trigger/client'
+import type { IconProps } from '@eco-agent/dsh-client-ui-primitives'
 
 /** Copy for an option that must be acknowledged before onSelect can run. */
 export interface SelectConfirmation {

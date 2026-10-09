@@ -48,7 +48,7 @@ export function extractPersistenceSchema(root: string): PersistenceSchemaInvento
   if (events.length === 0) throw new PersistenceSchemaError('persistence schema: no Session events were discovered')
   const filename = resolve(root, 'scripts/__persistence_schema_roots__.ts')
   const source = [
-    "import type { SessionHeader, SessionEvent, SessionEventMap, SurfaceEventType } from '@deepseek-ai/dsh-session/types'",
+    "import type { SessionHeader, SessionEvent, SessionEventMap, SurfaceEventType } from '@eco-agent/dsh-session/types'",
     'export type HeaderRoot = SessionHeader',
     'export type SurfaceRoot = SurfaceEventType',
     'export type EventNamesRoot = keyof SessionEventMap',

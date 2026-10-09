@@ -199,7 +199,7 @@
         }
       },
       {
-        "definitionId": "@deepseek-ai/dsh-command-goal",
+        "definitionId": "@eco-agent/dsh-command-goal",
         "name": "goal",
         "description": "Set or view the goal for a long-running task",
         "input": {
@@ -208,7 +208,7 @@
         }
       },
       {
-        "definitionId": "@deepseek-ai/dsh-permission-presets",
+        "definitionId": "@eco-agent/dsh-permission-presets",
         "name": "permission",
         "description": "Switch the permission preset (sandbox mode + approval policy)",
         "input": {
@@ -216,7 +216,7 @@
         }
       },
       {
-        "definitionId": "@deepseek-ai/dsh-plan-mode",
+        "definitionId": "@eco-agent/dsh-plan-mode",
         "name": "plan",
         "description": "Enter or leave plan mode",
         "input": {

@@ -1,12 +1,12 @@
 /** Host-wide durable reminders and shared human/model management. */
 import { randomUUID } from 'node:crypto'
-import z from '@deepseek-ai/schemastery'
-import { Context, Service } from '@deepseek-ai/cordis'
-import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
-import type { Domain } from '@deepseek-ai/dsh-storage-domain'
-import type {} from '@deepseek-ai/dsh-api-session-controller'
-import type { SessionId } from '@deepseek-ai/dsh-session'
-import type { SessionActivity } from '@deepseek-ai/dsh-workspace'
+import z from '@eco-agent/schemastery'
+import { Context, Service } from '@eco-agent/cordis'
+import { TypertRemoteService, Remote } from '@eco-agent/dsh-typert-protocol'
+import type { Domain } from '@eco-agent/dsh-storage-domain'
+import type {} from '@eco-agent/dsh-api-session-controller'
+import type { SessionId } from '@eco-agent/dsh-session'
+import type { SessionActivity } from '@eco-agent/dsh-workspace'
 import { ScheduleRuntime } from './runtime.ts'
 import { registerScheduleTools } from './tools.ts'
 import { scheduleDomain } from './storage.ts'
@@ -62,7 +62,7 @@ export {
 } from './domain.ts'
 
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Durable Host-wide reminder management. */
     schedule: ScheduleService
@@ -165,8 +165,8 @@ export class ScheduleService extends TypertRemoteService {
       return cleanup
     })
     const registered = new WeakSet<object>()
-    const attached = new Map<import('@deepseek-ai/dsh-agent').Agent, () => Promise<void>>()
-    const attach = (agent: import('@deepseek-ai/dsh-agent').Agent): void => {
+    const attached = new Map<import('@eco-agent/dsh-agent').Agent, () => Promise<void>>()
+    const attach = (agent: import('@eco-agent/dsh-agent').Agent): void => {
       if (this.stopping || registered.has(agent) || !ctx.agents.roots().includes(agent)) return
       registered.add(agent)
       // The plugin-scope effect is what tears the Agent-scoped registration down when this

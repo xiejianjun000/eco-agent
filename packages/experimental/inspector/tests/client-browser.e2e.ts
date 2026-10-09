@@ -240,7 +240,7 @@ function browserFixture(bootstrap: InspectorHandle['endpoint']['client']): strin
   const boot = {
     rev: 'browser-test',
     entries: [{
-      id: '@deepseek-ai/dsh-experimental-inspector',
+      id: '@eco-agent/dsh-experimental-inspector',
       url: '/client.js?rev=browser-test',
       rev: 'browser-test',
     }],
@@ -267,7 +267,7 @@ const root = {
 root.root = root;
 const cordis = { Context: { is(value) { return value?.__inspectorContext === true; } } };
 const plugin = registration.factory(specifier => {
-  if (specifier === '@deepseek-ai/cordis') return cordis;
+  if (specifier === '@eco-agent/cordis') return cordis;
   throw new Error('Unexpected Client bundle dependency ' + specifier);
 });
 await plugin.apply(root);

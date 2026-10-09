@@ -12,9 +12,9 @@
  * exists: a domain ships projection support with zero client code. Per-key
  * bare observable faces feed `useProjection` (ui-renderer binds them).
  */
-import type { SessionProjectionMap } from '@deepseek-ai/dsh-session-projection/types'
-import type { SessionSeqCursor } from '@deepseek-ai/dsh-session/types'
-import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
+import type { SessionProjectionMap } from '@eco-agent/dsh-session-projection/types'
+import type { SessionSeqCursor } from '@eco-agent/dsh-session/types'
+import type { ObservableSnapshot } from '@eco-agent/dsh-client-store'
 import { Notifier } from './notifier.ts'
 
 // The single projection type table, typed end to end (host unit, wire block,
@@ -24,7 +24,7 @@ import { Notifier } from './notifier.ts'
 // client program (one program must not hold both sides). No second
 // client-side "views" table (rejected in the Alternatives of
 // .agents/notes/proposed/architecture/2026-07-27-session-projection-and-command-log.md).
-export type { SessionProjectionMap } from '@deepseek-ai/dsh-session-projection/types'
+export type { SessionProjectionMap } from '@eco-agent/dsh-session-projection/types'
 
 /**
  * The fifth framework hook seat (see the session-projection subsystem page,

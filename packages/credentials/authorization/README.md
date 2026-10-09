@@ -3,7 +3,7 @@ description: "The authorization flow registry for users and maintainers who obta
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-authorization
+# @eco-agent/dsh-authorization
 
 English | [中文](README.zh.md)
 
@@ -36,9 +36,9 @@ Use it whenever a credential can only be obtained by talking to a human — an O
 Your plugin declares one flow per credential it holds, keyed by the `<scope>/<id>` credential record the flow writes — the scope names your plugin, the id names one credential it owns:
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import type { AuthorizationSession } from '@deepseek-ai/dsh-authorization'
-import { credentialKey } from '@deepseek-ai/dsh-credentials'
+import type { Context } from '@eco-agent/cordis'
+import type { AuthorizationSession } from '@eco-agent/dsh-authorization'
+import { credentialKey } from '@eco-agent/dsh-credentials'
 
 declare const ctx: Context
 declare const exchangeCode: (code: string, signal: AbortSignal) => Promise<{ token: string }>

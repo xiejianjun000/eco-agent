@@ -8,25 +8,25 @@
  * for its initial history open to succeed before contacting the Host.
  * This plugin does not create goals; deployments may expose /goal separately.
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
+import type { Context as ClientContext } from '@eco-agent/cordis'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { HostObservable } from '@eco-agent/dsh-client-ui-slots'
 // Type-only: pulls the generated Remote API and ctx.remote merge through the Client assembly boundary.
-import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from '@eco-agent/dsh-api-remotes/client'
 // Type-only: pulls the Session Controller service used for projected goal state.
-import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+import type {} from '@eco-agent/dsh-api-session-controller/client'
 // Type-only: pulls the Chat node slot and its keyed data map.
-import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
+import type {} from '@eco-agent/dsh-client-ui-chat/client'
 // Type-only: pulls the Conversation service and input-dock slot.
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@eco-agent/dsh-client-ui-conversation/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls the renderer-owned slots service.
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 // Type-only: pulls the Session standard useProjection seat.
-import type {} from '@deepseek-ai/dsh-client-ui-session/client'
+import type {} from '@eco-agent/dsh-client-ui-session/client'
 // Type-only: the `goal` SessionProjectionMap key merge (single source, the domain's pure outlet).
-import type { GoalProjection, GoalRef } from '@deepseek-ai/dsh-goal/client'
+import type { GoalProjection, GoalRef } from '@eco-agent/dsh-goal/client'
 import type { GoalActionResult, GoalBarInjected } from './slots.ts'
 import { createGoalActivationSource } from './activation-source.ts'
 import { GoalDock } from './GoalBar.tsx'
@@ -40,14 +40,14 @@ export type {
 } from './slots.ts'
 export type { GoalKey } from './locales.ts'
 
-declare module '@deepseek-ai/dsh-api-session-controller/client' {
+declare module '@eco-agent/dsh-api-session-controller/client' {
   interface SessionReferenceSourceMap {
     /** A live goal read waiting for initial history and its RPC result. */
     goalActivation: unknown
   }
 }
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** The goal strip's copy. */
     goal: GoalKey

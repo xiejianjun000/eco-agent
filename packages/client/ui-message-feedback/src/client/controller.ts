@@ -4,17 +4,17 @@
  * version this controller last observed, and a `version-conflict` reply carries
  * the authoritative item, so a lost race reconciles from the reply itself
  * instead of refetching the whole Session.
- * @module @deepseek-ai/dsh-client-ui-message-feedback/client/controller
+ * @module @eco-agent/dsh-client-ui-message-feedback/client/controller
  */
 
-import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ClientRemote, MessageId } from '@deepseek-ai/dsh-api-remotes/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { FeedbackRecord } from '@deepseek-ai/dsh-command-feedback/types'
+import type { HostObservable } from '@eco-agent/dsh-client-ui-slots'
+import type { ClientRemote, MessageId } from '@eco-agent/dsh-api-remotes/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { FeedbackRecord } from '@eco-agent/dsh-command-feedback/types'
 import type {
   MessageFeedbackItem,
   MessageFeedbackRating,
-} from '@deepseek-ai/dsh-message-feedback/types'
+} from '@eco-agent/dsh-message-feedback/types'
 
 /** Load state of the one list read that seeds every per-message control. */
 export type MessageFeedbackStatus = 'cold' | 'loading' | 'ready' | 'error'

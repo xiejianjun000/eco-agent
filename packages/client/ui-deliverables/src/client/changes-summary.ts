@@ -1,5 +1,5 @@
 /** Fetch-once cache of the change summaries the Host serves for announced `workspace/changes` events. */
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import { changesSummaryUrl, isChangesSummary, type ChangesSummary } from '../changes.ts'
 import { HostReadStore } from './host-read-store.ts'
 

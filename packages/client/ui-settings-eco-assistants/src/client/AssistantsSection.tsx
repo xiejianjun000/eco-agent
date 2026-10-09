@@ -2,11 +2,11 @@
  * 「我的助手」设置 section：微信助手（开关 + 扫码说明）与飞书助手（适配中占位）。
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
-import type { PluginInventorySnapshot } from '@deepseek-ai/dsh-api-remotes/client'
-import type { InjectFace, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
-import { StateDot, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { SettingsScope, SettingsScopeSnapshot } from '@eco-agent/dsh-client-ui-settings/client'
+import type { PluginInventorySnapshot } from '@eco-agent/dsh-api-remotes/client'
+import type { InjectFace, PropsRenderSlots } from '@eco-agent/dsh-client-ui-slots'
+import { StateDot, Switch } from '@eco-agent/dsh-client-ui-primitives'
+import type { StateDotState } from '@eco-agent/dsh-client-ui-primitives'
 import type { en } from './locales.ts'
 import styles from './AssistantsSection.module.css'
 

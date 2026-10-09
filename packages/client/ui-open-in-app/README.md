@@ -3,7 +3,7 @@ description: "Web \"Open In...\" controls: the Session-header split button launc
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-open-in-app
+# @eco-agent/dsh-client-ui-open-in-app
 
 English | [中文](README.zh.md)
 
@@ -45,7 +45,7 @@ Mounted controls with the same association reader and file share one query and i
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-Both directory slots use `OpenInAppAction` with an explicit `absolutePath`. The `conversation.session.header.utilities` registration reads the Session cwd, while `sidebar.right.tab.files.actions` receives the displayed directory from its owner. The plugin registers the `open-in-app` dictionaries as one effect. A page-lifetime controller ([`src/client/controller.ts`](src/client/controller.ts)) owns the once-per-page availability read, the persisted choice snapshot store, and the launch POST; the component receives the shared sources through the inject `hooks` compartment, so every Session header shares one truth. Document-relative route forms and wire payload types come from the host package's browser-safe `@deepseek-ai/dsh-host-open-in-app/shared` subpath. The controller guards in-flight launches and publishes their captured directory and status; header controls derive delayed busy and transient error visuals from that source.
+Both directory slots use `OpenInAppAction` with an explicit `absolutePath`. The `conversation.session.header.utilities` registration reads the Session cwd, while `sidebar.right.tab.files.actions` receives the displayed directory from its owner. The plugin registers the `open-in-app` dictionaries as one effect. A page-lifetime controller ([`src/client/controller.ts`](src/client/controller.ts)) owns the once-per-page availability read, the persisted choice snapshot store, and the launch POST; the component receives the shared sources through the inject `hooks` compartment, so every Session header shares one truth. Document-relative route forms and wire payload types come from the host package's browser-safe `@eco-agent/dsh-host-open-in-app/shared` subpath. The controller guards in-flight launches and publishes their captured directory and status; header controls derive delayed busy and transient error visuals from that source.
 
 The directory and file adapters supply application metadata and operations to [`OpenTargetButton`](src/client/OpenTargetButton.tsx), which owns menu ordering, default markers, icons, sizing, and gesture feedback. The file header and empty state share `FileOpenTarget`, while `OpenPathInjected.applications` queries `session.workspacePathApplications` through [`open-path.ts`](src/client/open-path.ts). Opening uses `session.openWorkspacePath`; the Host revalidates an explicitly selected handler before launch. The directory adapter keeps the existing catalog routes. `FileRouteAction` supplies the same control to delivery cards and change review through `deliverables.file.actions` and `deliverables.review.file.actions`; their authenticated routes retain Session file authorization. A failed or unavailable file query therefore needs no platform-specific UI implementation.
 

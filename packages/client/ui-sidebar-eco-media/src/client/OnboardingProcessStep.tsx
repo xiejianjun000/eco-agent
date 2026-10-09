@@ -1,6 +1,6 @@
 /** Work-detail choices with radio-group keyboard navigation. */
 import type { KeyboardEvent, RefObject } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '@eco-agent/dsh-client-ui-primitives'
 import type { OnboardingProcess } from '../onboarding-settings.ts'
 import type { DesktopOnboardingProps } from './onboarding-contract.ts'
 import compactIcon from './assets/onboarding-compact.svg'

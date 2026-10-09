@@ -1,6 +1,6 @@
 /** Shared Host/Client projection from live Cordis objects to a bounded semantic tree. */
 
-import { Context, type Fiber } from '@deepseek-ai/cordis'
+import { Context, type Fiber } from '@eco-agent/cordis'
 import { jsonByteLength, type InspectorJsonValue } from '../json.ts'
 import {
   CORDIS_TREE_SCHEMA_VERSION,

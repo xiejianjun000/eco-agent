@@ -4,7 +4,7 @@ The system package family supplies native mechanisms to Node callers: a Linux co
 
 ## Package family
 
-The ESM package `@deepseek-ai/node-addon-system` and its optional platform packages share one version. Platform metadata chooses the operating system and CPU; each package's `prebuilds.json` declares the files it must contain.
+The ESM package `@eco-agent/node-addon-system` and its optional platform packages share one version. Platform metadata chooses the operating system and CPU; each package's `prebuilds.json` declares the files it must contain.
 
 The `./landlock-run` entry owns Landlock path resolution, grant argv, and the functional probe. It does not load native addons. The `./flock` entry lazily loads `system.node` only when `tryLockExclusive(fd)` is called. Importing either JavaScript entry therefore works without a matching native payload. The package exposes these capability subpaths and its manifest, without a root export.
 

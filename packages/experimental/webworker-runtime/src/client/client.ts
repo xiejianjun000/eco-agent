@@ -6,7 +6,7 @@
  * The worker's unsolicited `view-text` frame opens the page's text viewer.
  */
 
-import type { IndexInjection } from '@deepseek-ai/dsh-host-webserver'
+import type { IndexInjection } from '@eco-agent/dsh-host-webserver'
 import type {
   TunnelAbortFrame as AbortFrame,
   TunnelOutboundFrame as ResponseFrame,

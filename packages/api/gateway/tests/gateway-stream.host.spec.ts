@@ -3,11 +3,11 @@ import { once } from 'node:events'
 import { queryObjects } from 'node:v8'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { type RawData } from 'ws'
-import { Context, symbols } from '@deepseek-ai/cordis'
-import { apply as applyConnection, inject as connectionInject } from '@deepseek-ai/dsh-client-connection'
-import WebServer from '@deepseek-ai/dsh-host-webserver'
-import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
-import type { AppReady } from '@deepseek-ai/dsh-cmdline'
+import { Context, symbols } from '@eco-agent/cordis'
+import { apply as applyConnection, inject as connectionInject } from '@eco-agent/dsh-client-connection'
+import WebServer from '@eco-agent/dsh-host-webserver'
+import { MAX_TIMER_DELAY_MS } from '@eco-agent/dsh-timeout'
+import type { AppReady } from '@eco-agent/dsh-cmdline'
 import {
   Remote,
   remoteErrorOf,
@@ -19,10 +19,10 @@ import {
   type TypertContextMap,
   type TypertContextWire,
   RemoteError,
-} from '@deepseek-ai/dsh-typert-protocol'
-import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
+} from '@eco-agent/dsh-typert-protocol'
+import TypertRegistry from '@eco-agent/dsh-typert-registry'
 
-declare module '@deepseek-ai/dsh-typert-protocol' {
+declare module '@eco-agent/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     'fixture/rejected': { readonly retryable: boolean }
     'fixture/broken': { readonly count: bigint }
@@ -35,7 +35,7 @@ import TypertGatewayService, {
   type TypertRemoteEventDispatch,
   type TypertRemoteEventInvocation,
   type TypertRemoteEventOutcome,
-} from '@deepseek-ai/dsh-api-gateway'
+} from '@eco-agent/dsh-api-gateway'
 import { z } from 'zod'
 import type {
   RemoteEventClientId,

@@ -1,14 +1,14 @@
 /** Initial and incremental tool definitions survive current-format restoration and forks. */
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { createDeveloperMessage } from '@deepseek-ai/dsh-llm'
-import type { ToolAdditionBlock, ToolSchema } from '@deepseek-ai/dsh-llm'
-import { Session, SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
-import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
-import { buildForkSeed } from '@deepseek-ai/dsh-session/fork'
-import { createSessionFormatCatalog } from '@deepseek-ai/dsh-session-format'
-import { restoreReleasedV4Artifact } from '@deepseek-ai/dsh-session-format-v3-to-v4'
+import { createDeveloperMessage } from '@eco-agent/dsh-llm'
+import type { ToolAdditionBlock, ToolSchema } from '@eco-agent/dsh-llm'
+import { Session, SessionId, SessionLogOffset } from '@eco-agent/dsh-session'
+import type { SessionEvent, SessionHeader } from '@eco-agent/dsh-session'
+import { buildForkSeed } from '@eco-agent/dsh-session/fork'
+import { createSessionFormatCatalog } from '@eco-agent/dsh-session-format'
+import { restoreReleasedV4Artifact } from '@eco-agent/dsh-session-format-v3-to-v4'
 import { sessionFormatCatalogOptions } from '../src/generated.ts'
-import type { SessionFormatEvent } from '@deepseek-ai/dsh-session-format'
+import type { SessionFormatEvent } from '@eco-agent/dsh-session-format'
 import { sessionFormatCatalog } from '../src/index.ts'
 
 function restore(session: Session): Session {

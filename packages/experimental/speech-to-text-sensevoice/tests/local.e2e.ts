@@ -1,7 +1,7 @@
 /** Explicit opt-in real SenseVoice inference, including the managed runtime when no overrides are supplied. */
 import { readFile } from 'node:fs/promises'
-import { Context } from '@deepseek-ai/cordis'
-import LocalSubprocess from '@deepseek-ai/dsh-subprocess-local'
+import { Context } from '@eco-agent/cordis'
+import LocalSubprocess from '@eco-agent/dsh-subprocess-local'
 import { expect, it, vi } from 'vitest'
 import { Config } from '../src/config.ts'
 import { SenseVoiceWorker } from '../src/recognizer.ts'

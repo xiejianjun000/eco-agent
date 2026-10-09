@@ -7,7 +7,7 @@ function failure(name: string, message: string): Error {
 
 describe('migration failure report facts', () => {
   it('distinguishes a direct field refusal from a child prerequisite failure', () => {
-    const message = '@deepseek-ai/dsh-session-format-v0-to-v1 refuses this format v0 Session: '
+    const message = '@eco-agent/dsh-session-format-v0-to-v1 refuses this format v0 Session: '
       + 'permission/preset 0 data has unexpected member "origin"; source v0 artifact remains unchanged'
     const direct = classifyMigrationFailure(failure('SessionFormatUnsupportedError', message))
     expect(direct).toEqual({ reason: 'unexpected_member', errorName: 'SessionFormatUnsupportedError',

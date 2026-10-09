@@ -9,7 +9,7 @@ In the loader configuration used here, a Cordis plugin module named-exports an `
 In your `tmp/cordis-tutorial` directory (see [setup](index.md#setup)), create `hello.ts`:
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 
 export const name = 'hello'
 
@@ -55,7 +55,7 @@ There is no framework bootstrap code in your file: a plugin describes what it co
 A function is the most common form, but Cordis accepts three:
 
 ```ts
-import { Service, type Context } from '@deepseek-ai/cordis'
+import { Service, type Context } from '@eco-agent/cordis'
 
 // 1. Function plugin (what you just wrote).
 export function apply(ctx: Context) {}

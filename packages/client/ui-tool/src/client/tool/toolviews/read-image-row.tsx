@@ -17,7 +17,7 @@
 // content until `execute` returns, so a running read_image shows the summary row
 // alone.
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import { imageCardModel } from '../models/image-card-model.ts'
 import { readFamilyRow, type ReadImageRowProps } from './read-family-row.tsx'
 import { CONVERSATION_NS as NS } from '../../locale.ts'

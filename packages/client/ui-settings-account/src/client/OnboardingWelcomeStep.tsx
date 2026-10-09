@@ -1,6 +1,6 @@
 /** Welcome page with a required explicit start. */
 import type { RefObject } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '@eco-agent/dsh-client-ui-primitives'
 import type { DesktopOnboardingProps } from './onboarding-contract.ts'
 import { OnboardingIllustration } from './OnboardingIllustration.tsx'
 import art from './assets/onboarding-welcome.png'

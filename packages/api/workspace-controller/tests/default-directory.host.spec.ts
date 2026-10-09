@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { NativeCommandRunner } from '@deepseek-ai/dsh-native-command'
+import type { NativeCommandRunner } from '@eco-agent/dsh-native-command'
 import { defaultWorkspaceDirectory, validateDocumentsDirectory } from '../src/default-directory.ts'
 
 describe('system Documents directory', () => {

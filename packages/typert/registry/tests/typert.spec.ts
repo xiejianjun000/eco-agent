@@ -1,21 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { z } from 'zod'
 import TypertRegistry, {
   typertEndpoint,
   typertKey,
   typertPackageKey,
   type TypertContribution,
-} from '@deepseek-ai/dsh-typert-registry'
+} from '@eco-agent/dsh-typert-registry'
 import type {
   InvocationDescriptor,
   TypertContext,
   TypertLookup,
   TypertRemoteContribution,
-} from '@deepseek-ai/dsh-typert-protocol'
+} from '@eco-agent/dsh-typert-protocol'
 import { apply as applyClientRegistry, inject as clientRegistryInject } from '../src/client/index.ts'
 
-declare module '@deepseek-ai/dsh-typert-protocol' {
+declare module '@eco-agent/dsh-typert-protocol' {
   interface TypertLookupMap {
     fixture: TypertLookup<{ readonly id: string }, string>
   }
@@ -34,7 +34,7 @@ async function makeCtx(): Promise<Context> {
 
 function toolsContribution(schema: z.ZodType = z.object({ name: z.string() })): TypertContribution {
   return {
-    package: '@deepseek-ai/dsh-tools',
+    package: '@eco-agent/dsh-tools',
     face: 'host',
     schemas: [{ name: 'ToolInput', create: () => schema }],
     invocations: [],
@@ -116,16 +116,16 @@ describe('TypertRegistry', () => {
     const contribution = toolsContribution()
     ctx.typert.register(contribution)
 
-    expect(typertKey('@deepseek-ai/dsh-tools', 'ToolInput')).toBe('@deepseek-ai/dsh-tools#ToolInput')
-    expect(typertPackageKey('@deepseek-ai/dsh-tools', 'host')).toBe('@deepseek-ai/dsh-tools#host')
-    expect(ctx.typert.get('@deepseek-ai/dsh-tools#ToolInput')).toMatchObject({
-      package: '@deepseek-ai/dsh-tools',
+    expect(typertKey('@eco-agent/dsh-tools', 'ToolInput')).toBe('@eco-agent/dsh-tools#ToolInput')
+    expect(typertPackageKey('@eco-agent/dsh-tools', 'host')).toBe('@eco-agent/dsh-tools#host')
+    expect(ctx.typert.get('@eco-agent/dsh-tools#ToolInput')).toMatchObject({
+      package: '@eco-agent/dsh-tools',
       face: 'host',
       name: 'ToolInput',
     })
-    expect(ctx.typert.get('@deepseek-ai/dsh-tools#ToolInput')?.schema).toBe(contribution.schemas[0]?.create())
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools', 'host')).toMatchObject({
-      key: '@deepseek-ai/dsh-tools#host',
+    expect(ctx.typert.get('@eco-agent/dsh-tools#ToolInput')?.schema).toBe(contribution.schemas[0]?.create())
+    expect(ctx.typert.getPackage('@eco-agent/dsh-tools', 'host')).toMatchObject({
+      key: '@eco-agent/dsh-tools#host',
       model: { services: [{ key: 'tools' }] },
     })
     expect(ctx.typert.list()).toHaveLength(1)
@@ -135,12 +135,12 @@ describe('TypertRegistry', () => {
   it('withdraws schemas and package metadata through the exact contribution disposer', async () => {
     const ctx = await makeCtx()
     const dispose = ctx.typert.register(toolsContribution())
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeDefined()
+    expect(ctx.typert.getPackage('@eco-agent/dsh-tools')).toBeDefined()
 
     await dispose()
 
-    expect(ctx.typert.get('@deepseek-ai/dsh-tools#ToolInput')).toBeUndefined()
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeUndefined()
+    expect(ctx.typert.get('@eco-agent/dsh-tools#ToolInput')).toBeUndefined()
+    expect(ctx.typert.getPackage('@eco-agent/dsh-tools')).toBeUndefined()
     expect(ctx.typert.listPackages()).toEqual([])
   })
 
@@ -151,11 +151,11 @@ describe('TypertRegistry', () => {
       { inject: ['typert'] },
     ))
     await fiber
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeDefined()
+    expect(ctx.typert.getPackage('@eco-agent/dsh-tools')).toBeDefined()
 
     await fiber.dispose()
 
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeUndefined()
+    expect(ctx.typert.getPackage('@eco-agent/dsh-tools')).toBeUndefined()
     expect(ctx.typert.list()).toEqual([])
   })
 
@@ -165,7 +165,7 @@ describe('TypertRegistry', () => {
     ctx.typert.register(original)
 
     expect(() => ctx.typert.register(toolsContribution(z.never()))).toThrow('package face')
-    expect(ctx.typert.get('@deepseek-ai/dsh-tools#ToolInput')?.schema).toBe(original.schemas[0]?.create())
+    expect(ctx.typert.get('@eco-agent/dsh-tools#ToolInput')?.schema).toBe(original.schemas[0]?.create())
 
     const duplicateBatch: TypertContribution = {
       ...toolsContribution(),
@@ -208,16 +208,16 @@ describe('TypertRegistry', () => {
     ctx.typert.register({ ...toolsContribution(), schemas: [{ name: 'ToolInput', create }] })
     expect(create).not.toHaveBeenCalled()
 
-    expect(ctx.typert.resolve('@deepseek-ai/dsh-tools#ToolInput').name).toBe('ToolInput')
+    expect(ctx.typert.resolve('@eco-agent/dsh-tools#ToolInput').name).toBe('ToolInput')
     expect(create).toHaveBeenCalledOnce()
-    expect(ctx.typert.resolve('@deepseek-ai/dsh-tools#ToolInput').schema).toBe(schema)
+    expect(ctx.typert.resolve('@eco-agent/dsh-tools#ToolInput').schema).toBe(schema)
     expect(create).toHaveBeenCalledOnce()
-    expect(() => ctx.typert.resolve('@deepseek-ai/dsh-tools#Missing')).toThrow('contributes no schema named "Missing"')
+    expect(() => ctx.typert.resolve('@eco-agent/dsh-tools#Missing')).toThrow('contributes no schema named "Missing"')
     expect(() => ctx.typert.resolve('@fixture/absent#Value')).toThrow('has no registered contribution')
     expect(() => ctx.typert.resolve('invalid')).toThrow('expected "<package>#<name>"')
-    const projected = ctx.typert.toJSONSchema('@deepseek-ai/dsh-tools#ToolInput')
+    const projected = ctx.typert.toJSONSchema('@eco-agent/dsh-tools#ToolInput')
     expect(projected).toMatchObject({ type: 'object', properties: { name: { type: 'string' } } })
-    expect(ctx.typert.toJSONSchema('@deepseek-ai/dsh-tools#ToolInput')).not.toBe(projected)
+    expect(ctx.typert.toJSONSchema('@eco-agent/dsh-tools#ToolInput')).not.toBe(projected)
   })
 
   it('registers local invocations atomically with generated reflection', async () => {
@@ -239,7 +239,7 @@ describe('TypertRegistry', () => {
     await dispose()
     expect(ctx.typert.local.list()).toEqual([])
     expect(ctx.typert.local.hasSeen('goals/create')).toBe(true)
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeUndefined()
+    expect(ctx.typert.getPackage('@eco-agent/dsh-tools')).toBeUndefined()
     expect(changes).toEqual(['local:goals/create', 'local:goals/create'])
   })
 

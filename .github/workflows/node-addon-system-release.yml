@@ -1,4 +1,4 @@
-# Build and publish the @deepseek-ai/node-addon-system package family from the
+# Build and publish the @eco-agent/node-addon-system package family from the
 # harness source of record. Rehearsal and publication consume the same packed
 # tarballs; each native binary is built on its matching architecture.
 name: Node Addon System Release

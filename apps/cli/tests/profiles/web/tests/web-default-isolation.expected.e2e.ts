@@ -1,12 +1,12 @@
 /** Real Web startup, mounted plugin package identities, and delivered Client graph isolation. */
 
-import { FiberState } from '@deepseek-ai/cordis'
-import type { WebBootGraph } from '@deepseek-ai/dsh-client-modules/client'
+import { FiberState } from '@eco-agent/cordis'
+import type { WebBootGraph } from '@eco-agent/dsh-client-modules/client'
 import { expect, it } from 'vitest'
 import { experimentalRuntimeReferences, modulePackage } from './runtime-roster.ts'
 import { withDefaultWeb, webGet } from './default-web-process.ts'
 
-const experimentalName = '@deepseek-ai/dsh-experimental-client-ui-agent-team'
+const experimentalName = '@eco-agent/dsh-experimental-client-ui-agent-team'
 
 it('boots default Web without experimental modules, scheduling, time context, or an active built-in Browser', async (test) => {
   await withDefaultWeb(test, async ({ url, request }) => {
@@ -22,19 +22,19 @@ it('boots default Web without experimental modules, scheduling, time context, or
     const roster = await request('roster')
     expect(roster.client).toEqual(delivered)
     expect(roster.entries).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: '@deepseek-ai/dsh-host-webserver', state: FiberState.ACTIVE }),
-      expect.objectContaining({ name: '@deepseek-ai/dsh-client-modules', state: FiberState.ACTIVE }),
+      expect.objectContaining({ name: '@eco-agent/dsh-host-webserver', state: FiberState.ACTIVE }),
+      expect.objectContaining({ name: '@eco-agent/dsh-client-modules', state: FiberState.ACTIVE }),
     ]))
     expect(roster.entries.some(entry => entry.name.endsWith('/runtime-roster-observer.js') && entry.state === FiberState.ACTIVE)).toBe(true)
     expect(roster.plugins.length).toBeGreaterThan(roster.entries.length)
-    expect(roster.modules.some(url => modulePackage(url) === '@deepseek-ai/dsh')).toBe(true)
+    expect(roster.modules.some(url => modulePackage(url) === '@eco-agent/dsh')).toBe(true)
     expect(roster.client.entries.length).toBeGreaterThan(0)
-    const browser = roster.entries.find(entry => entry.name === '@deepseek-ai/dsh-client-ui-sidebar-browser')
+    const browser = roster.entries.find(entry => entry.name === '@eco-agent/dsh-client-ui-sidebar-browser')
     expect(browser).toBeDefined()
     expect(browser!.state).toBeUndefined()
-    expect(delivered.entries.some(entry => entry.id === '@deepseek-ai/dsh-client-ui-sidebar-browser')).toBe(false)
+    expect(delivered.entries.some(entry => entry.id === '@eco-agent/dsh-client-ui-sidebar-browser')).toBe(false)
     // The optional Schedule bundle inserts these rows; the shipped composition carries none of them.
-    for (const name of ['@deepseek-ai/dsh-time-context', '@deepseek-ai/dsh-schedule', '@deepseek-ai/dsh-client-ui-schedule']) {
+    for (const name of ['@eco-agent/dsh-time-context', '@eco-agent/dsh-schedule', '@eco-agent/dsh-client-ui-schedule']) {
       expect(roster.entries.some(entry => entry.name === name), name).toBe(false)
       expect(delivered.entries.some(entry => entry.id === name), name).toBe(false)
     }

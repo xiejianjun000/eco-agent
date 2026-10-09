@@ -1,5 +1,5 @@
 /** SenseVoice language support and input failures that leave native inference untouched. */
-import { validateWave } from '@deepseek-ai/dsh-experimental-speech-to-text/wave'
+import { validateWave } from '@eco-agent/dsh-experimental-speech-to-text/wave'
 
 /** Language hints accepted by both provider metadata and native inference. */
 export const languages: readonly string[] = ['auto', 'zh', 'en', 'yue', 'ja', 'ko']

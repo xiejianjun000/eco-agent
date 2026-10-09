@@ -1,5 +1,5 @@
-import { Context } from '@deepseek-ai/cordis'
-import { createMessage, createSystemMessage, createToolResultMessage, createUserMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
+import { Context } from '@eco-agent/cordis'
+import { createMessage, createSystemMessage, createToolResultMessage, createUserMessage, ToolCallId } from '@eco-agent/dsh-llm'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import SessionStore, {
   adoptSessionEvent,
@@ -14,7 +14,7 @@ import SessionStore, {
   type SurfaceEventType,
   type SurfaceIntent,
   type SurfaceOp,
-} from '@deepseek-ai/dsh-session'
+} from '@eco-agent/dsh-session'
 
 const id = SessionId('canonical-envelopes')
 const header = { version: SESSION_FORMAT_VERSION, id, createdAt: 1, isSeeded: false } as const
@@ -88,7 +88,7 @@ describe('canonical event payload acceptance', () => {
     }
     for (const accept of [entryPaths.seed!, entryPaths.restore!, entryPaths.adopt!, entryPaths.snapshot!]) {
       expect(() => accept(structuredClone(event))).not.toThrow()
-      for (const source of [{ kind: 'runtime-context' }, { kind: 'plugin', plugin: '@deepseek-ai/dsh-system-prompt' }, { kind: 'user' }]) {
+      for (const source of [{ kind: 'runtime-context' }, { kind: 'plugin', plugin: '@eco-agent/dsh-system-prompt' }, { kind: 'user' }]) {
         const invalid = { ...event, data: { ...event.data, message: { ...message, source } } }
         expect(() => accept(invalid as unknown as SessionEvent)).toThrow(/system-prompt source/)
       }

@@ -6,11 +6,11 @@
  * backend write leaves memory untouched (no divergence between reads and the
  * medium), and events carry values that equal the in-memory state at
  * emission, in write order.
- * @module @deepseek-ai/dsh-storage-domain/src/domain
+ * @module @eco-agent/dsh-storage-domain/src/domain
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { KvUnit } from '@deepseek-ai/dsh-storage'
+import type { Context } from '@eco-agent/cordis'
+import type { KvUnit } from '@eco-agent/dsh-storage'
 import { DomainError } from './error.ts'
 import type { DomainSpec, DomainGlobalSpec, TableKeyOf, TableValueOf } from './spec.ts'
 import type { DomainChanged } from './events.ts'

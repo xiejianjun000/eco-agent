@@ -1,8 +1,8 @@
 /** Activation guidance after the Host inspects local recognition resources. */
 import { useEffect } from 'react'
 import { VoiceSetupDialog } from './VoiceSetupDialog.tsx'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/client'
+import type { InjectFace, PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-client-ui-plugin-manager/client'
 import type { VoiceInputInjected } from './VoiceInput.tsx'
 import type { NS } from './locales.ts'
 

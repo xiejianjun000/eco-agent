@@ -1,17 +1,17 @@
 /** Source-labelled Client references over real history transport and scoped Contexts. */
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { describe, expect, onTestFinished, vi } from 'vitest'
 import type {
   SessionReference, SessionReferenceSource, SessionRetainInfo,
-} from '@deepseek-ai/dsh-api-session-controller/client'
-import { SessionId } from '@deepseek-ai/dsh-session/types'
-import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import { ok, type RemoteMock } from '@deepseek-ai/dsh-remote-mock'
-import { createClientTest, webApp, type TestClient } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
+} from '@eco-agent/dsh-api-session-controller/client'
+import { SessionId } from '@eco-agent/dsh-session/types'
+import { RemoteError } from '@eco-agent/dsh-typert-protocol'
+import { ok, type RemoteMock } from '@eco-agent/dsh-remote-mock'
+import { createClientTest, webApp, type TestClient } from '@eco-agent/dsh-client-test-runtime/src/assembly/index.ts'
 import { ClientSessions } from '../src/client/sessions/service.ts'
 import { FOLLOW, followScript, type HistoryAnswer } from './remote/session.client.ts'
 
-declare module '@deepseek-ai/dsh-api-session-controller/client' {
+declare module '@eco-agent/dsh-api-session-controller/client' {
   interface SessionReferenceSourceMap {
     referenceTestView: unknown
     referenceTestWork: unknown
@@ -22,7 +22,7 @@ const viewSource: SessionReferenceSource = 'referenceTestView'
 const workSource: SessionReferenceSource = 'referenceTestWork'
 const ID = SessionId('reference-session')
 const EMPTY_HISTORY = ok({ records: [], hasMore: false })
-const it = createClientTest({ roster: webApp.closure(['@deepseek-ai/dsh-api-gateway']) })
+const it = createClientTest({ roster: webApp.closure(['@eco-agent/dsh-api-gateway']) })
 
 async function bench(mock: RemoteMock, start: () => Promise<TestClient>, listed = true) {
   const client = await start()

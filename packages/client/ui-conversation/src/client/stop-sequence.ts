@@ -1,5 +1,5 @@
 /** Two independent Escape presses addressed to one Conversation occurrence and live turn. */
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 
 /** Freshly resolved cancellation target; occurrence and region preserve focus ownership. */
 export interface StopTarget {

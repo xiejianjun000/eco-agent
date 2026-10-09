@@ -1,8 +1,8 @@
 /** Mandatory native V4 relationships; incomplete tails retain their open transactions. */
 
 import { isDeepStrictEqual } from 'node:util'
-import { SessionFormatError, isSessionFormatJsonObject, sessionFormatCount } from '@deepseek-ai/dsh-session-format'
-import type { SessionFormatArtifact, SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatError, isSessionFormatJsonObject, sessionFormatCount } from '@eco-agent/dsh-session-format'
+import type { SessionFormatArtifact, SessionFormatEvent, SessionFormatJsonObject, SessionFormatJsonValue } from '@eco-agent/dsh-session-format'
 
 const SURFACE_TYPES = new Set(['system/message', 'user/message', 'developer/message', 'assistant/message', 'tool/result'])
 const STEP_EVENT_TYPES = new Set(['system/message', 'developer/message', 'assistant/attempt'])

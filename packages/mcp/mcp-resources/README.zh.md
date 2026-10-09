@@ -3,7 +3,7 @@ description: "通过共享工具、显式服务器选择和 agent 作用域访�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-mcp-resources
+# @eco-agent/dsh-mcp-resources
 
 [English](README.md) | 中文
 
@@ -51,7 +51,7 @@ kind: "package-reference"
 
 ```yaml
 - id: mcp-resources
-  name: '@deepseek-ai/dsh-mcp-resources'
+  name: '@eco-agent/dsh-mcp-resources'
 ```
 
 作用域中的首个提供方注册该作用域的共享工具；移除最后一个提供方会移除本地工具注册，继承的提供方与工具仍然可见。资源服务独立于首个提供方插件拥有共享工具 effect，因此卸载该提供方不会移除其他服务器仍需要的工具。提供方选择与服务器名称提示词使用同一作用域注册表。每次调用都在派发前解析服务器。

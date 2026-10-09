@@ -17,10 +17,10 @@
  * the declaration. The types therefore live with their declarer.
  */
 
-import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-client-ui-slots'
 import type { ProviderDirectoryEntry } from './store.ts'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface SlotMap {
     /**
      * One provider card's adapter extension area, dispatched with

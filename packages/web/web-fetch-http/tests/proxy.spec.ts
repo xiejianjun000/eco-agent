@@ -1,9 +1,9 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
-import { HttpFetchProvider } from '@deepseek-ai/dsh-web-fetch-http'
-import type { HttpFetchLimits } from '@deepseek-ai/dsh-web-fetch-http'
+import { installProxyFromEnvironment } from '@eco-agent/dsh-http-proxy'
+import { HttpFetchProvider } from '@eco-agent/dsh-web-fetch-http'
+import type { HttpFetchLimits } from '@eco-agent/dsh-web-fetch-http'
 import { isNonPublicIpLiteral, publicHttpNetwork } from '../src/network.ts'
 
 const limits: HttpFetchLimits = {

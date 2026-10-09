@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
 /**
  * Local DOM snapshots of the sidebar shell through the real assembly path:
  * SlotTestRuntime mounts the package apply on its own fiber, the auto frame
@@ -11,11 +11,11 @@ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, waitFor } from '@testing-library/react'
-import { SlotTestRuntime, usePinnedBrowserLanguages } from '@deepseek-ai/dsh-client-test-runtime'
-import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
-import { en as commonEn } from '@deepseek-ai/dsh-client-locale/src/locales/en.ts'
-import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
-import { apply, inject } from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import { SlotTestRuntime, usePinnedBrowserLanguages } from '@eco-agent/dsh-client-test-runtime'
+import { LocaleRuntime } from '@eco-agent/dsh-client-locale/client'
+import { en as commonEn } from '@eco-agent/dsh-client-locale/src/locales/en.ts'
+import { zh as commonZh } from '@eco-agent/dsh-client-locale/src/locales/zh.ts'
+import { apply, inject } from '@eco-agent/dsh-client-ui-sidebar/client'
 
 // The service reads its initial locale from the browser; these specs assert
 // the shipped Chinese copy, so they state the browser they assume.

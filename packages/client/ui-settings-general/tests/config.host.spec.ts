@@ -1,5 +1,5 @@
 /** Onboarding state uses live Config fields. */
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { expect, it, onTestFinished } from 'vitest'
 import * as HostPlugin from '../src/index.ts'
 import { liveConfig, omitsGeneratedPage } from '../../../settings/settings/tests/live-config.ts'

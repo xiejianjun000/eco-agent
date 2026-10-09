@@ -1,6 +1,6 @@
 /** Client Cordis plugin that publishes browser observations directly to the Inspector Worker. */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import { parseInspectorClientBootstrap } from '../shared/bridge/control-codec.ts'
 import { createInspectorService, type InspectorService as SharedInspectorService } from '../shared/service.ts'
 import { publishCordisTree } from './inspection/cordis.ts'
@@ -25,7 +25,7 @@ declare global {
   var __DSH_INSPECTOR__: unknown
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Publish Client-realm observations and query the shared Inspector state. */
     inspector: InspectorService

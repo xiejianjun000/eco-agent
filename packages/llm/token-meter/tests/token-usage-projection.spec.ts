@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { TokenUsage } from '@deepseek-ai/dsh-llm'
-import SessionStore from '@deepseek-ai/dsh-session'
-import type { Session, SessionSeq } from '@deepseek-ai/dsh-session'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import TokenMeter from '@deepseek-ai/dsh-token-meter'
-import type { ContextPressureProjection, TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
-import { RetryId } from '@deepseek-ai/dsh-llm-retry'
-import type { ContextFormed } from '@deepseek-ai/dsh-llm'
-import { CompactionId } from '@deepseek-ai/dsh-compaction'
+import { Context } from '@eco-agent/cordis'
+import { createMessage, createUserMessage } from '@eco-agent/dsh-llm'
+import type { TokenUsage } from '@eco-agent/dsh-llm'
+import SessionStore from '@eco-agent/dsh-session'
+import type { Session, SessionSeq } from '@eco-agent/dsh-session'
+import SessionProjectionRegistry from '@eco-agent/dsh-session-projection'
+import TokenMeter from '@eco-agent/dsh-token-meter'
+import type { ContextPressureProjection, TokenUsageProjection } from '@eco-agent/dsh-token-meter/client'
+import { RetryId } from '@eco-agent/dsh-llm-retry'
+import type { ContextFormed } from '@eco-agent/dsh-llm'
+import { CompactionId } from '@eco-agent/dsh-compaction'
 
-declare module '@deepseek-ai/dsh-llm' {
+declare module '@eco-agent/dsh-llm' {
   interface MessageSourceMap {
     'test': { kind: 'test' } & ContextFormed
   }

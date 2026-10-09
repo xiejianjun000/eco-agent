@@ -1,5 +1,5 @@
 /** Declarative preset configuration and YAML validation. */
-import type { EntryOptions, JsExpr } from '@deepseek-ai/cordis-plugin-loader'
+import type { EntryOptions, JsExpr } from '@eco-agent/cordis-plugin-loader'
 
 /** Identity, display fields and child Cordis plugins of one preset. */
 export interface PresetDefinition {

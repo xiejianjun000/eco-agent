@@ -1,7 +1,7 @@
 /** Complete image bytes rendered in a shared zoom viewport. */
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import type { PropsLocale, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
-import { pathPartsOf } from '@deepseek-ai/dsh-util-workspace-path'
+import type { PropsLocale, PropsStore } from '@eco-agent/dsh-client-ui-slots'
+import { pathPartsOf } from '@eco-agent/dsh-util-workspace-path'
 import type { DocumentPreviewProps } from '../document/contract.ts'
 import { LoadingIndicator } from '../LoadingIndicator.tsx'
 import { hostFileOf } from '../rpc.ts'

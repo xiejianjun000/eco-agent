@@ -3,7 +3,7 @@ description: "Run TypeScript programs in fresh Node processes with the session f
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-ptc-runtime-node
+# @eco-agent/dsh-ptc-runtime-node
 
 English | [中文](README.zh.md)
 
@@ -32,7 +32,7 @@ Mount this provider in a composition that supplies `fs`, `subprocess`, `sandbox`
 Configure the provider row after its required services are available:
 
 ```yaml
-- name: '@deepseek-ai/dsh-ptc-runtime-node'
+- name: '@eco-agent/dsh-ptc-runtime-node'
   config:
     timeoutMs: 120000
     maxTimeoutMs: 600000

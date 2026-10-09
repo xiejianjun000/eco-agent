@@ -3,7 +3,7 @@ description: "面向部署方与维护者的默认 POSIX Bash 执行器说明，
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-bash-local
+# @eco-agent/dsh-bash-local
 
 [English](README.md) | 中文
 
@@ -33,7 +33,7 @@ kind: "package-reference"
 
 ```yaml
 - id: bash
-  name: '@deepseek-ai/dsh-bash-local'
+  name: '@eco-agent/dsh-bash-local'
   config:
     cwd: /path/to/workspace
     timeoutMs: 120000

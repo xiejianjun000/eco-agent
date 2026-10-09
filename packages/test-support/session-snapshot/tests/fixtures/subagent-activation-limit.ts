@@ -1,5 +1,5 @@
 /** Hold child execution until the parent's capacity probe has been recorded. */
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 
 export const name = 'subagent-activation-limit'
 export const inject = ['agents', 'loader', 'subagents']

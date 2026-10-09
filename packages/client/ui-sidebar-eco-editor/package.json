@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-client-ui-sidebar-eco-editor",
+  "name": "@eco-agent/dsh-client-ui-sidebar-eco-editor",
   "description": "Right-Sidebar document editor: edit a workspace file's whole text in place and save it through the ecoWorkspaceWrite write channel",
   "version": "0.1.7-alpha.2",
   "publishConfig": {
@@ -28,10 +28,10 @@
   "dsh": {
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-api-workspace-files",
-        "@deepseek-ai/dsh-api-eco-workspace-write",
-        "@deepseek-ai/dsh-client-ui-sidebar-documentpreview"
+        "@eco-agent/dsh-client-locale",
+        "@eco-agent/dsh-api-workspace-files",
+        "@eco-agent/dsh-api-eco-workspace-write",
+        "@eco-agent/dsh-client-ui-sidebar-documentpreview"
       ],
       "platform": "web"
     }
@@ -43,18 +43,18 @@
   "license": "MIT",
   "dependencies": null,
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-api-eco-workspace-write": "workspace:^",
-    "@deepseek-ai/dsh-api-gateway": "workspace:^",
-    "@deepseek-ai/dsh-api-workspace-files": "workspace:^",
-    "@deepseek-ai/dsh-client-locale": "workspace:^",
-    "@deepseek-ai/dsh-client-store": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-primitives": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-sidebar-documentpreview": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-sidebar-right": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-util-workspace-path": "workspace:^",
+    "@eco-agent/cordis": "workspace:^",
+    "@eco-agent/dsh-api-eco-workspace-write": "workspace:^",
+    "@eco-agent/dsh-api-gateway": "workspace:^",
+    "@eco-agent/dsh-api-workspace-files": "workspace:^",
+    "@eco-agent/dsh-client-locale": "workspace:^",
+    "@eco-agent/dsh-client-store": "workspace:^",
+    "@eco-agent/dsh-client-ui-primitives": "workspace:^",
+    "@eco-agent/dsh-client-ui-sidebar-documentpreview": "workspace:^",
+    "@eco-agent/dsh-client-ui-sidebar-right": "workspace:^",
+    "@eco-agent/dsh-client-ui-slots": "workspace:^",
+    "@eco-agent/dsh-session": "workspace:^",
+    "@eco-agent/dsh-util-workspace-path": "workspace:^",
     "@types/react": "~18.3.1",
     "react": "^18.2.0"
   },

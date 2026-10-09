@@ -11,7 +11,7 @@ test('the real Landlock subpath imports without platform packages or dlopen, whi
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'system-landlock-entry-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }), { timeout: 120_000 });
   const entry = fileURLToPath(new URL('../packages/entry/', import.meta.url));
-  const installed = path.join(dir, 'node_modules', '@deepseek-ai', 'node-addon-system');
+  const installed = path.join(dir, 'node_modules', '@eco-agent', 'node-addon-system');
   fs.mkdirSync(installed, { recursive: true });
   fs.copyFileSync(path.join(entry, 'package.json'), path.join(installed, 'package.json'));
   // Only the real entry payload is present; no platform package or addon is copied.
@@ -30,14 +30,14 @@ test('the real Landlock subpath imports without platform packages or dlopen, whi
         dlopenCalls++;
         throw new Error('Landlock import attempted dlopen');
       };
-      const api = await import('@deepseek-ai/node-addon-system/landlock-run');
+      const api = await import('@eco-agent/node-addon-system/landlock-run');
       assert.equal(api.LAUNCHER_BIN, 'landlock-run');
       assert.deepEqual(api.grantArgs({}), []);
       assert.equal(dlopenCalls, 0);
-      await assert.rejects(import('@deepseek-ai/node-addon-system'), {
+      await assert.rejects(import('@eco-agent/node-addon-system'), {
         code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
       });
-      assert.throws(() => createRequire(import.meta.url).resolve('@deepseek-ai/node-addon-system'), {
+      assert.throws(() => createRequire(import.meta.url).resolve('@eco-agent/node-addon-system'), {
         code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
       });
     } finally {

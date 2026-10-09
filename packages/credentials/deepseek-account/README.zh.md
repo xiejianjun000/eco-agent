@@ -3,7 +3,7 @@ description: "账号使用方可读取本地登录状态、发起或取消浏览
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-deepseek-account
+# @eco-agent/dsh-deepseek-account
 
 [English](README.md) | 中文
 

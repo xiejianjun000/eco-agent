@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import z from '@deepseek-ai/schemastery'
+import z from '@eco-agent/schemastery'
 import { redactSecrets } from '../src/index.ts'
 
 const Profile = z.object({

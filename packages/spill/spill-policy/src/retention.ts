@@ -1,5 +1,5 @@
-/** Ordered head/tail retention of text and indivisible images. @module @deepseek-ai/dsh-spill-policy/retention */
-import type { ContentBlock } from '@deepseek-ai/dsh-llm'
+/** Ordered head/tail retention of text and indivisible images. @module @eco-agent/dsh-spill-policy/retention */
+import type { ContentBlock } from '@eco-agent/dsh-llm'
 
 /** Content whose text can be split and whose images must remain whole. */
 export type RetainableBlock = Extract<ContentBlock, { type: 'text' | 'image' }>

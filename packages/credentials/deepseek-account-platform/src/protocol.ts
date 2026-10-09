@@ -1,6 +1,6 @@
 /** Validated platform HTTP messages and restricted browser destinations. */
 import { z } from 'zod'
-import type { AccountBonusOrderId } from '@deepseek-ai/dsh-deepseek-account/types'
+import type { AccountBonusOrderId } from '@eco-agent/dsh-deepseek-account/types'
 
 /** Protocol errors expose a stable code, never a response body or authorization URL. */
 export class PlatformAuthError extends Error {

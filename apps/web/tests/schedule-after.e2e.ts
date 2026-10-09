@@ -7,19 +7,19 @@ import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent'
-import { bundlePatchPaths, composeEntries, loadOverlayPatches } from '@deepseek-ai/dsh-app-boot'
-import { MessageId, ToolCallId, createUserMessage, LlmAdapter } from '@deepseek-ai/dsh-llm'
+import type { Agent, AgentHandle } from '@eco-agent/dsh-agent'
+import { bundlePatchPaths, composeEntries, loadOverlayPatches } from '@eco-agent/dsh-app-boot'
+import { MessageId, ToolCallId, createUserMessage, LlmAdapter } from '@eco-agent/dsh-llm'
 import { appendDelivery } from '../../../packages/schedule/schedule/src/delivery-history.ts'
-import type { ScheduleTask } from '@deepseek-ai/dsh-schedule'
-import type { ContextFormed, GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
-import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
+import type { ScheduleTask } from '@eco-agent/dsh-schedule'
+import type { ContextFormed, GenerateOptions, StreamChunk } from '@eco-agent/dsh-llm'
+import { SessionId, type SessionEvent } from '@eco-agent/dsh-session'
 import {
   ScheduleId,
   createEveryScheduleRecord,
   foldScheduleEvents,
   type EveryScheduleRecord,
-} from '@deepseek-ai/dsh-schedule'
+} from '@eco-agent/dsh-schedule'
 import {
   assertFixtureInventory,
   captureStableAria,
@@ -37,7 +37,7 @@ import {
   saveFailureShot,
 } from './support.ts'
 
-declare module '@deepseek-ai/dsh-llm' {
+declare module '@eco-agent/dsh-llm' {
   interface MessageSourceMap {
     'schedule-web-e2e': { kind: 'schedule-web-e2e' } & ContextFormed
   }
@@ -849,9 +849,9 @@ describe.skipIf(MODE === 'record')('web e2e: active Schedule catalog', () => {
     const shipped = composeEntries(layers)
     const withBundle = composeEntries([...layers, loadOverlayPatches('Schedule catalog bundle', SCHEDULE_BUNDLE)])
     for (const row of [
-      { id: 'time-context', name: '@deepseek-ai/dsh-time-context' },
-      { id: 'schedule', name: '@deepseek-ai/dsh-schedule' },
-      { id: 'ui-schedule', name: '@deepseek-ai/dsh-client-ui-schedule' },
+      { id: 'time-context', name: '@eco-agent/dsh-time-context' },
+      { id: 'schedule', name: '@eco-agent/dsh-schedule' },
+      { id: 'ui-schedule', name: '@eco-agent/dsh-client-ui-schedule' },
     ]) {
       // The shipped Web composition carries none of the rows; the bundle inserts each once, switched on.
       expect(shipped.some(entry => entry.id === row.id)).toBe(false)

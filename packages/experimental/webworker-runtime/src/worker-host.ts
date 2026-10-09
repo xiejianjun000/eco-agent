@@ -19,12 +19,12 @@
  * image, so entry mounting, the activation audit, and its diagnostics are the
  * same code the Node deployment runs. The Worker supplies module loading,
  * profile locations, and the command line.
- * @module @deepseek-ai/dsh-experimental-webworker-runtime/src/worker-host
+ * @module @eco-agent/dsh-experimental-webworker-runtime/src/worker-host
  */
 import { setActiveModuleLoader, WorkerModuleLoader, type StaticModuleFactory } from './module-system/module-loader.ts'
-import type { ProfileContext } from '@deepseek-ai/dsh-app-boot'
-import type { TypertGateway } from '@deepseek-ai/dsh-api-gateway'
-import type { HostConnectionHandle } from '@deepseek-ai/dsh-client-connection'
+import type { ProfileContext } from '@eco-agent/dsh-app-boot'
+import type { TypertGateway } from '@eco-agent/dsh-api-gateway'
+import type { HostConnectionHandle } from '@eco-agent/dsh-client-connection'
 import type { AlsCausality } from './polyfill/async-context/als-runtime.ts'
 import { dirname, join } from './module-system/posix-path.ts'
 import { installProcessGlobal } from './node/globals/process.ts'
@@ -221,7 +221,7 @@ export function createWorkerHost(options: WorkerHostOptions): WorkerHost {
       modules = loader
 
       const require = loader.requireFrom(dirname(configPath))
-      const appBoot = require('@deepseek-ai/dsh-app-boot') as {
+      const appBoot = require('@eco-agent/dsh-app-boot') as {
         boot(
           binName: string,
           configPath: string,
@@ -229,7 +229,7 @@ export function createWorkerHost(options: WorkerHostOptions): WorkerHost {
           prepare: (ctx: HostContext) => void,
         ): Promise<HostContext>
       }
-      const cmdline = require('@deepseek-ai/dsh-cmdline') as {
+      const cmdline = require('@eco-agent/dsh-cmdline') as {
         provideCmdline(ctx: unknown, host: {
           args: readonly string[]
           exit: (code: number) => void
@@ -323,7 +323,7 @@ export interface LogRenderer {
  * @param require - Image resolver, for cordis's own message renderer.
  */
 export function installLogSink(ctx: HostContext, require: (specifier: string) => unknown): void {
-  const { Logger } = require('@deepseek-ai/cordis') as { Logger: LogRenderer }
+  const { Logger } = require('@eco-agent/cordis') as { Logger: LogRenderer }
   const exporter: LogExporter = {
     colors: false,
     // cordis compares `exporter.levels ?? logger.level ?? INFO` against the
@@ -384,7 +384,7 @@ function bootPatches(
   root: string,
 ): { patches: unknown[]; profile: ProfileContext } {
   const text = vfs.readFileSync(configPath, 'utf8') as string
-  const include = loader.load(loader.resolve('@deepseek-ai/cordis-plugin-include', root)) as { entryListSchema: unknown }
+  const include = loader.load(loader.resolve('@eco-agent/cordis-plugin-include', root)) as { entryListSchema: unknown }
   const yaml = loader.load(loader.resolve('js-yaml', root)) as {
     load(source: string, options: { schema: unknown }): unknown
     dump(value: unknown, options: { schema: unknown }): string
@@ -429,7 +429,7 @@ function bootPatches(
   if (!vfs.existsSync(profile.patchPath)) {
     vfs.seed(profile.patchPath, yaml.dump([{ insert: rows }], { schema: include.entryListSchema }))
   }
-  const appBoot = loader.load(loader.resolve('@deepseek-ai/dsh-app-boot', root)) as {
+  const appBoot = loader.load(loader.resolve('@eco-agent/dsh-app-boot', root)) as {
     readProfilePatches(binName: string, profile: ProfileContext): unknown[]
   }
   return { patches: appBoot.readProfilePatches('dsh-webworker', profile), profile }

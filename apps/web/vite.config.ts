@@ -1,6 +1,8 @@
+import { existsSync, readFileSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { globSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -165,6 +167,116 @@ function npmPackageOf(id: string): string | undefined {
   return first
 }
 
+/**
+ * Local-preview bridge: resolve every in-repo `@eco-agent/*` workspace package
+ * straight to its TypeScript `src` so Vite/esbuild compiles it on the fly. This
+ * lets `vite build` succeed without first running the full monorepo `lib` build
+ * (tsc -b + tsdown), which the upstream 0.2.0-rc.2 developer preview has not
+ * fully wired for every dsh.bundle package. The bridge is local-only and is
+ * reverted before any production build / publish.
+ *
+ * `replacement` is a function (not a static string) so each import is resolved
+ * against the package's own `exports` map: a built target like
+ * `./lib/styles/brand-font.css` is mapped back to `./src/styles/brand-font.css`,
+ * while JS subpaths like `./client` map to `./src/client`. Resolution only
+ * succeeds when the source file actually exists; otherwise we return undefined
+ * and Vite falls back to the package's normal (built) resolution.
+ */
+type WorkspaceEntry = { pkgDir: string; exports: Record<string, unknown> }
+const workspaceSourceRegistry: Map<string, WorkspaceEntry> = (() => {
+  const reg = new Map<string, WorkspaceEntry>()
+  const selfDir = src('.')
+  const roots = ['packages', 'apps', 'vendor', 'native/system', 'benchmarks', 'website']
+  for (const root of roots) {
+    const base = src(`../../${root}`)
+    const patterns = [join(base, '*', 'package.json'), join(base, '*', '*', 'package.json')]
+    for (const pattern of patterns) {
+      for (const pkgPath of globSync(pattern)) {
+        let pkg: { name?: string; exports?: Record<string, unknown> } = {}
+        try { pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) } catch { continue }
+        const name = pkg.name
+        if (!name || !name.startsWith('@eco-agent/')) continue
+        const pkgDir = dirname(pkgPath)
+        if (pkgDir === selfDir) continue
+        if (!existsSync(join(pkgDir, 'src'))) continue
+        reg.set(name, { pkgDir, exports: pkg.exports ?? {} })
+      }
+    }
+  }
+  return reg
+})()
+
+/** Probe a source path, tolerating the .js→.ts extension gap between a
+ * package's built `exports` target and its TypeScript source. */
+function probeSource(pkgDir: string, rel: string): string | undefined {
+  const abs = join(pkgDir, rel)
+  if (existsSync(abs)) return abs
+  const ext = extname(rel)
+  const stem = ext ? rel.slice(0, rel.length - ext.length) : rel
+  for (const e of ['.ts', '.tsx', '.jsx', '.mjs', '.js']) {
+    const variant = join(pkgDir, stem + e)
+    if (existsSync(variant)) return variant
+  }
+  for (const e of ['.ts', '.tsx', '.js']) {
+    const idx = join(pkgDir, rel, `index${e}`)
+    if (existsSync(idx)) return idx
+  }
+  return undefined
+}
+
+function resolveWorkspaceSource(name: string, subpath: string): string | undefined {
+  const entry = workspaceSourceRegistry.get(name)
+  if (!entry) return undefined
+  // main entry: prefer an explicit index module, else the src directory
+  if (subpath === '') {
+    return probeSource(entry.pkgDir, 'src/index')
+      ?? (existsSync(join(entry.pkgDir, 'src')) ? join(entry.pkgDir, 'src') : undefined)
+  }
+  // direct src/<subpath> (covers the `./src/*` wildcard exports)
+  const direct = probeSource(entry.pkgDir, `src/${subpath}`)
+  if (direct) return direct
+  // via exports map: built target → source tree
+  const key = `./${subpath}`
+  const exp = entry.exports[key]
+  if (exp) {
+    const target = typeof exp === 'string' ? exp : ((exp as any).default ?? (exp as any).types)
+    if (typeof target === 'string') {
+      let rel = target.replace(/^\.\//, '')
+      rel = rel.replace(/^lib\/types\//, 'src/').replace(/^lib\//, 'src/')
+      const mapped = probeSource(entry.pkgDir, rel)
+      if (mapped) return mapped
+    }
+  }
+  // common source asset directories for asset subpaths that don't mirror 1:1
+  for (const dir of ['styles', 'assets', 'public', 'fonts']) {
+    const guess = probeSource(entry.pkgDir, `src/${dir}/${subpath}`)
+    if (guess) return guess
+  }
+  return undefined
+}
+
+function workspaceSourceAliases(): Array<{ find: RegExp; replacement: (id: string) => string | undefined }> {
+  const aliases: Array<{ find: RegExp; replacement: (id: string) => string | undefined }> = []
+  for (const name of workspaceSourceRegistry.keys()) {
+    const safe = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    aliases.push({
+      find: new RegExp(`^${safe}(/.*)?$`),
+      replacement: (id: string) => {
+        // Preserve Vite query/hash (e.g. `?worker`) so loaders downstream still
+        // see them after we point the specifier at the package's source tree.
+        const cut = id.search(/[?#]/)
+        const query = cut >= 0 ? id.slice(cut) : ''
+        const baseId = cut >= 0 ? id.slice(0, cut) : id
+        const subpath = baseId.slice(name.length).replace(/^\//, '')
+        const resolved = resolveWorkspaceSource(name, subpath)
+        if (!resolved) return undefined
+        return resolved + query
+      },
+    })
+  }
+  return aliases
+}
+
 export default defineConfig({
   // Relative asset URLs: preview.html mounts the same output under any base
   // directory, and the served index resolves identically from the site root.
@@ -245,6 +357,7 @@ export default defineConfig({
     // browserizes the vendored Cordis Loader's only Node import.
     alias: [
       { find: /^node:module$/, replacement: src('./src/node-module-stub.ts') },
+      ...workspaceSourceAliases(),
     ],
   },
   define: {

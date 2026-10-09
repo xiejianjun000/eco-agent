@@ -1,6 +1,6 @@
 /** Platform Web profile and wallet queries projected for account UI consumers. */
 import { z } from 'zod'
-import type { AccountBonusNotification, AccountBonusOrderId, AccountDetails, AccountProfile, AccountUserId } from '@deepseek-ai/dsh-deepseek-account/types'
+import type { AccountBonusNotification, AccountBonusOrderId, AccountDetails, AccountProfile, AccountUserId } from '@eco-agent/dsh-deepseek-account/types'
 import { AccountUnauthorizedError, PlatformAuthError, requestAccount, requestBonusNotified, requestUnnotifiedBonuses } from './protocol.ts'
 
 const user = z.object({

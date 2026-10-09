@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { ToolCallId } from '@deepseek-ai/dsh-llm'
-import { SESSION_FORMAT_VERSION, Session, SessionId } from '@deepseek-ai/dsh-session'
-import AgentRegistry from '@deepseek-ai/dsh-agent'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import TerminalSessionService from '@deepseek-ai/dsh-terminal'
+import { Context } from '@eco-agent/cordis'
+import { ToolCallId } from '@eco-agent/dsh-llm'
+import { SESSION_FORMAT_VERSION, Session, SessionId } from '@eco-agent/dsh-session'
+import AgentRegistry from '@eco-agent/dsh-agent'
+import type { Agent } from '@eco-agent/dsh-agent'
+import TerminalSessionService from '@eco-agent/dsh-terminal'
 import type {
   TerminalBackend,
   TerminalBackendSession,
@@ -14,11 +14,11 @@ import type {
   TerminalSessionStatus,
   TerminalSignal,
   TerminalWaitReason,
-} from '@deepseek-ai/dsh-terminal'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime from '@deepseek-ai/dsh-tools'
-import * as ToolBashPersistent from '@deepseek-ai/dsh-tool-bash-persistent'
-import { unsupportedInbox } from '@deepseek-ai/dsh-agent-loop-testkit'
+} from '@eco-agent/dsh-terminal'
+import SystemPrompt from '@eco-agent/dsh-system-prompt'
+import ToolRuntime from '@eco-agent/dsh-tools'
+import * as ToolBashPersistent from '@eco-agent/dsh-tool-bash-persistent'
+import { unsupportedInbox } from '@eco-agent/dsh-agent-loop-testkit'
 
 const contexts: Context[] = []
 let callNumber = 0

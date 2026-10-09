@@ -28,14 +28,14 @@ function bundle(name: string): { dir: string; patches: ReturnType<typeof loadOve
 }
 
 describe('optional bundles', () => {
-  const shipped = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'].map(name => bundle(name).patches)
+  const shipped = ['@eco-agent/dsh-base', '@eco-agent/dsh-web-app'].map(name => bundle(name).patches)
 
   it('ships at least one bundle switched off', () => {
     expect(OPTIONAL_BUNDLES.length).toBeGreaterThan(0)
   })
 
   it('keeps the Inspector out of the default plugin list', () => {
-    expect(OPTIONAL_BUNDLES).not.toContain('@deepseek-ai/dsh-experimental-inspector')
+    expect(OPTIONAL_BUNDLES).not.toContain('@eco-agent/dsh-experimental-inspector')
   })
 
   it.each(OPTIONAL_BUNDLES)('%s composes over the Web profile without a skipped patch', (name) => {
@@ -65,14 +65,14 @@ describe('optional bundles', () => {
   })
 
   it('adds the three Schedule rows the shipped Web composition leaves out', () => {
-    const { patches } = bundle('@deepseek-ai/dsh-experimental-schedule-bundle')
+    const { patches } = bundle('@eco-agent/dsh-experimental-schedule-bundle')
     const scheduleRows = (entries: ReturnType<typeof composeEntries>) =>
       entries.filter(entry => ['time-context', 'schedule', 'ui-schedule'].includes(entry.id))
     expect(scheduleRows(composeEntries(shipped))).toEqual([])
     expect(scheduleRows(composeEntries([...shipped, patches]))).toEqual([
-      { id: 'time-context', name: '@deepseek-ai/dsh-time-context' },
-      { id: 'schedule', name: '@deepseek-ai/dsh-schedule' },
-      { id: 'ui-schedule', name: '@deepseek-ai/dsh-client-ui-schedule' },
+      { id: 'time-context', name: '@eco-agent/dsh-time-context' },
+      { id: 'schedule', name: '@eco-agent/dsh-schedule' },
+      { id: 'ui-schedule', name: '@eco-agent/dsh-client-ui-schedule' },
     ])
   })
 

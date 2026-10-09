@@ -49,7 +49,7 @@ export function getDshRuntimeVersion(): string {
 }
 
 /**
- * Check every @deepseek-ai/dsh or @deepseek-ai/dsh-* peer against the runtime.
+ * Check every @eco-agent/dsh or @deepseek-ai/dsh-* peer against the runtime.
  * Prereleases participate in ranges. workspace:^, workspace:~, and workspace:*
  * refer to the current runtime; other invalid ranges are incompatible.
  * @param manifest - parsed plugin package.json; inherited fields are ignored.
@@ -72,7 +72,7 @@ export function evaluatePluginCompatibility(
     if (typeof range !== 'string') {
       throw new Error(`Plugin manifest peerDependencies[${JSON.stringify(name)}] must be a string`)
     }
-    if (name !== '@deepseek-ai/dsh' && !name.startsWith('@deepseek-ai/dsh-')) continue
+    if (name !== '@eco-agent/dsh' && !name.startsWith('@deepseek-ai/dsh-')) continue
     const requirement = ['workspace:^', 'workspace:~', 'workspace:*'].includes(range) ? runtimeVersion : range
     if (requirement.trim() === '' || !semver.satisfies(runtimeVersion, requirement, { includePrerelease: true })) {
       peers[name] = range

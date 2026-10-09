@@ -1,8 +1,8 @@
 /** Comment-preserving profile plugin enablement edits. */
 import { readFile } from 'node:fs/promises'
 import { isMap, isSeq, parseDocument } from 'yaml'
-import { loadOptionalPatches } from '@deepseek-ai/dsh-app-boot'
-import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
+import { loadOptionalPatches } from '@eco-agent/dsh-app-boot'
+import { writeFileAtomic } from '@eco-agent/dsh-atomic-write'
 
 /** Replace the last matching override or append one after existing insertions.
  * @param filename Current profile patch file.

@@ -1,6 +1,6 @@
 /** Maps ordinary message occurrences to Desktop product events. */
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-client-product-analytics/client'
+import type { Context } from '@eco-agent/cordis'
+import type {} from '@eco-agent/dsh-client-product-analytics/client'
 import type { MessageSubmission } from '../contract/composer-submission.ts'
 
 /**

@@ -6,10 +6,10 @@
  * keeps is reported to the sink on every read, because that reference
  * outlives any chunk. Pure utility — no cordis, no timers retained past
  * settlement.
- * @module @deepseek-ai/dsh-jobs-local/pump
+ * @module @eco-agent/dsh-jobs-local/pump
  */
 
-import type { JobAppendOptions, JobOutputSource } from '@deepseek-ai/dsh-jobs'
+import type { JobAppendOptions, JobOutputSource } from '@eco-agent/dsh-jobs'
 
 /** One pump run; `done` resolves after the final post-settlement drain. */
 export interface PumpHandle {

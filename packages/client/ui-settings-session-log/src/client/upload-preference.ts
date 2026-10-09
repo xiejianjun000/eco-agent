@@ -1,6 +1,6 @@
 /** Ordered preference writes and notices that survive the settings panel. */
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
+import type { ConfigForm } from '@eco-agent/dsh-client-ui-settings/client'
 
 /** Fields exposed by the Session-log plugin. */
 export interface UploadSettings {

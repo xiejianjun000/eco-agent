@@ -3,7 +3,7 @@ description: "Bundled Word, PowerPoint, and Excel instructions for deployments p
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-skill-office
+# @eco-agent/dsh-skill-office
 
 English | [中文](README.zh.md)
 
@@ -30,7 +30,7 @@ Mount this provider beside the skill registry and `dsh-tool-skill` to expose `of
 ### Minimal configuration
 
 ```yaml
-- name: '@deepseek-ai/dsh-skill-office'
+- name: '@eco-agent/dsh-skill-office'
 ```
 
 | Field | Default | Meaning |

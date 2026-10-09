@@ -1,10 +1,10 @@
 /** Developer field classification matches native admission and metadata preservation. */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { Session, SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
-import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
-import type { SessionFormatEvent } from '@deepseek-ai/dsh-session-format'
-import { sessionFormatCatalog } from '@deepseek-ai/dsh-session-format-catalog'
+import { Session, SessionId, SessionLogOffset } from '@eco-agent/dsh-session'
+import type { SessionEvent, SessionHeader } from '@eco-agent/dsh-session'
+import type { SessionFormatEvent } from '@eco-agent/dsh-session-format'
+import { sessionFormatCatalog } from '@eco-agent/dsh-session-format-catalog'
 import { canonicalizeSchema, schemaDigest } from './persistence-schema-model.ts'
 import { classifyPersistenceChange, parsePersistenceSnapshot } from './persistence-changes.ts'
 

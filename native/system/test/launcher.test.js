@@ -22,7 +22,7 @@ import {
   grantArgs,
   launcherPath,
   probe,
-} from '@deepseek-ai/node-addon-system/landlock-run';
+} from '@eco-agent/node-addon-system/landlock-run';
 
 const FATAL_PREFIX = 'landlock-run: ';
 const PARTIAL_NOTICE = 'landlock-run: partial enforcement (older Landlock ABI)';

@@ -6,10 +6,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { UseProjection } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { UseProjection } from '@eco-agent/dsh-api-session-controller/client'
 // Type-only: the `contextPressure` / `contextBreakdown` projection key merges.
-import type {} from '@deepseek-ai/dsh-token-meter/client'
-import { Tooltip, useAnchoredPosition, useDismissOnOutsidePointer } from '@deepseek-ai/dsh-client-ui-primitives'
+import type {} from '@eco-agent/dsh-token-meter/client'
+import { Tooltip, useAnchoredPosition, useDismissOnOutsidePointer } from '@eco-agent/dsh-client-ui-primitives'
 import type { ComposerBarProps } from '../contract/slots.ts'
 import { contextOccupancy } from '../context-occupancy.ts'
 import css from './ContextMeter.module.css'

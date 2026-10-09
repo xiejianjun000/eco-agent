@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
-import type { ScheduleId, ScheduleRecord } from '@deepseek-ai/dsh-schedule/client'
+import { makeTranslate } from '@eco-agent/dsh-client-test-runtime'
+import type { ScheduleId, ScheduleRecord } from '@eco-agent/dsh-schedule/client'
 import {
   FALLBACK_ZONES, formatScheduleAbsolute, formatScheduleNextRun, formatWeekdays, recordTimeZone,
   zoneChoices, zoneLabel, zoneName,

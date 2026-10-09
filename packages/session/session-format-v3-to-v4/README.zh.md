@@ -3,7 +3,7 @@ description: "完整的 V3 到 V4 Session 转换与原生接纳：工具角色�
 kind: "package-library"
 ---
 
-# @deepseek-ai/dsh-session-format-v3-to-v4
+# @eco-agent/dsh-session-format-v3-to-v4
 
 [English](README.md) | 中文
 
@@ -124,8 +124,8 @@ V3 未知内容标签变为 `plugin:<original-type>`，其他字段原样保留�
 | `compact` | `compact-checkpoint` |
 | `tools-code-mode`、`tools-ptc` | `ptc-mode` |
 | `dsh-compaction-basic` | `compact-basic` |
-| system 角色消息中的 `@deepseek-ai/dsh-system-prompt` | `system-prompt` |
-| 其他角色中的 `@deepseek-ai/dsh-system-prompt` | `runtime-context` |
+| system 角色消息中的 `@eco-agent/dsh-system-prompt` | `system-prompt` |
+| 其他角色中的 `@eco-agent/dsh-system-prompt` | `runtime-context` |
 | 下文列出的同名第一方生产者 | 精确的 plugin 字符串 |
 | 其他任何插件名 | `plugin:` 后接完整的原始名称 |
 

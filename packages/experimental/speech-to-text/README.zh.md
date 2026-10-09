@@ -3,7 +3,7 @@ description: "具名实验性转写 Provider 及取消操作的所有权。"
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-speech-to-text
+# @eco-agent/dsh-experimental-speech-to-text
 
 [English](README.md) | 中文
 

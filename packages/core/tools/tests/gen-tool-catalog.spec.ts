@@ -62,9 +62,9 @@ describe('gen-tool-catalog collectToolCatalog', () => {
 
   it('attributes each harvested tool with its registering plugin source', async () => {
     const catalog = await collectToolCatalog()
-    const bash = catalog.find(entry => entry.pkg === '@deepseek-ai/dsh-tool-bash')
+    const bash = catalog.find(entry => entry.pkg === '@eco-agent/dsh-tool-bash')
     expect(bash?.sources.bash).toBe('packages/shell/tool-bash/src/index.ts')
-    const control = catalog.find(entry => entry.pkg === '@deepseek-ai/dsh-tool-subagent-control')
+    const control = catalog.find(entry => entry.pkg === '@eco-agent/dsh-tool-subagent-control')
     expect(control?.sources).toEqual({
       interrupt_agent: 'packages/subagent/tool-subagent-control/src/index.ts',
       list_agents: 'packages/subagent/tool-subagent-control/src/list-agents.ts',
@@ -77,7 +77,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     try {
       process.env.PATH = ''
       const catalog = await collectToolCatalog()
-      const search = catalog.find(entry => entry.pkg === '@deepseek-ai/dsh-tool-fs-search')
+      const search = catalog.find(entry => entry.pkg === '@eco-agent/dsh-tool-fs-search')
       expect(search?.schemas.map(s => s.name).sort()).toEqual(['glob', 'grep'])
     } finally {
       if (oldPath === undefined) delete process.env.PATH
@@ -89,7 +89,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     // `tool-subagent`'s registered name is the load-time `toolName` config, so the shipped
     // agents surface this one package as both `subagent` and `subagent_fork`.
     const catalog = await collectToolCatalog()
-    const subagent = catalog.find(entry => entry.pkg === '@deepseek-ai/dsh-tool-subagent')
+    const subagent = catalog.find(entry => entry.pkg === '@eco-agent/dsh-tool-subagent')
     expect(subagent?.schemas.map(s => s.name)).toEqual(['list_subagent_models', 'subagent'])
     expect(subagent?.note).toMatch(/subagent_fork/)
   })
@@ -126,7 +126,7 @@ describe('gen-tool-catalog assertToolsHarvested', () => {
     // The failure this guards is silent by construction: the package is in the
     // manifest, its plugin merely stays PENDING on an unmounted service, and the
     // catalog would ship without its tools while every gate stays green.
-    expect(() => { assertToolsHarvested(entry, 0) }).toThrow(/@deepseek-ai\/dsh-tool-demo booted without registering a single tool/)
+    expect(() => { assertToolsHarvested(entry, 0) }).toThrow(/@eco-agent\/dsh-tool-demo booted without registering a single tool/)
     expect(() => { assertToolsHarvested(entry, 0) }).toThrow(/ctx.somethingUnmounted/)
   })
 })

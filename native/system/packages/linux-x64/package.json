@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/node-addon-system-linux-x64",
+  "name": "@eco-agent/node-addon-system-linux-x64",
   "version": "0.1.2",
   "description": "Linux x64 system binaries: static Landlock launcher and glibc/musl Node-API flock addons",
   "repository": {

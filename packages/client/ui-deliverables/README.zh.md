@@ -3,7 +3,7 @@ description: "Web GUI 的改动文件、交付文件与可点击文件引用：�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-deliverables
+# @eco-agent/dsh-client-ui-deliverables
 
 [English](README.md) | 中文
 

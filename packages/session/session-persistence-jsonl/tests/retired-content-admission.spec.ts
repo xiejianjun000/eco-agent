@@ -1,8 +1,8 @@
 /** Interpreted retired content must fail before migration publication or recoverable native-tail suppression. */
-import { Context } from '@deepseek-ai/cordis'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import { SessionFormatUnsupportedError, SessionPersistenceCorruptionError } from '@deepseek-ai/dsh-session-persistence'
-import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
+import { Context } from '@eco-agent/cordis'
+import { SessionId } from '@eco-agent/dsh-session'
+import { SessionFormatUnsupportedError, SessionPersistenceCorruptionError } from '@eco-agent/dsh-session-persistence'
+import JsonlSessionPersistence from '@eco-agent/dsh-session-persistence-jsonl'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'

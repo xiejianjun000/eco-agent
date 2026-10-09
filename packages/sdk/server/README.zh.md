@@ -3,7 +3,7 @@ description: "面向让进程外 SDK 客户端在 DeepSeek Harness 运行时中�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-sdk-jsonrpc-server
+# @eco-agent/dsh-sdk-jsonrpc-server
 
 [English](README.md) | 中文
 

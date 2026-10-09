@@ -9,7 +9,7 @@
     "client": {
       "platform": "web",
       "immediately": true,
-      "inject": ["@deepseek-ai/dsh-client-ui-conversation"]
+      "inject": ["@eco-agent/dsh-client-ui-conversation"]
     }
   }
 }

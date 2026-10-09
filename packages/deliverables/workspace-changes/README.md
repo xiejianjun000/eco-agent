@@ -3,7 +3,7 @@ description: "Summarize each top-level turn's changed files from git working-tre
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-workspace-changes
+# @eco-agent/dsh-workspace-changes
 
 English | [中文](README.zh.md)
 
@@ -28,7 +28,7 @@ This plugin summarizes which files each top-level turn changed, with per-file li
 The shipped Web bundle mounts this plugin. Mount it in any composition with the `subprocess` capability and a git executable on the Host:
 
 ```yaml
-- name: '@deepseek-ai/dsh-workspace-changes'
+- name: '@eco-agent/dsh-workspace-changes'
   config:
     maxFiles: 500
 ```

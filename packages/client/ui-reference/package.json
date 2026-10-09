@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-client-ui-reference",
+  "name": "@eco-agent/dsh-client-ui-reference",
   "description": "Unified Web @file and @session reference source",
   "version": "0.2.0-rc.2",
   "publishConfig": {
@@ -28,12 +28,12 @@
   "dsh": {
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-api-remotes",
-        "@deepseek-ai/dsh-api-session-controller",
-        "@deepseek-ai/dsh-client-connection",
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-input-trigger",
-        "@deepseek-ai/dsh-client-ui-sidebar-right"
+        "@eco-agent/dsh-api-remotes",
+        "@eco-agent/dsh-api-session-controller",
+        "@eco-agent/dsh-client-connection",
+        "@eco-agent/dsh-client-locale",
+        "@eco-agent/dsh-client-ui-input-trigger",
+        "@eco-agent/dsh-client-ui-sidebar-right"
       ],
       "platform": "web"
     }
@@ -44,23 +44,23 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
+    "@eco-agent/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-api-remotes": "workspace:*",
-    "@deepseek-ai/dsh-api-session-controller": "workspace:*",
-    "@deepseek-ai/dsh-client-connection": "workspace:*",
-    "@deepseek-ai/dsh-client-locale": "workspace:*",
-    "@deepseek-ai/dsh-client-test-runtime": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-input-trigger": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-primitives": "workspace:*",
-    "@deepseek-ai/dsh-client-ui-slots": "workspace:*",
-    "@deepseek-ai/dsh-file-reference": "workspace:*",
-    "@deepseek-ai/dsh-session-reference": "workspace:*",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*",
-    "@deepseek-ai/dsh-util-workspace-path": "workspace:*",
-    "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-client-ui-sidebar-right": "workspace:*"
+    "@eco-agent/dsh-api-remotes": "workspace:*",
+    "@eco-agent/dsh-api-session-controller": "workspace:*",
+    "@eco-agent/dsh-client-connection": "workspace:*",
+    "@eco-agent/dsh-client-locale": "workspace:*",
+    "@eco-agent/dsh-client-test-runtime": "workspace:*",
+    "@eco-agent/dsh-client-ui-input-trigger": "workspace:*",
+    "@eco-agent/dsh-client-ui-primitives": "workspace:*",
+    "@eco-agent/dsh-client-ui-slots": "workspace:*",
+    "@eco-agent/dsh-file-reference": "workspace:*",
+    "@eco-agent/dsh-session-reference": "workspace:*",
+    "@eco-agent/dsh-typert-protocol": "workspace:*",
+    "@eco-agent/dsh-util-workspace-path": "workspace:*",
+    "@eco-agent/cordis": "workspace:~",
+    "@eco-agent/dsh-client-ui-sidebar-right": "workspace:*"
   },
   "files": [
     "lib/index.js",

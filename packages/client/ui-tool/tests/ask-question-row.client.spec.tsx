@@ -9,16 +9,16 @@
  * results.
  */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { useDisclosure } from '@deepseek-ai/dsh-client-ui-chat/src/client/chat/use-disclosure.ts'
+import { useDisclosure } from '@eco-agent/dsh-client-ui-chat/src/client/chat/use-disclosure.ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ToolCallBlock, ToolResultNode } from '@deepseek-ai/dsh-client-ui-chat/client'
-import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
-import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
+import type { ToolCallBlock, ToolResultNode } from '@eco-agent/dsh-client-ui-chat/client'
+import { makeTranslate } from '@eco-agent/dsh-client-test-runtime'
+import { zh as commonZh } from '@eco-agent/dsh-client-locale/src/locales/zh.ts'
 // Export discipline: packages/client/AGENTS.md.
 import { AskQuestionRow, askQuestionToolview } from '../src/client/tool/toolviews/ask-question-row.tsx'
 import type { UserQuestionPanels } from '../src/client/contract/slots.ts'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import { zh } from '@deepseek-ai/dsh-client-ui-conversation/src/client/locales.ts'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import { zh } from '@eco-agent/dsh-client-ui-conversation/src/client/locales.ts'
 
 afterEach(cleanup)
 

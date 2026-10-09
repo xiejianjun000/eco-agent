@@ -1,16 +1,16 @@
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { describe, expect, it } from 'vitest'
-import { Context, Service, symbols } from '@deepseek-ai/cordis'
+import { Context, Service, symbols } from '@eco-agent/cordis'
 import { z } from 'zod'
-import { apply as applyConnection, inject as connectionInject } from '@deepseek-ai/dsh-client-connection'
+import { apply as applyConnection, inject as connectionInject } from '@eco-agent/dsh-client-connection'
 import type {
   ConnectionRpcHandler,
   HostConnectionHandle,
   PeerId,
   PeerScope,
-} from '@deepseek-ai/dsh-client-connection'
-import type { WebServer, WebRoute } from '@deepseek-ai/dsh-host-webserver'
+} from '@eco-agent/dsh-client-connection'
+import type { WebServer, WebRoute } from '@eco-agent/dsh-host-webserver'
 import {
   bindTypertRemote,
   Remote,
@@ -20,9 +20,9 @@ import {
   type TypertContext,
   type TypertLookup,
   type TypertLookupProvider,
-} from '@deepseek-ai/dsh-typert-protocol'
-import TypertRegistry, { type TypertContribution } from '@deepseek-ai/dsh-typert-registry'
-import TypertGatewayService, { TypertGatewayError } from '@deepseek-ai/dsh-api-gateway'
+} from '@eco-agent/dsh-typert-protocol'
+import TypertRegistry, { type TypertContribution } from '@eco-agent/dsh-typert-registry'
+import TypertGatewayService, { TypertGatewayError } from '@eco-agent/dsh-api-gateway'
 import { provideBrowserCredentials } from './browser-credentials.ts'
 
 interface FixtureAgent {
@@ -33,7 +33,7 @@ interface MarkedContext extends Context {
   readonly fixtureScope?: string
 }
 
-declare module '@deepseek-ai/dsh-typert-protocol' {
+declare module '@eco-agent/dsh-typert-protocol' {
   interface TypertLookupMap {
     gatewayFixture: TypertLookup<FixtureAgent, string>
     gatewayFixtureAlias: TypertLookup<FixtureAgent, string>

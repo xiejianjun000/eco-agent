@@ -8,14 +8,14 @@
  */
 
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: the settings shell's SlotMap merge (the 'settings.section'
 // entry). Cross-plugin collaboration goes through slots, never a value import
 // (client bundle purity gate).
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type { Context as ClientContext } from '@eco-agent/cordis'
+import { resolveSlotLabel } from '@eco-agent/dsh-client-ui-slots'
 import { PluginsSettingsSection } from './PluginsSettingsSection.tsx'
 import type { PluginsSettingsSectionInjected, PluginsSettingsTabEntry } from './PluginsSettingsSection.tsx'
 import { en, zh } from './locales.ts'

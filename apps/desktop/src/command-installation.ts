@@ -6,7 +6,7 @@ import { constants } from 'node:fs'
 import { access, link, lstat, mkdir, readFile, readlink, rename, stat, symlink, unlink } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join } from 'node:path'
 import { promisify } from 'node:util'
-import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
+import { withFileLock, writeFileAtomic } from '@eco-agent/dsh-atomic-write'
 
 /** Fixed installation locations supplied by the Desktop shell. */
 export interface FileCommandInstallation {

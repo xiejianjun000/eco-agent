@@ -1,10 +1,10 @@
 /** Test-owned Remote face: `$on` subscriptions with an explicit test event driver. */
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 
 // Value re-export for spec-side failure construction: the api-remotes facade
 // cannot carry it — its src top-level imports owner /remote lib artifacts, so a
 // value import from a spec would load the unbuilt assembly chain.
-export { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
+export { RemoteError } from '@eco-agent/dsh-typert-protocol'
 
 /**
  * Remote service test double for the forwarded-event path. Feature specs need

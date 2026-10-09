@@ -8,7 +8,7 @@
  * read-modify-write cycle can never resurrect a state another writer just
  * replaced; readers stay lock-free because the rename commit is atomic. A lock
  * whose recorded holder process no longer exists is taken over.
- * @module @deepseek-ai/dsh-atomic-write
+ * @module @eco-agent/dsh-atomic-write
  */
 
 import { createHash, randomBytes } from 'node:crypto'

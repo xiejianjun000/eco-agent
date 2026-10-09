@@ -1,19 +1,19 @@
 /**
  * Plugin-owned human-command registry shared by interactive UI adapters.
- * @module @deepseek-ai/dsh-commands
+ * @module @eco-agent/dsh-commands
  */
 
-import { Context } from '@deepseek-ai/cordis'
-import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { AttachmentError, admitEncodedImages } from '@deepseek-ai/dsh-attachment'
-import type { EncodedImageAttachment, FileAttachmentRef, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment/types'
-import type { FileBlock, ImageBlock } from '@deepseek-ai/dsh-llm'
-import { NamedEntries, ScopedLayers } from '@deepseek-ai/dsh-scope'
-import type { ScopeKey, ScopeLayer } from '@deepseek-ai/dsh-scope'
-import { SessionSeq } from '@deepseek-ai/dsh-session'
-import type { Session, SessionEvent, SessionEventMap } from '@deepseek-ai/dsh-session'
-import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
+import { Context } from '@eco-agent/cordis'
+import { randomUUID } from '@eco-agent/dsh-util-crypto'
+import type { Agent } from '@eco-agent/dsh-agent'
+import { AttachmentError, admitEncodedImages } from '@eco-agent/dsh-attachment'
+import type { EncodedImageAttachment, FileAttachmentRef, ImageAttachmentRef } from '@eco-agent/dsh-attachment/types'
+import type { FileBlock, ImageBlock } from '@eco-agent/dsh-llm'
+import { NamedEntries, ScopedLayers } from '@eco-agent/dsh-scope'
+import type { ScopeKey, ScopeLayer } from '@eco-agent/dsh-scope'
+import { SessionSeq } from '@eco-agent/dsh-session'
+import type { Session, SessionEvent, SessionEventMap } from '@eco-agent/dsh-session'
+import { TypertRemoteService, Remote } from '@eco-agent/dsh-typert-protocol'
 import { CommandId } from './brand.ts'
 import type { CommandDefinitionId } from './brand.ts'
 import type {
@@ -110,7 +110,7 @@ class CommandLayer implements ScopeLayer {
   }
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     commands: CommandRuntime
   }

@@ -3,7 +3,7 @@ description: "Nine tools that let the model create, message, and coordinate team
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-tool-agent-team
+# @eco-agent/dsh-experimental-tool-agent-team
 
 English | [中文](README.zh.md)
 
@@ -25,7 +25,7 @@ This package lets the model create named teammates, send them messages, inspect 
 <a id="use-this-package"></a>
 ## Use this package
 
-Add this package on top of `@deepseek-ai/dsh-experimental-agent-team` when the model should run a team through tools. Once mounted, every team member — the Lead and each teammate — gets the same nine tools plus the same coordination policy. `spawn_teammate` prefixes the initial task with the teammate’s role and name.
+Add this package on top of `@eco-agent/dsh-experimental-agent-team` when the model should run a team through tools. Once mounted, every team member — the Lead and each teammate — gets the same nine tools plus the same coordination policy. `spawn_teammate` prefixes the initial task with the teammate’s role and name.
 
 ### When to choose it
 
@@ -37,7 +37,7 @@ The smallest addition to an existing composition is the two-package fragment fro
 
 ```yaml
 - id: tool-agent-team
-  name: '@deepseek-ai/dsh-experimental-tool-agent-team'
+  name: '@eco-agent/dsh-experimental-tool-agent-team'
   config:
     freshProvider: spawn
     forkProvider: fork

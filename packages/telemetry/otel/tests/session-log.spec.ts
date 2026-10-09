@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import OTel from '../src/index.ts'
 import { Agent, createServer, type IncomingHttpHeaders } from 'node:http'
 import { once } from 'node:events'
@@ -7,7 +7,7 @@ import { gunzipSync } from 'node:zlib'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base'
 import { JsonLogsSerializer } from '@opentelemetry/otlp-transformer'
-import { SessionId, SessionSeq } from '@deepseek-ai/dsh-session'
+import { SessionId, SessionSeq } from '@eco-agent/dsh-session'
 import { SESSION_LOG_MAX_REQUEST_BYTES, type SessionLogRecord, type SessionLogOptions } from '../src/session-log.ts'
 
 interface Capture {
@@ -86,7 +86,7 @@ function parseContent(content: string): unknown {
 function reporter(endpoint: string, overrides: Partial<SessionLogOptions> = {}) {
   const onFailure = vi.fn()
   const sender = ctx.otel.createSessionLogReporter({
-    scope: { name: '@deepseek-ai/dsh-session-telemetry-otel', version: (createRequire(import.meta.url)('../package.json') as { version: string }).version },
+    scope: { name: '@eco-agent/dsh-session-telemetry-otel', version: (createRequire(import.meta.url)('../package.json') as { version: string }).version },
     exporter: { url: endpoint, timeoutMillis: 1000 }, resourceAttributes: { 'service.name': 'session-test' },
     processor: { scheduledDelayMillis: 60000 }, onFailure, ...overrides,
   })
@@ -107,7 +107,7 @@ it('preserves full nested events without truncation or ambient headers and retai
   expect(target.captures[0]!.headers).not.toHaveProperty('authorization')
   expect(target.captures[0]!.headers).not.toHaveProperty('x-channel')
   expect(target.captures[0]!.body.resourceLogs[0]!.scopeLogs[0]).toMatchObject({
-    scope: { name: '@deepseek-ai/dsh-session-telemetry-otel', version: (createRequire(import.meta.url)('../package.json') as { version: string }).version },
+    scope: { name: '@eco-agent/dsh-session-telemetry-otel', version: (createRequire(import.meta.url)('../package.json') as { version: string }).version },
   })
 })
 

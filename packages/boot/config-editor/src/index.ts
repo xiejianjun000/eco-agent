@@ -2,16 +2,16 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
-import { Context, FiberState, Service, resolveConfig } from '@deepseek-ai/cordis'
-import { entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import { Context, FiberState, Service, resolveConfig } from '@eco-agent/cordis'
+import { entryListSchema, type PatchOptions } from '@eco-agent/cordis-plugin-include'
 import yaml from 'js-yaml'
-import type { Entry, EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import type {} from '@deepseek-ai/dsh-hmr'
-import { composeEntries, loadProfileDirectory, readProfilePatches, reconcileProfilePatches } from '@deepseek-ai/dsh-app-boot'
-import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
+import type { Entry, EntryOptions } from '@eco-agent/cordis-plugin-loader'
+import type {} from '@eco-agent/dsh-hmr'
+import { composeEntries, loadProfileDirectory, readProfilePatches, reconcileProfilePatches } from '@eco-agent/dsh-app-boot'
+import { withFileLock, writeFileAtomic } from '@eco-agent/dsh-atomic-write'
 import { isMap, isSeq, parseDocument, Scalar, visit } from 'yaml'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Persistent edits to the active profile's plugin configuration. */
     configEditor: ConfigEditor

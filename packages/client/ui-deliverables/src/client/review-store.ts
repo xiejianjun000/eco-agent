@@ -4,8 +4,8 @@
  * reviews in one session keep their own choices; the bucket ends with the
  * tab record's signal.
  */
-import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
-import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
+import { defineStore, type EngineStoreHandle } from '@eco-agent/dsh-client-store'
+import type { TabId } from '@eco-agent/dsh-client-ui-dockkit'
 
 /** One review tab's choices. */
 export interface ReviewTabState {

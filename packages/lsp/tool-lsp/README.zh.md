@@ -3,7 +3,7 @@ description: "面向模型的 lsp 工具：四种只读代码导航操作、从 
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-tool-lsp
+# @eco-agent/dsh-tool-lsp
 
 [English](README.md) | 中文
 

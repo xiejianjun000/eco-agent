@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import clsx from 'clsx'
 import {
   IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@eco-agent/dsh-client-ui-primitives'
 import css from './AttachmentRail.module.css'
 
 /** One ordered draft attachment rendered by the rail owner. */

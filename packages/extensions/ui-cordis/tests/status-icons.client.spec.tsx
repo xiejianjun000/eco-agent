@@ -2,8 +2,8 @@
 
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ToolResultNode } from '@deepseek-ai/dsh-client-ui-chat/client'
-import type { CordisDynamicPackageId, CordisDynamicPluginId, CordisDynamicPluginRunId, SessionId } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ToolResultNode } from '@eco-agent/dsh-client-ui-chat/client'
+import type { CordisDynamicPackageId, CordisDynamicPluginId, CordisDynamicPluginRunId, SessionId } from '@eco-agent/dsh-api-remotes/client'
 import { CordisActionRow } from '../src/client/CordisActionRow.tsx'
 import { CordisDefineRow } from '../src/client/CordisDefineRow.tsx'
 import { CordisRunRow } from '../src/client/CordisRunRow.tsx'

@@ -1,6 +1,6 @@
 /** Browser entry registering the Agent Teams conversation-header action. */
 
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 import { registerAgentTeamUi } from './mount.ts'
 
 export { inject } from './mount.ts'

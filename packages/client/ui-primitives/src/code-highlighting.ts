@@ -4,10 +4,10 @@ import {
   grammarLoadCount, highlightLines, subscribeGrammarLoaded, type HighlightSpan,
 } from './markdown/highlight.ts'
 
-// The single extension table is owned by `@deepseek-ai/dsh-util-code-language`,
+// The single extension table is owned by `@eco-agent/dsh-util-code-language`,
 // shared with the Host read card; re-export it so Client callers keep importing
 // the language selector and the preview registry's suffix list from this package.
-export { CODE_HIGHLIGHT_EXTENSIONS, languageForPath } from '@deepseek-ai/dsh-util-code-language'
+export { CODE_HIGHLIGHT_EXTENSIONS, languageForPath } from '@eco-agent/dsh-util-code-language'
 
 /** Highlight one source fragment into one token list per line. */
 export type CodeHighlighter = (code: string) => HighlightSpan[][] | undefined

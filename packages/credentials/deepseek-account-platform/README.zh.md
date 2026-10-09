@@ -3,7 +3,7 @@ description: "通过系统浏览器登录，并将账号凭证保存在现有本
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-deepseek-account-platform
+# @eco-agent/dsh-deepseek-account-platform
 
 [English](README.md) | 中文
 

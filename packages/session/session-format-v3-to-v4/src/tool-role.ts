@@ -1,7 +1,7 @@
 /** First-class tool-role messages in the V4 representation. */
 
-import { SessionFormatError, SessionFormatUnsupportedMigrationError, isSessionFormatJsonObject } from '@deepseek-ai/dsh-session-format'
-import type { SessionFormatEvent, SessionFormatJsonValue } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatError, SessionFormatUnsupportedMigrationError, isSessionFormatJsonObject } from '@eco-agent/dsh-session-format'
+import type { SessionFormatEvent, SessionFormatJsonValue } from '@eco-agent/dsh-session-format'
 
 const WRAPPER_FIELDS = new Set(['type', 'toolCallId', 'content', 'isError'])
 const MESSAGE_FIELDS = new Set(['id', 'role', 'source', 'content'])

@@ -3,7 +3,7 @@ description: "保存当前 profile 配置，并通过 Loader 应用。"
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-config-editor
+# @eco-agent/dsh-config-editor
 
 [English](README.md) | 中文
 
@@ -27,7 +27,7 @@ kind: "package-reference"
 
 ```yaml
 - id: config-editor
-  name: '@deepseek-ai/dsh-config-editor'
+  name: '@eco-agent/dsh-config-editor'
 ```
 
 使用 [settings](../../settings/settings/README.zh.md) 提供只编辑即时字段的表单。编辑完整配置的调用方可使用 `ctx.configEditor.edit()`；普通字段保留 Loader 的正常生命周期。

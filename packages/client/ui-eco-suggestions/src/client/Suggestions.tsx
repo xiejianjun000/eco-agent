@@ -1,9 +1,9 @@
 /** Suggestion cards rendered below the composer in the hero (new-session) state. */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { InputActions } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
+import type { InputActions } from '@eco-agent/dsh-client-ui-conversation/client'
+import { writeClipboard } from '@eco-agent/dsh-client-ui-primitives'
 import { CheckGlyph, CopyGlyph } from './icons.tsx'
 import { NS, type SuggestionKey } from './locales.ts'
 import css from './Suggestions.module.css'

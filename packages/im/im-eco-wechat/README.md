@@ -1,10 +1,10 @@
-# @deepseek-ai/dsh-im-eco-wechat
+# @eco-agent/dsh-im-eco-wechat
 
 eco Agent 微信助手：把个人微信（腾讯 iLink / ClawBot 官方开放协议）桥接到 eco Agent，实现扫码登录、白名单控制、流式回复、定时任务、网页抓取（MCP）。
 
 ## 出处
 
-本项目照搬自社区插件 [zxz9988/dsh-wechat-bridge](https://github.com/zxz9988/dsh-wechat-bridge)（v0.5.1，MIT License，见 [LICENSE](./LICENSE) 与 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)）。仅将包名 rescope 为 `@deepseek-ai/dsh-im-eco-wechat` 并改为 workspace 依赖，业务逻辑保持原样（照搬，未重构）。
+本项目照搬自社区插件 [zxz9988/dsh-wechat-bridge](https://github.com/zxz9988/dsh-wechat-bridge)（v0.5.1，MIT License，见 [LICENSE](./LICENSE) 与 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)）。仅将包名 rescope 为 `@eco-agent/dsh-im-eco-wechat` 并改为 workspace 依赖，业务逻辑保持原样（照搬，未重构）。
 
 ## 接入方式
 

@@ -2,7 +2,7 @@
 /** Login choices, timeout recovery, and manual cancellation. */
 import { cleanup, fireEvent, render, screen, act } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import type { AccountView, SignInAttemptId } from '@deepseek-ai/dsh-deepseek-account/types'
+import type { AccountView, SignInAttemptId } from '@eco-agent/dsh-deepseek-account/types'
 import { SignInDialog } from '../src/client/SignInDialog.tsx'
 import { en, zh } from '../src/client/locales.ts'
 

@@ -3,7 +3,7 @@ description: "在 Web 中选择 Agent preset 和新任务默认值，查看各�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-agent-preset
+# @eco-agent/dsh-client-ui-agent-preset
 
 [English](README.md) | 中文
 

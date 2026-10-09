@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveTelemetryPatch } from '@deepseek-ai/dsh-app-boot'
+import { resolveTelemetryPatch } from '@eco-agent/dsh-app-boot'
 
 describe('resolveTelemetryPatch', () => {
   it('preserves the configured telemetry mode when the hard-disable switch is unset or empty', () => {

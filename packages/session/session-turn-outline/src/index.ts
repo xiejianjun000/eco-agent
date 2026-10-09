@@ -6,10 +6,10 @@
  * turn of a session and target history paging at exact seqs without holding
  * the events. The plugin owns only the fold; delivery is the seam's.
  *
- * @module @deepseek-ai/dsh-session-turn-outline
+ * @module @eco-agent/dsh-session-turn-outline
  */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import { turnOutlineProjectionDefinition } from './projection.ts'
 
 export type * from './types.ts'

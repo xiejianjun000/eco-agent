@@ -1,6 +1,6 @@
 /** Font warning for the Office revision displayed by the document toolbar. */
 import type { ReactNode } from 'react'
-import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsLocale, PropsRuntime, PropsStore } from '@eco-agent/dsh-client-ui-slots'
 import type { OfficeStore } from './store.ts'
 import { FontNotice } from './FontNotice.tsx'
 

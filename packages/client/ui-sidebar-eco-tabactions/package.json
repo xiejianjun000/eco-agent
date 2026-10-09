@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-client-ui-sidebar-eco-tabactions",
+  "name": "@eco-agent/dsh-client-ui-sidebar-eco-tabactions",
   "description": "eco Agent 右侧栏 tab 内容动作：复制文件路径 / 复制文件名 / 在文件管理器中显示（挂 tab 动作菜单，可插可拔）",
   "version": "0.1.7-alpha.2",
   "publishConfig": { "access": "public" },
@@ -20,29 +20,29 @@
   "dsh": {
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-sidebar-right",
-        "@deepseek-ai/dsh-api-remotes"
+        "@eco-agent/dsh-client-locale",
+        "@eco-agent/dsh-client-ui-sidebar-right",
+        "@eco-agent/dsh-api-remotes"
       ],
       "platform": "web"
     }
   },
   "scripts": { "bundle": "tsdown", "watch": "tsdown --watch" },
   "license": "MIT",
-  "peerDependencies": { "@deepseek-ai/cordis": "workspace:^" },
+  "peerDependencies": { "@eco-agent/cordis": "workspace:^" },
   "devDependencies": {
-    "@deepseek-ai/dsh-api-gateway": "workspace:^",
-    "@deepseek-ai/dsh-api-remotes": "workspace:^",
-    "@deepseek-ai/dsh-api-session-controller": "workspace:^",
-    "@deepseek-ai/dsh-client-locale": "workspace:^",
-    "@deepseek-ai/dsh-client-modules": "workspace:^",
-    "@deepseek-ai/dsh-client-store": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-primitives": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-renderer": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-sidebar-right": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
-    "@deepseek-ai/dsh-util-workspace-path": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^",
+    "@eco-agent/dsh-api-gateway": "workspace:^",
+    "@eco-agent/dsh-api-remotes": "workspace:^",
+    "@eco-agent/dsh-api-session-controller": "workspace:^",
+    "@eco-agent/dsh-client-locale": "workspace:^",
+    "@eco-agent/dsh-client-modules": "workspace:^",
+    "@eco-agent/dsh-client-store": "workspace:^",
+    "@eco-agent/dsh-client-ui-primitives": "workspace:^",
+    "@eco-agent/dsh-client-ui-renderer": "workspace:^",
+    "@eco-agent/dsh-client-ui-sidebar-right": "workspace:^",
+    "@eco-agent/dsh-client-ui-slots": "workspace:^",
+    "@eco-agent/dsh-util-workspace-path": "workspace:^",
+    "@eco-agent/cordis": "workspace:^",
     "@types/react": "~18.3.1",
     "react": "^18.2.0"
   },

@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
 import { expect, it, onTestFinished } from 'vitest'
-import { runLoaderSmoke, LOADER_SMOKE_TEST_TIMEOUT_MS } from '@deepseek-ai/dsh-loader-smoke'
+import { runLoaderSmoke, LOADER_SMOKE_TEST_TIMEOUT_MS } from '@eco-agent/dsh-loader-smoke'
 
 it('exports the explicitly submitted event through the headless Loader composition', async () => {
   let captures: unknown

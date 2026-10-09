@@ -1,5 +1,5 @@
 /** Exercise Messages request conversion with recorded responses from another protocol. */
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import { resolveAdapterOptions } from '../../src/config.ts'
 import { serialize } from '../../src/serialize.ts'
 

@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/node-addon-system",
+  "name": "@eco-agent/node-addon-system",
   "version": "0.1.2",
   "type": "module",
   "description": "Prebuilt system primitives: a Linux Landlock launcher and asynchronous POSIX flock through stable Node-API",
@@ -38,9 +38,9 @@
     "access": "public"
   },
   "optionalDependencies": {
-    "@deepseek-ai/node-addon-system-darwin-arm64": "workspace:~",
-    "@deepseek-ai/node-addon-system-darwin-x64": "workspace:~",
-    "@deepseek-ai/node-addon-system-linux-arm64": "workspace:~",
-    "@deepseek-ai/node-addon-system-linux-x64": "workspace:~"
+    "@eco-agent/node-addon-system-darwin-arm64": "workspace:~",
+    "@eco-agent/node-addon-system-darwin-x64": "workspace:~",
+    "@eco-agent/node-addon-system-linux-arm64": "workspace:~",
+    "@eco-agent/node-addon-system-linux-x64": "workspace:~"
   }
 }

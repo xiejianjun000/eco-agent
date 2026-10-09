@@ -2,9 +2,9 @@
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import { ToolCallId, createAssistantMessage, createToolResultMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import { SESSION_FORMAT_VERSION, Session, SessionId } from '@deepseek-ai/dsh-session'
-import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { ToolCallId, createAssistantMessage, createToolResultMessage, createUserMessage } from '@eco-agent/dsh-llm'
+import { SESSION_FORMAT_VERSION, Session, SessionId } from '@eco-agent/dsh-session'
+import type { JsonValue } from '@eco-agent/dsh-util-values'
 import { launchWebScaffold, seedSession, watchConsole, type WebScaffold } from './scaffold.ts'
 import { expandTurnProcesses, newEnglishPage, saveFailureShot } from './support.ts'
 

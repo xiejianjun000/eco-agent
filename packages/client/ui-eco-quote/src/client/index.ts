@@ -6,18 +6,18 @@
  * portal, so a selection anywhere (chat prose, a right-Sidebar document) is
  * quotable. Unloading removes the control and nothing else.
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls ctx.locale / ctx.slots merges.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-conversation/client'
 import { QuoteDock } from './QuoteDock.tsx'
 import { en, NS, zh, type QuoteKey } from './locales.ts'
 
 /** This plugin's identity in the dock list. */
 export const QUOTE_DOCK_ID = 'eco-quote'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** eco quote control copy. */
     ecoQuote: QuoteKey

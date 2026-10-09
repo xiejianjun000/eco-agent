@@ -18,7 +18,7 @@ import {
   type ClientPackageFacts,
 } from './verify-client-packages.ts'
 
-const CORDIS = '@deepseek-ai/cordis'
+const CORDIS = '@eco-agent/cordis'
 const roots: string[] = []
 
 afterEach(() => {
@@ -97,7 +97,7 @@ describe('source package uses', () => {
   it('counts type imports, module augmentations, dynamic imports, and JSX', () => {
     const uses = collectSourcePackageUses('feature.tsx', [
       "import type { A } from '@deepseek-ai/dsh-a/subpath'",
-      "declare module '@deepseek-ai/dsh-client-ui-slots' {}",
+      "declare module '@eco-agent/dsh-client-ui-slots' {}",
       "const load = () => import('@deepseek-ai/dsh-b/remote')",
       'export const view = <div />',
       "export type { Local } from './local.ts'",
@@ -106,12 +106,12 @@ describe('source package uses', () => {
     expect([...uses].sort()).toEqual([
       '@deepseek-ai/dsh-a',
       '@deepseek-ai/dsh-b',
-      '@deepseek-ai/dsh-client-ui-slots',
+      '@eco-agent/dsh-client-ui-slots',
       'react',
     ])
     expect([...collectRuntimeSourcePackageUses('feature.tsx', [
       "import type { A } from '@deepseek-ai/dsh-a/subpath'",
-      "declare module '@deepseek-ai/dsh-client-ui-slots' {}",
+      "declare module '@eco-agent/dsh-client-ui-slots' {}",
       "const load = () => import('@deepseek-ai/dsh-b')",
       'export const view = <div />',
     ].join('\n'))].sort()).toEqual([
@@ -202,43 +202,43 @@ describe('module requests', () => {
 
   it('rejects stale externals and accepts a runtime import outside client feature packages', () => {
     const gateway = {
-      ...declaration('@deepseek-ai/dsh-api-gateway'), manifest: 'packages/api/gateway/package.json',
+      ...declaration('@eco-agent/dsh-api-gateway'), manifest: 'packages/api/gateway/package.json',
     }
     const stale = { ...declaration('@deepseek-ai/dsh-api-stale', {
-      external: ['@deepseek-ai/dsh-api-gateway/client'],
+      external: ['@eco-agent/dsh-api-gateway/client'],
     }), manifest: 'packages/api/stale/package.json' }
     const live = { ...declaration('@deepseek-ai/dsh-api-live', {
-      external: ['@deepseek-ai/dsh-api-gateway/client'],
+      external: ['@eco-agent/dsh-api-gateway/client'],
       runtimeSourceUses: {
-        '@deepseek-ai/dsh-api-gateway': ['packages/api/live/src/client/index.ts'],
+        '@eco-agent/dsh-api-gateway': ['packages/api/live/src/client/index.ts'],
       },
       runtimeSourceSpecifiers: {
-        '@deepseek-ai/dsh-api-gateway/client': ['packages/api/live/src/client/index.ts'],
+        '@eco-agent/dsh-api-gateway/client': ['packages/api/live/src/client/index.ts'],
       },
     }), manifest: 'packages/api/live/package.json' }
     expect(collectClientPackageViolations(facts([], {
       declarations: [gateway, stale, live],
     }))).toEqual([
-      stale.manifest + ': dsh.client.external "@deepseek-ai/dsh-api-gateway/client"'
+      stale.manifest + ': dsh.client.external "@eco-agent/dsh-api-gateway/client"'
       + ' has no runtime import or re-export in production source; remove the stale declaration',
     ])
   })
 
   it('requires the exact external subpath to be imported at runtime', () => {
     const gateway = {
-      ...declaration('@deepseek-ai/dsh-api-gateway'), manifest: 'packages/api/gateway/package.json',
+      ...declaration('@eco-agent/dsh-api-gateway'), manifest: 'packages/api/gateway/package.json',
     }
-    const subject = { ...declaration('@deepseek-ai/dsh-api-session-controller', {
-      external: ['@deepseek-ai/dsh-api-gateway/client'],
+    const subject = { ...declaration('@eco-agent/dsh-api-session-controller', {
+      external: ['@eco-agent/dsh-api-gateway/client'],
       runtimeSourceUses: {
-        '@deepseek-ai/dsh-api-gateway': ['packages/api/session-controller/src/client/index.ts'],
+        '@eco-agent/dsh-api-gateway': ['packages/api/session-controller/src/client/index.ts'],
       },
       runtimeSourceSpecifiers: {
-        '@deepseek-ai/dsh-api-gateway/remote': ['packages/api/session-controller/src/client/index.ts'],
+        '@eco-agent/dsh-api-gateway/remote': ['packages/api/session-controller/src/client/index.ts'],
       },
     }), manifest: 'packages/api/session-controller/package.json' }
     expect(collectClientPackageViolations(facts([], { declarations: [gateway, subject] }))).toEqual([
-      subject.manifest + ': dsh.client.external "@deepseek-ai/dsh-api-gateway/client"'
+      subject.manifest + ': dsh.client.external "@eco-agent/dsh-api-gateway/client"'
       + ' has no runtime import or re-export in production source; remove the stale declaration',
     ])
   })
@@ -313,18 +313,18 @@ describe('manifest declarations', () => {
     roots.push(root)
     const subject = pkg('feature', {
       external: ['', 'react', '@deepseek-ai/dsh-client-feature', '@deepseek-ai/dsh-missing'],
-      inject: ['', '@deepseek-ai/dsh-agent', '@deepseek-ai/dsh-agent'],
+      inject: ['', '@eco-agent/dsh-agent', '@eco-agent/dsh-agent'],
       sourceUses: {
-        '@deepseek-ai/dsh-agent': ['packages/client/feature/src/index.ts'],
-        '@deepseek-ai/dsh-client-ui-slots': ['packages/client/feature/src/view.tsx'],
+        '@eco-agent/dsh-agent': ['packages/client/feature/src/index.ts'],
+        '@eco-agent/dsh-client-ui-slots': ['packages/client/feature/src/view.tsx'],
       },
       dependencies: {
         [CORDIS]: 'workspace:^',
-        '@deepseek-ai/dsh-agent': 'workspace:*',
+        '@eco-agent/dsh-agent': 'workspace:*',
       },
       peerDependencies: {
-        '@deepseek-ai/dsh-client-ui-slots': 'workspace:^',
-        '@deepseek-ai/cordis-plugin-loader': 'workspace:^',
+        '@eco-agent/dsh-client-ui-slots': 'workspace:^',
+        '@eco-agent/cordis-plugin-loader': 'workspace:^',
       },
       devDependencies: {},
     })
@@ -354,7 +354,7 @@ describe('manifest declarations', () => {
     }
     expect(fixed.dsh.client).toMatchObject({
       external: ['@deepseek-ai/dsh-missing'],
-      inject: ['@deepseek-ai/dsh-agent'],
+      inject: ['@eco-agent/dsh-agent'],
     })
     expect(fixed.dependencies).toEqual(subject.dependencies)
     expect(fixed.peerDependencies).toEqual(subject.peerDependencies)

@@ -1,6 +1,6 @@
 /** Shared account picture with an icon fallback for missing or unavailable images. */
 import { useState } from 'react'
-import { IconUserOutlineMedium } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconUserOutlineMedium } from '@eco-agent/dsh-client-ui-primitives'
 import css from './AccountAvatar.module.css'
 
 /**

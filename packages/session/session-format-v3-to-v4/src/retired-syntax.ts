@@ -1,6 +1,6 @@
 /** Retired native syntax remains a hard refusal even after a recoverable physical-row failure. */
 
-import { SessionFormatError, SessionFormatUnsupportedMigrationError, isSessionFormatJsonObject } from '@deepseek-ai/dsh-session-format'
+import { SessionFormatError, SessionFormatUnsupportedMigrationError, isSessionFormatJsonObject } from '@eco-agent/dsh-session-format'
 
 function assertBlock(block: unknown, subject: string): void {
   if (isSessionFormatJsonObject(block) && block['type'] === 'tool-result') {

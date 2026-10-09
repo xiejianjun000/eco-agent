@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { useState, useSyncExternalStore, type ReactNode } from 'react'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
-import type { SessionBinding as ControllerBinding, SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionBinding as ControllerBinding, SessionReference } from '@eco-agent/dsh-api-session-controller/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import type {
   SessionProviderComponent, StoredEntry, ScopedStandardSourceBinding,
   SlotRendererHost, SlotScopeAdapter, StandardSourceBinding,
-} from '@deepseek-ai/dsh-client-ui-slots'
-import type {} from '@deepseek-ai/dsh-client-ui-session/client'
+} from '@eco-agent/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-client-ui-session/client'
 import { renderSessionArea } from '../../ui-session/src/client/session-provider.tsx'
 import { createSlotRenderer } from '../src/client/scoped-slots.tsx'
 

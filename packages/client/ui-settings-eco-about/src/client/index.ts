@@ -2,13 +2,13 @@
  * eco Agent「帮助与关于」设置页，浏览器 half：注册 section。开源版第一需求 ——
  * 讲清是什么、源码在哪、问题往哪提。
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls the settings.section slot.
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
 // Type-only: pulls ctx.locale.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls ctx.slots (SlotRegistry) merge.
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 import { AboutSection } from './AboutSection.tsx'
 import type { AboutSectionInjected } from './AboutSection.tsx'
 import { en, zh, type AboutKey } from './locales.ts'
@@ -16,7 +16,7 @@ import { en, zh, type AboutKey } from './locales.ts'
 export type { AboutKey } from './locales.ts'
 export type { AboutSectionInjected, AboutSectionProps } from './AboutSection.tsx'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** 「帮助与关于」页面 copy。 */
     'settings.ecoAbout': AboutKey

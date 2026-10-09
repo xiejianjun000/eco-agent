@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest'
-import { SlotTestRuntime } from '@deepseek-ai/dsh-client-test-runtime'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
+import { SlotTestRuntime } from '@eco-agent/dsh-client-test-runtime'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { TabId } from '@eco-agent/dsh-client-ui-dockkit'
 import { SidebarSessionView } from '../src/client/session-view.ts'
 import { SidebarSessionViews } from '../src/client/session-views.ts'
 

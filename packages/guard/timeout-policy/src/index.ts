@@ -8,12 +8,12 @@
  * home; decide at resolution time
  * ([regrouping Agent Note](../../../../.agents/notes/archived/architecture/2026-07-29-package-regrouping.md)).
  *
- * @module @deepseek-ai/dsh-tool-call-timeout-policy
+ * @module @eco-agent/dsh-tool-call-timeout-policy
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
-import type { ToolExecutionResult } from '@deepseek-ai/dsh-tools'
+import type { Context } from '@eco-agent/cordis'
+import { deadline, timeoutOf } from '@eco-agent/dsh-timeout'
+import type { ToolExecutionResult } from '@eco-agent/dsh-tools'
 
 /**
  * The code owned by this plugin, used BOTH as the internal {@link deadline}

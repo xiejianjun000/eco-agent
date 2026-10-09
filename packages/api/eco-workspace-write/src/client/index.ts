@@ -9,8 +9,8 @@
  *
  * `types.ts` is what the protocol publishes; there is nothing else to register.
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-api-gateway/client'
+import type { Context as ClientContext } from '@eco-agent/cordis'
+import type {} from '@eco-agent/dsh-api-gateway/client'
 import ecoWorkspaceWriteRemote from './remote.js'
 
 export type * from '../types.ts'

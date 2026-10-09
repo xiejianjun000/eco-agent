@@ -2,7 +2,7 @@
 export const name = 'python-sdk-in-history-prompt'
 export const inject = ['systemPrompt']
 
-/** @param {import('@deepseek-ai/cordis').Context} ctx - Composed runtime services. */
+/** @param {import('@eco-agent/cordis').Context} ctx - Composed runtime services. */
 export function apply(ctx) {
   let version = 1
   ctx.effect(() => ctx.systemPrompt.section({

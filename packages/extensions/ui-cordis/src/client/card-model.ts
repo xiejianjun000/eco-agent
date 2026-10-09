@@ -1,6 +1,6 @@
 /** Replay-stable view models for Cordis lifecycle Tool calls. */
 
-import type { StartedToolCallViewProps } from '@deepseek-ai/dsh-client-ui-tool/client'
+import type { StartedToolCallViewProps } from '@eco-agent/dsh-client-ui-tool/client'
 import type {
   CordisDynamicPackageId, CordisDynamicPluginId, CordisDynamicPluginRunId, CordisDynamicRunMode,
 } from './events.ts'

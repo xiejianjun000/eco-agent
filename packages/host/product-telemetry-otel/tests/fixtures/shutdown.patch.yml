@@ -6,7 +6,7 @@
   disabled: true
 - insert:
     - id: product-telemetry-otel
-      name: '@deepseek-ai/dsh-host-product-telemetry-otel'
+      name: '@eco-agent/dsh-host-product-telemetry-otel'
       config:
         endpoint: !!js process.env.DSH_PRODUCT_TELEMETRY_TEST_ENDPOINT
         serviceName: dsh-telemetry-test

@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, renderHook, waitFor } from '@testing-library/react'
-import { languageForPath as sharedLanguageForPath, readLangHintForPath } from '@deepseek-ai/dsh-util-code-language'
+import { languageForPath as sharedLanguageForPath, readLangHintForPath } from '@eco-agent/dsh-util-code-language'
 import { CODE_HIGHLIGHT_EXTENSIONS, languageForPath, useCodeHighlighter } from '../src/code-highlighting.ts'
 import { grammarForHint, supportsHighlighting } from '../src/markdown/highlight.ts'
 

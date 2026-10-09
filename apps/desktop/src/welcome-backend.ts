@@ -1,4 +1,4 @@
-import type { ProductEvent } from '@deepseek-ai/dsh-client-product-analytics/types'
+import type { ProductEvent } from '@eco-agent/dsh-client-product-analytics/types'
 /** Native welcome operations using the shared Web authentication and RPC APIs. */
 
 import { randomUUID } from 'node:crypto'

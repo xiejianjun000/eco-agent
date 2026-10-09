@@ -1,6 +1,6 @@
 /** Host-driven Cordis tree integration. */
 
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import WebSocket, { type RawData } from 'ws'
 import { afterEach, describe, expect, it, vi, type TestContext } from 'vitest'
 import { CordisTreeCollector } from '../src/shared/cordis/collector.ts'

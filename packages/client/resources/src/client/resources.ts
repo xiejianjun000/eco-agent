@@ -8,9 +8,9 @@
  * across React's render-then-subscribe window and a StrictMode remount, where a
  * recreated record would make every render resubscribe and restart the stream.
  */
-import type { Context } from '@deepseek-ai/cordis'
-import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
-import { createSnapshotStore, type ObservableSnapshot, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { Context } from '@eco-agent/cordis'
+import type { RemoteResult } from '@eco-agent/dsh-typert-protocol'
+import { createSnapshotStore, type ObservableSnapshot, type SnapshotStore } from '@eco-agent/dsh-client-store'
 import type {
   ResourceOpenContext,
   ResourceProtocol,

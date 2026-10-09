@@ -1,9 +1,9 @@
 /** The ACP app command provider and stdin shutdown binding. */
 
 import { EventEmitter } from 'node:events'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@eco-agent/cordis'
 import { afterEach, describe, expect, it } from 'vitest'
-import { internals, provideCmdline } from '@deepseek-ai/dsh-cmdline'
+import { internals, provideCmdline } from '@eco-agent/dsh-cmdline'
 import { ACP_APP_STARTUP_SERVICE, apply } from '../src/index.ts'
 
 /** Controllable stdin for one startup invocation. */

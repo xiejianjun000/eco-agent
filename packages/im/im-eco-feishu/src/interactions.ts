@@ -27,13 +27,13 @@
  * card buttons.
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { ApprovalOutcome, ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
+import type { Context } from '@eco-agent/cordis'
+import type { ApprovalOutcome, ApprovalRequest } from '@eco-agent/dsh-user-approval'
 import type {
   AskUserQuestionAnswer,
   AskUserQuestionItem,
   AskUserQuestionRequest,
-} from '@deepseek-ai/dsh-user-questions'
+} from '@eco-agent/dsh-user-questions'
 import type { CardActionEvent, CardActionResponse, CardBody, FeishuClient } from './feishu.ts'
 import type { SessionMap } from './session-map.ts'
 import type { FeishuGatewayConfig } from './config.ts'

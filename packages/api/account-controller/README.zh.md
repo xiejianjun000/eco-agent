@@ -3,7 +3,7 @@ description: "账号页面使用经过认证的 Remote 操作和快照流。控�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-api-account-controller
+# @eco-agent/dsh-api-account-controller
 
 [English](README.md) | 中文
 

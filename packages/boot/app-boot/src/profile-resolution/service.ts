@@ -3,8 +3,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
-import { Service, type Context } from '@deepseek-ai/cordis'
-import type { PluginLocalizedMeta } from '@deepseek-ai/dsh-package-manifest'
+import { Service, type Context } from '@eco-agent/cordis'
+import type { PluginLocalizedMeta } from '@eco-agent/dsh-package-manifest'
 import {
   barePackageName,
   installRuntimeInterception,
@@ -14,7 +14,7 @@ import {
 import type { RuntimeResolution } from '../profile.ts'
 import { readPluginMeta } from '../package-meta.ts'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Deterministic package lookup for configured plugin specifiers. */
     pluginPackages: PluginPackages

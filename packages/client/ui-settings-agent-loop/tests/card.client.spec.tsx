@@ -3,9 +3,9 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { SettingsFieldState, SettingsFormShell } from '@deepseek-ai/dsh-client-ui-primitives'
+import { bindSnapshotSelector } from '@eco-agent/dsh-client-test-runtime'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
+import type { SettingsFieldState, SettingsFormShell } from '@eco-agent/dsh-client-ui-primitives'
 import { AgentLoopCard, type AgentLoopCardProps } from '../src/client/AgentLoopCard.tsx'
 import type { AgentLoopCardState } from '../src/client/agent-loop-card-controller.ts'
 import { en } from '../src/client/locales.ts'

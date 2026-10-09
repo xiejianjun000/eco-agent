@@ -2,13 +2,13 @@
  * eco Agent「记忆」设置页，浏览器 half：绑定宿主 memory namespace。
  * namespace 缺席时页面明说"没接入"，不伪造开关。
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls the ctx.settingsScope merge and the settings.section slot.
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
 // Type-only: pulls ctx.locale.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls ctx.slots (SlotRegistry) merge.
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 import { MemorySection } from './MemorySection.tsx'
 import type { MemoryConfig, MemorySectionInjected } from './MemorySection.tsx'
 import { en, zh, type MemoryKey } from './locales.ts'
@@ -16,7 +16,7 @@ import { en, zh, type MemoryKey } from './locales.ts'
 export type { MemoryKey } from './locales.ts'
 export type { MemoryConfig, MemorySectionInjected, MemorySectionProps } from './MemorySection.tsx'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** 「记忆」页面 copy。 */
     'settings.ecoMemory': MemoryKey

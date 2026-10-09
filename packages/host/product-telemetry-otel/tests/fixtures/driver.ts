@@ -3,7 +3,7 @@ import { createServer } from 'node:http'
 import { once } from 'node:events'
 import { gunzipSync } from 'node:zlib'
 import { writeFile } from 'node:fs/promises'
-import type {} from '@deepseek-ai/dsh-host-product-telemetry-otel'
+import type {} from '@eco-agent/dsh-host-product-telemetry-otel'
 import { bootProductionProfile } from '../../../../test-support/loader-smoke/tests/fixtures/production-profile.ts'
 
 const configPath = process.argv[2]

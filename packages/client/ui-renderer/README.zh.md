@@ -3,7 +3,7 @@ description: "浏览器 UI 渲染器：普通 Slot 与可复用 Component Factor
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-renderer
+# @eco-agent/dsh-client-ui-renderer
 
 [English](README.md) | 中文
 

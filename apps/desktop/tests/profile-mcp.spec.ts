@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
-import { composeEntries, loadProfileDirectory } from '@deepseek-ai/dsh-app-boot'
+import { composeEntries, loadProfileDirectory } from '@eco-agent/dsh-app-boot'
 import { createPluginProfile } from '../src/project-manager.ts'
 
 it('retains one shared resource consumer in the Desktop Web profile', () => {
@@ -21,11 +21,11 @@ it('retains one shared resource consumer in the Desktop Web profile', () => {
       profile.patches,
     ], message => warnings.push(message))
 
-    expect(rows.filter(row => row.name === '@deepseek-ai/dsh-mcp-resources')).toEqual([
-      { id: 'mcp-resources', name: '@deepseek-ai/dsh-mcp-resources' },
+    expect(rows.filter(row => row.name === '@eco-agent/dsh-mcp-resources')).toEqual([
+      { id: 'mcp-resources', name: '@eco-agent/dsh-mcp-resources' },
     ])
-    expect(rows.filter(row => row.name === '@deepseek-ai/dsh-mcp-client')).toEqual([])
-    expect(rows.find(row => row.id === 'webserver')).toMatchObject({ name: '@deepseek-ai/dsh-host-webserver' })
+    expect(rows.filter(row => row.name === '@eco-agent/dsh-mcp-client')).toEqual([])
+    expect(rows.find(row => row.id === 'webserver')).toMatchObject({ name: '@eco-agent/dsh-host-webserver' })
     expect(rows.find(row => row.id === 'webserver')?.disabled).not.toBe(true)
     expect(warnings).toEqual([])
   } finally {

@@ -10,7 +10,7 @@
  * already holds, and every other suffix persists the language's short name —
  * which for `kotlin`, `swift`, `yaml`, `json`, and similar equals that
  * language's grammar id.
- * @module @deepseek-ai/dsh-util-code-language
+ * @module @eco-agent/dsh-util-code-language
  */
 
 /**

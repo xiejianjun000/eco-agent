@@ -8,7 +8,7 @@ import { evaluatePluginCompatibility, getDshRuntimeVersion, pluginCompatibilityW
 
 const runtime = '0.1.7-alpha.1'
 const identity = { name: '@example/plugin', version: '2.0.0' }
-const incompatible = { ...identity, peerDependencies: { '@deepseek-ai/dsh': '^0.2.0' } }
+const incompatible = { ...identity, peerDependencies: { '@eco-agent/dsh': '^0.2.0' } }
 
 function check(peerDependencies: object) {
   return evaluatePluginCompatibility({ ...identity, peerDependencies }, {}, runtime)
@@ -48,47 +48,47 @@ describe('dsh runtime version', () => {
 describe('plugin compatibility', () => {
   it('defaults to the installed runtime and needs no identity without mismatches', () => {
     expect(evaluatePluginCompatibility({})).toBeUndefined()
-    expect(evaluatePluginCompatibility({ peerDependencies: { '@deepseek-ai/dsh': getDshRuntimeVersion() } })).toBeUndefined()
+    expect(evaluatePluginCompatibility({ peerDependencies: { '@eco-agent/dsh': getDshRuntimeVersion() } })).toBeUndefined()
     expect(check({})).toBeUndefined()
   })
 
   it.each(['*', '^0.1.0', '~0.1.0', '>=0.1.0 <0.2.0', '0.1.x', '0.1.0 - 0.1.9', '^0.2.0 || ^0.1.0', runtime])(
     'includes prereleases in supported semver range %s', (range) => {
-      expect(check({ '@deepseek-ai/dsh': range, '@deepseek-ai/dsh-session': range })).toBeUndefined()
+      expect(check({ '@eco-agent/dsh': range, '@eco-agent/dsh-session': range })).toBeUndefined()
     },
   )
 
   it.each(['workspace:^', 'workspace:~', 'workspace:*'])('uses the source runtime for %s', (range) => {
-    expect(check({ '@deepseek-ai/dsh-session': range })).toBeUndefined()
+    expect(check({ '@eco-agent/dsh-session': range })).toBeUndefined()
   })
 
   it('checks the intersection of dsh requirements and returns only mismatches', () => {
     expect(check({
-      '@deepseek-ai/dsh': '^0.1.0',
-      '@deepseek-ai/dsh-session': '>=0.2.0',
-      '@deepseek-ai/dsh-tools': '<0.1.0',
-      '@deepseek-ai/cordis': '^99.0.0',
+      '@eco-agent/dsh': '^0.1.0',
+      '@eco-agent/dsh-session': '>=0.2.0',
+      '@eco-agent/dsh-tools': '<0.1.0',
+      '@eco-agent/cordis': '^99.0.0',
     })).toEqual({
       ...identity,
       runtimeVersion: runtime,
-      peers: { '@deepseek-ai/dsh-session': '>=0.2.0', '@deepseek-ai/dsh-tools': '<0.1.0' },
+      peers: { '@eco-agent/dsh-session': '>=0.2.0', '@eco-agent/dsh-tools': '<0.1.0' },
       exempted: false,
     })
   })
 
   it.each(['^0.2.0', '>=0.1.7', 'broken', '', ' ', 'workspace:>=0.2.0', 'file:../dsh', 'npm:dsh@*'])(
     'fails closed for an incompatible or malformed range %j', (range) => {
-      expect(check({ '@deepseek-ai/dsh': range })?.peers).toEqual({ '@deepseek-ai/dsh': range })
+      expect(check({ '@eco-agent/dsh': range })?.peers).toEqual({ '@eco-agent/dsh': range })
     },
   )
 
   it('ignores unrelated names and dependency fields', () => {
     expect(check({
-      '@deepseek-ai/cordis': 'broken', '@deepseek-ai/cordis-plugin-loader': '^99',
+      '@eco-agent/cordis': 'broken', '@eco-agent/cordis-plugin-loader': '^99',
       '@other/dsh': '^99', '@deepseek-ai/dshx': '^99', dsh: '^99',
       constructor: '^99', hasOwnProperty: '^99', ['__proto__']: '^99',
     })).toBeUndefined()
-    expect(evaluatePluginCompatibility({ dependencies: { '@deepseek-ai/dsh': '^99' } }, {}, runtime)).toBeUndefined()
+    expect(evaluatePluginCompatibility({ dependencies: { '@eco-agent/dsh': '^99' } }, {}, runtime)).toBeUndefined()
   })
 
   it.each([null, [], 'bad', 1, false, undefined])('rejects malformed peerDependencies: %j', (peerDependencies) => {
@@ -96,7 +96,7 @@ describe('plugin compatibility', () => {
   })
 
   it.each([null, [], {}, 1, false, undefined])('rejects non-string peer ranges: %j', (range) => {
-    for (const name of ['@deepseek-ai/dsh', '@deepseek-ai/cordis']) {
+    for (const name of ['@eco-agent/dsh', '@eco-agent/cordis']) {
       expect(() => check({ [name]: range })).toThrow(`peerDependencies[${JSON.stringify(name)}] must be a string`)
     }
   })
@@ -116,7 +116,7 @@ describe('plugin compatibility', () => {
   it('ignores inherited peer declarations and inherited peer entries', () => {
     expect(evaluatePluginCompatibility(Object.create(incompatible) as object, {}, runtime)).toBeUndefined()
     expect(check(Object.create(incompatible.peerDependencies) as object)).toBeUndefined()
-    expect(check(Object.assign(Object.create({ '@deepseek-ai/dsh': '^99' }) as object, { '@deepseek-ai/dsh-session': '*' }))).toBeUndefined()
+    expect(check(Object.assign(Object.create({ '@eco-agent/dsh': '^99' }) as object, { '@eco-agent/dsh-session': '*' }))).toBeUndefined()
   })
 
   it('rejects an invalid explicit runtime even when no peers are declared', () => {
@@ -156,7 +156,7 @@ describe('exact-version exemptions', () => {
   })
 
   it('does not produce issues for compatible exempted plugins', () => {
-    expect(evaluatePluginCompatibility({ ...identity, peerDependencies: { '@deepseek-ai/dsh': '*' } }, exemptions, runtime)).toBeUndefined()
+    expect(evaluatePluginCompatibility({ ...identity, peerDependencies: { '@eco-agent/dsh': '*' } }, exemptions, runtime)).toBeUndefined()
   })
 })
 
@@ -164,10 +164,10 @@ describe('compatibility warning', () => {
   it.each([false, true])('retains mismatch details and risk when exemption status is %s', (exempted) => {
     expect(pluginCompatibilityWarning({
       ...identity, runtimeVersion: runtime,
-      peers: { '@deepseek-ai/dsh': '^0.2.0', '@deepseek-ai/dsh-session': 'broken' }, exempted,
+      peers: { '@eco-agent/dsh': '^0.2.0', '@eco-agent/dsh-session': 'broken' }, exempted,
     })).toBe(
       'Plugin @example/plugin@2.0.0 is incompatible with dsh 0.1.7-alpha.1: '
-      + 'peerDependencies {"@deepseek-ai/dsh":"^0.2.0","@deepseek-ai/dsh-session":"broken"}. '
+      + 'peerDependencies {"@eco-agent/dsh":"^0.2.0","@eco-agent/dsh-session":"broken"}. '
       + 'Running it may cause crashes or data loss. '
       + 'Update the plugin or install a plugin version compatible with this dsh runtime. '
       + 'To accept this risk explicitly, grant the exact-version exemption for @example/plugin@2.0.0 on dsh 0.1.7-alpha.1 '

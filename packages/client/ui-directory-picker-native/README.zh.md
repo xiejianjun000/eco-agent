@@ -3,7 +3,7 @@ description: "原生目录选择表面：驱动本地 Desktop 或 Host 操作系
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-directory-picker-native
+# @eco-agent/dsh-client-ui-directory-picker-native
 
 [English](README.md) | 中文
 

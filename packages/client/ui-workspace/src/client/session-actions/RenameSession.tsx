@@ -5,7 +5,7 @@
  * menu; the browser raises the same request from a title double-click.
  */
 import { useRef, useState } from 'react'
-import { Button, IconEditOutlineRegular, MenuItemButton, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconEditOutlineRegular, MenuItemButton, Modal } from '@eco-agent/dsh-client-ui-primitives'
 import type {
   RenameSessionInjected, SessionMenuItemProps, SessionRenameDialogInjected, SessionRenameDialogProps, SessionRenameTarget,
 } from '../contract/slots.ts'

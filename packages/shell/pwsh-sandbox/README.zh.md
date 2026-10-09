@@ -3,7 +3,7 @@ description: "面向部署方与维护者的沙箱 PowerShell 执行器说明，
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-pwsh-sandbox
+# @eco-agent/dsh-pwsh-sandbox
 
 [English](README.md) | 中文
 
@@ -45,14 +45,14 @@ kind: "package-reference"
 
 ```yaml
 - id: sandbox
-  name: '@deepseek-ai/dsh-sandbox-windows-acl'
+  name: '@eco-agent/dsh-sandbox-windows-acl'
 - id: sandbox-policy
-  name: '@deepseek-ai/dsh-sandbox-policy'
+  name: '@eco-agent/dsh-sandbox-policy'
   config:
     mode: read-only
     workspaceRoot: !!js process.cwd() # fallback for calls without a session cwd
 - id: bash
-  name: '@deepseek-ai/dsh-pwsh-sandbox'
+  name: '@eco-agent/dsh-pwsh-sandbox'
 ```
 
 ### 拒绝与升权
@@ -138,7 +138,7 @@ kind: "package-reference"
 
 这些限制说明本执行器在 Windows 上只是不完整的边界。它们是当前包约束，不是路线图。
 
-- **Windows 上读不受限**——ACL runner 只限写；读边界文档在 `@deepseek-ai/dsh-sandbox-windows-acl`。
+- **Windows 上读不受限**——ACL runner 只限写；读边界文档在 `@eco-agent/dsh-sandbox-windows-acl`。
 - **Windows workspace-write 的临时权限按每个活跃的会话/工作区对私有**——无 agent（智能体）的调用每次都获得一个新的私有目录；环境临时根目录绝不会被授权，runner 会在 spawn 前将 `TMP`/`TEMP` 重写为该私有目录。
 - **Windows read-only 不授予任何显式可写根目录，但仍为部分强制执行**——NTFS 硬链接会把同一文件对象别名为多个路径、读取仍不受限，且被其他 AppContainer 工具以包 SID 标记过的目录树对 Low 完整性子进程不可读。NUL 在两种模式下仍可写，因为设备 DACL 向 Everyone 授予写权限且不带更高的标签；PowerShell 的 `> $null` 重定向仍然工作，且不会打开 NUL。
 

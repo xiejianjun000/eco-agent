@@ -3,8 +3,8 @@
  * @module workspace-context-resume-agent
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { SessionId } from '@deepseek-ai/dsh-session'
+import type { Context } from '@eco-agent/cordis'
+import type { SessionId } from '@eco-agent/dsh-session'
 
 /** Fixture plugin name. */
 export const name = 'workspace-context-resume-agent'

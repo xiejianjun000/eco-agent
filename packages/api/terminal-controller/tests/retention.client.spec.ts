@@ -1,9 +1,9 @@
 /** A window hold accepts each physical acknowledgement and releases pending consumers. */
 import { afterEach, expect, it, vi } from 'vitest'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
-import { RemoteStream, type ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
-import { streamMethod } from '@deepseek-ai/dsh-remote-mock'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import { createSnapshotStore } from '@eco-agent/dsh-client-store'
+import { RemoteStream, type ClientRemote } from '@eco-agent/dsh-api-gateway/client'
+import { streamMethod } from '@eco-agent/dsh-remote-mock'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import type { TerminalRemote } from '../src/client/model.ts'
 import { TerminalWindowHold } from '../src/client/retention.ts'
 import type { TerminalRetentionFrame, WebTerminalId } from '../src/types.ts'

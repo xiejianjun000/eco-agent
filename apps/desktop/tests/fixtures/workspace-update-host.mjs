@@ -12,7 +12,7 @@ export async function apply(ctx) {
   const token = process.env.DSH_WORKSPACE_UPDATE_TOKEN
   if (!root || !token) throw new Error('Private workspace qualification configuration is missing')
   const require = createRequire(join(process.cwd(), 'package.json'))
-  const { createUserMessage } = await import(pathToFileURL(require.resolve('@deepseek-ai/dsh-llm')).href)
+  const { createUserMessage } = await import(pathToFileURL(require.resolve('@eco-agent/dsh-llm')).href)
   let owned
   let holdShutdown = false
   const requests = new Set()

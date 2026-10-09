@@ -1,8 +1,8 @@
-import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
-import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ObservableSnapshot } from '@eco-agent/dsh-client-store'
+import type { InjectFace, PropsLocale } from '@eco-agent/dsh-client-ui-slots'
 import { APP_LABEL_KEY } from './applications.ts'
 import type { OpenInAppLaunchState } from './controller.ts'
-import type { ShortcutCatalogEntry } from '@deepseek-ai/dsh-client-shortcuts/client'
+import type { ShortcutCatalogEntry } from '@eco-agent/dsh-client-shortcuts/client'
 import { NS } from './locales.ts'
 import { OpenTargetButton } from './OpenTargetButton.tsx'
 

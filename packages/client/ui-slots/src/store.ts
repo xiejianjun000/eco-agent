@@ -14,4 +14,4 @@ export type {
   StoreHandle,
   StoreInstance,
   StoreSpec,
-} from '@deepseek-ai/dsh-client-store'
+} from '@eco-agent/dsh-client-store'

@@ -614,8 +614,8 @@ function ciWindowsObservationalGates(): Gate[] {
     {
       id: 'electron-install',
       label: 'Electron binary',
-      displayCommand: 'pnpm --filter @deepseek-ai/dsh-desktop exec install-electron',
-      ...pnpmInvocation(['--filter', '@deepseek-ai/dsh-desktop', 'exec', 'install-electron']),
+      displayCommand: 'pnpm --filter @eco-agent/dsh-desktop exec install-electron',
+      ...pnpmInvocation(['--filter', '@eco-agent/dsh-desktop', 'exec', 'install-electron']),
       env: { ELECTRON_GET_USE_PROXY: '1' },
     },
     // Linux owns required lint and snapshots; Windows omits those duplicates.

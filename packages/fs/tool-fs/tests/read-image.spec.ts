@@ -10,20 +10,20 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
-import { PtcRuntime } from '@deepseek-ai/dsh-ptc-runtime'
-import type { PtcRunRequest, PtcRunResult } from '@deepseek-ai/dsh-ptc-runtime'
-import { ToolCallId, LlmAdapter, LlmRuntime } from '@deepseek-ai/dsh-llm'
-import type { GenerateOptions, LlmModelInfo, LlmResolvedModelInfo, Message, StreamChunk } from '@deepseek-ai/dsh-llm'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { RUN_CODE_NAME } from '@deepseek-ai/dsh-tools'
-import type { Config as ToolConfig } from '@deepseek-ai/dsh-tools'
-import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
-import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
-import LocalAttachmentStore from '@deepseek-ai/dsh-attachment-local'
-import { AttachmentError, AttachmentId, AttachmentStore } from '@deepseek-ai/dsh-attachment'
-import type { ImageAttachmentLimits, ImageAttachmentRef, SaveImageAttachment, StoredImageAttachment } from '@deepseek-ai/dsh-attachment'
-import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
+import { Context } from '@eco-agent/cordis'
+import { PtcRuntime } from '@eco-agent/dsh-ptc-runtime'
+import type { PtcRunRequest, PtcRunResult } from '@eco-agent/dsh-ptc-runtime'
+import { ToolCallId, LlmAdapter, LlmRuntime } from '@eco-agent/dsh-llm'
+import type { GenerateOptions, LlmModelInfo, LlmResolvedModelInfo, Message, StreamChunk } from '@eco-agent/dsh-llm'
+import SystemPrompt from '@eco-agent/dsh-system-prompt'
+import ToolRuntime, { RUN_CODE_NAME } from '@eco-agent/dsh-tools'
+import type { Config as ToolConfig } from '@eco-agent/dsh-tools'
+import LocalFileSystem from '@eco-agent/dsh-fs-local'
+import * as FsPolicy from '@eco-agent/dsh-fs-observation-policy'
+import LocalAttachmentStore from '@eco-agent/dsh-attachment-local'
+import { AttachmentError, AttachmentId, AttachmentStore } from '@eco-agent/dsh-attachment'
+import type { ImageAttachmentLimits, ImageAttachmentRef, SaveImageAttachment, StoredImageAttachment } from '@eco-agent/dsh-attachment'
+import * as ToolFs from '@eco-agent/dsh-tool-fs'
 import {
   applyReadImageTool,
   formatImageReadOutput,
@@ -71,7 +71,7 @@ class CatalogAdapter extends LlmAdapter {
 
 /** In-process PTC mode seam fake that invokes the real registry bindings. */
 class FakeRuntime extends PtcRuntime {
-  resolve(request: import('@deepseek-ai/dsh-ptc-runtime').PtcRunRequest): import('@deepseek-ai/dsh-ptc-runtime').PtcRunSpec { return { ...request, cwd: request.cwd ?? process.cwd(), timeoutMs: request.timeoutMs ?? 120_000 } }
+  resolve(request: import('@eco-agent/dsh-ptc-runtime').PtcRunRequest): import('@eco-agent/dsh-ptc-runtime').PtcRunSpec { return { ...request, cwd: request.cwd ?? process.cwd(), timeoutMs: request.timeoutMs ?? 120_000 } }
 
   readonly language = 'typescript'
   readonly isolation = 'fake'

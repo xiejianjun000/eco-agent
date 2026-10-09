@@ -25,9 +25,13 @@ import { mathCompatibility } from './mathCompatibility.ts'
  * @returns The mdast root.
  */
 export function parseGfm(text: string): Root {
+  // Build-compat shim: micromark-util-types is duplicated (2.0.2 vs 2.0.3) in
+  // the pnpm store, so the gfm/math Extension types are structurally
+  // incompatible at type-check time. The cast is type-only (erased by esbuild);
+  // runtime behavior is unchanged. The proper fix is a pnpm.overrides dedupe.
   return recoverLocalImages(fromMarkdown(text, {
-    extensions: [gfm(), cjkFriendlyStrong()],
-    mdastExtensions: [gfmFromMarkdown()],
+    extensions: [gfm(), cjkFriendlyStrong()] as any,
+    mdastExtensions: [gfmFromMarkdown()] as any,
   }), text)
 }
 
@@ -39,7 +43,7 @@ export function parseGfm(text: string): Root {
  */
 export function parseGfmWithMath(text: string): Root {
   return recoverLocalImages(fromMarkdown(text, {
-    extensions: [gfm(), cjkFriendlyStrong(), mathCompatibility(), math()],
-    mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
+    extensions: [gfm(), cjkFriendlyStrong(), mathCompatibility(), math()] as any,
+    mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()] as any,
   }), text)
 }

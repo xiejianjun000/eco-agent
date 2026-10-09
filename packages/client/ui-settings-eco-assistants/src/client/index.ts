@@ -2,15 +2,15 @@
  * eco Agent「我的助手」设置页，浏览器 half：注册「我的助手」section，
  * 把微信助手（`wechat-bridge` namespace）的配置绑定成一个可读写的作用域。
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@eco-agent/cordis'
 // Type-only: pulls the ctx.settingsScope merge and the settings.section slot.
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@eco-agent/dsh-client-ui-settings/client'
 // Type-only: pulls ctx.locale.
-import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls ctx.slots (SlotRegistry) merge.
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 // Type-only: pulls ctx.remote.pluginInventory（微信助手的运行状态来源）。
-import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from '@eco-agent/dsh-api-remotes/client'
 import { AssistantsSection } from './AssistantsSection.tsx'
 import type { AssistantsSectionInjected, WechatConfig } from './AssistantsSection.tsx'
 import { en, zh, type AssistantsKey } from './locales.ts'
@@ -18,7 +18,7 @@ import { en, zh, type AssistantsKey } from './locales.ts'
 export type { AssistantsKey } from './locales.ts'
 export type { AssistantsSectionInjected, AssistantsSectionProps, WechatConfig } from './AssistantsSection.tsx'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@eco-agent/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** 「我的助手」页面 copy。 */
     'settings.assistants': AssistantsKey

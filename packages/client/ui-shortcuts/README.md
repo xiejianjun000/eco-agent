@@ -3,7 +3,7 @@ description: "Browse the commands available in the current window and find them 
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-shortcuts
+# @eco-agent/dsh-client-ui-shortcuts
 
 English | [中文](README.zh.md)
 

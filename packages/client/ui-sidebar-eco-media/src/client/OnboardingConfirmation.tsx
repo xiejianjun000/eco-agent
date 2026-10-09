@@ -1,5 +1,5 @@
 /** Credit and setup confirmations with contained keyboard focus. */
-import { Button, IconCloseOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, Modal } from '@eco-agent/dsh-client-ui-primitives'
 import type { DesktopOnboardingProps } from './onboarding-contract.ts'
 import css from './DesktopOnboarding.module.css'
 

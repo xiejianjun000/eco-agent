@@ -3,11 +3,11 @@ import type {
   SessionFormatArtifact,
   SessionFormatHeader,
   SessionFormatJsonObject,
-} from '@deepseek-ai/dsh-session-format'
+} from '@eco-agent/dsh-session-format'
 import {
   assertReleasedV4Header,
   restoreReleasedV4Artifact,
-} from '@deepseek-ai/dsh-session-format-v3-to-v4'
+} from '@eco-agent/dsh-session-format-v3-to-v4'
 import { assertReleasedV4Artifact as assertReleasedV4PhysicalArtifact } from '../src/testing/validation.ts'
 
 const KNOWN = new Set(['turn/start', 'step/start', 'assistant/message', 'tool/call', 'tool/result', 'step/end', 'turn/end', 'user/message', 'session/end-seed'])

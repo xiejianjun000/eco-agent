@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /** Dormant saved layouts expose only provider metadata, with in-window stores authoritative. */
 import { afterEach, expect, it, vi } from 'vitest'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { TabRecord } from '@deepseek-ai/dsh-client-ui-dockkit'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { TabRecord } from '@eco-agent/dsh-client-ui-dockkit'
 import { SidebarTabInventory } from '../src/client/tab-inventory.ts'
 import { sidebarPersistence } from '../src/client/persistence.ts'
 

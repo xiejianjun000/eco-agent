@@ -3,7 +3,7 @@ description: "Settings domain base plugin: shared configuration forms, schema se
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-settings
+# @eco-agent/dsh-client-ui-settings
 
 English | [中文](README.zh.md)
 

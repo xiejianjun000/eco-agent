@@ -1,6 +1,6 @@
 /** Watch initialization and asynchronous release at the Chokidar adapter. */
-import { Context } from '@deepseek-ai/cordis'
-import { FsTargetKey, FsVersion } from '@deepseek-ai/dsh-fs'
+import { Context } from '@eco-agent/cordis'
+import { FsTargetKey, FsVersion } from '@eco-agent/dsh-fs'
 import { dirname, join, resolve } from 'node:path'
 import * as chokidar from 'chokidar'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'

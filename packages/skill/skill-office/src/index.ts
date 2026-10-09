@@ -5,9 +5,9 @@ import { readFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join } from 'node:path'
 import { isSea } from 'node:sea'
 import { fileURLToPath } from 'node:url'
-import type { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import { BUNDLED_SKILL_RANK, type SkillCandidate, type SkillProvider } from '@deepseek-ai/dsh-skill'
+import type { Context } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
+import { BUNDLED_SKILL_RANK, type SkillCandidate, type SkillProvider } from '@eco-agent/dsh-skill'
 import { parse as parseYaml } from 'yaml'
 
 const SKILL_NAMES = ['office-docx', 'office-pptx', 'office-xlsx'] as const

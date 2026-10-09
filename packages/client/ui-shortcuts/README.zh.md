@@ -3,7 +3,7 @@ description: "查看当前窗口可用的命令，按操作名称、英文别名
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-shortcuts
+# @eco-agent/dsh-client-ui-shortcuts
 
 [English](README.md) | 中文
 

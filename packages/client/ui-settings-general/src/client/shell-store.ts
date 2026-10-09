@@ -1,5 +1,5 @@
 /** Shared settings viewing state for its mouse and command entry points. */
-import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
+import { defineStore, type EngineStoreHandle } from '@eco-agent/dsh-client-store'
 
 type State = { open: boolean; activeId: string | undefined }
 type Actions = {

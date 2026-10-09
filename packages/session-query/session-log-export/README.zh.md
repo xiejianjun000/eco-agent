@@ -3,7 +3,7 @@ description: "Web 会话日志 ZIP 导出：Host 流式传输、认证下载路�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-session-log-export
+# @eco-agent/dsh-session-log-export
 
 [English](README.md) | 中文
 
@@ -37,7 +37,7 @@ kind: "package-reference"
 
 ```yaml
 - id: session-log-download
-  name: '@deepseek-ai/dsh-session-log-export'
+  name: '@eco-agent/dsh-session-log-export'
 ```
 
 Web bundle 将本包与 Connection、`dsh-commands`、`dsh-client-ui-commands` 和 `dsh-client-ui-conversation` 一起挂载。

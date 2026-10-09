@@ -1,8 +1,8 @@
 /** Read-only Markdown viewer for logged plans and temporary review documents. */
 import { useMemo } from 'react'
-import { FileTypeIcon, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+import { FileTypeIcon, MarkdownText } from '@eco-agent/dsh-client-ui-primitives'
+import type { PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
+import type {} from '@eco-agent/dsh-client-ui-sidebar-right/client'
 import type {} from './plan-resource.ts'
 import { isReviewPreviewAddress } from './review-preview.ts'
 import { planFailureLine } from './failure-line.ts'

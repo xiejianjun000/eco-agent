@@ -16,9 +16,9 @@ describe('generated tsconfig package aliases', () => {
   it('maps each package to its own source directory', () => {
     const aliases = collectPackageAliases()
     expect(aliases.length).toBeGreaterThan(100)
-    const session = aliases.find(alias => alias.specifier === '@deepseek-ai/dsh-session')
+    const session = aliases.find(alias => alias.specifier === '@eco-agent/dsh-session')
     expect(session).toEqual({
-      specifier: '@deepseek-ai/dsh-session',
+      specifier: '@eco-agent/dsh-session',
       source: './packages/core/session/src',
       hasInvariant: true,
     })
@@ -26,7 +26,7 @@ describe('generated tsconfig package aliases', () => {
     expect([...aliases].sort((a, b) => a.specifier.localeCompare(b.specifier))).toEqual(aliases)
     // Only packages named after their directory: the rest carry hand-written
     // aliases, because the removed wildcards could never have resolved them.
-    expect(aliases.some(alias => alias.specifier === '@deepseek-ai/dsh-typert-protocol')).toBe(false)
+    expect(aliases.some(alias => alias.specifier === '@eco-agent/dsh-typert-protocol')).toBe(false)
   })
 
   it('yields to a hand-written alias and closes without a trailing comma', () => {
@@ -83,7 +83,7 @@ describe('generated tsconfig package aliases', () => {
     // Includes the packages the generator skips because their name does not
     // match their directory: those carry hand-written aliases.
     const names = collectPackageNames()
-    expect(names).toContain('@deepseek-ai/dsh-typert-protocol')
+    expect(names).toContain('@eco-agent/dsh-typert-protocol')
     expect(uncoveredPackages(names, mappedSpecifiers(config))).toEqual([])
   })
 

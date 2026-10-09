@@ -3,9 +3,9 @@ import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, extname, isAbsolute, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import type { Context } from '@deepseek-ai/cordis'
-import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
+import type { Context } from '@eco-agent/cordis'
+import type { EntryOptions } from '@eco-agent/cordis-plugin-loader'
+import { applyEntryPatches, entryListSchema, type PatchOptions } from '@eco-agent/cordis-plugin-include'
 import { load } from 'js-yaml'
 import { resolvePluginResource } from './package-meta.ts'
 import { barePackageName } from './profile-resolution/resolver.ts'
@@ -127,9 +127,9 @@ function preflight(
         continue
       }
       // The `group` marker, not the module name, is what makes a row another tree carrier.
-      if ((row.group === true || row.name === 'cordis:group' || row.name === '@deepseek-ai/cordis-plugin-group')
+      if ((row.group === true || row.name === 'cordis:group' || row.name === '@eco-agent/cordis-plugin-group')
         && Array.isArray(row.config) && check(row.config as EntryOptions[], base)) blocked = true
-      if (row.name !== 'cordis:include' && row.name !== '@deepseek-ai/cordis-plugin-include') continue
+      if (row.name !== 'cordis:include' && row.name !== '@eco-agent/cordis-plugin-include') continue
       const reached = includedConflicts(row, base)
       if (reached !== undefined) {
         deny(row, reached)

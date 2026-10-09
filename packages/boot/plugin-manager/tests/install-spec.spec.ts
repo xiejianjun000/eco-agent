@@ -1,7 +1,7 @@
 /** Reading install specs and classifying pnpm failures: pure, table-driven. */
 
 import { describe, expect, it } from 'vitest'
-import { classifyInstallFailure, InvalidInstallSpecError, parseInstallSpec } from '@deepseek-ai/dsh-plugin-manager'
+import { classifyInstallFailure, InvalidInstallSpecError, parseInstallSpec } from '@eco-agent/dsh-plugin-manager'
 
 describe('parseInstallSpec', () => {
   it('reads registry names with an optional range, scoped or not', () => {

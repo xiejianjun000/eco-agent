@@ -1,7 +1,7 @@
 /** Display labels and toast sentences for global plugin management. */
 
-import type { IncompatiblePlugin, ManagementError, Registry } from '@deepseek-ai/dsh-api-remotes/client'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import type { IncompatiblePlugin, ManagementError, Registry } from '@eco-agent/dsh-api-remotes/client'
+import type { PropsLocale } from '@eco-agent/dsh-client-ui-slots'
 import type { PluginManagerLocaleKey } from './locales.ts'
 import type { FailedAction, ManagerNotice, PackageRow, PackageView, PluginManagerFace } from './manager-store.ts'
 

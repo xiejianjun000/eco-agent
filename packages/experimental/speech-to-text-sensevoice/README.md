@@ -3,7 +3,7 @@ description: "Prepare and operate a local CPU SenseVoice worker on demand."
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-experimental-speech-to-text-sensevoice
+# @eco-agent/dsh-experimental-speech-to-text-sensevoice
 
 English | [中文](README.zh.md)
 

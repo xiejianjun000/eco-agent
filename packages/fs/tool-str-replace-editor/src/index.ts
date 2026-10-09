@@ -1,19 +1,19 @@
 /**
  * Model-facing `str_replace_editor` over the Harness filesystem seam.
- * @module @deepseek-ai/dsh-tool-str-replace-editor
+ * @module @eco-agent/dsh-tool-str-replace-editor
  */
 
 import { isAbsolute } from 'node:path'
-import type { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import { FsError } from '@deepseek-ai/dsh-fs'
-import type { FsInfo, FsTarget, FsWriteIntent } from '@deepseek-ai/dsh-fs'
-import { truncateWithoutSplittingSurrogatePair } from '@deepseek-ai/dsh-output-retention'
-import { sandboxDenialMarker } from '@deepseek-ai/dsh-sandbox'
-import type { SandboxExecutionPolicy } from '@deepseek-ai/dsh-sandbox'
-import type { SandboxPolicyService } from '@deepseek-ai/dsh-sandbox-policy'
-import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { ToolCallView, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import type { Context } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
+import { FsError } from '@eco-agent/dsh-fs'
+import type { FsInfo, FsTarget, FsWriteIntent } from '@eco-agent/dsh-fs'
+import { truncateWithoutSplittingSurrogatePair } from '@eco-agent/dsh-output-retention'
+import { sandboxDenialMarker } from '@eco-agent/dsh-sandbox'
+import type { SandboxExecutionPolicy } from '@eco-agent/dsh-sandbox'
+import type { SandboxPolicyService } from '@eco-agent/dsh-sandbox-policy'
+import { defineTool } from '@eco-agent/dsh-tools'
+import type { ToolCallView, ToolRunContext } from '@eco-agent/dsh-tools'
 
 const TRUNCATED_MESSAGE = '<response clipped><NOTE>To save on context only part of this file has been shown to you. You should retry this tool after you have searched inside the file with `grep -n` in order to find the line numbers of what you are looking for.</NOTE>'
 

@@ -1,5 +1,5 @@
 /** Download diagnostics distinguish actionable causes without publishing raw network errors. */
-import { TimeoutReason } from '@deepseek-ai/dsh-timeout'
+import { TimeoutReason } from '@eco-agent/dsh-timeout'
 import { expect, it } from 'vitest'
 import { classifyDownloadFailure } from '../src/download-error.ts'
 

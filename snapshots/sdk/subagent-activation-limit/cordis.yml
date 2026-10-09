@@ -1,5 +1,5 @@
 - id: subagent
-  name: '@deepseek-ai/dsh-subagent'
+  name: '@eco-agent/dsh-subagent'
   config:
     maxActiveSubagents: 8
 

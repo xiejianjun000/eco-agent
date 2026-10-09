@@ -1,7 +1,7 @@
 /** Release the gated background SDK child only after job_output starts waiting. */
 
 import { writeFileSync } from 'node:fs'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 
 export const name = 'subagent-dsh-sdk-release-on-job-output'
 export const inject = ['tools']

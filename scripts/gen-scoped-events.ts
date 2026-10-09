@@ -84,7 +84,7 @@ class ScopedEventGenerator {
       ' * Generated scoped-event routing-subject resolvers for dsh-scope invariants.',
       ' * Do not edit by hand; run `pnpm run gen-scoped-events`.',
       ' *',
-      ' * @module @deepseek-ai/dsh-scope/scoped-events.generated',
+      ' * @module @eco-agent/dsh-scope/scoped-events.generated',
       ' */',
       '',
       'type ScopedSubjectResolver = (args: readonly unknown[]) => unknown',
@@ -309,14 +309,14 @@ class ScopedEventGenerator {
   }
 }
 
-/** Return whether an Events interface is inside declare module '@deepseek-ai/cordis'. */
+/** Return whether an Events interface is inside declare module '@eco-agent/cordis'. */
 function isCordisModuleInterface(node: ts.InterfaceDeclaration): boolean {
   const block = node.parent
   const declaration = block.parent
   return ts.isModuleBlock(block)
     && ts.isModuleDeclaration(declaration)
     && ts.isStringLiteral(declaration.name)
-    && declaration.name.text === '@deepseek-ai/cordis'
+    && declaration.name.text === '@eco-agent/cordis'
 }
 
 /** Return whether a parameter is the explicit TypeScript this receiver. */

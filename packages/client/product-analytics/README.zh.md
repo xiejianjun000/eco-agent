@@ -3,7 +3,7 @@ description: "配置桌面端产品埋点、身份字段和事件时机，不采
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-product-analytics
+# @eco-agent/dsh-client-product-analytics
 
 [English](README.md) | 中文
 

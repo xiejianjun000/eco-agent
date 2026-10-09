@@ -1,5 +1,5 @@
 /** Document drag-and-drop listeners owned by one mounted attachment view. */
-import type { ComposerAttachmentsProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { ComposerAttachmentsProps } from '@eco-agent/dsh-client-ui-conversation/client'
 
 /**
  * Members of a drop that are directories. The `File` a directory drop yields

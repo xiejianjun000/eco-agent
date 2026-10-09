@@ -1,21 +1,21 @@
 /** Host file-upload service: streamed intake and Agent-scoped staged receipts. */
 
 import { randomUUID } from 'node:crypto'
-import type { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { FileAttachmentRef } from '@deepseek-ai/dsh-attachment'
-import type {} from '@deepseek-ai/dsh-client-connection'
-import type { CommandFileReceiptResolver } from '@deepseek-ai/dsh-commands'
-import { scopeOf } from '@deepseek-ai/dsh-scope'
-import type { Session, SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
-import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import type { Context } from '@eco-agent/cordis'
+import type { Agent } from '@eco-agent/dsh-agent'
+import type { FileAttachmentRef } from '@eco-agent/dsh-attachment'
+import type {} from '@eco-agent/dsh-client-connection'
+import type { CommandFileReceiptResolver } from '@eco-agent/dsh-commands'
+import { scopeOf } from '@eco-agent/dsh-scope'
+import type { Session, SessionEvent, SessionId } from '@eco-agent/dsh-session'
+import { Remote, RemoteError, TypertRemoteService } from '@eco-agent/dsh-typert-protocol'
 import { handleFileUploadHttp } from './http-route.ts'
 import { FILE_UPLOAD_PATH } from './protocol.ts'
 import type { EncodedFileUploadRequest, FileUploadReceiptId, FileUploadValue } from './types.ts'
 
 export type * from './types.ts'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     /** Host storage and staged-receipt service for browser file uploads. */
     fileUploads: FileUploads

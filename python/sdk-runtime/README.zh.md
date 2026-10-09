@@ -25,7 +25,7 @@ wheel 包会安装 `dsh` 控制台命令和 `deepseek_harness_runtime` Python �
 
 要成套替换三个 Office 工作流与共用检查脚本，可将 `skill-office.config.assetRoot` 配置为另一个绝对资源目录。任意 skill 集合通过文件系统 skill 提供方加载。配置 patch 在进程启动时生效；切换 skills 无需重建 runtime wheel 或 Python 环境。
 
-仓库构建还会物化仅限开发的 `runtime/node/` 载体。它在系统 Node 22.19 或更高版本上运行 `node runtime/node/node_modules/@deepseek-ai/dsh/lib/bin.js`。系统不会自动选择它，而且 wheel 包与 sdist 均不包含它。
+仓库构建还会物化仅限开发的 `runtime/node/` 载体。它在系统 Node 22.19 或更高版本上运行 `node runtime/node/node_modules/@eco-agent/dsh/lib/bin.js`。系统不会自动选择它，而且 wheel 包与 sdist 均不包含它。
 
 两种载体执行相同的 `dsh` 语法与随附 profile，包括独立的 `sdk-minimal` 配置树，以及包含前端产物的完整 `web` profile。私有 `dsh-python-runtime-closure` manifest（元数据清单）定义打包依赖闭包；不存在 Python 专用 Node 应用或检入的默认 `cordis.yml`。
 

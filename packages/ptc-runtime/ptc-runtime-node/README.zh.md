@@ -3,7 +3,7 @@ description: "在全新 Node 进程中运行 TypeScript 程序，使用会话文
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-ptc-runtime-node
+# @eco-agent/dsh-ptc-runtime-node
 
 [English](README.md) | 中文
 
@@ -32,7 +32,7 @@ kind: "package-reference"
 在所需服务可用后，配置提供方条目：
 
 ```yaml
-- name: '@deepseek-ai/dsh-ptc-runtime-node'
+- name: '@eco-agent/dsh-ptc-runtime-node'
   config:
     timeoutMs: 120000
     maxTimeoutMs: 600000

@@ -1,7 +1,7 @@
 /** The generated request-header schema retains the native reader's retired-field refusal. */
 import { resolve } from 'node:path'
 import { expect, it } from 'vitest'
-import { assertV4RowAdmission } from '@deepseek-ai/dsh-session-format-v3-to-v4'
+import { assertV4RowAdmission } from '@eco-agent/dsh-session-format-v3-to-v4'
 import { extractPersistenceSchema } from './persistence-schema.ts'
 import { classifyPersistenceChange } from './persistence-changes.ts'
 import { canonicalizeSchema, schemaDigest } from './persistence-schema-model.ts'

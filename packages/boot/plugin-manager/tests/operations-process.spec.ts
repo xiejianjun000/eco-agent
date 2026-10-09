@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { initProfile } from '@deepseek-ai/dsh-app-boot'
+import { initProfile } from '@eco-agent/dsh-app-boot'
 import { runProfilePnpm, type PackageOperationOptions } from '../src/operations.ts'
 
 /** Holds the inherited pipes until its stop file appears, and ends on its own after a minute. */

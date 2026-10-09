@@ -2,7 +2,7 @@
 description: "预编译 Landlock 启动器与异步 POSIX flock 的 JavaScript 入口。"
 kind: "package-library"
 ---
-# @deepseek-ai/node-addon-system
+# @eco-agent/node-addon-system
 
 [English](README.md) | 中文
 

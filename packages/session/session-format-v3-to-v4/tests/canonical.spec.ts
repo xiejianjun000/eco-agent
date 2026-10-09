@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createSessionFormatCatalogWithChildren, sessionFormatCatalog } from '@deepseek-ai/dsh-session-format-catalog'
-import { SessionFormatEventCollector } from '@deepseek-ai/dsh-session-format'
-import type { SessionFormatArtifact, SessionFormatEvent } from '@deepseek-ai/dsh-session-format'
+import { createSessionFormatCatalogWithChildren, sessionFormatCatalog } from '@eco-agent/dsh-session-format-catalog'
+import { SessionFormatEventCollector } from '@eco-agent/dsh-session-format'
+import type { SessionFormatArtifact, SessionFormatEvent } from '@eco-agent/dsh-session-format'
 import { releasedV4SessionFormatCodec, restoreReleasedV4Artifact } from '../src/index.ts'
 
 const header = { type: 'session', version: 2, id: 'canonical-v4', createdAt: 1, isSeeded: true, parentSession: 'parent', delegationDepth: 0 }
 function source() {
-  const user = { id: 'context', role: 'user', source: { kind: 'plugin', plugin: '@deepseek-ai/dsh-system-prompt' }, content: [{ type: 'text', text: 'context' }] }
+  const user = { id: 'context', role: 'user', source: { kind: 'plugin', plugin: '@eco-agent/dsh-system-prompt' }, content: [{ type: 'text', text: 'context' }] }
   const dispatch = { rootCallId: 'root', parentCallId: 'root', subCallId: 'child', name: 'test', arguments: { kind: 'plugin', plugin: 'tools-ptc' } }
   const rows = [
     { type: 'turn/start', data: { turn: 1 } },

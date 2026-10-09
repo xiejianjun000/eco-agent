@@ -3,7 +3,7 @@ description: "DeepSeek 账号 authentication and model discovery."
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-llm-deepseek-account
+# @eco-agent/dsh-llm-deepseek-account
 
 [English](README.md) | 中文
 
@@ -29,7 +29,7 @@ kind: "package-reference"
 
 ```yaml
 - id: llm-deepseek-account
-  name: '@deepseek-ai/dsh-llm-deepseek-account'
+  name: '@eco-agent/dsh-llm-deepseek-account'
   config:
     reasoningEffort: high
 ```

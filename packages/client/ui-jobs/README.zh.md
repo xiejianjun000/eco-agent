@@ -3,7 +3,7 @@ description: "会话头部后台任务列表：可展开的流式输出面板、
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-jobs
+# @eco-agent/dsh-client-ui-jobs
 
 [English](README.md) | 中文
 

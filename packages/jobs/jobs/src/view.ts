@@ -3,12 +3,12 @@
  * chunks its output ring hands out. This leaf reaches no Host package, so
  * browser programs and Remote wire types import it without pulling the
  * registry's Host declaration merges.
- * @module @deepseek-ai/dsh-jobs/view
+ * @module @eco-agent/dsh-jobs/view
  */
 
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 // Type-only: the Workspace registry's archive-admission family map this seam merges `job` into.
-import type {} from '@deepseek-ai/dsh-workspace/types'
+import type {} from '@eco-agent/dsh-workspace/types'
 import type { JobId } from './brand.ts'
 
 /**
@@ -18,7 +18,7 @@ import type { JobId } from './brand.ts'
  */
 export type JobStatus = 'running' | 'stopping' | 'completed' | 'killed' | 'failed'
 
-declare module '@deepseek-ai/dsh-workspace/types' {
+declare module '@eco-agent/dsh-workspace/types' {
   interface SessionActivityKindMap {
     /** A background job owned by this session is running or stopping. */
     job: true

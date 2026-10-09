@@ -3,7 +3,7 @@ description: "Add Schedule, its reminder catalog, and the Automation tasks page 
 kind: "package-bundle"
 ---
 
-# @deepseek-ai/dsh-experimental-schedule-bundle
+# @eco-agent/dsh-experimental-schedule-bundle
 
 English | [中文](README.zh.md)
 

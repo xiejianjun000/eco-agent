@@ -10,7 +10,7 @@ import { generatedRegions } from './translation-pairing.ts'
 
 const roots: string[] = []
 const sharedSchema = `
-import Schema from '@deepseek-ai/schemastery'
+import Schema from '@eco-agent/schemastery'
 export interface LaunchConfig {
   /** Browser ownership mode. */
   mode: 'launch'

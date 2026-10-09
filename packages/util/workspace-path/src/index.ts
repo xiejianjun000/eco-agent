@@ -1,6 +1,6 @@
 /**
  * Browser-safe Workspace path and display helpers.
- * @module @deepseek-ai/dsh-util-workspace-path
+ * @module @eco-agent/dsh-util-workspace-path
  */
 import { sessionFileAddress } from './file-address.ts'
 

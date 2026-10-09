@@ -3,7 +3,7 @@ description: "从插件管理页加入定时服务、提醒目录与自动化任
 kind: "package-bundle"
 ---
 
-# @deepseek-ai/dsh-experimental-schedule-bundle
+# @eco-agent/dsh-experimental-schedule-bundle
 
 [English](README.md) | 中文
 

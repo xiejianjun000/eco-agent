@@ -1,8 +1,8 @@
 /** File-provider metadata reads, target subscriptions, failures, and cancellation. */
-import { RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { RemoteFailure, RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
-import { absoluteFileAddress, sessionFileAddress } from '@deepseek-ai/dsh-util-workspace-path'
+import { RemoteError } from '@eco-agent/dsh-client-test-runtime'
+import type { SessionId } from '@eco-agent/dsh-session/types'
+import type { RemoteFailure, RemoteResult } from '@eco-agent/dsh-typert-protocol'
+import { absoluteFileAddress, sessionFileAddress } from '@eco-agent/dsh-util-workspace-path'
 import type { WorkspaceFileStat } from '../src/types.ts'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { ChangeFeed } from '../src/client/change-feed.ts'

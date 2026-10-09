@@ -1,12 +1,12 @@
 /** Remote proxies: namespace discovery from roster injects and mock rules, and per-call routing over the Connection to the mock. */
-import { RemoteMock, frames, ok, openStream } from '@deepseek-ai/dsh-remote-mock'
+import { RemoteMock, frames, ok, openStream } from '@eco-agent/dsh-remote-mock'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import type { ClientPluginModule } from '../src/assembly/index.ts'
 import { TestClient, remoteDefaultResponses, webApp } from '../src/assembly/index.ts'
 import { remoteNamespacesOf } from '../src/assembly/remote-proxies.ts'
 
 /** The api-remotes row and its cone (Gateway client, Typert registry, Connection); TestClient drops the api-remotes row itself. */
-const API_ROSTER = webApp.closure(['@deepseek-ai/dsh-api-remotes'])
+const API_ROSTER = webApp.closure(['@eco-agent/dsh-api-remotes'])
 
 type RemoteFace = Record<string, Record<string, (...args: unknown[]) => unknown>>
 
@@ -30,7 +30,7 @@ describe('remoteNamespacesOf', () => {
 
 describe('remote proxies over a booted client', () => {
   it('boots the Office Remote subset from source and routes calls through its mock', async () => {
-    const name = '@deepseek-ai/dsh-api-remotes'
+    const name = '@eco-agent/dsh-api-remotes'
     const mock = RemoteMock.create().load(remoteDefaultResponses).unary('officeToPdf/render', ok({ bytes: 3 }))
     const client = await TestClient.start({ roster: webApp.closure([name]) }, mock)
     onTestFinished(() => client.dispose())
@@ -53,7 +53,7 @@ describe('remote proxies over a booted client', () => {
       m.unary('session/rename', ok({ title: 'renamed', seq: 3 }))
       m.unary('session/cancel', { ok: false, error: { code: 'session/not-found', message: 'gone', details: {} } })
     })
-    expect([...client.ctx.loader.entries()].map(entry => entry.options.name)).not.toContain('@deepseek-ai/dsh-api-remotes')
+    expect([...client.ctx.loader.entries()].map(entry => entry.options.name)).not.toContain('@eco-agent/dsh-api-remotes')
     await expect(remote.session!.rename!({ sessionId: 's1', title: 'renamed' })).resolves.toEqual({ ok: true, value: { title: 'renamed', seq: 3 } })
     await expect(remote.session!.cancel!({ sessionId: 's1' }, new AbortController().signal))
       .resolves.toEqual({ ok: false, error: { code: 'session/not-found', message: 'gone', details: {} } })

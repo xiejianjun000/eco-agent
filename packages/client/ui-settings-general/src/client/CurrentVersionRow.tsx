@@ -1,5 +1,5 @@
 /** Installed release version in General Settings for Web and Desktop. */
-import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsLocale, PropsRuntime } from '@eco-agent/dsh-client-ui-slots'
 import css from './CurrentVersionRow.module.css'
 
 /**

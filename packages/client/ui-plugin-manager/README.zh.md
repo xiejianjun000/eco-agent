@@ -3,7 +3,7 @@ description: "从 Web 侧栏管理 profile 的插件组合包、它们的行，�
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-client-ui-plugin-manager
+# @eco-agent/dsh-client-ui-plugin-manager
 
 [English](README.md) | 中文
 

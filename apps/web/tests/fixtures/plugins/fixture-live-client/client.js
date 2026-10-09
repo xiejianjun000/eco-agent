@@ -3,7 +3,7 @@ window.__ModuleLoader__.load({
   id: '@fixture/live-client',
   factory(require) {
     const React = require('react')
-    const { MenuItemButton } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { MenuItemButton } = require('@eco-agent/dsh-client-ui-primitives')
     const style = document.createElement('style')
     style.dataset.plugin = '@fixture/live-client'
     style.textContent = '[data-live-client] { color: rgb(12, 34, 56); position: absolute; bottom: 20px; right: 20px; }'

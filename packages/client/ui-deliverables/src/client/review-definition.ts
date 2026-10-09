@@ -6,8 +6,8 @@
  * in the address identify the content, and the turn they carry names the tab.
  * A row opens the tab with the file's index as its navigation parameter.
  */
-import type { SidebarRightTabDefinition } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
-import type { TranslateNS } from '@deepseek-ai/dsh-client-locale/client'
+import type { SidebarRightTabDefinition } from '@eco-agent/dsh-client-ui-sidebar-right/client'
+import type { TranslateNS } from '@eco-agent/dsh-client-locale/client'
 import { parseChangesReviewAddress } from '../changes.ts'
 import type { NS } from './locales.ts'
 
@@ -15,7 +15,7 @@ import type { NS } from './locales.ts'
 export const CHANGES_REVIEW_KIND = 'changes-review'
 
 /** This implementation's identity in the tab system, and the key its body registers under. */
-export const CHANGES_REVIEW_ID = '@deepseek-ai/dsh-client-ui-deliverables'
+export const CHANGES_REVIEW_ID = '@eco-agent/dsh-client-ui-deliverables'
 
 /** The file a review opens on. */
 export interface ChangesReviewParams {
@@ -23,7 +23,7 @@ export interface ChangesReviewParams {
   index?: number
 }
 
-declare module '@deepseek-ai/dsh-client-ui-sidebar-right/client' {
+declare module '@eco-agent/dsh-client-ui-sidebar-right/client' {
   interface SidebarRightResourceParamsMap {
     /** The file a review tab opens on. */
     'changes-review': ChangesReviewParams

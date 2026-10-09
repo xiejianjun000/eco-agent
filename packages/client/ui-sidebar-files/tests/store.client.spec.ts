@@ -1,9 +1,9 @@
 /** Tab-local directory caches, expansion preferences, and refresh settings. */
 import { describe, expect, it } from 'vitest'
-import { RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
+import { RemoteError } from '@eco-agent/dsh-client-test-runtime'
 import { createFilesStore } from '../src/client/store.ts'
 import type { DirLevel } from '../src/client/store.ts'
-import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
+import type { TabId } from '@eco-agent/dsh-client-ui-dockkit'
 
 const ROOT = '/work/app'
 const TAB = 'tab-1' as TabId

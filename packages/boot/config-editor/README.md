@@ -3,7 +3,7 @@ description: "Save active profile configuration and apply it through Loader."
 kind: "package-reference"
 ---
 
-# @deepseek-ai/dsh-config-editor
+# @eco-agent/dsh-config-editor
 
 English | [中文](README.zh.md)
 
@@ -27,7 +27,7 @@ Mount this service in a profile application with Loader and `profileContext`. It
 
 ```yaml
 - id: config-editor
-  name: '@deepseek-ai/dsh-config-editor'
+  name: '@eco-agent/dsh-config-editor'
 ```
 
 Use [settings](../../settings/settings/README.md) for forms restricted to live fields. Callers that edit complete configuration can use `ctx.configEditor.edit()`; ordinary fields retain Loader’s normal lifecycle.

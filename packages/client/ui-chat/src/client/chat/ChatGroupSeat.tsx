@@ -5,8 +5,8 @@ import {
   IconChevronUpOutlineRegular, IconCodeOutlineRegular, IconEditOutlineRegular, IconGlobeOutlineRegular,
   IconPlanOutlineRegular, IconQuestionOutlineRegular, IconSearchOutlineRegular, IconSparkleRegular,
   IconThinkOutlineRegular, TextShimmer,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import type { GroupKey, NodeReference } from '@deepseek-ai/dsh-client-ui-conversation/client'
+} from '@eco-agent/dsh-client-ui-primitives'
+import type { GroupKey, NodeReference } from '@eco-agent/dsh-client-ui-conversation/client'
 import type { ProcessActivity } from '../contract/process-groups.ts'
 import type { ChatStoreState } from '../contract/store.ts'
 import type { ChatViewSlotProps } from '../contract/slots.ts'

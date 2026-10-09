@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { chromium, type Locator } from 'playwright'
 import { expect, it, onTestFinished, vi } from 'vitest'
-import type { AccountView } from '@deepseek-ai/dsh-deepseek-account/types'
-import type {} from '@deepseek-ai/dsh-deepseek-account'
+import type { AccountView } from '@eco-agent/dsh-deepseek-account/types'
+import type {} from '@eco-agent/dsh-deepseek-account'
 import {
   captureStableAria, compareOrRefreshGolden, launchWebScaffold, webSnapshotMode,
 } from './scaffold.ts'

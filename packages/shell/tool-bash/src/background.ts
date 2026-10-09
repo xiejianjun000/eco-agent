@@ -3,13 +3,13 @@
  * registry records, the pull sources it pumps, and the ring read a foreground
  * call renders when it stops waiting.
  *
- * @module @deepseek-ai/dsh-tool-bash/background
+ * @module @eco-agent/dsh-tool-bash/background
  */
 
-import type { SandboxMode } from '@deepseek-ai/dsh-sandbox'
-import { escalationHintMarker, sandboxDenialMarker } from '@deepseek-ai/dsh-sandbox'
-import type { ShellProcess, ShellSandboxInfo } from '@deepseek-ai/dsh-shell'
-import type { JobChunk, JobHooks, JobOutcome, JobOutputSource } from '@deepseek-ai/dsh-jobs'
+import type { SandboxMode } from '@eco-agent/dsh-sandbox'
+import { escalationHintMarker, sandboxDenialMarker } from '@eco-agent/dsh-sandbox'
+import type { ShellProcess, ShellSandboxInfo } from '@eco-agent/dsh-shell'
+import type { JobChunk, JobHooks, JobOutcome, JobOutputSource } from '@eco-agent/dsh-jobs'
 
 /**
  * Sandbox facts worth the terminal detail: a runner that never ran the

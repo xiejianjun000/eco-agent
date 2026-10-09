@@ -3,7 +3,7 @@ description: "Slot registry pure core for the dsh web client: ordinary extension
 kind: "package-library"
 ---
 
-# @deepseek-ai/dsh-client-ui-slots
+# @eco-agent/dsh-client-ui-slots
 
 English | [中文](README.zh.md)
 

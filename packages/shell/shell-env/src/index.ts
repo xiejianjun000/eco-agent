@@ -5,19 +5,19 @@
  * the registry itself while plugins can register additional, enumerable facts
  * with effect-scoped disposal.
  *
- * @module @deepseek-ai/dsh-shell-env
+ * @module @eco-agent/dsh-shell-env
  */
 
-import { Service, type Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import { DSH_ENV_PREFIX } from '@deepseek-ai/dsh-shell'
-import type { DshEnvironment, DshEnvironmentKey } from '@deepseek-ai/dsh-shell'
-import { DSH_HOME_ENV, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
-import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import { Service, type Context } from '@eco-agent/cordis'
+import z from '@eco-agent/schemastery'
+import { DSH_ENV_PREFIX } from '@eco-agent/dsh-shell'
+import type { DshEnvironment, DshEnvironmentKey } from '@eco-agent/dsh-shell'
+import { DSH_HOME_ENV, resolveDshHome } from '@eco-agent/dsh-home-paths'
+import type { ToolExecution } from '@eco-agent/dsh-tools'
 // Declares `Context.profileContext`, the launcher-provided profile the built-ins read.
-import type {} from '@deepseek-ai/dsh-app-boot'
+import type {} from '@eco-agent/dsh-app-boot'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@eco-agent/cordis' {
   interface Context {
     shellEnv: ShellEnvRegistry
   }

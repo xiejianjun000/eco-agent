@@ -1,5 +1,5 @@
 /** Pure view inputs for the desktop onboarding flow. */
-import type { TrackProductEvent } from '@deepseek-ai/dsh-client-product-analytics/client'
+import type { TrackProductEvent } from '@eco-agent/dsh-client-product-analytics/client'
 import type { OnboardingProgress } from '../onboarding-settings.ts'
 import type { AccountSnapshot } from './AccountSection.tsx'
 import type { PlatformPages } from './platform-pages.ts'

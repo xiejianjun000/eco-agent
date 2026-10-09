@@ -1,7 +1,7 @@
 /** Work-purpose selection with controlled, independently selectable cards. */
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
-import { Button, FileTypeIcon, IconCheckOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, FileTypeIcon, IconCheckOutlineRegular } from '@eco-agent/dsh-client-ui-primitives'
 import type { OnboardingPurpose } from '../onboarding-settings.ts'
 import type { DesktopOnboardingProps } from './onboarding-contract.ts'
 import officeIcon from './assets/onboarding-office.svg'

@@ -5,9 +5,9 @@
  * `changes` stream per session, `provider.ts` turns it and `stat` into a value
  * stream, and this module only wires them into `ctx.resources`.
  */
-import type { Context as ClientContext } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-api-gateway/client'
-import type {} from '@deepseek-ai/dsh-client-resources/client'
+import type { Context as ClientContext } from '@eco-agent/cordis'
+import type {} from '@eco-agent/dsh-api-gateway/client'
+import type {} from '@eco-agent/dsh-client-resources/client'
 import { ChangeFeed } from './change-feed.ts'
 import { createFileResourceProvider } from './provider.ts'
 

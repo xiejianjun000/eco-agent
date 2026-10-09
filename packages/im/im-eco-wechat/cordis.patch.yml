@@ -4,4 +4,4 @@
 # 注意：name 必须是 workspace 内的包全名（scoped）。
 - insert:
     - id: wechat-bridge
-      name: '@deepseek-ai/dsh-im-eco-wechat'
+      name: '@eco-agent/dsh-im-eco-wechat'

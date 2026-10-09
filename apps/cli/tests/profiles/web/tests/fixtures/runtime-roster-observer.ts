@@ -1,6 +1,6 @@
 /** Test-only IPC observer mounted beside the unchanged default Web composition. */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@eco-agent/cordis'
 import { runtimeRoster } from '../runtime-roster.ts'
 
 /** Services whose live state the observer reads. */

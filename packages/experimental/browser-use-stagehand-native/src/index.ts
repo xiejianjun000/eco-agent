@@ -1,22 +1,22 @@
 /**
  * Stagehand browser tools with one native browser runtime per live Session.
- * @module @deepseek-ai/dsh-experimental-browser-use-stagehand-native
+ * @module @eco-agent/dsh-experimental-browser-use-stagehand-native
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import Schema from '@deepseek-ai/schemastery'
-import { BrowserUseProviderName } from '@deepseek-ai/dsh-browser-use/brand'
-import { SessionResources } from '@deepseek-ai/dsh-experimental-browser-use-runtime'
-import { createMcpToolDefinition } from '@deepseek-ai/dsh-mcp-client'
+import type { Context } from '@eco-agent/cordis'
+import Schema from '@eco-agent/schemastery'
+import { BrowserUseProviderName } from '@eco-agent/dsh-browser-use/brand'
+import { SessionResources } from '@eco-agent/dsh-experimental-browser-use-runtime'
+import { createMcpToolDefinition } from '@eco-agent/dsh-mcp-client'
 import { z } from 'zod'
 import { browserInputs, stagehandModelSchema, StagehandDrainError } from './native.ts'
 import type { BrowserMethod, NativeBrowserRuntime, StagehandModelConfig } from './native.ts'
 import { openBrowserWorker } from './worker-client.ts'
 import { launchChromium } from './launch.ts'
-import type {} from '@deepseek-ai/dsh-agent'
-import type {} from '@deepseek-ai/dsh-browser-use'
-import type {} from '@deepseek-ai/dsh-system-prompt'
-import type {} from '@deepseek-ai/dsh-tools'
+import type {} from '@eco-agent/dsh-agent'
+import type {} from '@eco-agent/dsh-browser-use'
+import type {} from '@eco-agent/dsh-system-prompt'
+import type {} from '@eco-agent/dsh-tools'
 
 /** Cordis identity for the native Stagehand provider. */
 export const name = 'experimental-browser-use-stagehand-native'

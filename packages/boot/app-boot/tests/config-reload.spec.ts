@@ -4,8 +4,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import type { Include } from '@deepseek-ai/cordis-plugin-include'
+import { Context } from '@eco-agent/cordis'
+import type { Include } from '@eco-agent/cordis-plugin-include'
 import { boot } from '../src/index.ts'
 
 const NAME = 'dsh-test-bin'
@@ -264,7 +264,7 @@ describe('shipped builtins', () => {
   it('lets a booted composition share one isolate realm across a group of rows', async () => {
     // The reason `boot()` registers `cordis:group`: a composition — notably an
     // agent preset living outside this workspace, which cannot resolve
-    // `@deepseek-ai/cordis-plugin-group` by name — gives a provider and its consumer one
+    // `@eco-agent/cordis-plugin-group` by name — gives a provider and its consumer one
     // named realm so the service stays out of the root realm while remaining
     // visible to the rows that need it.
     const { ctx } = await bootTree([

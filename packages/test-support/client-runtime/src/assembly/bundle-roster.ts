@@ -11,20 +11,20 @@
  * bundle change is visible at the next import. Node only — the
  * whole-client tier runs under vitest, and this is the one place it reads the
  * repository.
- * @module @deepseek-ai/dsh-client-test-runtime/src/assembly/bundle-roster
+ * @module @eco-agent/dsh-client-test-runtime/src/assembly/bundle-roster
  */
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { evaluate, isJsExpr, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
-import { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
-import { exactPackageSpecifier, parseDshClient } from '@deepseek-ai/dsh-client-modules/client'
+import { evaluate, isJsExpr, type EntryOptions } from '@eco-agent/cordis-plugin-loader'
+import { applyEntryPatches, entryListSchema, type PatchOptions } from '@eco-agent/cordis-plugin-include'
+import { exactPackageSpecifier, parseDshClient } from '@eco-agent/dsh-client-modules/client'
 import * as yaml from 'js-yaml'
 import { ClientRoster, type ClientRosterRow } from './roster.ts'
 
 /** The `web` profile's bundle layers, in the order `dsh --profile web` applies them (app-boot `PROFILE_TEMPLATES.web`). */
-export const WEB_PROFILE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']
+export const WEB_PROFILE_BUNDLES: readonly string[] = ['@eco-agent/dsh-base', '@eco-agent/dsh-web-app']
 
 interface PackageManifest {
   name?: unknown
