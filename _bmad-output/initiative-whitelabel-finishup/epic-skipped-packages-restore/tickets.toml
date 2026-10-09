@@ -1,0 +1,57 @@
+# Epic breakdown — Restore 24 skipped packages & verify three-column UI
+# Tracer bullet = entry 1 (diff backups to learn the exact restore shape). Entry 5 commits per Epic 1 strategy.
+
+[[entry]]
+id = 1
+type = "spike"
+title = "Diff the 24 rescope backups vs current state"
+description = "For each of the 19 tsdown.config.ts and 5 package.json backups, diff the .eco-*-bak against the live file to learn what the rescope changed and whether internal @deepseek-ai/* self-refs must be renamed. Produce a per-backup restore-action map."
+verify = "A written inventory maps each backup file -> (internal eco pkg to rename | third-party dep to keep) and the specific edit required."
+covers = ["R1"]
+after = ["1.2"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Restore the 24 backups with consistent @eco-agent/* naming"
+description = "Apply the restore-action map: rewrite the 19 tsdown.config.ts and 5 package.json from their .eco-*-bak with @deepseek-ai/* -> @eco-agent/* where the package is internal; keep third-party deps verbatim. Remove or retain each backup per the map with a recorded reason."
+verify = "grep -rE '@deepseek-ai/' packages/ returns no internal-package self-reference; third-party deps still present; each backup accounted for in git status."
+covers = ["R2"]
+after = [1]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Rebuild client (tsc -b && tsdown --env.DSH_BUILD_FACE client)"
+description = "Run the full client build after restore and resolve any type or bundling errors introduced by the restored configs."
+verify = "tsc -b && tsdown --env.DSH_BUILD_FACE client exits 0; no type errors in the restored packages."
+covers = ["R3"]
+after = [2]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Re-verify three-column UI"
+description = "Run the fixed verify_columns.mjs against the rebuilt client to confirm the three-column Web UI is intact and not regressed by the rescope/restore."
+verify = "verify_columns.mjs reports all three columns present and aligned."
+covers = ["R4"]
+after = [3]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Commit restore batch to fork main"
+description = "Commit the restored configs/package.json with a clear message per the Epic 1 ratified vendor-branch strategy; confirm no stray .eco-*-bak remains untracked."
+verify = "git status clean of .eco-*-bak; restore batch committed on main of the fork."
+covers = ["R2", "R3", "R4"]
+after = [4]
+hitl = true
+risk = "low"

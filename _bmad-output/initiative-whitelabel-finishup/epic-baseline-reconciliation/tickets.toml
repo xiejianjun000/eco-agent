@@ -1,0 +1,24 @@
+# Epic breakdown — Reconcile fork baseline & ratify vendor-branch strategy
+# Two entries: first an investigation (no person needed), then a ratify decision (person required).
+
+[[entry]]
+id = 1
+type = "spike"
+title = "Baseline provenance audit"
+description = "Verify and document that the fork's history is disjoint from upstream dsh-v0.2.0-rc.2, and record the figures in BASELINE-DEVIATION.md."
+verify = "git merge-base --is-ancestor dsh-v0.2.0-rc.2 main returns false; a BASELINE-DEVIATION.md records the empty merge base and the 8/20470 divergence."
+covers = ["B1"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Ratify vendor-branch strategy"
+description = "Present 2-3 strategy options (independent fork + keep tag as provenance ref; independent fork + drop tag; tracked vendor branch) and record the user's choice in BASELINE-DEVIATION.md as a dated Decision."
+verify = "A ratified strategy is recorded; epic 2 and epic 3 each cite it as the commit-branch contract."
+covers = ["B2"]
+after = [1]
+hitl = true
+risk = "medium"

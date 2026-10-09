@@ -1,0 +1,23 @@
+# Initiative breakdown — eco-agent DSH→ECO white-label finish-up
+# Build order = table order. Epic 1 sets the provenance/branch contract that 2 and 3 follow when committing.
+# Epic 2 (restore) and Epic 3 (triage) are independent of each other; both only wait on Epic 1's ratified strategy.
+
+[[epic]]
+id = 1
+slug = "epic-baseline-reconciliation"
+title = "Reconcile fork baseline & ratify vendor-branch strategy"
+covers = ["B1", "B2"]
+
+[[epic]]
+id = 2
+slug = "epic-skipped-packages-restore"
+title = "Restore 24 skipped packages & verify three-column UI"
+covers = ["R1", "R2", "R3", "R4"]
+after = [{ epic = 1, needs = "1.2 ratified vendor-branch strategy (how the restore batch commits)" }]
+
+[[epic]]
+id = 3
+slug = "epic-trademark-triage"
+title = "Triage ~120 residual DeepSeek/deepseek-harness references"
+covers = ["T1", "T2", "T3"]
+after = [{ epic = 1, needs = "1.2 ratified vendor-branch strategy (how the triage batch commits)" }]

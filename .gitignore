@@ -71,3 +71,6 @@ packages/session/**/src/**/*.d.ts.map
 /edge_cdp.log
 /dom.html
 /_tmp_11592_b92a8de9a085abd08166696b50584b19
+
+# BMAD 方法论骨架（本地脚手架，不纳入版本库；_bmad-output 为看板产物需提交）
+_bmad/

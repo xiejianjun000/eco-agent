@@ -1,0 +1,46 @@
+# Epic breakdown — Triage ~120 residual DeepSeek/deepseek-harness references
+# Tracer bullet = entry 1 (categorize; learn the exact shape). Entry 2 ratifies policy with the user. Entry 3 executes.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Categorize residual DeepSeek/deepseek-harness files"
+description = "Scan the repo for DeepSeek/deepseek-harness references (excluding node_modules/dist/backups). Of the 3405 broad matches, classify each into: (a) MIT copyright/attribution to upstream DeepSeek (keep), (b) internal deepseek-harness repo-name self-ref (rewrite to eco-agent), (c) user-facing DeepSeek brand copy (policy decision). Record exact per-category counts and the file list; the rewrite target is subset (b), not all 3405."
+verify = "A triage map exists: file -> category -> action, with exact counts per category, and the rewrite subset (b) isolated from the 3405 broad matches."
+covers = ["T1"]
+after = ["1.2"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Ratify trademark triage policy"
+description = "Present the categorization and a recommended policy (preserve MIT copyright/attribution to DeepSeek; rewrite internal deepseek-harness self-refs to eco-agent; user-facing brand -> eco Agent or keep per legal review) and record the user's decision as a dated Decision."
+verify = "A one-line ratified policy is recorded and applied as the rule for entry 3."
+covers = ["T2"]
+after = [1]
+hitl = true
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Execute trademark rewrite pass"
+description = "Apply the ratified policy: rewrite internal deepseek-harness self-references to eco-agent and user-facing brand per decision; leave MIT attribution lines intact. Verify by diff that no copyright was stripped."
+verify = "grep -rE 'deepseek-harness' returns only honest upstream-attribution references (if any); MIT DeepSeek copyright lines intact by diff."
+covers = ["T3"]
+after = [2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Commit triage batch to fork main"
+description = "Commit the rewritten references with a clear message per the Epic 1 strategy; confirm no internal deepseek-harness self-reference remains."
+verify = "Triage batch committed on main of the fork; grep confirms policy compliance."
+covers = ["T3"]
+after = [3]
+hitl = true
+risk = "low"
