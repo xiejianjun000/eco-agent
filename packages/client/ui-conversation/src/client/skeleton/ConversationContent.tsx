@@ -162,7 +162,12 @@ export function ConversationContent(props: ConversationContentProps) {
 
   const composerBar = (
     <div className={clsx(css.composerStack, hero && css.composerHero)}>
-      {hero && <HeroShell t={t} renderSlot={renderSlot} />}
+      {hero && <HeroShell t={t} />}
+      {/* WorkBuddy-style suggestion chips between the greeting and the card:
+          they ride the session-maybe standard props (inputActions), so a click
+          fills and submits once an input machine exists and no-ops cleanly on
+          the cold no-session start. */}
+      {hero && renderSlot('conversation.input.suggestions', {})}
       {hero && heroWorkspaceRow}
       {zone !== undefined && renderSlot('conversation.input.dock', zone)}
       {inputBar}

@@ -56,7 +56,7 @@ it.each([false, true])('retains the mounted application across WebSocket recover
     await writeComposerDraft(page, composer, draft)
     await expect.poll(() => sessionBaselines).toBeGreaterThan(0)
   } else {
-    await page.getByText('Into the Unknown', { exact: true }).waitFor({ timeout: 20_000 })
+    await page.getByText('eco Agent, how can I help?', { exact: true }).waitFor({ timeout: 20_000 })
   }
   await expect.poll(() => readyFrames).toBeGreaterThan(0)
   const root = await page.locator('[data-slot="root"]').elementHandle()
@@ -85,5 +85,5 @@ it.each([false, true])('retains the mounted application across WebSocket recover
   }
 
   expect(navigations).toBe(0)
-  if (!activeSession) expect(await page.getByText('Into the Unknown', { exact: true }).isVisible()).toBe(true)
+  if (!activeSession) expect(await page.getByText('eco Agent, how can I help?', { exact: true }).isVisible()).toBe(true)
 })

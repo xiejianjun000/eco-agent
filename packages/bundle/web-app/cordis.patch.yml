@@ -292,6 +292,12 @@
     - id: ui-sidebar
       name: '@eco-agent/dsh-client-ui-sidebar'
 
+    # WorkBuddy-style hero suggestion chips: the eco role-card prompts under
+    # the new-session greeting (renders the conversation.input.suggestions
+    # slot; a chip click fills and submits its sample prompt).
+    - id: eco-suggestions
+      name: '@eco-agent/dsh-client-ui-eco-suggestions'
+
     # The right Sidebar: one docking surface per session over ui-dockkit.
     - id: ui-sidebar-right
       name: '@eco-agent/dsh-client-ui-sidebar-right'

@@ -23,63 +23,28 @@
   overflow: visible;
 }
 
-/* figma 34:10411: fish + title, gap 10, centered; 26/32 wt500. The preview
-   badge is a product addition outside that source: a mono superscript pill
-   riding the title's top-right. */
+/* WorkBuddy-template greeting: one bold text line, no brand mark above —
+   the brand name lives in the headline copy itself. 34/44 wt700 centered. */
 .headline {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   row-gap: 18px;
-  font-size: 26px;
-  line-height: 32px;
-  font-weight: 500;
+  font-size: 34px;
+  line-height: 44px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   color: var(--dsw-alias-label-primary);
 }
 
-/* Title text + badge as one wrap unit so the title never breaks mid-text with
-   the badge stranded beside a fragment. When the badge no longer fits beside
-   the title it wraps to its own centered line below; while both fit, the group
-   is content-sized and centering is a no-op, keeping the superscript snug. */
+/* Title text as one centered wrap unit. */
 .titleGroup {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  /* Superscript sits 7 from the title. */
-  column-gap: 7px;
-  row-gap: 4px;
   min-width: 0;
-}
-
-.previewBadge {
-  align-self: flex-start;
-  margin-top: 2px;
-  padding: 1px 7px 0;
-  border: 0.5px solid var(--dsw-alias-interactive-bg-hover);
-  border-radius: 24px;
-  background: var(--dsw-alias-state-business-tertiary);
-  color: var(--dsw-alias-label-primary-bluish);
-  font-family: var(--ds-font-family-code);
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* Keep hover detection on a stationary box while the mark renders within it. */
-.markHitbox {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-}
-
-/* eco hero mark: static two-tone logo. */
-.ecoHeroMark {
-  display: block;
-  overflow: visible;
 }
 
 /* Workspace row sits 12px above the input card (figma y80 → y112). */

@@ -2490,6 +2490,9 @@ importers:
       '@eco-agent/dsh-client-ui-directory-picker-native':
         specifier: workspace:*
         version: link:../../client/ui-directory-picker-native
+      '@eco-agent/dsh-client-ui-eco-suggestions':
+        specifier: workspace:*
+        version: link:../../client/ui-eco-suggestions
       '@eco-agent/dsh-client-ui-goal':
         specifier: workspace:*
         version: link:../../client/ui-goal
@@ -3810,6 +3813,10 @@ importers:
         version: 18.3.1(react@18.3.1)
 
   packages/client/ui-eco-quote:
+    dependencies:
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
     devDependencies:
       '@eco-agent/cordis':
         specifier: workspace:^
@@ -5874,6 +5881,10 @@ importers:
         version: 18.3.1
 
   packages/client/ui-sidebar-eco-media:
+    dependencies:
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
     devDependencies:
       '@eco-agent/cordis':
         specifier: workspace:^

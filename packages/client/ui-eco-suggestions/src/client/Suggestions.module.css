@@ -20,27 +20,28 @@
   width: 100%;
 }
 
+/* WorkBuddy-template pills: borderless, fully rounded, quiet fill; the green
+   brand glow stays as the hover affordance. */
 .card {
   display: inline-flex;
   align-items: center;
   gap: 2px;
   min-height: 32px;
-  padding: 0 4px 0 14px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 16px;
+  padding: 0 6px 0 16px;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-primary);
   font-size: 13px;
   line-height: 20px;
   font-weight: 500;
   transition:
-    border-color 300ms ease,
     box-shadow 300ms ease,
     background-color 300ms ease;
 }
 
 .card:hover {
-  border-color: #96d562;
   background: var(--dsw-alias-interactive-bg-hover-solid);
   box-shadow: 0 0 0 1px #96d562, 0 0 12px rgba(15, 118, 110, 0.35);
 }
@@ -60,8 +61,9 @@
   transform: scale(0.985);
 }
 
-/* Copy control: quiet until the card or the control itself is hovered, always
-   visible enough to be discoverable and to be tappable on touch. */
+/* Copy control: invisible at rest (WorkBuddy pills are copy-free at a glance),
+   revealed by hovering the card or focusing the control; success/refusal
+   states force it visible so feedback is never swallowed. */
 .copy {
   display: inline-flex;
   align-items: center;
@@ -74,14 +76,14 @@
   background: none;
   color: var(--dsw-alias-label-caption);
   cursor: pointer;
-  opacity: 0.55;
+  opacity: 0;
   transition: opacity 200ms ease, color 200ms ease, background-color 200ms ease;
 }
 
 .card:hover .copy,
 .copy:hover,
 .copy:focus-visible {
-  opacity: 1;
+  opacity: 0.55;
 }
 
 .copy:hover {

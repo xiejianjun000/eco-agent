@@ -2,7 +2,9 @@
   "name": "@eco-agent/dsh-client-ui-sidebar-eco-media",
   "description": "eco Agent 右侧栏媒体预览：视频 / 音频文件在文档预览器内直接播放（注册为文件扩展名渲染器，可插可拔）",
   "version": "0.1.7-alpha.2",
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xiejianjun000/eco-agent.git",
@@ -12,8 +14,14 @@
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
   "exports": {
-    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
-    "./client": { "types": "./lib/types/client/index.d.ts", "default": "./lib/client.js" },
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },
@@ -26,9 +34,14 @@
       "platform": "web"
     }
   },
-  "scripts": { "bundle": "tsdown", "watch": "tsdown --watch" },
+  "scripts": {
+    "bundle": "tsdown",
+    "watch": "tsdown --watch"
+  },
   "license": "MIT",
-  "peerDependencies": { "@eco-agent/cordis": "workspace:^" },
+  "peerDependencies": {
+    "@eco-agent/cordis": "workspace:^"
+  },
   "devDependencies": {
     "@eco-agent/dsh-client-locale": "workspace:^",
     "@eco-agent/dsh-client-modules": "workspace:^",
@@ -41,5 +54,12 @@
     "@types/react": "~18.3.1",
     "react": "^18.2.0"
   },
-  "files": [ "lib/index.js", "lib/client.js", "lib/types/**/*.d.ts" ]
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "dependencies": {
+    "react-dom": "^18.2.0"
+  }
 }

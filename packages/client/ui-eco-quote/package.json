@@ -60,5 +60,8 @@
     "lib/index.js",
     "lib/client.js",
     "lib/types/**/*.d.ts"
-  ]
+  ],
+  "dependencies": {
+    "react-dom": "^18.2.0"
+  }
 }

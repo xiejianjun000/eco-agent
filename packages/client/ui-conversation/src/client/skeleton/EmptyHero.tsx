@@ -3,7 +3,7 @@
 
 import type { ReactNode, RefObject } from 'react'
 import {
-  EcoLogo, IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
+  IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
 } from '@eco-agent/dsh-client-ui-primitives'
 import { workspaceTitleOf } from '@eco-agent/dsh-util-workspace-path'
 import type { ConversationContentProps } from '../contract/slots.ts'
@@ -64,27 +64,22 @@ export function WorkspaceChip({ buttonRef, label, menuOpen = false, onClick, t }
 export interface HeroShellProps {
   /** The owner's locale seat, passed down as a plain prop. */
   t: HeroTranslate
-  /** Authorized renderer for the hero brand-mark slot. */
-  renderSlot: ConversationContentProps['renderSlot']
   /** Overlay content after the stack (modals). */
   children?: ReactNode
 }
 
 /**
- * Render the hero chrome (headline only; no composer, no workspace row).
+ * Render the hero chrome (WorkBuddy-style text-only greeting; no brand mark,
+ * no composer, no workspace row — the brand name lives in the headline text
+ * itself, and the suggestion chips render as their own slot beside the stack).
  * @param props - see {@link HeroShellProps}.
  * @returns the centered hero element tree.
  */
-export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
+export function HeroShell({ t, children }: HeroShellProps) {
   return (
     <div className={css.root}>
       <div className={css.stack}>
         <div className={css.headline}>
-          <span className={css.markHitbox}>
-            {renderSlot('conversation.hero.brand.mark', { size: 44, className: css.ecoHeroMark }, {
-              fallback: <EcoLogo size={44} className={css.ecoHeroMark} />,
-            })}
-          </span>
           <span className={css.titleGroup}>
             <span>{t('hero.headline')}</span>
           </span>
