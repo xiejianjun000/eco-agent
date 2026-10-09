@@ -65,6 +65,12 @@ version line.
 - **Family version coherence:** every `@eco-agent/dsh*` workspace member shares the root
   `package.json` version (enforced by `checkEcoFamilyVersion`); all members are currently
   aligned at `0.2.0-rc.2` (inherited baseline, not a release claim).
+- **Package-name decision (ratified 2026-10-09, user choice):** the `dsh-` infix in
+  `@eco-agent/dsh-*` package names **stays**. `BRAND_GUIDELINES.md` explicitly sanctions the
+  abbreviated "DSH" designation, so the names are compliant as-is; ~150 packages / ~25k
+  specifiers would have to move for a purely cosmetic gain, and nothing has been published to
+  npm yet, so no external constraint exists either way. Revisit only if the project later
+  decides to publish under a fully eco-native naming scheme.
 - Model IDs, wire identities, and `.agents/notes/**` are out of scope for the family rename.
 
 ## References
