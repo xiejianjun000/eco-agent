@@ -33,6 +33,8 @@
         "@eco-agent/dsh-client-ui-renderer",
         "@eco-agent/dsh-client-ui-tool",
         "@eco-agent/dsh-client-ui-input-trigger",
+        "@eco-agent/dsh-client-ui-layout",
+        "@eco-agent/dsh-client-ui-sidebar",
         "@eco-agent/dsh-api-remotes",
         "@eco-agent/dsh-client-ui-sidebar-right"
       ],
@@ -48,6 +50,8 @@
     "@eco-agent/cordis": "workspace:~"
   },
   "devDependencies": {
+    "@eco-agent/dsh-client-ui-layout": "workspace:*",
+    "@eco-agent/dsh-client-ui-sidebar": "workspace:*",
     "@eco-agent/dsh-api-remotes": "workspace:*",
     "@eco-agent/dsh-api-session-controller": "workspace:*",
     "@eco-agent/dsh-client-connection": "workspace:*",

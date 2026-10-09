@@ -38,6 +38,7 @@ import type { SkillEntry } from '@eco-agent/dsh-api-remotes/client'
 import type {} from '@eco-agent/dsh-api-session-controller/client'
 import type { SessionId } from '@eco-agent/dsh-session/types'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@eco-agent/dsh-client-ui-input-trigger/client'
+import type { MainPanelId } from '@eco-agent/dsh-client-ui-layout/client'
 import { fileAddressFor } from '@eco-agent/dsh-util-workspace-path'
 import { rankByName } from '@eco-agent/dsh-client-ui-primitives'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
@@ -45,6 +46,9 @@ import type {} from '@eco-agent/dsh-client-locale/client'
 // Type-only: pulls the SlotRegistry service merge (ctx.slots).
 import type {} from '@eco-agent/dsh-client-ui-renderer/client'
 import { SkillRow } from './SkillRow.tsx'
+import { SkillsCenterPage } from './SkillsCenterPage.tsx'
+import { SkillsPanelIcon } from './SkillsPanelIcon.tsx'
+import { SkillsShortcut } from './SkillsShortcut.tsx'
 import { en, NS, zh, type SkillKey } from './locales.ts'
 
 declare module '@eco-agent/dsh-api-session-controller/client' {
@@ -69,8 +73,14 @@ interface CatalogFetch {
   settled?: readonly SkillEntry[]
 }
 
-/** Required services: reference source faces plus the tool-row and locale registries. */
-export const inject = ['inputTriggers', 'sessions', 'slots', 'locale', 'remote', 'remote.skills', 'sidebarRight']
+/** eco 技能中心全局面板 id：main keyed slot 的 key，也是侧栏 panellist 条目 id。 */
+export const PANEL_ID = 'skills' as MainPanelId
+
+/**
+ * Required services: reference source faces plus the tool-row and locale registries,
+ * and layout (the skills panel navigation).
+ */
+export const inject = ['inputTriggers', 'sessions', 'slots', 'locale', 'remote', 'remote.skills', 'sidebarRight', 'layout']
 
 /**
  * Client plugin body: register the '/' source, dictionaries, and keyed tool row.
@@ -236,4 +246,36 @@ export function apply(ctx: ClientContext): void {
       clearAll()
     }
   }, 'ui-skill: source')
+
+  // eco 技能中心（S2）：浏览/调用侧的全局面板 + 侧栏席位 + 会话头直达。
+  // 8088 工作台仍负责上传/审核/广场；3081 只浏览与取调用命令。
+  // 面板与 chip 共用 fetchCatalog 的 per-session 单飞缓存——斜杠菜单预热后零额外 RPC。
+  ctx.slots.inject('main', function* () {
+    yield ctx.slots.register({
+      name: 'main',
+      key: PANEL_ID,
+      locale: NS,
+      inject: () => ({
+        fetchCatalog: (sessionId: SessionId) => fetchCatalog(sessionId).promise,
+      }),
+    }, SkillsCenterPage)
+  })
+  ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
+    name: 'sidebar.panellist',
+    id: PANEL_ID,
+    // After the plugins entry: skills browse sits one seat below plugin management.
+    order: 1,
+    label: () => t('panel.title'),
+    locale: NS,
+  }, SkillsPanelIcon))
+  ctx.slots.inject(
+    'conversation.session.header.actions',
+    () => ctx.slots.register({
+      name: 'conversation.session.header.actions',
+      id: 'skills-shortcut',
+      order: 22,
+      locale: NS,
+      inject: () => ({ openSkills: () => ctx.layout.selectPanel(PANEL_ID) }),
+    }, SkillsShortcut),
+  )
 }

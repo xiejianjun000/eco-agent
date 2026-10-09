@@ -36,6 +36,9 @@
       "path": "../ui-input-trigger"
     },
     {
+      "path": "../ui-layout"
+    },
+    {
       "path": "../ui-slots"
     },
     {

@@ -1,0 +1,144 @@
+/* Skills center page: a centred column with its header and the skill cards. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  box-sizing: border-box;
+  height: 100%;
+  overflow: auto;
+  /* Inline and bottom insets only: the 28px top inset belongs to the head row,
+     mirroring the plugin manager page shell. */
+  padding: 0 clamp(24px, 4vw, 48px) 48px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.root > * {
+  width: 100%;
+  max-width: 960px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  box-sizing: border-box;
+  padding-top: 28px;
+}
+
+:global([data-platform='darwin']) .header {
+  padding-top: calc(28px + var(--dsh-frame-top-clearance, 0px));
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 28px;
+}
+
+.titleIcon {
+  flex: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.count {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid var(--dsw-alias-separator-secondary);
+  border-radius: 10px;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.name {
+  overflow: hidden;
+  font-family: var(--dsw-font-mono, ui-monospace, monospace);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy {
+  flex: none;
+  margin-left: auto;
+  padding: 2px 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--dsw-alias-fill-secondary, transparent);
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.copy:hover {
+  color: var(--dsw-alias-label-primary);
+}
+
+.description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.whenToUse {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 48px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.notice p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.noticeIcon {
+  flex: none;
+}
+
+.noticeError {
+  color: var(--dsw-alias-label-danger, var(--dsw-alias-label-primary));
+}
