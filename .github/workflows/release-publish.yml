@@ -55,13 +55,13 @@ jobs:
       - name: Verify release version
         env:
           RELEASE_PUBLISH: 'true'
-        run: pnpm run release:verify --family dsh
+        run: pnpm run release:verify --family eco
 
       - name: Build
         run: pnpm run build:official
 
       - name: Pack release tarballs
-        run: pnpm run release:pack --family dsh --out dist/npm
+        run: pnpm run release:pack --family eco --out dist/npm
 
       # The harness packages declare the vendored framework as a peer, and this
       # verification must not depend on the registry already carrying matching
@@ -80,7 +80,7 @@ jobs:
           pnpm --dir native/system/packages/entry pack --pack-destination "$PWD/dist/npm-landlock"
 
       - name: Verify packed install
-        run: pnpm run release:verify-packed-install --family dsh --from dist/npm --from dist/npm-vendor --from dist/npm-landlock
+        run: pnpm run release:verify-packed-install --family eco --from dist/npm --from dist/npm-vendor --from dist/npm-landlock
 
       - uses: actions/upload-artifact@v4
         with:
@@ -128,4 +128,4 @@ jobs:
       - name: Publish tarballs
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm run release:publish --family dsh --from dist/npm
+        run: pnpm run release:publish --family eco --from dist/npm

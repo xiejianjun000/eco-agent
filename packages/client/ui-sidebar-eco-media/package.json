@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-sidebar-eco-media",
   "description": "eco Agent 右侧栏媒体预览：视频 / 音频文件在文档预览器内直接播放（注册为文件扩展名渲染器，可插可拔）",
-  "version": "0.1.7-alpha.2",
+  "version": "0.2.0-rc.2",
   "publishConfig": {
     "access": "public"
   },

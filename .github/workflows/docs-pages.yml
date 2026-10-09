@@ -62,7 +62,7 @@ jobs:
       - name: Verify release version
         env:
           RELEASE_PUBLISH: 'true'
-        run: pnpm run release:verify --family dsh
+        run: pnpm run release:verify --family eco
 
       - name: Configure Pages
         id: pages

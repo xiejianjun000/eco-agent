@@ -48,6 +48,25 @@ their batches to **`main` of the fork** (`origin = xiejianjun000/eco-agent.git`)
   SSH `Broken pipe`). Plus `git config core.sshCommand "ssh -o ServerAliveInterval=30 -o
   ServerAliveCountMax=10"`.
 
+## Release versioning policy (ratified 2026-10-09)
+
+The fork releases **independently of upstream** — it does not follow the upstream `dsh-v*`
+version line.
+
+- **No release yet.** The version is **TBD**; no `eco-v*` tag has been cut.
+- **Release family id:** `eco` (`EcoFamily` in `scripts/release/families.ts`), run via
+  `pnpm run release:eco` (`bump.ts --family eco`).
+- **Tag prefix:** `eco-v` (e.g. `eco-v0.1.0`). The `dsh-v` prefix is upstream lineage only and
+  is kept where it names upstream history: persistence/doc-standard key namespaces,
+  verify-concrete-terms fixtures, the provenance tag `dsh-v0.2.0-rc.2`, and CI failover
+  variable names (`DSH_CI_FAILOVER_LINUX`).
+- **Upstream baseline (provenance):** `dsh-v0.2.0-rc.2` @ `639ed015397290b3745d163aafe02ffee4aa3f84`
+  on the `vendor/dsh` tracking branch (see above).
+- **Family version coherence:** every `@eco-agent/dsh*` workspace member shares the root
+  `package.json` version (enforced by `checkEcoFamilyVersion`); all members are currently
+  aligned at `0.2.0-rc.2` (inherited baseline, not a release claim).
+- Model IDs, wire identities, and `.agents/notes/**` are out of scope for the family rename.
+
 ## References
 
 - upstream remote: `git@github.com:deepseek-ai/deepseek-harness.git`

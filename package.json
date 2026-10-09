@@ -193,7 +193,7 @@
     "doc-sync": "tsx scripts/run-gates.ts doc-sync",
     "hygiene": "tsx scripts/run-gates.ts hygiene",
     "publish:npm-baseline": "tsx scripts/publish-npm-baseline.ts",
-    "release:dsh": "tsx scripts/release/bump.ts --family dsh",
+    "release:eco": "tsx scripts/release/bump.ts --family eco",
     "release:vendor": "tsx scripts/release/bump.ts --family vendor",
     "release:verify": "tsx scripts/release/verify.ts",
     "release:pack": "tsx scripts/release/pack.ts",

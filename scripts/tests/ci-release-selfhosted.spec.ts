@@ -72,11 +72,11 @@ const fallbackCases: Array<[string, Record<string, string | boolean>]> = [
   ['Dependabot PR actor', { ...trustedPr, 'github.actor': 'dependabot[bot]' }],
   ['Dependabot push actor', { ...trustedPush, 'github.actor': 'dependabot[bot]' }],
   ['non-master push', { ...trustedPush, 'github.ref': 'refs/heads/topic' }],
-  ['tag push', { ...trustedPush, 'github.ref': 'refs/tags/dsh-v1.0.0' }],
+  ['tag push', { ...trustedPush, 'github.ref': 'refs/tags/eco-v1.0.0' }],
   ['push in another repository', { ...trustedPush, 'github.repository': 'outsider/fork' }],
   ['dispatch on master', { ...trustedPush, 'github.event_name': 'workflow_dispatch' }],
   ['dispatch on topic', { ...trustedPush, 'github.event_name': 'workflow_dispatch', 'github.ref': 'refs/heads/topic' }],
-  ['dispatch on tag', { ...trustedPush, 'github.event_name': 'workflow_dispatch', 'github.ref': 'refs/tags/dsh-v1.0.0' }],
+  ['dispatch on tag', { ...trustedPush, 'github.event_name': 'workflow_dispatch', 'github.ref': 'refs/tags/eco-v1.0.0' }],
   ['pull_request_target', { ...trustedPr, 'github.event_name': 'pull_request_target' }],
   ['missing PR payload', { ...trustedPush, 'github.event_name': 'pull_request' }],
 ]
@@ -142,14 +142,14 @@ for (const [file, jobIds] of [['release.yml', ['dependencies', 'pack']], ['relea
             expect(commands).toContain('pnpm run verify-package-dependencies')
             expect(commands).toContain('pnpm run verify-npm-install-layout')
           } else {
-            const family = file === 'release.yml' ? 'dsh' : 'vendor'
-            const output = family === 'dsh' ? 'dist/npm' : 'dist/npm-vendor'
+            const family = file === 'release.yml' ? 'eco' : 'vendor'
+            const output = family === 'eco' ? 'dist/npm' : 'dist/npm-vendor'
             expect(job.steps[0]?.with?.['fetch-depth']).toBe(0)
             expect(commands).toContain('pnpm run release:verify --family ' + family)
-            expect(commands).toContain('pnpm run ' + (family === 'dsh' ? 'build:official' : 'build:lib:host'))
+            expect(commands).toContain('pnpm run ' + (family === 'eco' ? 'build:official' : 'build:lib:host'))
             expect(commands).toContain('pnpm run release:pack --family ' + family + ' --out ' + output + ' --concurrency 8')
             expect(commands).toContain('pnpm run release:verify-packed-install --family ' + family + ' --from ' + output
-              + (family === 'dsh' ? ' --from dist/npm-vendor --from dist/npm-landlock' : ''))
+              + (family === 'eco' ? ' --from dist/npm-vendor --from dist/npm-landlock' : ''))
             expect(job.steps.at(-1)).toMatchObject({ uses: 'actions/upload-artifact@v4', with: { path: output + '/*', 'retention-days': 7 } })
           }
           expect(JSON.stringify(job)).not.toMatch(/secrets\.|release:publish|npm-publish/)

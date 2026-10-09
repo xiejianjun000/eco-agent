@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-settings-eco-permission",
   "description": "eco Agent「权限与审批」设置页：新会话默认权限预设",
-  "version": "0.1.7-alpha.2",
+  "version": "0.2.0-rc.2",
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",

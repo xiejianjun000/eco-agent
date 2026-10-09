@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-sidebar-eco-tabactions",
   "description": "eco Agent 右侧栏 tab 内容动作：复制文件路径 / 复制文件名 / 在文件管理器中显示（挂 tab 动作菜单，可插可拔）",
-  "version": "0.1.7-alpha.2",
+  "version": "0.2.0-rc.2",
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",

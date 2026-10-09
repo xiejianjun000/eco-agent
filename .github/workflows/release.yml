@@ -143,7 +143,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify release version
-        run: pnpm run release:verify --family dsh
+        run: pnpm run release:verify --family eco
 
       - name: Build
         run: pnpm run build:official
@@ -151,7 +151,7 @@ jobs:
       # Concurrency here is rehearsal-only: the credentialed publish workflows
       # invoke release:pack without the flag and keep the strictly serial path.
       - name: Pack release tarballs
-        run: pnpm run release:pack --family dsh --out dist/npm --concurrency 8
+        run: pnpm run release:pack --family eco --out dist/npm --concurrency 8
 
       # The harness packages declare the vendored framework as a peer, and this
       # verification must not depend on the registry already carrying matching
@@ -170,7 +170,7 @@ jobs:
           pnpm --dir native/system/packages/entry pack --pack-destination "$PWD/dist/npm-landlock"
 
       - name: Verify packed install
-        run: pnpm run release:verify-packed-install --family dsh --from dist/npm --from dist/npm-vendor --from dist/npm-landlock
+        run: pnpm run release:verify-packed-install --family eco --from dist/npm --from dist/npm-vendor --from dist/npm-landlock
 
       - uses: actions/upload-artifact@v4
         with:

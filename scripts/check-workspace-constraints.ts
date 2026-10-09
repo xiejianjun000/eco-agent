@@ -54,7 +54,7 @@ const publishedRepositoryUrl = 'git+https://github.com/xiejianjun000/eco-agent.g
 /** Packages that participate in the experimental policy. */
 const experimentalPackageDirectory = /^packages\/experimental\/[^/]+$/
 /** npm namespace reserved for experimental packages. */
-const experimentalPackageNamePrefix = '@deepseek-ai/dsh-experimental-'
+const experimentalPackageNamePrefix = '@eco-agent/dsh-experimental-'
 /** Ordinary directories whose packages this repository publishes: one release member each. */
 const standardReleaseMemberDirectory = /^(?:packages\/(?!experimental\/)[^/]+\/[^/]+|apps\/(?!desktop(?:-host)?$)[^/]+|vendor\/[^/]+)$/
 /** Installable application assembled by electron-builder rather than published to npm. */
@@ -358,19 +358,19 @@ function isReleaseMemberDirectory(dir: string): boolean {
 /**
  * Require a dsh-family manifest to carry the workspace version.
  *
- * The dsh release sequence publishes packages/ and apps/ members and every
- * private dsh package on one shared version, written by `release:dsh` and
+ * The eco release sequence publishes packages/ and apps/ members and every
+ * private eco package on one shared version, written by `release:eco` and
  * shared with the workspace root. This name test is that boundary: it covers
  * the family wherever the manifest lives, so apps/ members cannot drift with
  * only the release lane noticing.
  * @param manifest - the workspace package manifest.
- * @param expected - the version every dsh-family manifest must carry (the root's).
+ * @param expected - the version every eco-family manifest must carry (the root's).
  * @returns one violation naming the manifest and the expected version, or
  * undefined when the manifest is compliant or not in the family.
  */
-export function checkDshFamilyVersion(manifest: PackageManifest, expected: string | undefined): string | undefined {
+export function checkEcoFamilyVersion(manifest: PackageManifest, expected: string | undefined): string | undefined {
   const name = manifest.name
-  if (name !== '@eco-agent/dsh' && name?.startsWith('@deepseek-ai/dsh-') !== true) return undefined
+  if (name !== '@eco-agent/dsh' && name?.startsWith('@eco-agent/dsh-') !== true) return undefined
   if (manifest.version !== expected) {
     return `${name}: package.json version must match root version ${expected ?? '(missing)'}`
   }
@@ -378,14 +378,14 @@ export function checkDshFamilyVersion(manifest: PackageManifest, expected: strin
 }
 
 /**
- * Check one workspace manifest against publication and dsh-package policy.
+ * Check one workspace manifest against publication and eco-package policy.
  * @param workspace - package directory and parsed manifest.
  * @returns path-qualified policy violations.
  */
 export function checkWorkspaceManifest({ dir, manifest }: WorkspaceManifest): string[] {
   const errors = checkExperimentalManifest({ dir, manifest })
   const label = manifest.name ?? dir
-  const familyVersionError = checkDshFamilyVersion(manifest, repositoryVersion)
+  const familyVersionError = checkEcoFamilyVersion(manifest, repositoryVersion)
   if (familyVersionError !== undefined) errors.push(familyVersionError)
   const isNativePackageDir = dir.startsWith('native/system/packages/')
   const isPublicNativePackage = isNativePackageDir
@@ -412,7 +412,7 @@ export function checkWorkspaceManifest({ dir, manifest }: WorkspaceManifest): st
     //
     // Access is per release sequence, not per scope: the vendored framework and
     // the Landlock packages publish publicly because outside consumers install
-    // them, and the dsh family published publicly with its own sequence on
+    // them, and the eco family published publicly with its own sequence on
     // 2026-08-13. No publish path passes `--access`; each packed manifest declares
     // it, and this gate requires every release member to be public.
     if (manifest.private === true) {
@@ -461,7 +461,7 @@ export function checkWorkspaceManifest({ dir, manifest }: WorkspaceManifest): st
     }
   }
 
-  if (dir.startsWith('packages/') && manifest.name?.startsWith('@deepseek-ai/dsh-')) {
+  if (dir.startsWith('packages/') && manifest.name?.startsWith('@eco-agent/dsh-')) {
     const peer = manifest.peerDependencies?.['@eco-agent/cordis']
     const dev = manifest.devDependencies?.['@eco-agent/cordis']
 
@@ -534,7 +534,7 @@ function checkHierarchyShape(): string[] {
 }
 
 function checkRepositoryVersion(): string[] {
-  // The root carries the dsh release family's version, so a prerelease such as
+  // The root carries the eco release family's version, so a prerelease such as
   // 0.0.1-rc.1 is a valid state between `release:dsh` and its publication.
   if (repositoryVersion && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(repositoryVersion)) return []
   return ['package.json: version must be X.Y.Z with an optional prerelease segment']
@@ -595,7 +595,7 @@ export function checkWorkspaceProtocol(manifests: readonly WorkspaceManifest[]):
     for (const section of dependencySections) {
       for (const [name, range] of Object.entries(manifest[section] ?? {})) {
         if (!members.has(name)) continue
-        const expected = name === '@eco-agent/dsh' || name.startsWith('@deepseek-ai/dsh-')
+        const expected = name === '@eco-agent/dsh' || name.startsWith('@eco-agent/dsh-')
           ? 'workspace:*'
           : vendors.has(name) ? 'workspace:~' : undefined
         if (expected !== undefined ? range === expected : range.startsWith('workspace:')) continue

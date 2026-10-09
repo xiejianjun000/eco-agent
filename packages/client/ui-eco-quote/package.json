@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-eco-quote",
   "description": "eco Agent 引用到输入框：选中任意页面文本即浮出「引用」按钮，点击把选中内容以引用块追加进当前会话草稿（可插可拔）",
-  "version": "0.1.7-alpha.2",
+  "version": "0.2.0-rc.2",
   "publishConfig": {
     "access": "public"
   },

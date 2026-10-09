@@ -9,7 +9,7 @@ import {
   PRIVATE_EXPERIMENTAL_PACKAGE_DIRECTORIES,
 } from './experimental-package-policy.ts'
 import {
-  checkDshFamilyVersion,
+  checkEcoFamilyVersion,
   checkWorkspaceManifest,
   checkWorkspaceProtocol,
   checkExperimentalDependencyIsolation,
@@ -22,13 +22,13 @@ import {
 const experimental = {
   dir: 'packages/experimental/prototype',
   manifest: {
-    name: '@deepseek-ai/dsh-experimental-prototype',
+    name: '@eco-agent/dsh-experimental-prototype',
     publishConfig: { access: 'public' },
   },
 } satisfies WorkspaceManifest
 
 describe('workspace dependency ranges', () => {
-  const dependency = { dir: 'packages/core/runtime', manifest: { name: '@deepseek-ai/dsh-runtime' } }
+  const dependency = { dir: 'packages/core/runtime', manifest: { name: '@eco-agent/dsh-runtime' } }
   const cli = { dir: 'apps/cli', manifest: { name: '@eco-agent/dsh' } }
   const vendor = { dir: 'vendor/cordis', manifest: { name: '@eco-agent/cordis' } }
   const native = { dir: 'native/system', manifest: { name: '@eco-agent/node-addon-system' } }
@@ -48,7 +48,7 @@ describe('workspace dependency ranges', () => {
         })
         const check = (name: string, range: string): string[] =>
           checkWorkspaceProtocol([dependency, cli, vendor, native, platform, unrelated, consumer(name, range)])
-        for (const name of ['@eco-agent/dsh', '@deepseek-ai/dsh-runtime']) {
+        for (const name of ['@eco-agent/dsh', '@eco-agent/dsh-runtime']) {
           expect(check(name, 'workspace:*')).toEqual([])
           for (const range of ['workspace:^', 'workspace:~', 'workspace:^0.1.7', '^0.1.7', '*']) {
             expect(check(name, range)).toEqual([
@@ -88,13 +88,13 @@ describe('workspace manifest discovery', () => {
     for (const dir of [...consumers, 'tools/excluded', 'unlisted/probe', 'packages/core/runtime']) {
       mkdirSync(join(root, dir), { recursive: true })
       writeFileSync(join(root, dir, 'package.json'), JSON.stringify(dir === 'packages/core/runtime'
-        ? { name: '@deepseek-ai/dsh-runtime' }
-        : { dependencies: { '@deepseek-ai/dsh-runtime': 'workspace:^' } }))
+        ? { name: '@eco-agent/dsh-runtime' }
+        : { dependencies: { '@eco-agent/dsh-runtime': 'workspace:^' } }))
     }
     const manifests = readWorkspaceManifests(root)
     expect(manifests.map(entry => entry.dir).sort()).toEqual([...consumers, 'packages/core/runtime'].sort())
     expect(checkWorkspaceProtocol(manifests).sort()).toEqual(consumers.map(dir =>
-      `${dir}: dependencies.@deepseek-ai/dsh-runtime must use workspace:*, got workspace:^`).sort())
+      `${dir}: dependencies.@eco-agent/dsh-runtime must use workspace:*, got workspace:^`).sort())
   })
 
   it.each(['', 'null', '{}', 'packages: []', 'packages: [false]', 'packages: [""]', 'packages: wrong'])(
@@ -118,9 +118,9 @@ describe('experimental workspace constraints', () => {
   it('requires the experimental package-name prefix', () => {
     expect(checkExperimentalManifest({
       ...experimental,
-      manifest: { ...experimental.manifest, name: '@deepseek-ai/dsh-prototype' },
+      manifest: { ...experimental.manifest, name: '@eco-agent/dsh-prototype' },
     })).toEqual([
-      '@deepseek-ai/dsh-prototype: experimental package name must start with "@deepseek-ai/dsh-experimental-"',
+      '@eco-agent/dsh-prototype: experimental package name must start with "@eco-agent/dsh-experimental-"',
     ])
   })
 
@@ -130,8 +130,8 @@ describe('experimental workspace constraints', () => {
       ...experimental,
       manifest: { name: experimental.manifest.name, private: true },
     })).toEqual([
-      '@deepseek-ai/dsh-experimental-prototype: public experimental package must not set "private": true',
-      '@deepseek-ai/dsh-experimental-prototype: public experimental package must set publishConfig.access to "public"',
+      '@eco-agent/dsh-experimental-prototype: public experimental package must not set "private": true',
+      '@eco-agent/dsh-experimental-prototype: public experimental package must set publishConfig.access to "public"',
     ])
   })
 
@@ -170,28 +170,28 @@ describe('experimental workspace constraints', () => {
       expect(checkExperimentalDependencyIsolation([experimental, {
         dir: 'packages/core/consumer',
         manifest: {
-          name: '@deepseek-ai/dsh-consumer',
-          [section]: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
+          name: '@eco-agent/dsh-consumer',
+          [section]: { '@eco-agent/dsh-experimental-prototype': 'workspace:^' },
         },
       }])).toEqual([
-        `@deepseek-ai/dsh-consumer: ${section}.@deepseek-ai/dsh-experimental-prototype must not reference an experimental package`,
+        `@eco-agent/dsh-consumer: ${section}.@eco-agent/dsh-experimental-prototype must not reference an experimental package`,
       ])
     },
   )
 
   it('allows the dsh installation to ship the optional bundles the launcher names, and nothing else experimental', () => {
-    const listed = { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' }
+    const listed = { '@eco-agent/dsh-experimental-prototype': 'workspace:^' }
     const installation = { dir: 'apps/cli', manifest: { name: '@eco-agent/dsh', dependencies: listed } } satisfies WorkspaceManifest
-    expect(checkExperimentalDependencyIsolation([experimental, installation], ['@deepseek-ai/dsh-experimental-prototype'])).toEqual([])
+    expect(checkExperimentalDependencyIsolation([experimental, installation], ['@eco-agent/dsh-experimental-prototype'])).toEqual([])
     expect(checkExperimentalDependencyIsolation([experimental, installation], [])).toEqual([
-      '@eco-agent/dsh: dependencies.@deepseek-ai/dsh-experimental-prototype must not reference an experimental package',
+      '@eco-agent/dsh: dependencies.@eco-agent/dsh-experimental-prototype must not reference an experimental package',
     ])
     // Only a plain dependency edge is offered; a peer would make the bundle a requirement of every consumer.
     expect(checkExperimentalDependencyIsolation([experimental, {
       dir: 'apps/cli',
       manifest: { name: '@eco-agent/dsh', peerDependencies: listed },
-    }], ['@deepseek-ai/dsh-experimental-prototype'])).toEqual([
-      '@eco-agent/dsh: peerDependencies.@deepseek-ai/dsh-experimental-prototype must not reference an experimental package',
+    }], ['@eco-agent/dsh-experimental-prototype'])).toEqual([
+      '@eco-agent/dsh: peerDependencies.@eco-agent/dsh-experimental-prototype must not reference an experimental package',
     ])
   })
 
@@ -199,58 +199,58 @@ describe('experimental workspace constraints', () => {
     const manifests: WorkspaceManifest[] = [experimental, {
       dir: 'packages/core/test-only',
       manifest: {
-        name: '@deepseek-ai/dsh-test-only',
-        devDependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
+        name: '@eco-agent/dsh-test-only',
+        devDependencies: { '@eco-agent/dsh-experimental-prototype': 'workspace:^' },
       },
     }, {
       dir: 'packages/experimental/consumer',
       manifest: {
-        name: '@deepseek-ai/dsh-experimental-consumer',
-        dependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
+        name: '@eco-agent/dsh-experimental-consumer',
+        dependencies: { '@eco-agent/dsh-experimental-prototype': 'workspace:^' },
       },
     }, {
       dir: 'python/sdk-runtime',
       manifest: {
-        name: '@deepseek-ai/dsh-python-runtime',
-        dependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
+        name: '@eco-agent/dsh-python-runtime',
+        dependencies: { '@eco-agent/dsh-experimental-prototype': 'workspace:^' },
       },
     }]
 
     expect(checkExperimentalDependencyIsolation(manifests)).toEqual([
-      '@deepseek-ai/dsh-python-runtime: dependencies.@deepseek-ai/dsh-experimental-prototype must not reference an experimental package',
+      '@eco-agent/dsh-python-runtime: dependencies.@eco-agent/dsh-experimental-prototype must not reference an experimental package',
     ])
   })
 })
 
-describe('dsh family version coherence', () => {
+describe('eco family version coherence', () => {
   it('rejects a package carrying a stale shared version', () => {
-    expect(checkDshFamilyVersion(
+    expect(checkEcoFamilyVersion(
       { name: '@eco-agent/dsh-http-proxy', version: '0.1.2-alpha.5' },
       '0.1.2-rc.1',
     )).toBe('@eco-agent/dsh-http-proxy: package.json version must match root version 0.1.2-rc.1')
   })
 
   it('rejects the root-named CLI app on a stale shared version', () => {
-    expect(checkDshFamilyVersion(
+    expect(checkEcoFamilyVersion(
       { name: '@eco-agent/dsh', version: '0.1.2-alpha.5' },
       '0.1.2-rc.1',
     )).toBe('@eco-agent/dsh: package.json version must match root version 0.1.2-rc.1')
   })
 
   it('accepts a manifest carrying the shared version', () => {
-    expect(checkDshFamilyVersion(
+    expect(checkEcoFamilyVersion(
       { name: '@eco-agent/dsh-http-proxy', version: '0.1.2-rc.1' },
       '0.1.2-rc.1',
     )).toBeUndefined()
   })
 
   it('leaves other sequences to their own version lines', () => {
-    expect(checkDshFamilyVersion({ name: '@eco-agent/cordis', version: '4.0.1' }, '0.1.2-rc.1')).toBeUndefined()
-    expect(checkDshFamilyVersion(
+    expect(checkEcoFamilyVersion({ name: '@eco-agent/cordis', version: '4.0.1' }, '0.1.2-rc.1')).toBeUndefined()
+    expect(checkEcoFamilyVersion(
       { name: '@eco-agent/node-addon-system', version: '0.1.1' },
       '0.1.2-rc.1',
     )).toBeUndefined()
-    expect(checkDshFamilyVersion({ version: '0.1.2-alpha.5' }, '0.1.2-rc.1')).toBeUndefined()
+    expect(checkEcoFamilyVersion({ version: '0.1.2-alpha.5' }, '0.1.2-rc.1')).toBeUndefined()
   })
 })
 
@@ -277,7 +277,7 @@ describe('package payload constraints', () => {
     { exports: { './locale/*.json': './locale/*.json', './search/locale/*.json': './locale/*.json' }, resources: ['locale/*.json'] },
     { exports: { './search/locale/*.json': './z/*.json', './locale/*.json': './a/*.json' }, resources: ['a/*.json', 'z/*.json'] },
   ])('includes declared locale resources in the canonical payload: $exports', ({ exports, resources }) => {
-    expect(expectedDshPackageFiles({ name: '@deepseek-ai/dsh-localized', exports })).toEqual([
+    expect(expectedDshPackageFiles({ name: '@eco-agent/dsh-localized', exports })).toEqual([
       ...resources, 'lib/index.js', 'lib/types/**/*.d.ts',
     ])
   })
@@ -316,7 +316,7 @@ describe('package payload constraints', () => {
 
   it('includes a declared profile patch without a package-name allowlist', () => {
     expect(expectedDshPackageFiles({
-      name: '@deepseek-ai/dsh-private-profile',
+      name: '@eco-agent/dsh-private-profile',
       dsh: { bundle: { patch: './cordis.patch.yml' } },
     })).toEqual([
       'lib/index.js',
@@ -324,7 +324,7 @@ describe('package payload constraints', () => {
       'lib/types/**/*.d.ts',
     ])
     expect(expectedDshPackageFiles({
-      name: '@deepseek-ai/dsh-private-profile',
+      name: '@eco-agent/dsh-private-profile',
       dsh: { bundle: { patch: ['./cordis.patch.yml', './layers/web.patch.yml'] } },
     })).toEqual([
       'lib/index.js',

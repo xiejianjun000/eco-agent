@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-sidebar-eco-editor",
   "description": "Right-Sidebar document editor: edit a workspace file's whole text in place and save it through the ecoWorkspaceWrite write channel",
-  "version": "0.1.7-alpha.2",
+  "version": "0.2.0-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -42,6 +42,9 @@
   },
   "license": "MIT",
   "dependencies": null,
+  "peerDependencies": {
+    "@eco-agent/cordis": "workspace:^"
+  },
   "devDependencies": {
     "@eco-agent/cordis": "workspace:^",
     "@eco-agent/dsh-api-eco-workspace-write": "workspace:^",

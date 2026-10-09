@@ -55,7 +55,7 @@ async function main(): Promise<void> {
     options: { family: { type: 'string' }, out: { type: 'string' }, concurrency: { type: 'string' } },
     allowPositionals: false,
   })
-  if (values.family === undefined) throw new Error('usage: pack.ts --family <dsh|vendor> [--out dist/npm] [--concurrency 1]')
+  if (values.family === undefined) throw new Error('usage: pack.ts --family <eco|vendor> [--out dist/npm] [--concurrency 1]')
   const concurrency = parseConcurrency(values.concurrency)
 
   const family = releaseFamily(values.family)

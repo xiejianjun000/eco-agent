@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-api-eco-workspace-write",
   "description": "Guarded workspace write channel: whole-file text writes and literal edits confined to one Session's workspace root, over the ecoWorkspaceWrite Remote namespace",
-  "version": "0.1.7-alpha.2",
+  "version": "0.2.0-rc.2",
   "publishConfig": {
     "access": "public"
   },

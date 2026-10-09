@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-settings-eco-about",
   "description": "eco Agent「帮助与关于」设置页：文档、仓库、反馈入口",
-  "version": "0.1.7-alpha.2",
+  "version": "0.2.0-rc.2",
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",

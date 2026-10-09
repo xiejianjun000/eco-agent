@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-settings-eco-mcp",
   "description": "eco Agent「MCP 服务」设置页：远程 MCP 服务清单与真实连通状态（启用状态 + Fiber 阶段）",
-  "version": "0.1.7-alpha.2",
+  "version": "0.2.0-rc.2",
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",

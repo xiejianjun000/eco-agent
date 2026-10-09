@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-im-eco-feishu",
   "description": "eco Agent 飞书助手：把飞书（Lark）长连接桥接到 eco Agent，持久会话、/new、Markdown 回复、流式进度卡片、主动推送。",
-  "version": "0.1.7-alpha.2",
+  "version": "0.2.0-rc.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xiejianjun000/eco-agent.git",
