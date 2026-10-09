@@ -39,6 +39,7 @@
     "@eco-agent/dsh-client-locale": "workspace:*",
     "@eco-agent/dsh-client-test-runtime": "workspace:*",
     "@eco-agent/dsh-client-ui-conversation": "workspace:*",
+    "@eco-agent/dsh-client-ui-layout": "workspace:*",
     "@eco-agent/dsh-client-ui-primitives": "workspace:*",
     "@eco-agent/dsh-client-ui-renderer": "workspace:*",
     "@eco-agent/dsh-client-ui-session": "workspace:*",
@@ -59,6 +60,7 @@
         "@eco-agent/dsh-api-job-controller",
         "@eco-agent/dsh-client-locale",
         "@eco-agent/dsh-client-ui-conversation",
+        "@eco-agent/dsh-client-ui-layout",
         "@eco-agent/dsh-client-ui-primitives"
       ],
       "platform": "web"

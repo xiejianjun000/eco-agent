@@ -363,3 +363,13 @@
 .noticeError {
   color: var(--dsw-alias-state-error-primary);
 }
+
+/* eco 会话枢纽：空态引导行。 */
+.emptyHint {
+  padding: 10px 14px 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--dsh-text-secondary, #5a7a6e);
+  max-width: 320px;
+  white-space: normal;
+}

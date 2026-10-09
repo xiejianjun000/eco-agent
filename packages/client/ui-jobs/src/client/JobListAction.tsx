@@ -457,7 +457,31 @@ export function JobListAction({ sessionId, useJobs, watchRows, observe, killJob,
     })
   }
 
-  if (visibleCount === 0) return null
+  if (visibleCount === 0) {
+    return (
+      <div ref={rootRef} className={css.root}>
+        <button
+          ref={triggerRef}
+          type="button"
+          className={css.trigger}
+          aria-expanded={open}
+          aria-label={t('trigger.idle')}
+          onClick={() => { setOpen(current => !current) }}
+        >
+          <span className={css.count}>{t('trigger.idle')}</span>
+          <IconChevronDownOutlineRegular size={12} className={open ? css.triggerOpen : undefined} />
+        </button>
+        {open
+          ? (
+            <ul ref={menuRef} className={css.menu} style={{ left: menuShift }} aria-label={t('list.aria')}>
+              <li className={css.sectionHeader} aria-hidden="true">{t('empty.title')}</li>
+              <li className={css.emptyHint}>{t('empty.hint')}</li>
+            </ul>
+          )
+          : null}
+      </div>
+    )
+  }
 
   const countKey = liveRows.length > 0
     ? (liveRows.length === 1 ? 'count.live.one' : 'count.live.other')
