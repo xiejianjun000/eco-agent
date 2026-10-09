@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { SessionListState, SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { WorkspaceSnapshot, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionListState, SessionSummary } from '@eco-agent/dsh-api-session-controller/client'
+import type { WorkspaceSnapshot, WorkspaceView } from '@eco-agent/dsh-api-workspace-controller/client'
+import type { SessionId } from '@eco-agent/dsh-session/types'
 import { ArchivedSessionsSection } from '../src/client/ArchivedSessionsSection.tsx'
 import type { ArchivedSessionsSectionProps } from '../src/client/ArchivedSessionsSection.tsx'
 import { en, type ArchivedSessionsLocaleKey } from '../src/client/locales.ts'
@@ -28,13 +28,12 @@ function sessionState(sessions: readonly SessionSummary[], phase: SessionListSta
     ids: sessions.map(session => session.id),
     byId: Object.fromEntries(sessions.map(session => [session.id, session])),
     phase,
-    subagentsByParent: {},
-    jobsBySession: {},
+    projectionsBySession: {},
   }
 }
 
 function snapshot(archivedSessionIds: readonly string[], items: readonly WorkspaceView[] = []): WorkspaceSnapshot {
-  return { items, archivedSessionIds: archivedSessionIds.map(sid), state: 'idle', phase: 'ready', error: null }
+  return { items, archivedSessionIds: archivedSessionIds.map(sid), pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null }
 }
 
 function workspace(title: string, sessionIds: readonly string[]): WorkspaceView {
