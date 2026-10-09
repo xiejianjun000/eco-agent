@@ -46,3 +46,13 @@ worktrees/
 .agents/worktrees/
 .typert-*/
 native/system/test/bin/
+
+# tsc/tsdown 编译产物落在 src 相邻目录（可再生，勿随 git add -A 提交）
+packages/client/**/src/**/*.js
+packages/client/**/src/**/*.js.map
+packages/client/**/src/**/*.d.ts
+packages/client/**/src/**/*.d.ts.map
+packages/session/**/src/**/*.js
+packages/session/**/src/**/*.js.map
+packages/session/**/src/**/*.d.ts
+packages/session/**/src/**/*.d.ts.map
