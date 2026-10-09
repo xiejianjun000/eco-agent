@@ -23,6 +23,12 @@ peerDependencyRules:
   allowedVersions:
     typescript: '>=5 <7'
 
+# pnpm's auto `pnpm install` before `pnpm run` (verify-deps-before-run) probes
+# registry.npmjs.org for metadata even when the workspace is fully installed.
+# That probe hard-fails on this network and breaks the pre-push typecheck hook,
+# so the check is disabled: installs are run explicitly instead.
+verifyDepsBeforeRun: false
+
 # pnpm 10+ blocks any dependency shipping an install/build script until it is
 # explicitly reviewed here (strictDepBuilds defaults to true: an unlisted script
 # is a hard install error). Every such package MUST be listed; we deny by
