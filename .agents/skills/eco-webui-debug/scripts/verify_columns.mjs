@@ -76,24 +76,17 @@ function cdpSession(wsUrl) {
 
   await wait(3500) // 等页面加载 + 三栏运行时加载完成
 
-  const evalRes = await s.send('Runtime.evaluate', {
-    expression: `(function(){
-      var b = document.body ? document.body.innerText : '';
-      var els = Array.from(document.querySelectorAll('*'))
-        .filter(function(e){ return /col|side|main|panel|rightbar/i.test(e.className || ''); });
-      var cols = els
-        .map(function(e){ return { c: (e.className||'').toString().slice(0,24), n: (e.innerText||'').length }; })
-        .sort(function(a,b){ return b.n - a.n; })
-        .slice(0, 6);
-      return {
-        len: b.length,
-        hasExplore: /探索未至之境|描述你想要构建的内容|DeepSeek-V41/.test(b),
-        cols: cols
-      };
-    })())`,
-    returnByValue: true,
-  })
-  const v = evalRes.result && evalRes.result.value
+  const ev = async (expr) => {
+    const r = await s.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })
+    const outer = r.result || {}
+    if (outer.exceptionDetails) return undefined
+    const inner = outer.result || {}
+    return inner.value
+  }
+  const len = await ev('document.body ? document.body.innerText.length : 0')
+  const hasExplore = await ev("/探索未至之境|描述你想要构建的内容|DeepSeek-V41/.test(document.body ? document.body.innerText : '')")
+  const cols = (await ev("(function(){var els=Array.from(document.querySelectorAll('*')).filter(function(e){var cn=typeof e.className==='string'?e.className:'';return /col|side|main|panel|rightbar/i.test(cn);});return els.map(function(e){var cn=typeof e.className==='string'?e.className:'';return {c:cn.slice(0,24),n:(e.innerText||'').length};}).sort(function(a,b){return b.n-a.n;}).slice(0,6);})()")) || []
+  const v = { len: len || 0, hasExplore: !!hasExplore, cols: cols }
 
   console.log('--- eco web UI 验收报告 ---')
   console.log('body 文本长度      :', v && v.len)
