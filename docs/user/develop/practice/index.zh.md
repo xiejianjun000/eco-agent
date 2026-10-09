@@ -92,7 +92,7 @@ export interface MyCapResult {
 ```ts ignore-check
 // packages/my-cap/my-cap-local/src/index.ts
 import type { Context } from '@eco-agent/cordis'
-import { MyCapService, type MyCapRequest, type MyCapResult } from '@deepseek-ai/dsh-my-cap'
+import { MyCapService, type MyCapRequest, type MyCapResult } from '@eco-agent/dsh-my-cap'
 
 class MyCapLocal extends MyCapService {
   async execute(request: MyCapRequest): Promise<MyCapResult> {
@@ -140,8 +140,8 @@ export function apply(ctx: Context) {
 ### 在 cordis.yml 中组合
 
 ```yaml
-- name: '@deepseek-ai/dsh-my-cap-local'
-- name: '@deepseek-ai/dsh-tool-my-cap'
+- name: '@eco-agent/dsh-my-cap-local'
+- name: '@eco-agent/dsh-tool-my-cap'
 ```
 
 ## 设计要点

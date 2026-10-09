@@ -5,33 +5,33 @@
 /:
   en: f6377310e46f34e5
   zh: 55f00c64a61fb235
-/deepseek-ai-dsh-client-ui-settings-shell:
-  en: d38072750be19799
-  zh: 8e2a7f9aacf2d61d
-/deepseek-ai-dsh-client-ui-settings-shell/summary:
+/eco-agent-dsh-client-ui-settings-shell:
+  en: 7441ec3f7237a4a7
+  zh: d32a2f3a02a48676
+/eco-agent-dsh-client-ui-settings-shell/summary:
   en: 4a6764083793412e
   zh: f177136090ceee7e
-/deepseek-ai-dsh-client-ui-settings-shell/table-of-contents:
+/eco-agent-dsh-client-ui-settings-shell/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
-/deepseek-ai-dsh-client-ui-settings-shell/use-this-package:
+/eco-agent-dsh-client-ui-settings-shell/use-this-package:
   en: caaab79a5e1a76f6
   zh: 31dbcaaef71d4a0e
-/deepseek-ai-dsh-client-ui-settings-shell/understand-the-implementation:
+/eco-agent-dsh-client-ui-settings-shell/understand-the-implementation:
   en: 2c58855d6b1dfaa6
   zh: 6e5546f2edb07687
-/deepseek-ai-dsh-client-ui-settings-shell/further-exploration:
+/eco-agent-dsh-client-ui-settings-shell/further-exploration:
   en: 89337b623b8bf2f5
   zh: c73362e199061864
-/deepseek-ai-dsh-client-ui-settings-shell/model-experience:
+/eco-agent-dsh-client-ui-settings-shell/model-experience:
   en: 6b7c6f82ab6c8435
   zh: 4517689c899abcbe
-/deepseek-ai-dsh-client-ui-settings-shell/model-experience/kv-cache-effect:
+/eco-agent-dsh-client-ui-settings-shell/model-experience/kv-cache-effect:
   en: ca75c51c89c2c9b0
   zh: 6e1c9a8fdde89577
-/deepseek-ai-dsh-client-ui-settings-shell/known-limitations-and-deferred-work:
+/eco-agent-dsh-client-ui-settings-shell/known-limitations-and-deferred-work:
   en: 51c2778fb17f8d1d
   zh: 6425a598ba93833e
-/deepseek-ai-dsh-client-ui-settings-shell/known-limitations-and-deferred-work/dev-note:
+/eco-agent-dsh-client-ui-settings-shell/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: e88aeb617ffb74ea

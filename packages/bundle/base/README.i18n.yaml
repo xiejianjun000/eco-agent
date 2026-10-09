@@ -5,57 +5,57 @@
 /:
   en: 21c1b63e74134d34
   zh: 78c69828d5930a86
-/deepseek-ai-dsh-base:
-  en: 501b1b61d4739d2a
-  zh: 5faba14f2480be3b
-/deepseek-ai-dsh-base/summary:
+/eco-agent-dsh-base:
+  en: a9be4f0617b09407
+  zh: 8a5c1fffc09062d2
+/eco-agent-dsh-base/summary:
   en: 5c15f68a65aadc7d
   zh: 7ac9ace622e161ae
-/deepseek-ai-dsh-base/table-of-contents:
+/eco-agent-dsh-base/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
-/deepseek-ai-dsh-base/use-this-package:
+/eco-agent-dsh-base/use-this-package:
   en: 4c0d7045f95ff79c
   zh: 456bb24bd1d35db1
-/deepseek-ai-dsh-base/use-this-package/a-minimal-custom-profile:
-  en: 0f971f7ac7c09139
-  zh: ceb866da681c709c
-/deepseek-ai-dsh-base/use-this-package/what-you-get:
+/eco-agent-dsh-base/use-this-package/a-minimal-custom-profile:
+  en: de838f658af8ad06
+  zh: 27e814a7f4d02584
+/eco-agent-dsh-base/use-this-package/what-you-get:
   en: 7ee3a3def76e0ce6
   zh: b53b1fdc78cf0339
-/deepseek-ai-dsh-base/use-this-package/shell-tools-per-platform:
+/eco-agent-dsh-base/use-this-package/shell-tools-per-platform:
   en: 2dce12f82d6ee955
   zh: d4599eb899a3cd88
-/deepseek-ai-dsh-base/use-this-package/changing-the-defaults:
+/eco-agent-dsh-base/use-this-package/changing-the-defaults:
   en: 96a55abd5f7007dd
   zh: d94f020708c38a17
-/deepseek-ai-dsh-base/understand-the-implementation:
+/eco-agent-dsh-base/understand-the-implementation:
   en: 094cfca8e26a0042
   zh: de435e3e38420c01
-/deepseek-ai-dsh-base/understand-the-implementation/composition-mechanics:
+/eco-agent-dsh-base/understand-the-implementation/composition-mechanics:
   en: fd37bc66e39ac5e7
   zh: 1a039afb8bf2d517
-/deepseek-ai-dsh-base/understand-the-implementation/platform-gating:
-  en: 8c2444fa7b237783
-  zh: 82002a8b9ddf5942
-/deepseek-ai-dsh-base/understand-the-implementation/source-map:
+/eco-agent-dsh-base/understand-the-implementation/platform-gating:
+  en: 9ad02bc7dc68d7d3
+  zh: 2a4344b50c2c964d
+/eco-agent-dsh-base/understand-the-implementation/source-map:
   en: 3aaf655b9c93534b
   zh: 5a1b627cc6385a17
-/deepseek-ai-dsh-base/understand-the-implementation/invariant-ownership:
+/eco-agent-dsh-base/understand-the-implementation/invariant-ownership:
   en: 533299d7bd555e61
   zh: 0aed404f790ea447
-/deepseek-ai-dsh-base/further-exploration:
+/eco-agent-dsh-base/further-exploration:
   en: 39701b25b209fb67
   zh: 2b7ce98365f1ecfc
-/deepseek-ai-dsh-base/model-experience:
+/eco-agent-dsh-base/model-experience:
   en: f6c4d2609b5f4bb6
   zh: 869a9565a133fb01
-/deepseek-ai-dsh-base/model-experience/kv-cache-effect:
+/eco-agent-dsh-base/model-experience/kv-cache-effect:
   en: e6e907c99df7cd0a
   zh: f19f2f84a5f95177
-/deepseek-ai-dsh-base/known-limitations-and-deferred-work:
-  en: ce8558ab18184bf2
-  zh: 3b3fb98cf1bd4652
-/deepseek-ai-dsh-base/known-limitations-and-deferred-work/dev-note:
+/eco-agent-dsh-base/known-limitations-and-deferred-work:
+  en: 60df3254dcf1816a
+  zh: 2bb9b031e103ddd2
+/eco-agent-dsh-base/known-limitations-and-deferred-work/dev-note:
   en: ca037cb236aa841a
   zh: e06f3899be43b572

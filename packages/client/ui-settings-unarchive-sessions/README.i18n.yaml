@@ -1,40 +1,52 @@
 # Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
 # section, a hash of its English and Chinese blocks outside code blocks and generated regions.
 # After editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write packages/client/ui-settings-account/README.md
+#   pnpm run verify-translation-pairing --write packages/client/ui-settings-unarchive-sessions/README.md
 /:
-  en: 1fcba8f273b661fb
-  zh: 14e1236f84ae39d7
-/deepseek-ai-dsh-client-ui-settings-account:
-  en: 9ff7ac2d70f70b59
-  zh: ded522c4cfd6e040
-/deepseek-ai-dsh-client-ui-settings-account/summary:
-  en: 9ff357621753be69
-  zh: 3f7ede82acc9fa31
-/deepseek-ai-dsh-client-ui-settings-account/table-of-contents:
-  en: c26f81e8adf0128b
-  zh: e11ab371f51f66bc
-/deepseek-ai-dsh-client-ui-settings-account/use-this-package:
-  en: db54432d24abc9d9
-  zh: 55add79efabfae08
-/deepseek-ai-dsh-client-ui-settings-account/use-this-package/desktop-onboarding:
-  en: c1c4db71fd09ca13
-  zh: a40c0a01e9951945
-/deepseek-ai-dsh-client-ui-settings-account/understand-the-implementation:
-  en: 6b3ad3b6860100cf
-  zh: aeced4fb37642f15
-/deepseek-ai-dsh-client-ui-settings-account/further-exploration:
-  en: a28acdef21b1643a
-  zh: 5e2e357a6b716274
-/deepseek-ai-dsh-client-ui-settings-account/model-experience:
-  en: ee1df7ca3467ee3f
-  zh: 84904a5148da3862
-/deepseek-ai-dsh-client-ui-settings-account/model-experience/kv-cache-effect:
-  en: ca3015e252db0114
-  zh: ebca9253cf15e8e9
-/deepseek-ai-dsh-client-ui-settings-account/known-limitations-and-deferred-work:
-  en: 161a4d95bfdd5181
-  zh: b94c3e165e69d23b
-/deepseek-ai-dsh-client-ui-settings-account/known-limitations-and-deferred-work/dev-note:
-  en: 2facb0fc2e6c1a9c
-  zh: bd04803f5c9e132c
+  en: 9c4f193b4a7446e9
+  zh: 9e03c0ecf35410c0
+/eco-agent-dsh-client-ui-settings-unarchive-sessions:
+  en: c9e77a42d5fc437f
+  zh: 3803417fec808557
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/summary:
+  en: 8c95a9f635f0482e
+  zh: 93c557a88f421637
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/use-this-package:
+  en: a8ec4a40a1cf3ba9
+  zh: 166e356ec2946061
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/use-this-package/reading-a-row:
+  en: 5445c5c721b8db17
+  zh: 167ccf94c562ec95
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/use-this-package/restoring-a-session:
+  en: 00960eb756b7e659
+  zh: edcd2d869ec61f49
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/understand-the-implementation:
+  en: 3f8be000388c56e3
+  zh: 30edbe6915f5198c
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/understand-the-implementation/registration-and-data-sources:
+  en: 797fe2512150ef8f
+  zh: 26c26ebebd288527
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/understand-the-implementation/row-derivation:
+  en: b1085dd5b11f6493
+  zh: 7ab004a94b29f34c
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/understand-the-implementation/source-map:
+  en: 282c196c6771ed5b
+  zh: 44c0795cfb20100d
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/further-exploration:
+  en: 95663e8d633ea687
+  zh: 83394e6891701d87
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/model-experience:
+  en: 3120df665299c634
+  zh: 1d9f365d091d0d2a
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/model-experience/kv-cache-effect:
+  en: ca75c51c89c2c9b0
+  zh: de54f3467ef3b9be
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/known-limitations-and-deferred-work:
+  en: a5e85bc8f04a6f95
+  zh: 096b2fb4c52e4e43
+/eco-agent-dsh-client-ui-settings-unarchive-sessions/known-limitations-and-deferred-work/dev-note:
+  en: af8f1b3f61eb1bbb
+  zh: 89e8d125399d7b15

@@ -5,39 +5,39 @@
 /:
   en: 063a69d5d6281c07
   zh: 04562d2b1dd29590
-/deepseek-ai-dsh-client-ui-jobs:
-  en: faa1eecdc7f06930
-  zh: c6e7b06ccb434f0b
-/deepseek-ai-dsh-client-ui-jobs/summary:
+/eco-agent-dsh-client-ui-jobs:
+  en: 8db37097f6a5a3f0
+  zh: 09af78e5354ec7f0
+/eco-agent-dsh-client-ui-jobs/summary:
   en: b61245c057c1a924
   zh: 6013131975ece32e
-/deepseek-ai-dsh-client-ui-jobs/table-of-contents:
+/eco-agent-dsh-client-ui-jobs/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
-/deepseek-ai-dsh-client-ui-jobs/use-this-package:
+/eco-agent-dsh-client-ui-jobs/use-this-package:
   en: 60f6d05d870f6518
   zh: dddf3f532d828b78
-/deepseek-ai-dsh-client-ui-jobs/use-this-package/one-row-per-job:
+/eco-agent-dsh-client-ui-jobs/use-this-package/one-row-per-job:
   en: 2b0bb648937cd7b9
   zh: ce3104a27132ead5
-/deepseek-ai-dsh-client-ui-jobs/use-this-package/the-expanded-panel:
+/eco-agent-dsh-client-ui-jobs/use-this-package/the-expanded-panel:
   en: c34dad62fee63306
   zh: 167d9da7928a9488
-/deepseek-ai-dsh-client-ui-jobs/understand-the-implementation:
+/eco-agent-dsh-client-ui-jobs/understand-the-implementation:
   en: f6f5d497ab340b9e
   zh: 94832761177f12ca
-/deepseek-ai-dsh-client-ui-jobs/further-exploration:
+/eco-agent-dsh-client-ui-jobs/further-exploration:
   en: 01eaaecb5850f391
   zh: 2eabd14cde191ab8
-/deepseek-ai-dsh-client-ui-jobs/model-experience:
+/eco-agent-dsh-client-ui-jobs/model-experience:
   en: 84ad94ba940f17af
   zh: 0199b09d360df0d8
-/deepseek-ai-dsh-client-ui-jobs/model-experience/kv-cache-effect:
+/eco-agent-dsh-client-ui-jobs/model-experience/kv-cache-effect:
   en: 47f982e326fe77fd
   zh: 9f2be5c9af23d759
-/deepseek-ai-dsh-client-ui-jobs/known-limitations-and-deferred-work:
+/eco-agent-dsh-client-ui-jobs/known-limitations-and-deferred-work:
   en: 8be824a877852373
   zh: bf4ae00ee70273b5
-/deepseek-ai-dsh-client-ui-jobs/known-limitations-and-deferred-work/dev-note:
+/eco-agent-dsh-client-ui-jobs/known-limitations-and-deferred-work/dev-note:
   en: 2e50937c500fbfd6
   zh: 8b86762471d56dcc

@@ -6,14 +6,14 @@
   en: c8aa4d3384ea1306
   zh: 5aa030587d5b634d
 /vendored-package-rescope/name-mapping:
-  en: cc0f91dc4bb82605
-  zh: 81d5031752c6ea74
+  en: 717d1f8d4d3ee8dc
+  zh: ec45db0343be5fc6
 /vendored-package-rescope/what-the-rename-does-not-touch:
-  en: e781d7e1b46c0974
-  zh: 9796fb884c25d850
+  en: 5746b07d8319be32
+  zh: 18ed191b7453499a
 /vendored-package-rescope/what-your-code-has-to-change:
-  en: 50a48dfda6cea731
-  zh: 55028c5c04270eff
+  en: 6028acc54b963257
+  zh: 1f9262ba8aae8240
 /vendored-package-rescope/applying-verifying-and-reverting:
   en: 2a7f21e03e6cb4f7
   zh: dcf4172adf916fda

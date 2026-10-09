@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/im/im-eco-wechat/README.md
+/eco-agent-dsh-im-eco-wechat:
+  en: fa62423bbbd00338
+  zh: e099fb7efafa8328
+/eco-agent-dsh-im-eco-wechat/provenance:
+  en: 223f81ad9d93d2d1
+  zh: 13665740b62fe24b
+/eco-agent-dsh-im-eco-wechat/wiring-it-in:
+  en: 334fbecfd63e7a9f
+  zh: 4dcf259826ceaf51
+/eco-agent-dsh-im-eco-wechat/key-configuration:
+  en: 450f05211bf88a45
+  zh: e548784e150e97c9

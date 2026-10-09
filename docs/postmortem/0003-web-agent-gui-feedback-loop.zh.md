@@ -10,7 +10,7 @@ Web agent 修改了 GUI 源码，却不知道当前会话对应哪个 URL、由�
 
 ## 概述
 
-该会话运行在端口 3081 的 DeepSeek Harness Web GUI 中，而用户选择的 Workspace 是空的 `test/` 目录。模型请求既未指明该 GUI，也未提供它的源码检出目录、URL、进程或更新模式。仓库在 `apps/web` 中提供了 Vite 开发脚本，完整的浏览器组合则由 `dsh web` 提供。
+该会话运行在端口 3081 的 eco Agent Web GUI 中，而用户选择的 Workspace 是空的 `test/` 目录。模型请求既未指明该 GUI，也未提供它的源码检出目录、URL、进程或更新模式。仓库在 `apps/web` 中提供了 Vite 开发脚本，完整的浏览器组合则由 `dsh web` 提供。
 
 由此产生的各个动作单看都合理，却没有指向同一个验收目标。源码修改、成功构建、HTTP 200、注入的启动 manifest（元数据清单）和用户原本打开的页面，被当成了可以相互替代的事实。
 

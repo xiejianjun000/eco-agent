@@ -5,63 +5,63 @@
 /:
   en: 4a173bf52227a3b6
   zh: 76bb85595252765c
-/deepseek-ai-dsh-shell:
-  en: 607578ed1d9dbabe
-  zh: e6c674aad094f056
-/deepseek-ai-dsh-shell/summary:
+/eco-agent-dsh-shell:
+  en: 5b2ca8d40f6d268f
+  zh: e4c614c58ec6a128
+/eco-agent-dsh-shell/summary:
   en: bb40932744bc4b80
   zh: 22e2af1327b2f835
-/deepseek-ai-dsh-shell/table-of-contents:
+/eco-agent-dsh-shell/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
-/deepseek-ai-dsh-shell/use-this-package:
+/eco-agent-dsh-shell/use-this-package:
   en: b81fffe9eb713a49
   zh: ac37478e7f1f7499
-/deepseek-ai-dsh-shell/use-this-package/foreground-commands:
+/eco-agent-dsh-shell/use-this-package/foreground-commands:
   en: cf38f6bc0e150602
   zh: 2ff6cfb0ce48a7b8
-/deepseek-ai-dsh-shell/use-this-package/background-processes:
+/eco-agent-dsh-shell/use-this-package/background-processes:
   en: 277c543917453017
   zh: d2c100e37944f151
-/deepseek-ai-dsh-shell/use-this-package/deadlines-and-bounded-waits:
+/eco-agent-dsh-shell/use-this-package/deadlines-and-bounded-waits:
   en: 719b0708bf3cf1cf
   zh: 044f53d543960f42
-/deepseek-ai-dsh-shell/use-this-package/requests-and-resolved-specs:
+/eco-agent-dsh-shell/use-this-package/requests-and-resolved-specs:
   en: e104e13a7dae9491
   zh: 1b219491fabf780b
-/deepseek-ai-dsh-shell/use-this-package/choosing-and-composing-an-executor:
+/eco-agent-dsh-shell/use-this-package/choosing-and-composing-an-executor:
   en: ddcf8a0c7a45e8d3
   zh: e4ee99e2e27234fe
-/deepseek-ai-dsh-shell/use-this-package/the-shared-exit-status-contract:
+/eco-agent-dsh-shell/use-this-package/the-shared-exit-status-contract:
   en: f4125282c1deab36
   zh: 46b8ee789ae68a9a
-/deepseek-ai-dsh-shell/understand-the-implementation:
+/eco-agent-dsh-shell/understand-the-implementation:
   en: d2192b68c2faf92b
   zh: 7678a2fd356d8587
-/deepseek-ai-dsh-shell/understand-the-implementation/design-philosophy:
+/eco-agent-dsh-shell/understand-the-implementation/design-philosophy:
   en: a6467114855249e8
   zh: 65b53a2839cb411e
-/deepseek-ai-dsh-shell/understand-the-implementation/source-map:
+/eco-agent-dsh-shell/understand-the-implementation/source-map:
   en: 80d45b2de500588a
   zh: 23da8d99b05f4db6
-/deepseek-ai-dsh-shell/understand-the-implementation/settings-namespace:
+/eco-agent-dsh-shell/understand-the-implementation/settings-namespace:
   en: a5b81ecee7fe9938
   zh: 25fcf060b48e14cf
-/deepseek-ai-dsh-shell/understand-the-implementation/background-lifecycle-and-ownership:
+/eco-agent-dsh-shell/understand-the-implementation/background-lifecycle-and-ownership:
   en: 63853c610719e1bb
   zh: 09668e6fd34c9161
-/deepseek-ai-dsh-shell/further-exploration:
+/eco-agent-dsh-shell/further-exploration:
   en: e1653edf9807c768
   zh: bac6f0001ca214d6
-/deepseek-ai-dsh-shell/model-experience:
+/eco-agent-dsh-shell/model-experience:
   en: 7dec7effc0b15288
   zh: 6ac73faa9ae252ed
-/deepseek-ai-dsh-shell/model-experience/kv-cache-effect:
+/eco-agent-dsh-shell/model-experience/kv-cache-effect:
   en: 40294c1c31b74824
   zh: 788a4799b1d65a8b
-/deepseek-ai-dsh-shell/known-limitations-and-deferred-work:
+/eco-agent-dsh-shell/known-limitations-and-deferred-work:
   en: d45d58f3ac323b73
   zh: a4a4fe86a4f9f15c
-/deepseek-ai-dsh-shell/known-limitations-and-deferred-work/dev-note:
+/eco-agent-dsh-shell/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: 3c8bbe93d71a3377

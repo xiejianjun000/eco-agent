@@ -1,37 +1,43 @@
 # Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
 # section, a hash of its English and Chinese blocks outside code blocks and generated regions.
 # After editing either side, bring the other along and re-record with:
-#   pnpm run verify-translation-pairing --write packages/experimental/api-speech-to-text/README.md
+#   pnpm run verify-translation-pairing --write packages/experimental/agent-team-web-profile/README.md
 /:
-  en: 492c18403fe67bc0
-  zh: 547cb261324c7691
-/deepseek-ai-dsh-experimental-api-speech-to-text:
-  en: 9273fdafb9804346
-  zh: 4fec3a81b4d29fc6
-/deepseek-ai-dsh-experimental-api-speech-to-text/summary:
-  en: 81978b4b6c035754
-  zh: f1a08200eb31c020
-/deepseek-ai-dsh-experimental-api-speech-to-text/table-of-contents:
+  en: 7417b72ee953318c
+  zh: 39a963cf65ea2afb
+/eco-agent-dsh-experimental-agent-team-web-profile:
+  en: 19f38cccbed163a2
+  zh: b2ea6a3094cb1348
+/eco-agent-dsh-experimental-agent-team-web-profile/summary:
+  en: 61aebfb035dc4284
+  zh: 994b558b93fce987
+/eco-agent-dsh-experimental-agent-team-web-profile/table-of-contents:
   en: d152484eb41ac6b4
-  zh: 364c80ee00a374ff
-/deepseek-ai-dsh-experimental-api-speech-to-text/use-this-package:
-  en: 23efd2789fe70cd9
-  zh: 3edd559ee5975742
-/deepseek-ai-dsh-experimental-api-speech-to-text/understand-the-implementation:
-  en: 83c580c412f4026a
-  zh: cd6742fef27de9e5
-/deepseek-ai-dsh-experimental-api-speech-to-text/further-exploration:
-  en: 5c64426add9d79d6
-  zh: 4e06aa2ead8d2ccd
-/deepseek-ai-dsh-experimental-api-speech-to-text/model-experience:
-  en: 3c5a85f8b7129ce8
-  zh: d5f491ca88d9a810
-/deepseek-ai-dsh-experimental-api-speech-to-text/model-experience/kv-cache-effect:
-  en: b5ec79db2e1d0dbc
-  zh: e5aff567ae5ee6fc
-/deepseek-ai-dsh-experimental-api-speech-to-text/known-limitations-and-deferred-work:
-  en: 067a5c6a1772f2eb
-  zh: 6973c5a4a950c5cf
-/deepseek-ai-dsh-experimental-api-speech-to-text/known-limitations-and-deferred-work/dev-note:
-  en: 0225ba087c5266f3
-  zh: 4e706f1b2b984e63
+  zh: 09388d293f9be9cb
+/eco-agent-dsh-experimental-agent-team-web-profile/use-this-package:
+  en: bbff250eba0f1b89
+  zh: 0a618f05cc88ee2b
+/eco-agent-dsh-experimental-agent-team-web-profile/use-this-package/install-into-a-profile:
+  en: f9acb3f83144eaf2
+  zh: 7cb45c151a9596c7
+/eco-agent-dsh-experimental-agent-team-web-profile/use-this-package/what-you-get:
+  en: eae37efdf5442cf5
+  zh: e7a583fde182e256
+/eco-agent-dsh-experimental-agent-team-web-profile/understand-the-implementation:
+  en: ab6a36959704e8a7
+  zh: ef22e4e3ea151ed9
+/eco-agent-dsh-experimental-agent-team-web-profile/further-exploration:
+  en: 70ac2341a76ae187
+  zh: 004c9458ac17ad22
+/eco-agent-dsh-experimental-agent-team-web-profile/model-experience:
+  en: 78597e4915ffb252
+  zh: d80cf9e16ffcd829
+/eco-agent-dsh-experimental-agent-team-web-profile/model-experience/kv-cache-effect:
+  en: fd005940699dac76
+  zh: c9e14e07b9c3fb58
+/eco-agent-dsh-experimental-agent-team-web-profile/known-limitations-and-deferred-work:
+  en: f9681354abe286d1
+  zh: 571e601399fb7ce3
+/eco-agent-dsh-experimental-agent-team-web-profile/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

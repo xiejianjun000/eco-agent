@@ -101,7 +101,7 @@ export function collectSessionFormatMigrations(
     const from = safeVersion(metadata['from'], `${rel} from`)
     const to = safeVersion(metadata['to'], `${rel} to`)
     if (to !== from + 1) throw new Error(`gen-session-format-catalog: ${rel} must declare adjacent v${from}->v${from + 1}`)
-    const expectedPackageName = `@deepseek-ai/dsh-session-format-v${from}-to-v${to}`
+    const expectedPackageName = `@eco-agent/dsh-session-format-v${from}-to-v${to}`
     if (packageName !== expectedPackageName) {
       throw new Error(`gen-session-format-catalog: ${rel} name must be ${expectedPackageName}`)
     }

@@ -5,42 +5,42 @@
 /:
   en: ff4e1ec5ccd5d0b3
   zh: d29383843e3decc8
-/deepseek-ai-dsh-experimental-inspector:
-  en: 1060bee3ef37134d
-  zh: 7a7b0096714f4279
-/deepseek-ai-dsh-experimental-inspector/summary:
-  en: 65ed8a4c21915cc0
-  zh: dcb1ae527e6bfc8c
-/deepseek-ai-dsh-experimental-inspector/table-of-contents:
+/eco-agent-dsh-experimental-inspector:
+  en: 4b97af8d276b9565
+  zh: 1a4e272b6a6c7e2e
+/eco-agent-dsh-experimental-inspector/summary:
+  en: ad818a172c69031e
+  zh: 5e3dd8359dfd6852
+/eco-agent-dsh-experimental-inspector/table-of-contents:
   en: 2650c2b268bf6dff
   zh: 43a08863d2c75ad1
-/deepseek-ai-dsh-experimental-inspector/runtime-layout:
+/eco-agent-dsh-experimental-inspector/runtime-layout:
   en: a713d2910acf48c9
   zh: 152dcdba78e73115
-/deepseek-ai-dsh-experimental-inspector/configuration:
+/eco-agent-dsh-experimental-inspector/configuration:
   en: 95f1c9c4ea6ba8b8
   zh: 16b56e2dd8c7408a
-/deepseek-ai-dsh-experimental-inspector/observation-api:
+/eco-agent-dsh-experimental-inspector/observation-api:
   en: d32f994e6c9d0c4a
   zh: ac2f35f5799aeae0
-/deepseek-ai-dsh-experimental-inspector/cordis-tree-inspection:
+/eco-agent-dsh-experimental-inspector/cordis-tree-inspection:
   en: 9abe1a8cd52386fb
   zh: a5e96ec22a503153
-/deepseek-ai-dsh-experimental-inspector/host-fetch-capture:
+/eco-agent-dsh-experimental-inspector/host-fetch-capture:
   en: 187859f65acc45d7
   zh: 606e93905c8275e6
-/deepseek-ai-dsh-experimental-inspector/security:
+/eco-agent-dsh-experimental-inspector/security:
   en: 2372c96aba1ce7e6
   zh: 823ceaa99cfb1f6a
-/deepseek-ai-dsh-experimental-inspector/model-experience:
+/eco-agent-dsh-experimental-inspector/model-experience:
   en: 6ac8fb2f45b3a97c
   zh: 9162ffb1a133e11b
-/deepseek-ai-dsh-experimental-inspector/model-experience/kv-cache-effect:
+/eco-agent-dsh-experimental-inspector/model-experience/kv-cache-effect:
   en: ca75c51c89c2c9b0
   zh: 64715dc7e6d02f71
-/deepseek-ai-dsh-experimental-inspector/known-limitations-and-deferred-work:
+/eco-agent-dsh-experimental-inspector/known-limitations-and-deferred-work:
   en: a35e1559aff5e7aa
   zh: fbe20422dbe4a0f6
-/deepseek-ai-dsh-experimental-inspector/known-limitations-and-deferred-work/dev-note:
+/eco-agent-dsh-experimental-inspector/known-limitations-and-deferred-work/dev-note:
   en: 59a59a4788c80163
   zh: db23a6b9dc0880ba

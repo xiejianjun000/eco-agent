@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/im/im-eco-feishu/README.md
+/eco-agent-dsh-im-eco-feishu:
+  en: 3b0b3ba7e0d806a9
+  zh: 24e702174e998fb7
+/eco-agent-dsh-im-eco-feishu/provenance:
+  en: 37d44f1fe7848e85
+  zh: 8c52c4180288ec62
+/eco-agent-dsh-im-eco-feishu/wiring-it-in:
+  en: 2b4e8099d382d98e
+  zh: 22199dbd7453769a
+/eco-agent-dsh-im-eco-feishu/key-configuration:
+  en: 31a36851958b656c
+  zh: 35cfb37e40619ab0

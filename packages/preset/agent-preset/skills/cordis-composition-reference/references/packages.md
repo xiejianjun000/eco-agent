@@ -8,7 +8,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-acp` | yes | Automation-only Agent Client Protocol server for driving DeepSeek Harness agents over JSON-RPC stdio |
+| `@eco-agent/dsh-acp` | yes | Automation-only Agent Client Protocol server for driving eco Agent agents over JSON-RPC stdio |
 
 ## api
 
@@ -68,7 +68,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@eco-agent/dsh-client-ui-agent-preset` | no | Agent-preset surfaces: the default for later sessions, this session's seat, and the composition editor |
 | `@eco-agent/dsh-client-ui-approval` | no | Approval composer takeover over the scoped Remote Event waterfall |
 | `@eco-agent/dsh-client-ui-attachment` | no | Dynamic attachment presentation plugin for conversation input, message-image, and trajectory image slots |
-| `@eco-agent/dsh-client-ui-brand-official` | no | Official DeepSeek Harness brand occupants for the Web client's sidebar slots |
+| `@eco-agent/dsh-client-ui-brand-official` | no | Official eco Agent brand occupants for the Web client's sidebar slots |
 | `@eco-agent/dsh-client-ui-chat` | no | Chat Conversation target, node definitions, renderers, and details surface |
 | `@eco-agent/dsh-client-ui-commands` | no | Client command surface: global directory cache, '/' source, three command UI kinds, popupSelect registry |
 | `@eco-agent/dsh-client-ui-conversation` | no | Target-neutral Conversation assembly, shell, composer, queue, and view navigation |
@@ -121,7 +121,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | Package | Config | Description |
 |---|---|---|
 | `@eco-agent/dsh-command-compact` | no | Human-facing slash command for explicit session compaction |
-| `@eco-agent/dsh-compaction-basic` | yes | Token-meter-driven compaction policy and LLM summarization backend for the DeepSeek Harness |
+| `@eco-agent/dsh-compaction-basic` | yes | Token-meter-driven compaction policy and LLM summarization backend for the eco Agent |
 | `@eco-agent/dsh-compaction-image-offload` | no | Durable image offload for image-capable routes: replace over-budget request images with placeholders and retry |
 | `@eco-agent/dsh-compaction-tool-result-pruner` | yes | Replay-safe model-free head/middle/tail pruning for tool-result surface nodes |
 
@@ -145,28 +145,28 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-agent` | no | Agent interface, registry, initiator scope, and event vocabulary for the DeepSeek Harness |
+| `@eco-agent/dsh-agent` | no | Agent interface, registry, initiator scope, and event vocabulary for the eco Agent |
 | `@eco-agent/dsh-agent-default-model` | yes | Default model selection shared by Agent entry points |
-| `@eco-agent/dsh-agent-loop` | yes | The concrete agent loop plugin for the DeepSeek Harness |
+| `@eco-agent/dsh-agent-loop` | yes | The concrete agent loop plugin for the eco Agent |
 | `@eco-agent/dsh-agent-tool-presentation` | yes | Agent-plane presentation selector: composes one agent's tools as PTC mode, native, or both |
-| `@eco-agent/dsh-session` | no | Event-sourced session store for the DeepSeek Harness |
-| `@eco-agent/dsh-system-prompt` | yes | System prompt assembly registry for the DeepSeek Harness |
-| `@eco-agent/dsh-tools` | yes | Tool registry and execution pipeline for the DeepSeek Harness |
+| `@eco-agent/dsh-session` | no | Event-sourced session store for the eco Agent |
+| `@eco-agent/dsh-system-prompt` | yes | System prompt assembly registry for the eco Agent |
+| `@eco-agent/dsh-tools` | yes | Tool registry and execution pipeline for the eco Agent |
 
 ## credentials
 
 | Package | Config | Description |
 |---|---|---|
 | `@eco-agent/dsh-authorization` | no | Authorization seam (ctx.authorization): plugin-owned flows that obtain a credential through a conversation with the human |
-| `@eco-agent/dsh-credentials-local` | yes | File-backed credentials provider ($DSH_HOME/.env under the live process environment) for the DeepSeek Harness |
+| `@eco-agent/dsh-credentials-local` | yes | File-backed credentials provider ($DSH_HOME/.env under the live process environment) for the eco Agent |
 | `@eco-agent/dsh-deepseek-account-platform` | yes | Authorize DeepSeek accounts through browser PKCE |
 
 ## deliverables
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-tool-present` | yes | Explicit workspace file delivery declarations for the DeepSeek Harness |
-| `@eco-agent/dsh-workspace-changes` | yes | Per-turn workspace file changes recorded from git working-tree snapshots and whole-file captures, with per-file comparisons, for the DeepSeek Harness |
+| `@eco-agent/dsh-tool-present` | yes | Explicit workspace file delivery declarations for the eco Agent |
+| `@eco-agent/dsh-workspace-changes` | yes | Per-turn workspace file changes recorded from git working-tree snapshots and whole-file captures, with per-file comparisons, for the eco Agent |
 
 ## document
 
@@ -180,7 +180,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 |---|---|---|
 | `@eco-agent/dsh-experimental-agent-team` | yes | Implicit-root Agent Teams roster, durable peer mailbox, and shared task DAG |
 | `@eco-agent/dsh-experimental-api-speech-to-text` | yes | Authenticated experimental speech transcription for browser clients |
-| `@eco-agent/dsh-experimental-auto-review` | no | Per-tool LLM authorization review for the DeepSeek Harness Auto permission preset |
+| `@eco-agent/dsh-experimental-auto-review` | no | Per-tool LLM authorization review for the eco Agent Auto permission preset |
 | `@eco-agent/dsh-experimental-browser-use-chrome-devtools-mcp` | yes | Experimental per-Session Chromium browser tools through chrome-devtools-mcp |
 | `@eco-agent/dsh-experimental-browser-use-playwright-mcp` | yes | Experimental per-Session Chromium browser tools through @playwright/mcp |
 | `@eco-agent/dsh-experimental-browser-use-stagehand-native` | yes | Experimental Stagehand browser tools with separately configured native models |
@@ -189,7 +189,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@eco-agent/dsh-experimental-computer-use-cua-driver-mcp` | yes | Experimental computer use through an installed Cua Driver MCP executable |
 | `@eco-agent/dsh-experimental-computer-use-cua-driver-native` | no | Experimental computer-use provider embedding the Cua Driver native npm SDK |
 | `@eco-agent/dsh-experimental-inspector` | yes | Experimental cross-realm CDP hub for Host debugging and Client Runtime inspection |
-| `@eco-agent/dsh-experimental-ptc-runtime-python` | yes | CPython subprocess implementation of the DeepSeek Harness PTC execution seam |
+| `@eco-agent/dsh-experimental-ptc-runtime-python` | yes | CPython subprocess implementation of the eco Agent PTC execution seam |
 | `@eco-agent/dsh-experimental-speech-to-text` | yes | Experimental speech recognition with independently selectable providers |
 | `@eco-agent/dsh-experimental-speech-to-text-sensevoice` | yes | Local SenseVoice ONNX transcription with a managed sherpa-onnx process |
 | `@eco-agent/dsh-experimental-tool-agent-team` | yes | Scoped model-facing Agent Teams tools over ctx.agentTeams |
@@ -214,10 +214,10 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-fs-local` | yes | Local-filesystem implementation of the DeepSeek Harness filesystem seam (ctx.fs) |
-| `@eco-agent/dsh-fs-observation-policy` | no | File-context policy plugin for the DeepSeek Harness — observed-state, read-before-edit, and version-guarded write/edit added over the ctx.fs provider seam through the fs/* event gate (no service API) |
-| `@eco-agent/dsh-fs-sandbox` | yes | Sandbox-enforcing implementation of the DeepSeek Harness filesystem seam: fences write/edit by the per-call sandbox mode (read-only denies mutation, workspace-write contains it to the workspace + temp roots) while reads pass through |
-| `@eco-agent/dsh-tool-fs` | yes | Model-facing filesystem tools (read, write, edit) over the DeepSeek Harness filesystem seam (ctx.fs) |
+| `@eco-agent/dsh-fs-local` | yes | Local-filesystem implementation of the eco Agent filesystem seam (ctx.fs) |
+| `@eco-agent/dsh-fs-observation-policy` | no | File-context policy plugin for the eco Agent — observed-state, read-before-edit, and version-guarded write/edit added over the ctx.fs provider seam through the fs/* event gate (no service API) |
+| `@eco-agent/dsh-fs-sandbox` | yes | Sandbox-enforcing implementation of the eco Agent filesystem seam: fences write/edit by the per-call sandbox mode (read-only denies mutation, workspace-write contains it to the workspace + temp roots) while reads pass through |
+| `@eco-agent/dsh-tool-fs` | yes | Model-facing filesystem tools (read, write, edit) over the eco Agent filesystem seam (ctx.fs) |
 | `@eco-agent/dsh-tool-fs-search` | yes | Model-facing filesystem discovery tools (glob, grep) backed by the packaged ripgrep binary (@vscode/ripgrep) |
 | `@eco-agent/dsh-tool-str-replace-editor` | yes | Model-facing view, create, literal replace, and line insert tool over the Harness filesystem service |
 
@@ -226,7 +226,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | Package | Config | Description |
 |---|---|---|
 | `@eco-agent/dsh-command-goal` | no | Human-facing slash command for persisted same-session goals |
-| `@eco-agent/dsh-goal` | yes | Event-sourced same-session goal state and lifecycle service for the DeepSeek Harness |
+| `@eco-agent/dsh-goal` | yes | Event-sourced same-session goal state and lifecycle service for the eco Agent |
 | `@eco-agent/dsh-goal-round-driver` | no | Race-fenced same-session goal-round driver |
 | `@eco-agent/dsh-tool-goal` | yes | Model-facing same-session goal tools with execution-time authority checks |
 
@@ -241,16 +241,16 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-hooks-claude-code` | yes | Bridge plugin: run a Claude Code hooks.json / settings hook config on the DeepSeek Harness interception seams |
-| `@eco-agent/dsh-hooks-codex` | yes | Bridge plugin: run a Codex hooks.json hook config on the DeepSeek Harness interception seams |
+| `@eco-agent/dsh-hooks-claude-code` | yes | Bridge plugin: run a Claude Code hooks.json / settings hook config on the eco Agent interception seams |
+| `@eco-agent/dsh-hooks-codex` | yes | Bridge plugin: run a Codex hooks.json hook config on the eco Agent interception seams |
 
 ## host
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-host-directory-picker-auto` | no | Adaptive chooser of the directory-picker seam: resolves the host situation at boot and mounts the native or browse backend for the DeepSeek Harness web GUI host |
+| `@eco-agent/dsh-host-directory-picker-auto` | no | Adaptive chooser of the directory-picker seam: resolves the host situation at boot and mounts the native or browse backend for the eco Agent web GUI host |
 | `@eco-agent/dsh-host-directory-picker-browse` | yes | In-app browsing backend of the directory-picker seam (listing/creation primitives over the host filesystem) |
-| `@eco-agent/dsh-host-directory-picker-native` | no | Native-OS-chooser backend of the directory-picker seam for the DeepSeek Harness web GUI host |
+| `@eco-agent/dsh-host-directory-picker-native` | no | Native-OS-chooser backend of the directory-picker seam for the eco Agent web GUI host |
 | `@eco-agent/dsh-host-frontend-static` | yes | SPA dist server for the Web shell: owns the webserver fallback seat, serving explicit index entries and static assets with traversal rejection and 404 misses |
 | `@eco-agent/dsh-host-open-in-app` | yes | Host half of open-in-app: resolved application catalog, icons, and the launch endpoint as three webServer routes |
 | `@eco-agent/dsh-host-plugin-inventory` | no | Read-only Remote projection of current Cordis Loader plugin state |
@@ -261,17 +261,17 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-commands` | no | Plugin-owned human command registry for DeepSeek Harness UIs |
-| `@eco-agent/dsh-permission-presets` | yes | User-facing permission presets (ctx.permissionPresets) for the DeepSeek Harness: one product-level Permissions select bundling the sandbox-mode and approval-policy knobs, written through to their own session events |
+| `@eco-agent/dsh-commands` | no | Plugin-owned human command registry for eco Agent UIs |
+| `@eco-agent/dsh-permission-presets` | yes | User-facing permission presets (ctx.permissionPresets) for the eco Agent: one product-level Permissions select bundling the sandbox-mode and approval-policy knobs, written through to their own session events |
 | `@eco-agent/dsh-tool-ask-user` | yes | Model-facing ask_user_question tool over the ctx.userQuestions seam |
-| `@eco-agent/dsh-user-approval` | yes | User-approval seam (ctx.approval) for the DeepSeek Harness: one-shot permission decisions dispatched to composed answerers over the approval/request waterfall, fail-closed by default |
+| `@eco-agent/dsh-user-approval` | yes | User-approval seam (ctx.approval) for the eco Agent: one-shot permission decisions dispatched to composed answerers over the approval/request waterfall, fail-closed by default |
 | `@eco-agent/dsh-user-questions` | no | Abstract user-questions seam (ctx.userQuestions) for asking the human during agent runs |
 
 ## jobs
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-jobs-local` | yes | Process-local implementation of the DeepSeek Harness background job registry seam |
+| `@eco-agent/dsh-jobs-local` | yes | Process-local implementation of the eco Agent background job registry seam |
 | `@eco-agent/dsh-tool-jobs` | yes | Model-facing background job control tools (job_output, job_list, job_kill) over the ctx.jobs registry |
 
 ## llm
@@ -279,21 +279,21 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | Package | Config | Description |
 |---|---|---|
 | `@eco-agent/dsh-deepseek-llm-api-extensions` | no | Additive request-field registry for the official DeepSeek LLM API adapter |
-| `@eco-agent/dsh-llm` | no | Provider-neutral LLM service interface for the DeepSeek Harness |
+| `@eco-agent/dsh-llm` | no | Provider-neutral LLM service interface for the eco Agent |
 | `@eco-agent/dsh-llm-deepseek-account` | yes | DeepSeek account provider authentication and discovery |
 | `@eco-agent/dsh-llm-deepseek-api-key` | yes | DeepSeek api-key provider authentication and discovery |
-| `@eco-agent/dsh-llm-pi-ai` | yes | pi-ai-backed DeepSeek adapter for the DeepSeek Harness LLM seam (design-verification twin of dsh-llm-deepseek) |
-| `@eco-agent/dsh-llm-retry` | yes | Provider-routed LLM request retry policy for the DeepSeek Harness |
+| `@eco-agent/dsh-llm-pi-ai` | yes | pi-ai-backed DeepSeek adapter for the eco Agent LLM seam (design-verification twin of dsh-llm-deepseek) |
+| `@eco-agent/dsh-llm-retry` | yes | Provider-routed LLM request retry policy for the eco Agent |
 | `@eco-agent/dsh-plugin-package-inventory-deepseek` | yes | Active Loader-backed plugin package inventory for official DeepSeek LLM API requests |
-| `@eco-agent/dsh-token-meter` | yes | Replay-aware token measurement service (ctx.tokenMeter) for the DeepSeek Harness |
+| `@eco-agent/dsh-token-meter` | yes | Replay-aware token measurement service (ctx.tokenMeter) for the eco Agent |
 
 ## lsp
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-lsp` | no | Abstract LSP capability seam (ctx.lsp) for the DeepSeek Harness — language-server provider registry keyed by branded id and extension mapping, order-independent per-query selection, normalized definition/references/implementation/hover requests and results, and the LspError taxonomy |
-| `@eco-agent/dsh-lsp-stdio` | yes | Generic stdio language-server provider for the DeepSeek Harness LSP capability seam (ctx.lsp) — spawns configured servers, translates JSON-RPC, and serves transient-open goToDefinition/findReferences/goToImplementation/hover queries in the host filesystem namespace |
-| `@eco-agent/dsh-tool-lsp` | yes | Model-facing lsp tool over the DeepSeek Harness LSP capability seam (ctx.lsp) — one read-only tool with goToDefinition/findReferences/goToImplementation/hover operations, one-based UTF-16 cursor coordinates, bounded location rendering, and hover normalization |
+| `@eco-agent/dsh-lsp` | no | Abstract LSP capability seam (ctx.lsp) for the eco Agent — language-server provider registry keyed by branded id and extension mapping, order-independent per-query selection, normalized definition/references/implementation/hover requests and results, and the LspError taxonomy |
+| `@eco-agent/dsh-lsp-stdio` | yes | Generic stdio language-server provider for the eco Agent LSP capability seam (ctx.lsp) — spawns configured servers, translates JSON-RPC, and serves transient-open goToDefinition/findReferences/goToImplementation/hover queries in the host filesystem namespace |
+| `@eco-agent/dsh-tool-lsp` | yes | Model-facing lsp tool over the eco Agent LSP capability seam (ctx.lsp) — one read-only tool with goToDefinition/findReferences/goToImplementation/hover operations, one-based UTF-16 cursor coordinates, bounded location rendering, and hover normalization |
 
 ## mcp
 
@@ -314,25 +314,25 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 |---|---|---|
 | `@eco-agent/dsh-agent-preset` | yes | Declare an Agent capability composition in Cordis YAML |
 | `@eco-agent/dsh-agent-preset-registry` | yes | Declarative Agent preset registry and profile-backed editing |
-| `@eco-agent/dsh-persona` | yes | Composition-authored deployment persona section for the DeepSeek Harness |
+| `@eco-agent/dsh-persona` | yes | Composition-authored deployment persona section for the eco Agent |
 
 ## ptc-runtime
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-ptc-runtime-node` | yes | Sandboxed Node process implementation of the DeepSeek Harness PTC execution capability |
+| `@eco-agent/dsh-ptc-runtime-node` | yes | Sandboxed Node process implementation of the eco Agent PTC execution capability |
 
 ## runtime-diagnostics
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-invariants` | yes | Registry service for package-owned DeepSeek Harness runtime invariants |
+| `@eco-agent/dsh-invariants` | yes | Registry service for package-owned eco Agent runtime invariants |
 
 ## sandbox
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-sandbox-local` | yes | Local process-sandbox backends for the DeepSeek Harness sandbox seam: bwrap, the npm-distributed landlock-run launcher, macOS Seatbelt, or the Windows ACL restricted-token runner — functionally probed, fail-closed |
+| `@eco-agent/dsh-sandbox-local` | yes | Local process-sandbox backends for the eco Agent sandbox seam: bwrap, the npm-distributed landlock-run launcher, macOS Seatbelt, or the Windows ACL restricted-token runner — functionally probed, fail-closed |
 | `@eco-agent/dsh-sandbox-policy` | yes | Per-call sandbox policy resolver and current model context: deployment fallbacks plus each session's mode and workspace root, shared by every enforcing capability family |
 
 ## schedule
@@ -345,7 +345,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-sdk-jsonrpc-server` | yes | Stdio JSON-RPC server plugin for out-of-process DeepSeek Harness SDK clients |
+| `@eco-agent/dsh-sdk-jsonrpc-server` | yes | Stdio JSON-RPC server plugin for out-of-process eco Agent SDK clients |
 
 ## session
 
@@ -353,15 +353,15 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 |---|---|---|
 | `@eco-agent/dsh-session-checkpoint-policy` | no | Semantic session durability checkpoints before model requests and tool side effects |
 | `@eco-agent/dsh-session-log-deepseek` | yes | Incremental lossless session-log request extension for the official DeepSeek LLM API |
-| `@eco-agent/dsh-session-persistence-jsonl` | yes | JSONL durable session persistence backend for the DeepSeek Harness |
+| `@eco-agent/dsh-session-persistence-jsonl` | yes | JSONL durable session persistence backend for the eco Agent |
 | `@eco-agent/dsh-session-projection` | no | Session-projection seam: the merge-extensible projection type table, the provider contract, and the ctx.sessionProjections registry serving whole current values of log-derived per-session state |
 | `@eco-agent/dsh-session-projection-cache` | yes | Persisted projection cache (ctx.sessionProjectionCache): durable per-session checkpoint records on the session_projcache storage domain (per-record layout), throttled write-behind, and the cached listing read |
-| `@eco-agent/dsh-session-stats` | no | Whole-log conversation counts and wall times projection (sessionStats) for the DeepSeek Harness |
+| `@eco-agent/dsh-session-stats` | no | Whole-log conversation counts and wall times projection (sessionStats) for the eco Agent |
 | `@eco-agent/dsh-session-telemetry-otel` | yes | Feedback-authorized Session logs over byte-bounded OpenTelemetry HTTP requests |
-| `@eco-agent/dsh-session-title` | yes | Log-backed session title service and provider registry for the DeepSeek Harness |
-| `@eco-agent/dsh-session-title-all-prompts-llm` | yes | All-user-messages LLM provider plugin for DeepSeek Harness session titles |
-| `@eco-agent/dsh-session-title-first-prompt-llm` | yes | First-message LLM provider plugin for DeepSeek Harness session titles |
-| `@eco-agent/dsh-session-turn-outline` | no | Whole-log turn outline projection (turnOutline) for the DeepSeek Harness |
+| `@eco-agent/dsh-session-title` | yes | Log-backed session title service and provider registry for the eco Agent |
+| `@eco-agent/dsh-session-title-all-prompts-llm` | yes | All-user-messages LLM provider plugin for eco Agent session titles |
+| `@eco-agent/dsh-session-title-first-prompt-llm` | yes | First-message LLM provider plugin for eco Agent session titles |
+| `@eco-agent/dsh-session-turn-outline` | no | Whole-log turn outline projection (turnOutline) for the eco Agent |
 
 ## session-query
 
@@ -375,16 +375,16 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-settings` | no | Abstract user-settings seam (ctx.settings) for the DeepSeek Harness |
+| `@eco-agent/dsh-settings` | no | Abstract user-settings seam (ctx.settings) for the eco Agent |
 
 ## shell
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-bash-local` | yes | Local-subprocess implementation of the DeepSeek Harness bash executor seam |
-| `@eco-agent/dsh-bash-sandbox` | yes | Sandbox-consuming implementation of the DeepSeek Harness bash executor seam (confines every command via ctx.sandbox, reports denial/enforcement result facts) |
-| `@eco-agent/dsh-pwsh-local` | yes | Local PowerShell implementation of the DeepSeek Harness bash executor seam |
-| `@eco-agent/dsh-pwsh-sandbox` | yes | Sandbox-consuming implementation of the DeepSeek Harness PowerShell executor seam (confines every command via ctx.sandbox, reports denial/enforcement result facts) |
+| `@eco-agent/dsh-bash-local` | yes | Local-subprocess implementation of the eco Agent bash executor seam |
+| `@eco-agent/dsh-bash-sandbox` | yes | Sandbox-consuming implementation of the eco Agent bash executor seam (confines every command via ctx.sandbox, reports denial/enforcement result facts) |
+| `@eco-agent/dsh-pwsh-local` | yes | Local PowerShell implementation of the eco Agent bash executor seam |
+| `@eco-agent/dsh-pwsh-sandbox` | yes | Sandbox-consuming implementation of the eco Agent PowerShell executor seam (confines every command via ctx.sandbox, reports denial/enforcement result facts) |
 | `@eco-agent/dsh-shell-env` | yes | Tool-independent managed DSH_* shell environment registry |
 | `@eco-agent/dsh-tool-bash` | yes | Model-facing bash tool with optional generic background-job and sandbox-escalation support |
 | `@eco-agent/dsh-tool-bash-persistent` | yes | Model-facing owner-scoped persistent Bash tool backed by the Harness PTY service |
@@ -395,18 +395,18 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-skill` | yes | Agent skill provider registry for the DeepSeek Harness |
-| `@eco-agent/dsh-skill-badge` | no | Bundled dsh badge skill provider for DeepSeek Harness |
-| `@eco-agent/dsh-skill-filesystem` | yes | Local filesystem skill provider for the DeepSeek Harness |
+| `@eco-agent/dsh-skill` | yes | Agent skill provider registry for the eco Agent |
+| `@eco-agent/dsh-skill-badge` | no | Bundled dsh badge skill provider for eco Agent |
+| `@eco-agent/dsh-skill-filesystem` | yes | Local filesystem skill provider for the eco Agent |
 | `@eco-agent/dsh-skill-office` | yes | Bundled Word, PowerPoint, and Excel workflows and structural checks |
-| `@eco-agent/dsh-tool-skill` | yes | Model-facing skill loading tool for the DeepSeek Harness |
+| `@eco-agent/dsh-tool-skill` | yes | Model-facing skill loading tool for the eco Agent |
 | `@eco-agent/dsh-tool-workspace-dependencies` | yes | The load_workspace_dependencies tool: absolute paths into a bundled Python, Node.js, and pnpm payload |
 
 ## spill
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-spill-local` | yes | Local-filesystem implementation of the DeepSeek Harness spill storage seam (private session-scoped files) |
+| `@eco-agent/dsh-spill-local` | yes | Local-filesystem implementation of the eco Agent spill storage seam (private session-scoped files) |
 | `@eco-agent/dsh-spill-policy` | yes | Token-budgeted tool-result retention with recoverable text and image paths |
 
 ## ssh
@@ -422,10 +422,10 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-storage` | no | Storage hub (ctx.storage): named backend registry plus mounted data-form facilities for the DeepSeek Harness |
-| `@eco-agent/dsh-storage-domain` | yes | Domain data form (ctx.storage.domain): schema-validated, event-emitting KV domains over storage backends for the DeepSeek Harness |
-| `@eco-agent/dsh-storage-json` | yes | JSON file KV storage backend for the DeepSeek Harness storage hub |
-| `@eco-agent/dsh-storage-sqlite` | yes | SQLite storage backend (kv facet) for the DeepSeek Harness storage hub |
+| `@eco-agent/dsh-storage` | no | Storage hub (ctx.storage): named backend registry plus mounted data-form facilities for the eco Agent |
+| `@eco-agent/dsh-storage-domain` | yes | Domain data form (ctx.storage.domain): schema-validated, event-emitting KV domains over storage backends for the eco Agent |
+| `@eco-agent/dsh-storage-json` | yes | JSON file KV storage backend for the eco Agent storage hub |
+| `@eco-agent/dsh-storage-sqlite` | yes | SQLite storage backend (kv facet) for the eco Agent storage hub |
 
 ## subagent
 
@@ -435,7 +435,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@eco-agent/dsh-subagent-acp` | yes | Out-of-process ACP subagent backend: drives a child agent in a spawned subprocess over the Agent Client Protocol |
 | `@eco-agent/dsh-subagent-claude-code` | yes | One-shot Claude Code subagent provider over the official Agent SDK |
 | `@eco-agent/dsh-subagent-codex` | yes | One-shot Codex subagent provider over the official app-server protocol |
-| `@eco-agent/dsh-subagent-dsh-sdk` | yes | Out-of-process SDK subagent backend: drives a child DeepSeek Harness runtime subprocess over stdio JSON-RPC through the TypeScript SDK client |
+| `@eco-agent/dsh-subagent-dsh-sdk` | yes | Out-of-process SDK subagent backend: drives a child eco Agent runtime subprocess over stdio JSON-RPC through the TypeScript SDK client |
 | `@eco-agent/dsh-subagent-fork-in-process` | yes | In-process fork subagent backend: runs a child agent seeded with a prefix of the parent's log |
 | `@eco-agent/dsh-subagent-spawn-in-process` | yes | In-process spawn subagent backend: runs a fresh child agent on ctx.agents |
 | `@eco-agent/dsh-tool-subagent` | yes | Model-facing subagent delegation tool over the ctx.subagents seam |
@@ -445,7 +445,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-subprocess-local` | no | Local-subprocess implementation of the DeepSeek Harness subprocess seam |
+| `@eco-agent/dsh-subprocess-local` | no | Local-subprocess implementation of the eco Agent subprocess seam |
 
 ## telemetry
 
@@ -457,8 +457,8 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-terminal` | no | Persistent PTY session seam for the DeepSeek Harness — owner-scoped ids, backend registry, interactive sends, reads, signals, and awaited cleanup |
-| `@eco-agent/dsh-terminal-bash` | yes | Persistent shell PTY backend over the DeepSeek Harness subprocess terminal primitive |
+| `@eco-agent/dsh-terminal` | no | Persistent PTY session seam for the eco Agent — owner-scoped ids, backend registry, interactive sends, reads, signals, and awaited cleanup |
+| `@eco-agent/dsh-terminal-bash` | yes | Persistent shell PTY backend over the eco Agent subprocess terminal primitive |
 | `@eco-agent/dsh-tool-terminal` | yes | Six model-facing persistent PTY tools with owner isolation and generic background-job integration |
 
 ## test-support
@@ -471,7 +471,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-tool-todo` | yes | Model-facing todo_write tool over the DeepSeek Harness event-sourced session log |
+| `@eco-agent/dsh-tool-todo` | yes | Model-facing todo_write tool over the eco Agent event-sourced session log |
 
 ## typert
 
@@ -483,19 +483,19 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-tool-web` | yes | Model-facing web tools (web_search, web_fetch) over the DeepSeek Harness web capability seam (ctx.web) |
-| `@eco-agent/dsh-web` | yes | Abstract web access capability seam (ctx.web) for the DeepSeek Harness — search/fetch provider registry, registration-order-independent selection, request/result vocabulary, and the WebError taxonomy |
-| `@eco-agent/dsh-web-fetch-http` | yes | Anonymous public HTTP(S) fetch provider for the DeepSeek Harness web capability seam (ctx.web) |
-| `@eco-agent/dsh-web-search-deepseek` | yes | DeepSeek-backed search provider (native web_search via the Anthropic-compatible API) for the DeepSeek Harness web capability seam (ctx.web) |
-| `@eco-agent/dsh-web-search-exa` | yes | Exa-backed search provider for the DeepSeek Harness web capability seam (ctx.web) |
-| `@eco-agent/dsh-web-search-perplexity` | yes | Perplexity-backed search provider for the DeepSeek Harness web capability seam (ctx.web) |
+| `@eco-agent/dsh-tool-web` | yes | Model-facing web tools (web_search, web_fetch) over the eco Agent web capability seam (ctx.web) |
+| `@eco-agent/dsh-web` | yes | Abstract web access capability seam (ctx.web) for the eco Agent — search/fetch provider registry, registration-order-independent selection, request/result vocabulary, and the WebError taxonomy |
+| `@eco-agent/dsh-web-fetch-http` | yes | Anonymous public HTTP(S) fetch provider for the eco Agent web capability seam (ctx.web) |
+| `@eco-agent/dsh-web-search-deepseek` | yes | DeepSeek-backed search provider (native web_search via the Anthropic-compatible API) for the eco Agent web capability seam (ctx.web) |
+| `@eco-agent/dsh-web-search-exa` | yes | Exa-backed search provider for the eco Agent web capability seam (ctx.web) |
+| `@eco-agent/dsh-web-search-perplexity` | yes | Perplexity-backed search provider for the eco Agent web capability seam (ctx.web) |
 
 ## webhook
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-webhook` | no | Fire-and-forget webhook rule runtime that creates Workspace-backed DeepSeek Harness Sessions |
-| `@eco-agent/dsh-webhook-github` | yes | Signed GitHub HTTP webhook adapter for the DeepSeek Harness webhook runtime |
+| `@eco-agent/dsh-webhook` | no | Fire-and-forget webhook rule runtime that creates Workspace-backed eco Agent Sessions |
+| `@eco-agent/dsh-webhook-github` | yes | Signed GitHub HTTP webhook adapter for the eco Agent webhook runtime |
 
 ## workflow
 
@@ -509,4 +509,4 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@eco-agent/dsh-workspace` | no | Workspace entity registry (ctx.workspaceRegistry): durable workspace records with validated session attachment over the domain data form for the DeepSeek Harness |
+| `@eco-agent/dsh-workspace` | no | Workspace entity registry (ctx.workspaceRegistry): durable workspace records with validated session attachment over the domain data form for the eco Agent |

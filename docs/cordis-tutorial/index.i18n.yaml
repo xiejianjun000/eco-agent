@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/cordis-tutorial/index.md
 /cordis-tutorial:
-  en: 07671d53f483c796
-  zh: 495179dd609bf5a9
+  en: ca48ac2274ef3305
+  zh: e401f742ccdf90bf
 /cordis-tutorial/setup:
   en: beffc06ab58daf2d
   zh: a0a2dd15e4a3989e
@@ -12,5 +12,5 @@
   en: 1b72d8e48e2688f3
   zh: a4beaacdca936766
 /cordis-tutorial/typescript-notes:
-  en: 60a3f108ca98e532
-  zh: 1cd4aabf471a576a
+  en: 20aa9a1aa0e11160
+  zh: 31ea9fc832d727ed

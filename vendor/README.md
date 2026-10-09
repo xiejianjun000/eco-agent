@@ -2,7 +2,7 @@
 
 This directory contains source-vendored copies of the Cordis framework and its foundation libraries. They are copied into this monorepo instead of being depended on via npm, so that the harness fully owns its framework layer (auditable, patchable, pinned).
 
-All vendored packages use the **`@eco-agent` scope** (`cordis` → `@eco-agent/cordis`, `@cordisjs/plugin-<x>` → `@deepseek-ai/cordis-plugin-<x>`). The manifest table records upstream versions and source commits; each package manifest carries its Harness release version and publication metadata. References to vendored packages use `workspace:~`, so local builds resolve the workspace packages and published ranges permit patch updates within the same minor version. Upstream MIT `LICENSE` files are preserved in each package directory.
+All vendored packages use the **`@eco-agent` scope** (`cordis` → `@eco-agent/cordis`, `@cordisjs/plugin-<x>` → `@eco-agent/cordis-plugin-<x>`). The manifest table records upstream versions and source commits; each package manifest carries its Harness release version and publication metadata. References to vendored packages use `workspace:~`, so local builds resolve the workspace packages and published ranges permit patch updates within the same minor version. Upstream MIT `LICENSE` files are preserved in each package directory.
 
 This file covers the manifest, the local-modification log, and the procedure for **updating** an existing vendored package. To **add a new** one, see the cookbook guide: [docs/cookbook/adding-a-vendored-package.md](../docs/cookbook/adding-a-vendored-package.md).
 

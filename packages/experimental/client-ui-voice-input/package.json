@@ -73,23 +73,6 @@
     "@eco-agent/dsh-client-store": "workspace:*",
     "@eco-agent/dsh-client-ui-plugin-manager": "workspace:*"
   },
-  "dsh": {
-    "client": {
-      "inject": [
-        "@eco-agent/dsh-api-remotes",
-        "@eco-agent/dsh-api-session-controller",
-        "@eco-agent/dsh-client-locale",
-        "@eco-agent/dsh-client-ui-conversation",
-        "@eco-agent/dsh-client-ui-primitives",
-        "@eco-agent/dsh-api-gateway",
-        "@eco-agent/dsh-client-ui-plugin-manager"
-      ],
-      "platform": "web",
-      "external": [
-        "@eco-agent/dsh-api-gateway/client"
-      ]
-    }
-  },
   "scripts": {
     "bundle": "tsdown",
     "watch": "tsdown --watch"

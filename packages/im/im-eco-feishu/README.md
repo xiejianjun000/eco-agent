@@ -1,17 +1,19 @@
 # @eco-agent/dsh-im-eco-feishu
 
-eco Agent 飞书助手：把飞书（Lark）长连接桥接到 eco Agent，实现持久会话、`/new` 新建会话、Markdown 回复、流式进度卡片、主动推送。
+English | [中文](README.zh.md)
 
-## 出处
+eco Agent Feishu assistant: bridges Feishu (Lark) long connection into eco Agent, with persistent sessions, `/new` session creation, Markdown replies, streaming progress cards, and proactive push.
 
-本项目照搬自社区插件 [kriskwok/dsh-feishu-gateway](https://github.com/kriskwok/dsh-feishu-gateway)（v0.2.15，MIT License，见 [LICENSE](./LICENSE)）。仅将包名 rescope 为 `@eco-agent/dsh-im-eco-feishu`、本地 import 改为 `.ts` 扩展名、依赖改为 workspace 协议，业务逻辑保持原样（照搬，未重构）。
+## Provenance
 
-## 接入方式
+This package is copied from the community plugin [kriskwok/dsh-feishu-gateway](https://github.com/kriskwok/dsh-feishu-gateway) (v0.2.15, MIT License, see [LICENSE](./LICENSE)). Only the package name was rescoped to `@eco-agent/dsh-im-eco-feishu`, local imports were changed to `.ts` extensions, and dependencies were switched to the workspace protocol; the business logic stays as-is (copied, not refactored).
 
-1. 在 profile 的 `dsh.profile.bundles` 中列出本包（或把 [cordis.patch.yml](./cordis.patch.yml) 的行并入 profile 的 `cordis.patch.yml`）。
-2. 配置项走飞书设置 namespace（`feishu.appId` / `feishu.appSecret`），可在设置界面或 profile patch 中调整。
+## Wiring it in
 
-## 关键配置
+1. List this package in the profile's `dsh.profile.bundles` (or merge the [cordis.patch.yml](./cordis.patch.yml) lines into the profile's `cordis.patch.yml`).
+2. Configuration lives in the Feishu settings namespace (`feishu.appId` / `feishu.appSecret`), adjustable in the settings UI or the profile patch.
 
-- `feishu.appId` / `feishu.appSecret`：飞书开放平台应用凭据
-- 长连接监听，无需公网端点
+## Key configuration
+
+- `feishu.appId` / `feishu.appSecret`: Feishu Open Platform app credentials
+- Long-connection listener; no public endpoint required

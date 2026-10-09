@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/README.md
 /:
-  en: b2be0c61aa2780eb
-  zh: c308e935e481f211
+  en: 3f02946427effbf0
+  zh: 29996a3f6cba795c
 /packages:
   en: 9f8cdc7bf95bed2b
   zh: 9e25684a309f580a
 /packages/summary:
-  en: 299fb58abec76411
-  zh: e9fdd53d39b755de
+  en: 952365180092383d
+  zh: 98d2f613cb6f881e
 /packages/table-of-contents:
   en: ffc55792d6e922e1
   zh: 83bd759638857e2d

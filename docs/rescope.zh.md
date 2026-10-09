@@ -8,17 +8,17 @@ Cordis 框架及其基础库以源码形式 vendored 在 [`vendor/`](../vendor/R
 
 | 目录 | 上游名 | 发布名 | 上游版本 | 角色 |
 |---|---|---|---|---|
-| `vendor/cordis/` | `cordis` | `@deepseek-ai/cordis` | 4.0.0-rc.7 | 框架核心：`Context`、`Service`、`Fiber`、事件 |
-| `vendor/cosmokit/` | `cosmokit` | `@deepseek-ai/cosmokit` | 1.8.1 | 框架与 Schemastery 共用的基础工具 |
-| `vendor/schemastery/` | `schemastery` | `@deepseek-ai/schemastery` | 3.18.0 | 配置 schema（`Schema`），每个插件的 `Config` 都基于它 |
-| `vendor/loader/` | `@cordisjs/plugin-loader` | `@deepseek-ai/cordis-plugin-loader` | 1.0.0-rc.5 | `cordis.yml` 装载、插件解析、repository 缓存 |
-| `vendor/include/` | `@cordisjs/plugin-include` | `@deepseek-ai/cordis-plugin-include` | 1.0.4 | 配置包含与 patch 叠加 |
-| `vendor/group/` | `@cordisjs/plugin-group` | `@deepseek-ai/cordis-plugin-group` | 1.0.0 | 嵌套插件分组 |
-| `vendor/timer/` | `@cordisjs/plugin-timer` | `@deepseek-ai/cordis-plugin-timer` | 1.1.2 | `ctx` 上随 disposal 回收的定时器 |
-| `vendor/hmr/` | `@cordisjs/plugin-hmr` | `@deepseek-ai/cordis-plugin-hmr` | 1.0.15 | 插件与配置的热替换 |
-| `vendor/logger-console/` | `@cordisjs/plugin-logger-console` | `@deepseek-ai/cordis-plugin-logger-console` | 1.0.0 | 控制台日志导出 |
+| `vendor/cordis/` | `cordis` | `@eco-agent/cordis` | 4.0.0-rc.7 | 框架核心：`Context`、`Service`、`Fiber`、事件 |
+| `vendor/cosmokit/` | `cosmokit` | `@eco-agent/cosmokit` | 1.8.1 | 框架与 Schemastery 共用的基础工具 |
+| `vendor/schemastery/` | `schemastery` | `@eco-agent/schemastery` | 3.18.0 | 配置 schema（`Schema`），每个插件的 `Config` 都基于它 |
+| `vendor/loader/` | `@cordisjs/plugin-loader` | `@eco-agent/cordis-plugin-loader` | 1.0.0-rc.5 | `cordis.yml` 装载、插件解析、repository 缓存 |
+| `vendor/include/` | `@cordisjs/plugin-include` | `@eco-agent/cordis-plugin-include` | 1.0.4 | 配置包含与 patch 叠加 |
+| `vendor/group/` | `@cordisjs/plugin-group` | `@eco-agent/cordis-plugin-group` | 1.0.0 | 嵌套插件分组 |
+| `vendor/timer/` | `@cordisjs/plugin-timer` | `@eco-agent/cordis-plugin-timer` | 1.1.2 | `ctx` 上随 disposal 回收的定时器 |
+| `vendor/hmr/` | `@cordisjs/plugin-hmr` | `@eco-agent/cordis-plugin-hmr` | 1.0.15 | 插件与配置的热替换 |
+| `vendor/logger-console/` | `@cordisjs/plugin-logger-console` | `@eco-agent/cordis-plugin-logger-console` | 1.0.0 | 控制台日志导出 |
 
-子路径导出保持原路径：`@cordisjs/plugin-loader/repository` 变成 `@deepseek-ai/cordis-plugin-loader/repository`。
+子路径导出保持原路径：`@cordisjs/plugin-loader/repository` 变成 `@eco-agent/cordis-plugin-loader/repository`。
 
 ## 改名不碰什么
 
@@ -26,7 +26,7 @@ Cordis 框架及其基础库以源码形式 vendored 在 [`vendor/`](../vendor/R
 - **依赖 range。** 改名只修改依赖键，不改变范围。Workspace 清单使用 `workspace:` 协议；[仓库规则](../AGENTS.md#conventions)区分精确的 DSH 引用与 vendor/native tilde 范围。
 - **Loader 的 `cordis:` 内建前缀。** `cordis:include`、`cordis:group` 是协议前缀，不是包名。
 - **`cordis.yml` 配置文件家族**，包括 `*.cordis.yml`、`*.cordis.snapshot.yml`、`cordis.patch.yml`。
-- **名字里带这个词的 harness 包**，例如 `@deepseek-ai/dsh-tool-cordis`。
+- **名字里带这个词的 harness 包**，例如 `@eco-agent/dsh-tool-cordis`。
 - **上游运行时标识符**，例如 Schemastery 的 `Symbol.for('schemastery')` 及其 `vendor:` 元数据字段。
 - **`docs/` 之外的散文。** `vendor/*/README.md`、各包 README 与 Agent Note 保留写作当时的名字；那里的裸 `cordis` 也可能是 Python SDK 的选项名或某个 agent-preset 的 id。`docs/` 之内，散文与所有 Markdown 围栏都跟着改。
 
@@ -34,10 +34,10 @@ Cordis 框架及其基础库以源码形式 vendored 在 [`vendor/`](../vendor/R
 
 | 位置 | 改前 | 改后 |
 |---|---|---|
-| 模块 import | `import { Context } from 'cordis'` | `import { Context } from '@deepseek-ai/cordis'` |
-| 类型事件声明合并 | `declare module 'cordis'` | `declare module '@deepseek-ai/cordis'` |
-| `package.json` 依赖键 | `"@cordisjs/plugin-hmr": "^1.0.15"` | `"@deepseek-ai/cordis-plugin-hmr": "^1.0.15"` |
-| `cordis.yml` 插件条目 | `name: '@cordisjs/plugin-include'` | `name: '@deepseek-ai/cordis-plugin-include'` |
+| 模块 import | `import { Context } from 'cordis'` | `import { Context } from '@eco-agent/cordis'` |
+| 类型事件声明合并 | `declare module 'cordis'` | `declare module '@eco-agent/cordis'` |
+| `package.json` 依赖键 | `"@cordisjs/plugin-hmr": "^1.0.15"` | `"@eco-agent/cordis-plugin-hmr": "^1.0.15"` |
+| `cordis.yml` 插件条目 | `name: '@cordisjs/plugin-include'` | `name: '@eco-agent/cordis-plugin-include'` |
 
 ## 施加、核验与回退
 

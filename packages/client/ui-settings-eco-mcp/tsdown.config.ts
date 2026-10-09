@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const bundle = clientBundle('@eco-agent/dsh-client-ui-settings-account', ['lib/types/index.js'])
+const bundle = clientBundle('@eco-agent/dsh-client-ui-settings-eco-mcp', ['lib/types/index.js'])
 
 export default ((options) => bundle(options).map(config => ({
   ...config,

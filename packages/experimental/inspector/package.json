@@ -29,11 +29,6 @@
     "./locale/*.json": "./locale/*.json"
   },
   "dsh": {
-    "client": {
-      "inject": [],
-      "platform": "web",
-      "immediately": true
-    },
     "bundle": {
       "patch": "./cordis.patch.yml"
     }

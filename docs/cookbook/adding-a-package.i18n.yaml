@@ -3,20 +3,20 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/cookbook/adding-a-package.md
 /cookbook-adding-a-workspace-package:
-  en: b94bcdbebcd6355e
-  zh: 9fd61c2b986da759
+  en: b071c498d5c30db4
+  zh: 587a45efffcc0643
 /cookbook-adding-a-workspace-package/1-create-the-package:
-  en: 3499082415478cc5
-  zh: 65d3120abd646b64
+  en: 2bd30605b308bdc3
+  zh: fa83401836049444
 /cookbook-adding-a-workspace-package/2-register-it-in-the-root-configs:
-  en: 12b985dee93a47a7
-  zh: 1027db3d251cd860
+  en: 4c0f51e8ec2bad67
+  zh: e8ce259ea22d680b
 /cookbook-adding-a-workspace-package/3-decide-the-package-topology:
   en: 455fd18c17d2e813
   zh: 610f17d2ca673492
 /cookbook-adding-a-workspace-package/3-decide-the-package-topology/name-the-role-that-exists:
-  en: 995813ee34abfbd6
-  zh: 328d78e65599e0cc
+  en: e730dfe2fb2f48a8
+  zh: b0231fb686e45eae
 /cookbook-adding-a-workspace-package/4-write-the-package-readme:
   en: 519b4adbef7b0b91
   zh: b0b857ec6ee50ad7

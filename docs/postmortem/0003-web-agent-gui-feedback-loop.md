@@ -10,7 +10,7 @@ A Web agent changed the GUI source but did not know which URL and process hosted
 
 ## Summary
 
-The session ran inside the DeepSeek Harness Web GUI at port 3081 while its selected Workspace was an empty `test/` directory. The model request named neither the GUI nor its source checkout, URL, process, or update mode. Repository affordances exposed `apps/web` with a Vite development script, while the full browser composition lived behind `dsh web`.
+The session ran inside the eco Agent Web GUI at port 3081 while its selected Workspace was an empty `test/` directory. The model request named neither the GUI nor its source checkout, URL, process, or update mode. Repository affordances exposed `apps/web` with a Vite development script, while the full browser composition lived behind `dsh web`.
 
 The resulting actions were individually plausible but did not share one acceptance target. A source edit, a successful build, an HTTP 200, an injected boot manifest, and the user's existing page were treated as interchangeable facts.
 

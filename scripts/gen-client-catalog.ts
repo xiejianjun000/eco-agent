@@ -392,9 +392,9 @@ const KIND_EXAMPLE: Readonly<Record<string, readonly string[]>> = {
   chain: ['select: owner => null'],
 }
 
-/** Drop the `@deepseek-ai/dsh-` prefix so rows stay readable. */
+/** Drop the `@eco-agent/dsh-` prefix so rows stay readable. */
 function shortPackage(name: string): string {
-  return name.replace('@deepseek-ai/dsh-', '')
+  return name.replace('@eco-agent/dsh-', '')
 }
 
 /** Truncate an over-long declaration, naming the truncation. */
