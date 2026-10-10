@@ -39,6 +39,7 @@
     "@eco-agent/dsh-compaction-tool-result-pruner": "workspace:*",
     "@eco-agent/dsh-cordis-client-runner": "workspace:*",
     "@eco-agent/dsh-experimental-agent-team-profile": "workspace:*",
+    "@eco-agent/dsh-im-eco-wechat": "workspace:*",
     "@eco-agent/dsh-experimental-schedule-bundle": "workspace:*",
     "@eco-agent/dsh-fs-local": "workspace:*",
     "@eco-agent/dsh-goal": "workspace:*",
