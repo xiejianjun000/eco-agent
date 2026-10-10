@@ -26,6 +26,23 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },
+  "dsh": {
+    "client": {
+      "external": [
+        "@eco-agent/dsh-experimental-agent-team/client"
+      ],
+      "inject": [
+        "@eco-agent/dsh-experimental-agent-team",
+        "@eco-agent/dsh-api-session-controller",
+        "@eco-agent/dsh-client-locale",
+        "@eco-agent/dsh-client-ui-conversation",
+        "@eco-agent/dsh-client-ui-renderer",
+        "@eco-agent/dsh-client-ui-workspace",
+        "@eco-agent/dsh-session"
+      ],
+      "platform": "web"
+    }
+  },
   "scripts": {
     "bundle": "tsdown",
     "watch": "tsdown --watch"
