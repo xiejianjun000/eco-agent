@@ -18,6 +18,12 @@ overrides:
   'extract-zip>yauzl': '3.4.0'
   '@eco-agent/cosmokit': 'link:vendor/cosmokit'
   '@eco-agent/schemastery': 'link:vendor/schemastery'
+  # cdn.sheetjs.com is unreachable from CN networks (and SheetJS publishes
+  # nowhere else: no npm 0.20.x, no GitHub release assets). The vendored
+  # tarball is a repack of the integrity-verified copy pnpm previously
+  # installed from the CDN (lockfile integrity sha512-oLDq3jw7AcLq...),
+  # so the file contents are byte-faithful to upstream 0.20.3.
+  'xlsx': 'file:patches/vendor-tarballs/xlsx-0.20.3.tgz'
 
 peerDependencyRules:
   allowedVersions:
