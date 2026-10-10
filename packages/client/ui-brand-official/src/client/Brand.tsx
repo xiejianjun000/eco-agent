@@ -1,4 +1,4 @@
-import { BrandWordmark, EcoLogo } from '@eco-agent/dsh-client-ui-primitives'
+import { EcoLogo } from '@eco-agent/dsh-client-ui-primitives'
 import type { SidebarBrandMarkOwnerProps } from '@eco-agent/dsh-client-ui-sidebar/client'
 
 /**
@@ -11,9 +11,12 @@ export function OfficialBrandMark({ size }: SidebarBrandMarkOwnerProps) {
 }
 
 /**
- * Render the official name artwork without its independently slotted mark.
- * @returns the official name wordmark.
+ * Render the official name without its leading "eco": the mark slot already
+ * carries the green eco wordmark, so the name renders only "Agent" and the
+ * pair reads "eco Agent" instead of duplicating the word. The host's
+ * `.brandName` styles (size, weight, tracking, color) apply to this span.
+ * @returns the official name span.
  */
 export function OfficialBrandName() {
-  return <BrandWordmark includeMark={false} />
+  return <span>Agent</span>
 }

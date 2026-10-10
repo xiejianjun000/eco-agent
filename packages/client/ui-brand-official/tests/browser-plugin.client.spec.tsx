@@ -79,13 +79,16 @@ describe('official browser-brand plugin', () => {
   })
 
   it('renders the official name independently from both requested mark sizes', () => {
+    // The mark slot carries the green eco wordmark, so the name is text-only "Agent".
     const name = render(<OfficialBrandName />)
-    expect(name.container.querySelector('svg')?.getAttribute('viewBox')).toBe('26 0 156 24')
+    expect(name.container.textContent).toBe('Agent')
+    expect(name.container.querySelector('svg')).toBeNull()
     name.unmount()
 
     const mark = render(<OfficialBrandMark size={34} />)
-    expect(mark.container.querySelector('svg')?.getAttribute('width')).toBe('34')
+    // EcoLogo's `size` is the svg height; the width follows the 788:348 ratio.
+    expect(mark.container.querySelector('svg')?.getAttribute('height')).toBe('34')
     mark.rerender(<OfficialBrandMark size={24} />)
-    expect(mark.container.querySelector('svg')?.getAttribute('width')).toBe('24')
+    expect(mark.container.querySelector('svg')?.getAttribute('height')).toBe('24')
   })
 })

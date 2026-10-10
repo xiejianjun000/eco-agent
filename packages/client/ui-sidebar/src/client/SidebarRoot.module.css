@@ -249,6 +249,8 @@
   min-width: 0;
   display: inline-flex;
   align-items: center;
+  /* Center the mark+name group in the row (the panel toggle keeps the right edge). */
+  justify-content: center;
   overflow: hidden;
   padding: 0;
   border: none;
@@ -270,6 +272,8 @@
   align-items: center;
   gap: 8px;
   height: 24px;
+  /* Sit a touch below the row's vertical center (the row reads top-heavy). */
+  margin-top: 6px;
   min-width: 0;
 }
 

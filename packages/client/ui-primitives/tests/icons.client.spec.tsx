@@ -144,6 +144,6 @@ describe('BrandWordmark', () => {
 
     view.rerender(<primitives.BrandWordmark includeMark={false} />)
     expect(svg.getAttribute('width')).toBe('156')
-    expect(svg.getAttribute('viewBox')).toBe('26 0 156 24')
+    expect(svg.getAttribute('viewBox')).toBe('0 0 156 24')
   })
 })
