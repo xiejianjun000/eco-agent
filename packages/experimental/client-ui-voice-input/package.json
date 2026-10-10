@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-experimental-client-ui-voice-input",
   "description": "Record speech and insert editable text into the conversation draft",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

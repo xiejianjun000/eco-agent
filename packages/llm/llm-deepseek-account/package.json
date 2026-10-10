@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-llm-deepseek-account",
   "description": "DeepSeek account provider authentication and discovery",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

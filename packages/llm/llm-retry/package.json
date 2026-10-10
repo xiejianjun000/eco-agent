@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-llm-retry",
   "description": "Provider-routed LLM request retry policy for the DeepSeek Harness",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

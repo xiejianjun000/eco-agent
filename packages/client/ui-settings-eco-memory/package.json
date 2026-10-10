@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-settings-eco-memory",
   "description": "eco Agent「记忆」设置页：记忆服务接入状态（未接入时诚实显示）",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",

@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-subprocess-ssh",
   "description": "Subprocess and terminal provider over the shared POSIX SSH helper",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

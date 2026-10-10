@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-typert-protocol",
   "description": "Compiler-independent Remote metadata and Typert provider protocols",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

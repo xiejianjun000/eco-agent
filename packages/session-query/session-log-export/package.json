@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-session-log-export",
   "description": "Web Session-log export command and shared download dialog",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

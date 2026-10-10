@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-session",
   "description": "Session Controller adapter for React and session-scoped slots",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

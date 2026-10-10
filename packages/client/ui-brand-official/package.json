@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-brand-official",
   "description": "Official DeepSeek Harness brand occupants for the Web client's sidebar slots",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

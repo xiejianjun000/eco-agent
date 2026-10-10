@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-shortcuts",
   "description": "Application keyboard command registry and physical-key routing",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

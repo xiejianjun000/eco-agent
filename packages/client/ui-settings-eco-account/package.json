@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-settings-eco-account",
   "description": "eco Agent「账号与身份」设置页（预留：正式应用版启用，自部署开源版默认关闭）",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",

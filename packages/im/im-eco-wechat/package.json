@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-im-eco-wechat",
   "description": "eco Agent 微信助手：把个人微信（腾讯 iLink 官方协议）桥接到 eco Agent，扫码登录、白名单、流式回复、定时任务、MCP 抓取。",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xiejianjun000/eco-agent.git",

@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-skill-office",
   "description": "Bundled Word, PowerPoint, and Excel workflows and structural checks",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

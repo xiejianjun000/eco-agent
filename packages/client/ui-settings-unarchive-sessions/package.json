@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-settings-unarchive-sessions",
   "description": "Archived-session settings page: the registry-global archive set with one Unarchive action per row",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

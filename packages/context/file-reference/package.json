@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-file-reference",
   "description": "File-reference discovery contract and shared @file grammar",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

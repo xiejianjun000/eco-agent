@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-session-format",
   "description": "Streaming adjacent Session format migration machinery",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-schedule",
   "description": "Host-wide durable reminders with shared management and original-Session delivery",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

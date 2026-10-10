@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-session",
   "description": "Event-sourced session store for the DeepSeek Harness",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-web-frontend",
   "description": "Web application entry: vite build over the @eco-agent/dsh-client-web shell library; dist/ served by apps/cli's dsh web",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

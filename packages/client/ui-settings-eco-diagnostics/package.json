@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-settings-eco-diagnostics",
   "description": "eco Agent「数据与诊断」设置页：插件健康统计、客户端模块同步、日志导出",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": { "access": "public" },
   "repository": {
     "type": "git",

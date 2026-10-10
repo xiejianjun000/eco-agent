@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-settings-eco-assistants",
   "description": "eco Agent「我的助手」设置页：微信助手（扫码登录 + 白名单 + 开关）与飞书助手的配置入口",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

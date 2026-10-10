@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-client-ui-eco-suggestions",
   "description": "eco suggestion cards below the hero composer: six professional roles and the twelve-element coverage line",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },

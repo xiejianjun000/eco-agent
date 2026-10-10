@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-session-format-v3-to-v4",
   "description": "Streaming tool-role migration and delivery validation from Session V3 to V4",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },
