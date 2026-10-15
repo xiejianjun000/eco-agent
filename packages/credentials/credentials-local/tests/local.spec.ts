@@ -223,9 +223,9 @@ describe('layer ladder', () => {
 })
 
 describe('document validation', () => {
-  // Every rejection below is a boot failure rather than a skipped entry: this
-  // document holds nothing but credentials, so an ignored key would read as
-  // "the secret I stored has no effect".
+  // Every rejection below is a boot failure rather than a skipped entry: inside
+  // `refs` and `records`, an ignored entry would read as "the secret I stored
+  // has no effect". Only a foreign top-level key is tolerated.
   it.each([
     ['a non-mapping root', 'just a string\n', /must be a mapping/],
     ['a sequence root', '- DSH_CRED_TEST\n', /must be a mapping/],
@@ -243,7 +243,6 @@ describe('document validation', () => {
     ['the flat layout under document directives', '%YAML 1.2\n---\nDSH_CRED_TEST: a\n',
       /pre-release flat layout/],
     ['a future version', 'version: 2\nrefs: {}\n', /this build reads version 1/],
-    ['an unknown top-level key', 'version: 1\nsecrets: {}\n', /unknown top-level key "secrets"/],
     ['a non-mapping refs section', 'version: 1\nrefs: nope\n', /"refs" .* must be a mapping/],
     ['a key that is not a POSIX identifier', 'version: 1\nrefs:\n  not-a-ref: value\n', /credential ref/],
     ['a non-string value', 'version: 1\nrefs:\n  DSH_CRED_TEST: 123\n', /must be a string/],
@@ -299,6 +298,29 @@ describe('document validation', () => {
     expect(String(failure)).toMatch(/line 2, column 1/)
     expect(String(failure)).not.toContain(secret)
     expect((failure as Error).stack ?? '').not.toContain(secret)
+  })
+
+  it('boots past an unknown top-level key, warns by name, and keeps it through a write', async () => {
+    const dir = await tempDir()
+    const path = join(dir, '.credentials.yaml')
+    vi.stubEnv('GITLAB_TOKEN', '')
+    await writeCredentials(path, 'version: 1\nGITLAB_TOKEN: glpat-secret\nACCOUNT_ID: 9007199254740993\n'
+      + 'refs:\n  DSH_CRED_TEST: sk-file\n')
+    const ctx = new Context()
+    const warn = vi.spyOn(ctx.logger, 'warn').mockImplementation(() => {})
+    const fiber = ctx.plugin(LocalCredentialProvider, { path, watch: false })
+    cleanups.push(async () => {
+      await fiber.dispose()
+    })
+    await fiber
+    expect(await ctx.credentials.resolve(KEY)).toEqual({ value: 'sk-file', source: 'file' })
+    expect(await ctx.credentials.resolve(credentialRef('GITLAB_TOKEN'))).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('ignoring unknown top-level'), '"GITLAB_TOKEN", "ACCOUNT_ID"', path)
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('glpat-secret')
+    await ctx.credentials.set(OTHER, 'sk-other')
+    expect(await readFile(path, 'utf8')).toBe(
+      'version: 1\nGITLAB_TOKEN: glpat-secret\nACCOUNT_ID: 9007199254740993\n'
+      + 'refs:\n  DSH_CRED_TEST: sk-file\n  DSH_CRED_OTHER: sk-other\n')
   })
 
   it('reads an empty document as an empty store', async () => {

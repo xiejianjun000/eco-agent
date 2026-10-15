@@ -26,8 +26,9 @@
  * edits hot-publish through the seam, and each reload replaces the snapshot
  * wholesale so a deleted entry never lingers in memory.
  *
- * The document holds nothing but credentials, which is why it is a strict
- * `CredentialRef`-to-string mapping rather than a dotenv file: a store the
+ * The document holds credentials, which is why `refs` is a strict
+ * `CredentialRef`-to-string mapping rather than a dotenv file; a foreign
+ * top-level key another tool wrote is kept but resolves nothing: a store the
  * Harness owns and never materializes into the environment cannot also serve
  * as the user's environment layer; a store that doubled as the environment
  * layer would shadow non-secret entries behind its precedence, making them
@@ -166,24 +167,28 @@ function describeYamlError(error: YAMLError): string {
 /** The document layout this build reads and writes. */
 export const DOCUMENT_VERSION = 1
 
-/** One parsed credentials document: the two key spaces it stores, keyed as written. */
+/** One parsed credentials document: the two key spaces it stores, keyed as written, plus the top-level keys it does not read. */
 export interface CredentialsDocument {
   /** Reference entries, keyed by {@link CredentialRef}. */
   refs: Map<string, string>
   /** Stored records, keyed by {@link CredentialKey}. */
   records: Map<string, CredentialRecord>
+  /** Top-level keys this build does not read; they stay on disk and resolve nothing. */
+  ignoredKeys: string[]
 }
 
 /**
- * Parse one credentials document. Everything is rejected rather than skipped —
- * an unversioned root, an unknown top-level key, a key that is not addressable,
- * a wrong-typed value, an unknown record tag or field — because this file holds
- * nothing but credentials and a silently ignored entry reads as "the credential
- * I stored has no effect". Duplicate keys surface as parser errors. An empty
- * document is an empty store and needs no version.
+ * Parse one credentials document. Inside `refs` and `records` everything is
+ * rejected rather than skipped — a key that is not addressable, a wrong-typed
+ * value, an unknown record tag or field — because a silently ignored entry
+ * reads as "the credential I stored has no effect"; an unversioned root is
+ * rejected too. An unknown top-level key is returned in `ignoredKeys` for the
+ * caller to report, so a foreign entry another tool wrote does not stop boot.
+ * Duplicate keys surface as parser errors. An empty document is an empty store
+ * and needs no version.
  * @param text - the document's text.
  * @param filename - absolute path, quoted in errors.
- * @returns the parsed references and records.
+ * @returns the parsed references, records, and ignored top-level keys.
  */
 export function parseCredentialsDocument(text: string, filename: string): CredentialsDocument {
   // `prettyErrors` is on only for `linePos`; `error.message` is never used,
@@ -204,7 +209,7 @@ export function parseCredentialsDocument(text: string, filename: string): Creden
   const keys = Object.keys(fields)
   // An empty (or comment-only) document is the empty store and needs no
   // version: there is nothing in it a later layout could have meant.
-  if (keys.length === 0) return { refs: new Map(), records: new Map() }
+  if (keys.length === 0) return { refs: new Map(), records: new Map(), ignoredKeys: [] }
   if (!('version' in fields)) {
     throw new Error(
       `credentials-local: ${filename} uses the pre-release flat layout. Add \`version: ${DOCUMENT_VERSION}\``
@@ -218,12 +223,11 @@ export function parseCredentialsDocument(text: string, filename: string): Creden
       + ` this build reads version ${DOCUMENT_VERSION}`,
     )
   }
-  for (const key of keys) {
-    if (key !== 'version' && key !== 'refs' && key !== 'records') {
-      throw new Error(`credentials-local: unknown top-level key "${key}" in ${filename}`)
-    }
+  return {
+    refs: parseRefs(fields['refs'], filename),
+    records: parseRecords(fields['records'], filename),
+    ignoredKeys: keys.filter(key => key !== 'version' && key !== 'refs' && key !== 'records'),
   }
-  return { refs: parseRefs(fields['refs'], filename), records: parseRecords(fields['records'], filename) }
 }
 
 /**
@@ -424,8 +428,9 @@ function assertJsonValue(where: string, value: unknown, seen: Set<object>): void
  */
 function mutableDocument(text: string | undefined): Document {
   // `text` only ever caches content that parsed successfully, so this re-parse
-  // for the mutable comment-preserving tree cannot fail.
-  const document = text === undefined ? new Document({}) : parseDocument(text)
+  // for the mutable comment-preserving tree cannot fail. `intAsBigInt` keeps an
+  // integer beyond 2^53 in a foreign top-level entry exact when re-serialized.
+  const document = text === undefined ? new Document({}) : parseDocument(text, { intAsBigInt: true })
   // Stamped on every edit so a document this provider creates is readable by
   // the same parser that admitted the one it edits; an existing stamp is
   // rewritten to the identical value.
@@ -805,6 +810,7 @@ export class LocalCredentialProvider extends CredentialProvider {
     }
     if (renderFlatLayoutMigration(text) !== undefined) text = await this.migrateFlatDocument()
     const document = parseCredentialsDocument(text, this.spec.filename)
+    this.warnIgnoredKeys(document)
     this.values = document.refs
     this.records = document.records
     this.text = text
@@ -879,8 +885,9 @@ export class LocalCredentialProvider extends CredentialProvider {
     }
     if (text === this.text || this.isClosed()) return
     const next = text === undefined
-      ? { refs: new Map<string, string>(), records: new Map<string, CredentialRecord>() }
+      ? { refs: new Map<string, string>(), records: new Map<string, CredentialRecord>(), ignoredKeys: [] }
       : parseCredentialsDocument(text, this.spec.filename)
+    this.warnIgnoredKeys(next)
     const changedRefs = this.changedRefs(this.values, next.refs)
     const changedRecords = this.changedRecords(this.records, next.records)
     this.text = text
@@ -888,6 +895,16 @@ export class LocalCredentialProvider extends CredentialProvider {
     this.records = next.records
     for (const ref of changedRefs) this.notifyUpdated(ref)
     for (const key of changedRecords) this.notifyRecordUpdated(key)
+  }
+
+  /** Report top-level keys that resolve nothing; only key names are printed, never values. */
+  private warnIgnoredKeys(document: CredentialsDocument): void {
+    if (document.ignoredKeys.length === 0) return
+    this.ctx.logger.warn(
+      'credentials-local: ignoring unknown top-level keys %s in %s; only `refs` and `records` entries resolve',
+      document.ignoredKeys.map(key => JSON.stringify(key)).join(', '),
+      this.spec.filename,
+    )
   }
 
   /** Entries whose stored value changed; the parser has already proven every key addressable. */
