@@ -144,7 +144,7 @@ export const ChatGroupSeat = memo(function ChatGroupSeat({ groupKey, useChatGrou
     || (policy.stepGrouping === 'history' && turnLocation?.status !== 'open'))
   const reason = turnLocation?.end?.data.reason.kind
   const alwaysOpen = presentation?.turnClosed === false || presentation?.hasInterleavedInput === true
-    || reason === 'aborted' || reason === 'error'
+    || reason === 'aborted' || reason === 'interrupted' || reason === 'error'
   const spec = presentation?.spec
   const selectStored = useCallback((state: Readonly<ChatStoreState>) => turn === undefined
     ? undefined : storedTurnProcessEntry(state, turn), [turn])
