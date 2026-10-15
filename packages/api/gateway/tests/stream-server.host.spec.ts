@@ -67,6 +67,40 @@ describe('Remote stream mux server carrier lifecycle', () => {
     await closed
   })
 
+  it('counts inbound frames as liveness while Pong is delayed', async () => {
+    const entry = await startMux(async (_endpoint, _payload, _uplink, _peer, control) => waitForAbort(control.signal), 20)
+    const client = await connect(entry.url, false)
+    const terminated = vi.spyOn(acceptedSocket(entry.mux), 'terminate')
+    const traffic = setInterval(() => { client.send(JSON.stringify({ type: 'cancel', streamId: 'absent' })) }, 5)
+    try {
+      await new Promise<void>((resolve) => { setTimeout(resolve, 150) })
+      expect(terminated).not.toHaveBeenCalled()
+    } finally {
+      clearInterval(traffic)
+    }
+    await vi.waitFor(() => { expect(terminated).toHaveBeenCalledOnce() })
+  })
+
+  it('counts completed downlink writes as liveness while Pong is delayed', async () => {
+    const stop = Promise.withResolvers<undefined>()
+    const entry = await startMux(async () => (async function *(): AsyncIterable<string> {
+      const stopped = stop.promise.then(() => true)
+      while (!await Promise.race([stopped, new Promise<false>((resolve) => { setTimeout(() => { resolve(false) }, 5) })])) {
+        yield 'item'
+      }
+    })(), 20)
+    const client = await connect(entry.url, false)
+    const terminated = vi.spyOn(acceptedSocket(entry.mux), 'terminate')
+    client.send(openFrame('busy'))
+    try {
+      await new Promise<void>((resolve) => { setTimeout(resolve, 150) })
+      expect(terminated).not.toHaveBeenCalled()
+    } finally {
+      stop.resolve(undefined)
+    }
+    await vi.waitFor(() => { expect(terminated).toHaveBeenCalledOnce() })
+  })
+
   it('keeps the socket when a delayed Pong arrives before the final check', async () => {
     const entry = await startMux(async (_endpoint, _payload, _uplink, _peer, control) => waitForAbort(control.signal), 20)
     const client = await connect(entry.url, false)

@@ -72,12 +72,16 @@ export class RemoteStreamMuxServer {
     this.server.handleUpgrade(req, socket, head, (websocket) => {
       const release = bindPeer(websocket, peer)
       if (release === undefined) return
-      this.missedHeartbeats.set(websocket, 0)
-      websocket.on('pong', () => { this.missedHeartbeats.set(websocket, 0) })
+      // Any frame received or downlink write flushed proves the peer is still
+      // reading, even when a congested link delays the Pong behind data.
+      const alive = (): void => { this.missedHeartbeats.set(websocket, 0) }
+      alive()
+      websocket.on('pong', alive)
+      websocket.on('message', alive)
       this.startHeartbeat()
       const bound: BoundStreamOpener = (endpoint, payload, uplink, control) =>
         this.open(endpoint, payload, uplink, peer, control)
-      const connection = new RemoteStreamMuxConnection(websocket, bound, this.failure, this.streamInboxBytes)
+      const connection = new RemoteStreamMuxConnection(websocket, bound, this.failure, this.streamInboxBytes, alive)
       const done = connection.run()
       this.connections.add(done)
       void done.then(() => {
@@ -141,6 +145,7 @@ class RemoteStreamMuxConnection {
     private readonly open: BoundStreamOpener,
     private readonly failure: RemoteStreamFailureMapper,
     private readonly streamInboxBytes: number,
+    private readonly alive: () => void,
   ) {}
 
   async run(): Promise<void> {
@@ -284,8 +289,12 @@ class RemoteStreamMuxConnection {
         return
       }
       this.socket.send(text, (error) => {
-        if (error) reject(error)
-        else resolve()
+        if (error) {
+          reject(error)
+          return
+        }
+        this.alive()
+        resolve()
       })
     }))
     this.writes = delivery.catch(() => undefined)
