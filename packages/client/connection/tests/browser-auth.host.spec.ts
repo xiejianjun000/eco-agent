@@ -250,6 +250,53 @@ describe('BrowserAuth', () => {
     expect(store).toMatchObject({ reads: 0, modifies: 2 })
   })
 
+  it('throttles repeated failed handshakes without punishing other clients', async () => {
+    const auth = await createAuth(new RecordCredentials())
+    const deny = (): number | undefined => {
+      const res = response()
+      auth.authorizeIndex(request('/?token=wrong'), res.value)
+      return res.state.status
+    }
+    for (let attempt = 0; attempt < 20; attempt += 1) expect(deny()).toBe(401)
+    expect(deny()).toBe(429)
+
+    // Inside the window even a valid token stays throttled (brute-force guard).
+    const login = new URL(auth.authenticatedUrl('http://127.0.0.1:3080'))
+    const throttled = response()
+    auth.authorizeIndex(request(`${login.pathname}${login.search}`), throttled.value)
+    expect(throttled.state.status).toBe(429)
+    expect(throttled.state.headers?.['retry-after']).toBe('60')
+
+    // A different client key (distinct Host authority) is unaffected.
+    const other = new URL(auth.authenticatedUrl('http://gateway.example'))
+    const allowed = response()
+    auth.authorizeIndex(request(`${other.pathname}${other.search}`, 'gateway.example'), allowed.value)
+    expect(allowed.state.status).toBe(303)
+  })
+
+  it('marks the session cookie Secure only when forwarded over TLS', async () => {
+    const auth = await createAuth(new RecordCredentials())
+    const login = new URL(auth.authenticatedUrl('http://gateway.example'))
+    const qs = `${login.pathname}${login.search}`
+
+    const secure = response()
+    auth.authorizeIndex({
+      method: 'GET',
+      url: qs,
+      headers: { host: 'gateway.example', 'x-forwarded-proto': 'https' },
+    }, secure.value)
+    expect(secure.state.status).toBe(303)
+    expect(secure.state.headers?.['set-cookie']).toMatch(/; HttpOnly; SameSite=Strict; Secure$/u)
+
+    const plain = response()
+    auth.authorizeIndex({
+      method: 'GET',
+      url: qs,
+      headers: { host: 'gateway.example', 'x-forwarded-proto': 'http' },
+    }, plain.value)
+    expect(plain.state.headers?.['set-cookie']).not.toContain('Secure')
+  })
+
   it('fails loud on an invalid owner record instead of replacing it', async () => {
     const unsupported = new RecordCredentials()
     unsupported.record = { kind: 'api-key', key: 'not-a-cookie-secret' }

@@ -18,6 +18,13 @@ const COOKIE_PAYLOAD_VERSION = 1
 const STORED_SECRET_VERSION = 1
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]*$/
 const PROCESS_LAUNCH_TOKENS = new WeakMap<object, string>()
+const FORWARDED_PROTO_HEADER = 'x-forwarded-proto'
+const FORWARDED_FOR_HEADER = 'x-forwarded-for'
+/** Sliding-window throttle for failed boot-token handshakes (brute-force guard). */
+const RATE_LIMIT_WINDOW_MILLISECONDS = 60_000
+const RATE_LIMIT_MAX_FAILURES = 20
+/** Hard ceiling on tracked clients so attacker IP churn cannot grow the map unbounded. */
+const RATE_LIMIT_MAX_TRACKED_CLIENTS = 10_000
 
 interface StoredSecretPayload {
   readonly version: typeof STORED_SECRET_VERSION
@@ -118,8 +125,23 @@ function cookieValue(headerValue: string, name: string): string | undefined {
 }
 
 /** Serialize the fixed browser-session attributes; generated names and values are cookie-safe base64url. */
-function sessionCookie(name: string, value: string, expiresAt: number, maxAgeSeconds: number): string {
-  return `${name}=${value}; Max-Age=${String(maxAgeSeconds)}; Path=/; Expires=${new Date(expiresAt).toUTCString()}; HttpOnly; SameSite=Strict`
+function sessionCookie(
+  name: string,
+  value: string,
+  expiresAt: number,
+  maxAgeSeconds: number,
+  secure: boolean,
+): string {
+  const base = `${name}=${value}; Max-Age=${String(maxAgeSeconds)}; Path=/; Expires=${new Date(expiresAt).toUTCString()}; HttpOnly; SameSite=Strict`
+  return secure ? `${base}; Secure` : base
+}
+
+/** True when the request arrived over TLS, per the standard reverse-proxy contract. */
+function requestIsSecure(headers: ConnectionTrustRequest['headers']): boolean {
+  const value = header(headers, FORWARDED_PROTO_HEADER)
+  if (value === undefined) return false
+  const first = value.split(',')[0]?.trim().toLowerCase()
+  return first === 'https'
 }
 
 function signature(secret: Buffer, body: string): Buffer {
@@ -185,6 +207,8 @@ async function initializeSecret(credentials: CredentialProvider): Promise<Buffer
 export class BrowserAuth {
   private readonly launchToken: string
   private readonly maxAgeMilliseconds: number
+  /** Failed boot-token handshake timestamps per client key (sliding window). */
+  private readonly failedTokenAttempts = new Map<string, number[]>()
 
   private constructor(
     processOwner: object,
@@ -240,6 +264,10 @@ export class BrowserAuth {
     const url = new URL(req.url ?? '/', 'http://dsh.invalid')
     const tokens = url.searchParams.getAll(TOKEN_QUERY)
     if (tokens.length > 0) {
+      if (this.tokenAttemptsExhausted(req.headers)) {
+        this.writeTooManyRequests(res)
+        return false
+      }
       const authority = requestAuthority(req.headers)
       if (req.method === 'GET' && url.pathname === '/' && tokens.length === 1
         && authority !== undefined && tokenMatches(tokens.join(''), this.launchToken)) {
@@ -257,11 +285,13 @@ export class BrowserAuth {
           'referrer-policy': 'no-referrer',
           'set-cookie': sessionCookie(
             cookieName(authority), value, expiresAt, Math.floor(this.maxAgeMilliseconds / 1000),
+            requestIsSecure(req.headers),
           ),
         })
         res.end()
         return false
       }
+      this.recordFailedTokenAttempt(req.headers)
       if (req.method === 'GET' && url.pathname === '/' && this.isAuthenticated(req)) {
         res.writeHead(303, {
           'cache-control': 'no-store',
@@ -307,5 +337,52 @@ export class BrowserAuth {
     res.end(req.method === 'HEAD'
       ? undefined
       : 'dsh web authentication required; reopen the URL printed by dsh web.\n')
+  }
+
+  /**
+   * Client key for handshake throttling: the proxy-forwarded client IP when
+   * present, else the Host authority (direct local connections share one key).
+   */
+  private clientKey(headers: ConnectionTrustRequest['headers']): string {
+    const forwarded = header(headers, FORWARDED_FOR_HEADER)
+    if (forwarded !== undefined) {
+      const first = forwarded.split(',')[0]?.trim()
+      if (first !== undefined && first !== '') return first
+    }
+    return header(headers, 'host') ?? 'unknown'
+  }
+
+  /** True when this client already exhausted failed handshakes inside the window. */
+  private tokenAttemptsExhausted(headers: ConnectionTrustRequest['headers']): boolean {
+    const now = Date.now()
+    const key = this.clientKey(headers)
+    const attempts = this.failedTokenAttempts.get(key)
+    if (attempts === undefined) return false
+    const recent = attempts.filter(at => now - at < RATE_LIMIT_WINDOW_MILLISECONDS)
+    if (recent.length === 0) {
+      this.failedTokenAttempts.delete(key)
+      return false
+    }
+    this.failedTokenAttempts.set(key, recent)
+    return recent.length >= RATE_LIMIT_MAX_FAILURES
+  }
+
+  private recordFailedTokenAttempt(headers: ConnectionTrustRequest['headers']): void {
+    if (this.failedTokenAttempts.size >= RATE_LIMIT_MAX_TRACKED_CLIENTS) {
+      this.failedTokenAttempts.clear()
+    }
+    const key = this.clientKey(headers)
+    const attempts = this.failedTokenAttempts.get(key)
+    if (attempts === undefined) this.failedTokenAttempts.set(key, [Date.now()])
+    else attempts.push(Date.now())
+  }
+
+  private writeTooManyRequests(res: ConnectionIndexResponse): void {
+    res.writeHead(429, {
+      'cache-control': 'no-store',
+      'content-type': 'text/plain; charset=utf-8',
+      'retry-after': String(Math.ceil(RATE_LIMIT_WINDOW_MILLISECONDS / 1000)),
+    })
+    res.end('dsh web authentication rate limit exceeded; retry later.\n')
   }
 }
