@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-deque",
   "description": "Zero-dependency circular deque with amortized constant-time end operations and bounded vacant storage",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publishConfig": {
     "access": "public"
   },

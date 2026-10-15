@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-otel",
   "description": "Cordis service for independent ordinary-event and byte-bounded Session-log OTLP channels",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publishConfig": {
     "access": "public"
   },

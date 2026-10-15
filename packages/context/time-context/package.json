@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-time-context",
   "description": "Durable per-step context with the current time and elapsed time",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publishConfig": {
     "access": "public"
   },

@@ -1,7 +1,7 @@
 {
   "name": "@eco-agent/dsh-hmr",
   "description": "Coordinated module and profile configuration hot reload",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publishConfig": {
     "access": "public"
   },
