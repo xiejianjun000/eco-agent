@@ -239,7 +239,7 @@
     "fflate": "^0.8.2",
     "istanbul-lib-report": "^3.0.1",
     "js-yaml": "^4.2.0",
-    "jscpd": "^5.0.12",
+    "jscpd": "^5.1.2",
     "jsdom": "29.1.1",
     "lefthook": "^2.1.9",
     "lightningcss": "^1.32.0",
